@@ -59,13 +59,13 @@ export const LOADING_PART_CSS = /* css */ `
 .fd-sk { display: block; block-size: 0.9em; margin-block: 7px; border-radius: 4px; background-color: var(--fd-skeleton); }
 .fd-loader[data-way="skeleton"] > .fd-sk:nth-child(2) { inline-size: 82%; }
 .fd-loader[data-way="skeleton"] > .fd-sk:nth-child(3) { inline-size: 64%; }
-.fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size: 1.6em; border-color: transparent !important; box-shadow: none !important; color: transparent !important; background-color: var(--fd-skeleton) !important; border-radius: max(var(--fd-control-radius), 4px); appearance: none !important; }
-.fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) * { visibility: hidden; }
-.fd-form [data-fd-look="shimmer"] :is(.fd-sk, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > .fd-label + *, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :first-child:not(.fd-label)), .fd-loader[data-look="shimmer"] .fd-sk {
+.fd-form [data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size: 1.6em; border-color: transparent !important; box-shadow: none !important; color: transparent !important; background-color: var(--fd-skeleton) !important; border-radius: max(var(--fd-control-radius), 4px); appearance: none !important; }
+.fd-form [data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) * { visibility: hidden; }
+.fd-form [data-fd-look="shimmer"] :is(.fd-sk, .fd-field:not([data-fd-open]) > .fd-label + *, .fd-field:not([data-fd-open]) > :first-child:not(.fd-label)), .fd-loader[data-look="shimmer"] .fd-sk {
   background-image: linear-gradient(90deg, transparent 30%, var(--fd-skeleton-shine) 50%, transparent 70%) !important; background-size: 300% 100% !important; background-position: 100% 0; animation: fd-shimmer var(--fd-shimmer) linear infinite;
 }
 .fd-form [data-fd-look="shimmer"] :dir(rtl) { animation-direction: reverse; }
-.fd-form [data-fd-look="pulse"] :is(.fd-sk, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > .fd-label + *, .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :first-child:not(.fd-label)), .fd-loader[data-look="pulse"] .fd-sk { animation: fd-pulse 1.4s ease-in-out infinite alternate; }
+.fd-form [data-fd-look="pulse"] :is(.fd-sk, .fd-field:not([data-fd-open]) > .fd-label + *, .fd-field:not([data-fd-open]) > :first-child:not(.fd-label)), .fd-loader[data-look="pulse"] .fd-sk { animation: fd-pulse 1.4s ease-in-out infinite alternate; }
 @keyframes fd-shimmer { to { background-position: 0 0; } }
 @keyframes fd-pulse { to { opacity: 0.45; } }
 /* A page's skeleton from its layout, while its parts come (page-skeleton.ts): its groups as cards, each field a label's bar over its box. */
@@ -86,7 +86,7 @@ export const LOADING_PART_CSS = /* css */ `
   .fd-bar, .fd-bar::before { inset-inline-start: 0 !important; inline-size: 100% !important; opacity: 0.7; }
 }
 @media (forced-colors: active) {
-  .fd-sk, .fd-form [data-fd-shaped] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)) { forced-color-adjust: none; background: GrayText !important; }
+  .fd-sk, .fd-form [data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) { forced-color-adjust: none; background: GrayText !important; }
   .fd-bar, .fd-bar::before { forced-color-adjust: none; background: Highlight !important; }
   .fd-spin { forced-color-adjust: none; border-color: GrayText; border-block-start-color: Highlight; }
   .fd-loader[data-look="dots"] .fd-spin { background: Highlight; box-shadow: -14px 0 Highlight, 14px 0 Highlight; }

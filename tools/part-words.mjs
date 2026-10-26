@@ -57,7 +57,7 @@ export const PART_WORDS = {
   },
   files: {
     widgets: [
-      'uploadImage', 'dropHere', 'addFiles', 'addPhotos', 'dropThem', 'upToSize', 'upToEach', 'upToFiles', 'fileCount', 'oneFile', 'fileCountOf', 'tooMany', 'alreadyAdded', 'fileAt', 'noPreview', 'cannotPlay', 'recordVoice', 'recordVideo', 'recordVoiceUpTo', 'recordVideoUpTo', 'recorderNoPart', 'showFilesAs', 'asList', 'asCards', 'asThumbnails',
+      'uploadImage', 'dropHere', 'addFiles', 'addPhotos', 'dropThem', 'upToSize', 'upToEach', 'upToFiles', 'fileCount', 'oneFile', 'fileCountOf', 'tooMany', 'alreadyAdded', 'fileAt', 'noPreview', 'notAPicture', 'cannotPlay', 'recordVoice', 'recordVideo', 'recordVoiceUpTo', 'recordVideoUpTo', 'recorderNoPart', 'showFilesAs', 'asList', 'asCards', 'asThumbnails',
       'signaturePad', 'signHere', 'typeSignature', 'clearDrawing', 'uploadSignature', 'uploadPercent', 'uploadWaiting', 'uploadPreparing', 'uploadFailed', 'uploadRefused', 'uploadingNamed', 'retryUploadNamed', 'fileUploaded', 'filesUploaded', 'notUploadedNamed', 'noDocument',
       'removeAsk', 'removeFile', 'removed', 'notSignedNoPart', 'signingNoPart', 'signingRetry', 'notSignedReload', 'signingNoPartReload',
     ],

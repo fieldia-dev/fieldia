@@ -22,6 +22,20 @@ export const replay: DemoReplay = {
       },
     },
     {
+      says: 'Reload the page: it offers your answers back. Press Restore',
+      async run({ page, press, see }) {
+        // What was typed is kept a moment after the last key, as a person's typing is: then the page is reloaded.
+        await expect.poll(() => page.evaluate(() => Object.values(localStorage).some((kept) => kept.includes('A cough')))).toBe(true);
+        await page.reload();
+        const offer = page.locator('#app .fd-draft:visible');
+        await see(offer).toContainText('You have unsaved answers from');
+        await press(offer.getByRole('button', { name: 'Restore' }));
+        await see(page.locator('.fd-step:not([hidden]) .fd-step-title')).toHaveText('Your visit');
+        await see(page.locator('[data-node="f-reason"] textarea')).toHaveValue('A cough that will not go.');
+        await see(offer).toHaveCount(0);
+      },
+    },
+    {
       says: 'Press Continue later: your answers are saved',
       async run({ page, phone, press, see }) {
         await press(page.getByRole('button', { name: 'Continue later' }));

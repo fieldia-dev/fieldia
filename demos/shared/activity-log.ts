@@ -44,11 +44,15 @@ export function activityEntries(now = demoNow()): Record<number, Values> {
   return records;
 }
 
-/** An entry's own page, as a row of the log opens it: when, who, what and to which record. */
+/**
+ * An entry's own page, as a row of the log opens it: when, who, what and to which record — read as words, never boxes,
+ * as an audit's entry is never changed (the walk of 0.35: its Did read as a dropdown to choose from).
+ */
 export const activityEntryPage: Page = {
   fieldia: '0.13',
   id: 'activity-entry',
   title: 'An entry of the log',
+  look: { readonlyShown: 'text' },
   data: { kind: 'record', model: 'activity.entry' },
   fields: {
     at: { type: 'datetime', label: 'When', readonly: true },

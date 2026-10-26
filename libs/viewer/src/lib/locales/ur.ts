@@ -35,6 +35,7 @@ export const ur: ViewerLabels = {
   submitAnother: 'ایک اور جواب بھیجیں',
   leaveEmpty: 'اس خانے کو خالی چھوڑ دیں',
   draftFound: 'آپ کے پاس {time} کے غیر محفوظ جوابات ہیں۔',
+  draftFoundRecord: 'آپ کے پاس {time} کی غیر محفوظ تبدیلیاں ہیں۔',
   restore: 'بحال کریں',
   discardDraft: 'ترک کریں',
   ok: 'ٹھیک ہے',

@@ -182,6 +182,37 @@ test('a row opened to its details stays open as the view goes away and comes bac
   }
 });
 
+test('far down a long list, an entry opened and Back: the list where it was left — its rows loaded, the row read at its place, the keyboard on the entry', async ({ page }) => {
+  // The owner's walk of 0.35: the activity log scrolled to 480 loaded, an entry opened, Back — "1–30 of 1,284" at its top.
+  await page.goto('/plain/?page=activity-log&skin=underline');
+  const rows = page.locator('.fd-list-row');
+  await expect(rows.first()).toBeVisible();
+  for (let i = 0; i < 12; i++) {
+    await page.evaluate(() => window.scrollBy(0, 1500));
+    await frames(page);
+  }
+  await expect(page.locator('.fd-pager-text')).not.toHaveText(/^1–30 /);
+  const read = () =>
+    page.evaluate(() => {
+      const row = document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest<HTMLElement>('.fd-list-row');
+      return row ? { id: row.dataset['id'] as string, top: Math.round(row.getBoundingClientRect().top), range: document.querySelector('.fd-pager-text')?.textContent } : null;
+    });
+  const left = (await read())!;
+  expect(left).not.toBeNull();
+  await page.locator(`.fd-list-row[data-id="${left.id}"]`).click({ position: { x: 40, y: 10 } });
+  await expect(page).toHaveURL(new RegExp(`page=activity-entry.*record=${left.id}`));
+  await page.goBack();
+  const entry = page.locator(`.fd-list-row[data-id="${left.id}"]`);
+  await expect(entry).toBeFocused();
+  await expect(page.locator('.fd-pager-text')).toHaveText(left.range as string);
+  await expect.poll(async () => Math.abs(((await entry.boundingBox())?.y ?? -1e6) - left.top)).toBeLessThanOrEqual(2);
+  // Opened anew — a page of its own in the history, from the gallery or a link — the list starts at its top, as ever.
+  await page.goto('/plain/?page=activity-log&skin=outlined');
+  await expect(rows.first()).toBeVisible();
+  await expect(page.locator('.fd-pager-text')).toHaveText(/^1–30 of /);
+  expect(await page.evaluate(() => Math.round(scrollY))).toBe(0);
+});
+
 test('reads right to left the same: its rows counted, Down past the last row drawn', async ({ page }) => {
   await mountList(page, 2000, {}, 'rtl');
   await scrollTo(page, 40000);

@@ -224,3 +224,56 @@ export function sameValue(a: Value | undefined, b: Value | undefined): boolean {
 export function structuredCopy<T>(value: T): T {
   return value === undefined ? value : (JSON.parse(JSON.stringify(value)) as T);
 }
+
+/** Whether two plain JSON values hold the same, part by part, whatever order their keys were written in. */
+export function alike(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return (a ?? null) === (b ?? null);
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) {
+    const other = b as unknown[];
+    if (a.length !== other.length) return false;
+    for (let i = 0; i < a.length; i++) if (!alike(a[i], other[i])) return false;
+    return true;
+  }
+  const one = a as Record<string, unknown>;
+  const two = b as Record<string, unknown>;
+  // A key held as undefined is none, as JSON writes it.
+  const keys = Object.keys(one).filter((key) => one[key] !== undefined);
+  if (keys.length !== Object.keys(two).filter((key) => two[key] !== undefined).length) return false;
+  for (const key of keys) if (!alike(one[key], two[key])) return false;
+  return true;
+}
+
+/**
+ * `next`, with what it holds alike in `now` kept as `now`'s own objects: a value alike in every part, and a table's
+ * line alike in all it holds — its table the same array when every line is — so what an answer gives back unchanged (a
+ * server working out an invoice's 200 lines again, the same) is the same object, which nothing that compares by it
+ * draws, checks or copies again. `next` itself when nothing is kept.
+ */
+export function keptSame(next: Values, now: Readonly<Values>, fields: Readonly<Record<string, AnyField>>): Values {
+  let out: Values | null = null;
+  for (const name of Object.keys(next)) {
+    const value = next[name];
+    const held = now[name];
+    if (value === held || value === null || typeof value !== 'object' || held === null || held === undefined || typeof held !== 'object') continue;
+    const kept = fields[name]?.type === 'one2many' && Array.isArray(value) && Array.isArray(held) ? linesKept(value as Line[], held as Line[]) : alike(value, held) ? held : value;
+    if (kept !== value) (out ??= { ...next })[name] = kept;
+  }
+  return out ?? next;
+}
+
+/** `next`'s lines, each alike one of `held` by its key kept as that one; `held` itself when every line is, in its order. */
+function linesKept(next: Line[], held: Line[]): Line[] {
+  const byKey = new Map(held.map((line) => [line.key, line]));
+  let same = next.length === held.length;
+  let kept = false;
+  const out = next.map((line, at) => {
+    const was = line && byKey.get(line.key);
+    const one = was && was !== line && alike(was, line) ? was : line;
+    if (one !== line) kept = true;
+    if (one !== held[at]) same = false;
+    return one;
+  });
+  return same ? held : kept ? out : next;
+}

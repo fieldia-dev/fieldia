@@ -138,6 +138,7 @@ export const de: WidgetLabels = {
   close: 'Schließen',
   fileAt: '{n} von {total}',
   noPreview: 'Keine Vorschau für diese Art von Datei',
+  notAPicture: 'Diese Datei ist kein Bild, auch wenn ihr Name es sagt: Sie wird nicht angezeigt',
   cannotPlay: 'Dieser Browser kann die Datei nicht abspielen: Laden Sie sie herunter, um sie abzuspielen.',
   recordVoice: 'Sprachnotiz aufnehmen',
   recordVideo: 'Video aufnehmen',

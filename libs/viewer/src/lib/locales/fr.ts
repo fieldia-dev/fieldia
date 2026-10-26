@@ -28,6 +28,7 @@ export const fr: ViewerLabels = {
   submitAnother: 'Envoyer une autre réponse',
   leaveEmpty: 'Laissez ce champ vide',
   draftFound: 'Vous avez des réponses non enregistrées du {time}.',
+  draftFoundRecord: 'Vous avez des modifications non enregistrées du {time}.',
   restore: 'Restaurer',
   discardDraft: 'Ignorer',
   ok: 'OK',

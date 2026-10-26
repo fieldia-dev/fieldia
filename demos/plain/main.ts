@@ -1,4 +1,4 @@
-import type { ActionRequest, Locale, Theme } from '@fieldia/core';
+import { workCounts, type ActionRequest, type Locale, type Theme } from '@fieldia/core';
 import { loadParts, mountViewer, openFormDialog, type FormDialogResult, type Skin, type ViewerOptions } from '@fieldia/viewer';
 import { quietPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 // ag-Grid's and CodeMirror's widgets, fetched by the pages that draw one (shared/lazy-widgets.ts).
@@ -244,5 +244,6 @@ if (name === 'treatment-course') document.getElementById('app')?.before(frontDes
 
 // `pageNames`: every page `?page=` opens, for the browser test that each is named for what it shows; `allPages()`, the
 // pages themselves, each fetched, for the one that each draws the sample records' values as their kind is;
-// `releasePages` and `pagesHeld`, the saved forms held by `?pagesDelay=hold` let go, and how many wait.
-Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages), allPages, releasePages, pagesHeld } });
+// `releasePages` and `pagesHeld`, the saved forms held by `?pagesDelay=hold` let go, and how many wait; `workCounts`, the
+// form's own work, for the counts at scale on the demos' own pages (e2e/lines-invoice-scale.spec.ts).
+Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults, pageNames: Object.keys(pages), allPages, releasePages, pagesHeld, workCounts } });

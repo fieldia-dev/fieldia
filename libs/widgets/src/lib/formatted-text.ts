@@ -1,4 +1,4 @@
-import { LINK_URL, PICTURE_URL, safeUrl } from '@fieldia/core';
+import { LINK_URL, MESSAGES, PICTURE_URL, safeUrl, webAddress, type Locale } from '@fieldia/core';
 import { drawIcon, type IconSet } from './icons';
 import { fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
@@ -800,6 +800,9 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     const url = safeUrl(linkAddress(address.value), ['http', 'https', 'mailto']);
     if (!url) {
       address.setAttribute('aria-invalid', 'true');
+      // Said why, as a web address field says it (0.35.1: refused without a word).
+      const messages = MESSAGES[(options.locale ?? 'en') as Locale] ?? MESSAGES.en;
+      say(webAddress(address.value) === 'scheme' ? messages.urlScheme : messages.url, true);
       return;
     }
     address.setAttribute('aria-invalid', 'false');

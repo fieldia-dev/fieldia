@@ -140,6 +140,7 @@ export const tr: WidgetLabels = {
   close: 'Kapat',
   fileAt: '{n} / {total}',
   noPreview: 'Bu dosya türü için önizleme yok',
+  notAPicture: 'Bu dosya, adı öyle söylese de bir resim değil: gösterilmiyor',
   cannotPlay: 'Bu tarayıcı bunu oynatamıyor: oynatmak için indirin.',
   recordVoice: 'Sesli not kaydet',
   recordVideo: 'Video kaydet',

@@ -193,10 +193,48 @@ test.describe('a consent whose signing could not load', () => {
   /** What a blocked script tells the console: the test's own doing. */
   const blockedSaid = /evidence|Failed to load resource|dynamically imported module|module script failed|ERR_FAILED|could not be loaded/i;
 
-  test('in an app of modules: says so under the signature, a reload — never a Try again that cannot work — and a save refuses it', async ({ page }) => {
+  test('in an app of modules, where the browser names the module that failed: Try again asks for it anew, and the picture is signed once it comes', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'WebKit names no module that failed: its words ask for a reload (below)');
+    await page.setViewportSize(WIDE);
+    // The signing's part refused, as offline or with its script blocked, in an app bundled as modules (this demo). The
+    // browser keeps a module it could not fetch failed for the page's life; where its error names the module (Chromium,
+    // Firefox), Try again asks for it anew at an address of its own (0.35.1: it said reload, and a reload lost the pad).
+    let blocked = true;
+    const asked: string[] = [];
+    await page.route(/\/evidence-part-[^/]*\.js(\?.*)?$/, (route) => {
+      asked.push(route.request().url().split('/').pop() as string);
+      return blocked ? route.abort() : route.continue();
+    });
+    ({ problems } = await open(page, 'plain', `page=clinic-consent&record=new&skin=outlined&now=${NOW}`));
+    await answer(page);
+    await draw(page, sign(page).locator('canvas'));
+    const note = sign(page).locator('.fd-signature-unloaded');
+    await expect(note).toHaveText('Not signed yet: the signing could not load. Try again');
+    await expect(note).toHaveAttribute('role', 'alert');
+    // The picture kept on the pad and in the field — never signed in silence; a save refuses it, saying why under it.
+    expect((await state(page)).values.signature).toMatchObject({ name: 'signature.png', type: 'image/png' });
+    expect((await state(page)).values.signature.signed).toBeUndefined();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(sign(page).locator('.fd-error')).toHaveText('Not signed yet: the signing could not load.');
+    expect((await state(page)).recordId).toBeNull();
+    await sign(page).scrollIntoViewIfNeeded();
+    await screen(page, 'signature-evidence-unloaded-modules-try-again', { viewport: true });
+    // Back online: Try again asks for the part's module anew, and the picture is signed.
+    blocked = false;
+    const before = asked.length;
+    await note.getByRole('button', { name: 'Try again' }).click();
+    await expect(evidence(page).locator('.fd-signature-state')).toHaveText('✓The answers are as they were signed.');
+    expect(asked.slice(before).some((file) => /\?fd-again=\d+$/.test(file))).toBe(true);
+    await expect(note).toBeHidden();
+    expect((await state(page)).values.signature.signed).toMatchObject({ by: 'Mona Adel', at: NOW });
+    problems = problems.filter((said) => !blockedSaid.test(said));
+  });
+
+  test('in an app of modules, where the browser names no module: says so under the signature, a reload — never a Try again that cannot work — and a save refuses it', async ({ page, browserName }) => {
+    test.skip(browserName !== 'webkit', 'Chromium and Firefox name the module: Try again asks for it anew (above)');
     await page.setViewportSize(WIDE);
     // The signing's part refused, as offline or with its script blocked. An app bundled as modules (this demo): the
-    // browser keeps a module it could not fetch for the page's life, so only a reload brings it — and that is said.
+    // browser keeps a module it could not fetch for the page's life, and names none, so only a reload brings it — and that is said.
     await page.route(/\/evidence-part-[^/]*\.js(\?.*)?$/, (route) => route.abort());
     ({ problems } = await open(page, 'plain', `page=clinic-consent&record=new&skin=outlined&now=${NOW}`));
     await answer(page);

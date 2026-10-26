@@ -28,6 +28,7 @@ export const ar: ViewerLabels = {
   submitAnother: 'إرسال إجابة أخرى',
   leaveEmpty: 'اترك هذا الحقل فارغًا',
   draftFound: 'لديك إجابات غير محفوظة من {time}.',
+  draftFoundRecord: 'لديك تغييرات غير محفوظة من {time}.',
   restore: 'استعادة',
   discardDraft: 'تجاهل',
   ok: 'موافق',

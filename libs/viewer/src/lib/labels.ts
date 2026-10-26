@@ -47,6 +47,11 @@ export interface ViewerLabels {
   /** A public page's hidden box (`botCheck`), which no person sees: what it says to one who does, its look gone. */
   leaveEmpty: string;
   draftFound: string;
+  /**
+   * The same offer on a record's page (0.35.1: a customer's record offered its "unsaved answers" — a survey's word):
+   * its changes. An app's own `draftFound`, given without this, is said on a record's page too.
+   */
+  draftFoundRecord: string;
   restore: string;
   discardDraft: string;
   ok: string;
@@ -961,6 +966,7 @@ const en: ViewerLabels = {
   submitAnother: 'Submit another response',
   leaveEmpty: 'Leave this box empty',
   draftFound: 'You have unsaved answers from {time}.',
+  draftFoundRecord: 'You have unsaved changes from {time}.',
   restore: 'Restore',
   discardDraft: 'Discard',
   ok: 'OK',

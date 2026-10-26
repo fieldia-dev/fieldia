@@ -33,6 +33,7 @@ export const tr: ViewerLabels = {
   submitAnother: 'Başka bir yanıt gönder',
   leaveEmpty: 'Bu kutuyu boş bırakın',
   draftFound: '{time} tarihli, kaydedilmemiş yanıtlarınız var.',
+  draftFoundRecord: '{time} tarihli, kaydedilmemiş değişiklikleriniz var.',
   restore: 'Geri yükle',
   discardDraft: 'Sil',
   ok: 'Tamam',

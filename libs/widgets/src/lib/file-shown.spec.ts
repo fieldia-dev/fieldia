@@ -70,6 +70,16 @@ describe('a file is shown in place only as a format Fieldia shows, from bytes th
     expect(made).toEqual([]);
   });
 
+  it('says a file named as a picture whose bytes are none is not a picture, not only that it has no preview (the walk of 0.35)', () => {
+    const box = open([{ name: 'floor-photo.png', type: '', size: 209, data: b64(HTML) }]);
+    expect(box.querySelector('.fd-file-none p')?.textContent).toBe('This file is not a picture, though its name says so: it is not shown');
+    expect(box.querySelector('img, iframe')).toBeNull();
+    // A file of a kind Fieldia shows no preview of: as before.
+    box.closest('.fd-dialog-backdrop')?.remove();
+    const other = open([{ name: 'notes.zip', type: 'application/zip', size: 3, data: b64('PK\x03') }]);
+    expect(other.querySelector('.fd-file-none p')?.textContent).toBe('No preview for this kind of file');
+  });
+
   it('shows a PDF and a picture from a blob typed from its format, never from the type the file says', () => {
     const pdf = fileShown(document, { name: 'Quote.pdf', type: 'application/x-pdf', size: 1, data: b64(PDF) });
     expect(pdf?.element.tagName).toBe('IFRAME');

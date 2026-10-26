@@ -814,6 +814,8 @@ export function ganttPart(context: ListViewContext, settings: GanttSettings = {}
       doc.removeEventListener('keydown', escape, true);
       if (!moving) return;
       block.removeAttribute('data-moving');
+      // Its arrows back as it lands, drawn to where it landed (0.35.1: they stayed hidden after a drop, a broken link with them).
+      for (const link of itsLinks()) link.style.removeProperty('visibility');
       if (keep && by) return void commit(task, by, edge);
       draw();
     };

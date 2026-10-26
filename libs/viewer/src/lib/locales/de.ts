@@ -28,6 +28,7 @@ export const de: ViewerLabels = {
   submitAnother: 'Weitere Antwort senden',
   leaveEmpty: 'Dieses Feld bitte leer lassen',
   draftFound: 'Sie haben ungespeicherte Antworten vom {time}.',
+  draftFoundRecord: 'Sie haben ungespeicherte Änderungen vom {time}.',
   restore: 'Wiederherstellen',
   discardDraft: 'Verwerfen',
   ok: 'OK',

@@ -111,8 +111,13 @@ export const contactPage: Page = {
         id: 'contact-main',
         columns: 2,
         children: ['name', 'company', 'email', 'phone', 'country_id', 'state', 'owner_id', 'last_order', 'lifetime_value', 'newsletter'].map((field) =>
-          // A phone read the world over, with its call and WhatsApp links, as the list writes it.
-          field === 'phone' ? { type: 'field' as const, id: `contact-${field}`, field, widget: 'phone', options: { shown: 'international' } } : { type: 'field' as const, id: `contact-${field}`, field }
+          // A phone read the world over, with its call and WhatsApp links, as the list writes it; an email checked as one
+          // (the walk of 0.35: "@SUM(A1:A9)" was saved as a contact's email).
+          field === 'phone'
+            ? { type: 'field' as const, id: `contact-${field}`, field, widget: 'phone', options: { shown: 'international' } }
+            : field === 'email'
+              ? { type: 'field' as const, id: `contact-${field}`, field, widget: 'email' }
+              : { type: 'field' as const, id: `contact-${field}`, field }
         ),
       },
     ],

@@ -146,6 +146,8 @@ describe('the rich editor', () => {
     (el.querySelector('.fd-link-apply') as HTMLButtonElement).click();
     expect(address.getAttribute('aria-invalid')).toBe('true');
     expect(commands).toEqual([]);
+    // Said why, as a web address field says it.
+    expect(el.querySelector('.fd-text-say')?.textContent).toBe('Only a web address (http or https) can go here');
   });
 
   it('moves along its toolbar with the arrows, Home and End', () => {

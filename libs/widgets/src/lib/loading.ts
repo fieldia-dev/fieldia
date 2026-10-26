@@ -195,6 +195,49 @@ const AT_ONCE = new Set(['keep', 'none', 'button', 'bar']);
 
 /** A popup open (a box's list, a date's calendar, a menu: its opener expanded), which a wait never covers. */
 const OPEN_POPUP = ':is([aria-haspopup], [role="combobox"])[aria-expanded="true"]';
+/**
+ * The fields of a waiting region holding an open popup, marked `data-fd-open` — what the stylesheet keeps out of a
+ * wait's shapes (styles-loading.ts) — and kept so as popups open and close while a wait is on it; let go with its
+ * last wait. The stylesheet asked a :has() of every field instead, which made every change in a form lay the whole
+ * form out again (0.35.1): a key in a line of 200 took twice what one of 3 did.
+ */
+const openMarks = new WeakMap<HTMLElement, { mark(): void; stop(): void }>();
+function markOpen(region: HTMLElement): void {
+  const kept = openMarks.get(region);
+  if (kept) return kept.mark();
+  const marked = new Set<HTMLElement>();
+  const mark = () => {
+    const open = new Set<HTMLElement>();
+    for (const opener of region.querySelectorAll(OPEN_POPUP)) {
+      for (let field = opener.closest<HTMLElement>('.fd-field'); field && region.contains(field) && field !== region; field = field.parentElement?.closest<HTMLElement>('.fd-field') ?? null) open.add(field);
+    }
+    for (const field of marked) if (!open.has(field)) {
+      field.removeAttribute('data-fd-open');
+      marked.delete(field);
+    }
+    for (const field of open) if (!marked.has(field)) {
+      field.setAttribute('data-fd-open', '');
+      marked.add(field);
+    }
+  };
+  mark();
+  const View = region.ownerDocument.defaultView;
+  const watch = View?.MutationObserver ? new View.MutationObserver(mark) : null;
+  watch?.observe(region, { subtree: true, attributes: true, attributeFilter: ['aria-expanded'] });
+  openMarks.set(region, {
+    mark,
+    stop() {
+      watch?.disconnect();
+      for (const field of marked) field.removeAttribute('data-fd-open');
+      marked.clear();
+    },
+  });
+}
+function unmarkOpen(region: HTMLElement): void {
+  openMarks.get(region)?.stop();
+  openMarks.delete(region);
+}
+
 /** The ways of asking again that stand over what is shown: drawn as `keep` where a popup is open in it. */
 const OVER_SHOWN = new Set(['skeleton', 'spinner']);
 
@@ -283,6 +326,7 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     }, 50);
   };
   region.setAttribute('aria-busy', 'true');
+  markOpen(region);
   // Drawn the first time, what is not there yet is out of sight until the loader is drawn — never empty boxes before a
   // skeleton: a form's boxes alone, under their labels, where its own shapes will stand in them; else all it holds, as
   // its loader will hide it. A quick answer is drawn whole in their place.
@@ -406,6 +450,7 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     loader = null;
     if (going.get(region) !== mine) return;
     going.delete(region);
+    unmarkOpen(region);
     if (region.hasAttribute('data-fd-shaped')) how.shape?.hide();
     for (const name of ['aria-busy', 'inert', 'data-fd-wait', 'data-fd-way', 'data-fd-look', 'data-fd-shaped', 'data-fd-coming']) region.removeAttribute(name);
     say('');

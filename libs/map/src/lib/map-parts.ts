@@ -75,7 +75,13 @@ function holding<P>(doc: Document, height: string, wait: { part: string; loading
   const coming: Wait = startLoading(element, 'first', wait.loading, {
     part: wait.part,
     shape: {
-      show: () => element.append(Object.assign(doc.createElement('span'), { className: 'fd-sk fd-sk-block' })),
+      // As big as the map, as the map's own first wait draws it once its code came: never a bar across its top, then a
+      // block (0.35.1, the walk on Slow 4G) — the map's stylesheet comes with its code, so it is sized here.
+      show: () => {
+        const block = Object.assign(doc.createElement('span'), { className: 'fd-sk fd-sk-block' });
+        Object.assign(block.style, { margin: '0', blockSize: height === '100%' ? '100%' : height, borderRadius: 'var(--fd-control-radius, 6px)' });
+        element.append(block);
+      },
       hide: () => element.querySelector(':scope > .fd-sk-block')?.remove(),
     },
   });

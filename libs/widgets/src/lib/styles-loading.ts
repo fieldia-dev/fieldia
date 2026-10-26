@@ -10,7 +10,8 @@
  *
  * What a person has open stays theirs: a part of the place holding an open popup (a box's list, a date's calendar, a
  * menu — its opener expanded) is never hidden, dimmed or shaped under a wait, so the popup stays over everything,
- * whole and pressed as ever, while the rest waits.
+ * whole and pressed as ever, while the rest waits. A field holding one is marked so while a wait is on its place
+ * (`data-fd-open`, loading.ts): a :has() asked of every field made each change in a form lay the form out again.
  */
 export const LOADING_CSS = /* css */ `
 @media not print {
@@ -19,7 +20,7 @@ export const LOADING_CSS = /* css */ `
 .fd-form [data-fd-wait="first"]:not([data-fd-shaped]) { min-height: 96px; }
 /* Drawn the first time, before its loader is (its delay, its part on its way): what is not there yet out of sight — a
    form's boxes under their labels where its own shapes will stand in them, else all it holds — never empty boxes. */
-.fd-form [data-fd-coming="boxes"] .fd-field:not(:has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) > :is(.fd-label + *, :first-child:not(.fd-label)),
+.fd-form [data-fd-coming="boxes"] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)),
 .fd-form [data-fd-coming="all"] > :not(.fd-loader, :has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) { visibility: hidden; }
 .fd-form [data-fd-wait]:is([data-fd-wait="first"], [data-fd-way="skeleton"]):not([data-fd-shaped]) > :not(.fd-loader, :has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) { visibility: hidden; }
 .fd-form [data-fd-way="dim"] > :not(.fd-loader, :has(:is([aria-haspopup], [role="combobox"])[aria-expanded="true"])) { opacity: 0.55; transition: opacity 0.2s; }

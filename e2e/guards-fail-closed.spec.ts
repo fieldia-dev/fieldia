@@ -143,7 +143,11 @@ test.describe('a part that guards a send, from the one tag', () => {
     await expect(status(page)).toHaveText('The payment step could not load, so nothing was sent. Try again.');
     failing = false;
     await page.locator('#app .fd-status-box .fd-retry').click();
-    // The page was drawn without its payment step: the source's own pay takes the fee, and the answers carry it.
+    // The page was drawn without its payment step: Retry draws it as its part comes (0.35.1) — the fee shown, then
+    // taken as Pay is pressed, never through the source's own pay unseen — and the answers carry it.
+    const step = page.locator('#app .fd-pay');
+    await expect(step).toBeVisible();
+    await step.getByRole('button', { name: /^Pay EGP\s500\.00$/ }).click();
     await expect(page.locator('#app .fd-done')).toBeVisible();
     const response = await page.evaluate(() => (window as any).fieldiaDemo.dataSource.responses[0]);
     expect(response.payment).toMatchObject({ amount: 500, currency: 'EGP' });

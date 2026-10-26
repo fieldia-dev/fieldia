@@ -31,6 +31,7 @@ export const fa: ViewerLabels = {
   submitAnother: 'ارسال پاسخی دیگر',
   leaveEmpty: 'این کادر را خالی بگذارید',
   draftFound: 'پاسخ‌های ذخیره‌نشده‌ای از {time} دارید.',
+  draftFoundRecord: 'تغییرات ذخیره‌نشده‌ای از {time} دارید.',
   restore: 'بازیابی',
   discardDraft: 'کنار گذاشتن',
   ok: 'تأیید',

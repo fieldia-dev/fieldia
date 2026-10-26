@@ -18,7 +18,7 @@ import { checkInput } from './inputs';
 import { compileComputed, type AskedFor } from './compute';
 import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
-import { expressionEnv, lineContext, recordContext, sameReads, type AppReads } from './env';
+import { expressionEnv, lineContext, parentReads, recordContext, sameReads, type AppReads } from './env';
 import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-map';
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
@@ -61,7 +61,7 @@ import type { FormApproval } from './approving';
 import { draftRead, resumeStep, timedStore } from './drafts';
 import { envelopeOf, valuesFromSource } from './from-source';
 import { DISCARD_GRACE_MS, stopSends, withDeadlines } from './deadline';
-import { ownerOf } from './browser-kept';
+import { ownerOf, tabStore } from './browser-kept';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -77,6 +77,7 @@ import {
   emptyValue,
   initialValues,
   isEmpty,
+  keptSame,
   lineKind,
   sameValue as sameAsSaved,
   structuredCopy,
@@ -681,9 +682,10 @@ export interface Form {
    * Show another record of the page's model in this form, loaded from the
    * data source as a pager moves to it, or a new one for null. Changes not
    * saved are dropped: save first. The page's `open` steps run for it. It
-   * goes through `leave()` first: false when the person kept their work.
+   * goes through `leave()` first: false when the person kept their work. `name`, the record's name where the person
+   * picked it by one (a list's row): what a failure to open it calls it, rather than its id.
    */
-  openRecord(id: RecordId | null): Promise<boolean>;
+  openRecord(id: RecordId | null, name?: string): Promise<boolean>;
   /**
    * The one check every way out of the form goes through — another record,
    * the record loaded again, the form closed, reset by a step — and the app's
@@ -1248,8 +1250,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (loadedOnce) join.loaded?.();
     };
   }
-  /** A part's side of this form, by its name, once it came. */
-  const joined = <K extends keyof FormJoins>(name: K): FormJoins[K] | null => (joins[joinParts.findIndex((part) => part.name === name)] ?? null) as FormJoins[K] | null;
+  /** A part's side of this form, by its name, once it came — one that came since it first failed (its Retry) made now. */
+  const joined = <K extends keyof FormJoins>(name: K): FormJoins[K] | null => {
+    const at = joinParts.findIndex((part) => part.name === name);
+    const came = at === -1 || joins[at] ? undefined : joinParts[at].loaded;
+    if (came) joinMade(at)(came);
+    return (joins[at] ?? null) as FormJoins[K] | null;
+  };
   /** Whether a part that joins the form says so of a part of the page, or of a field. */
   const anyJoin = (says: (join: FormJoin) => boolean | undefined) => joins.some((join) => join && says(join));
   /**
@@ -1418,14 +1425,51 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return null;
   }
 
-  /** A line of a table as its rules have it now; none, plain. */
+  /** Each table's lines by their keys, for the array the table holds now: a line found at once, of 200 as of 3. */
+  const linesByKey = new WeakMap<Line[], Map<string, Line>>();
+  function lineOf(field: string, key: string): Line | undefined {
+    const lines = state.values[field] as Line[] | null | undefined;
+    if (!Array.isArray(lines)) return undefined;
+    let byKey = linesByKey.get(lines);
+    if (!byKey) linesByKey.set(lines, (byKey = new Map(lines.map((line) => [line.key, line]))));
+    return byKey.get(key);
+  }
+
+  /**
+   * What a table's line rules read of the record a line is on (`parent.state`), by its node: its fields' names — none
+   * when they read only the line — or null where they read the record whole, or call a function that is not said by
+   * what it reads alone (today(), an app's own): a line's state then is read again at every change, as before.
+   */
+  const lineReads = new Map<string, readonly string[] | null>();
+  function lineReadsOf(nodeId: string, table: { compiled: CompiledTable }): readonly string[] | null {
+    if (lineReads.has(nodeId)) return lineReads.get(nodeId) as readonly string[] | null;
+    const conditions = table.compiled.lineConditions.filter((condition) => typeof condition.source === 'string');
+    if (!conditions.every((condition) => steadyCalls(condition.calls))) return null;
+    const names = parentReads(conditions.flatMap((condition) => condition.paths));
+    lineReads.set(nodeId, names);
+    return names;
+  }
+  /** Each line's state as its table's rules last had it, and what they read then: the line, and what of its record. */
+  const lineStatesKept = new Map<string, { inputs: unknown[]; found: LineState }>();
+
+  /**
+   * A line of a table as its rules have it now; none, plain. The same object while neither the line nor what its rules
+   * read of its record changed (0.35.1): 200 lines are not read again for a key in the record's header.
+   */
   function lineStateOf(nodeId: string, key: string): LineState {
     const table = tableOf(nodeId);
     if (!table) return { tone: null, bold: false, cells: {}, buttons: {}, deletable: true };
-    const line = ((state.values[table.field] as Line[] | null) ?? []).find((l) => l.key === key);
+    const line = lineOf(table.field, key);
     if (!line) throw new Error(`"${table.field}" has no line "${key}"`);
+    const reads = full ? null : lineReadsOf(nodeId, table);
+    const inputs = reads ? [line, ...reads.map(inputOf)] : null;
+    const id = `${nodeId}\u0000${key}`;
+    const kept = inputs && lineStatesKept.get(id);
+    if (kept && inputs && sameReads(kept.inputs, inputs)) return kept.found;
     const def = lineField(table.field);
-    return table.compiled.line(lineContext(line.values, def.fields as Record<string, LineField>, reading().context, line.id ?? null), { ...app, today }, userRoles);
+    const found = table.compiled.line(lineContext(line.values, def.fields as Record<string, LineField>, reading().context, line.id ?? null), { ...app, today }, userRoles);
+    if (inputs) lineStatesKept.set(id, { inputs, found });
+    return found;
   }
 
   function createValuesOf(field: string, line?: { lines: string; key: string }): Values {
@@ -2347,13 +2391,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
   /** Each field's last comparison with the record as loaded: the same value and the same baseline are not compared again. */
   const dirtyKept = new Map<string, { value: unknown; base: unknown; dirty: boolean }>();
+  /** Each value's words as JSON, written once for each object: a line unchanged since is never written out again. */
+  const jsonKept = new WeakMap<object, string>();
+  const jsonOf = (value: unknown): string => {
+    if (value === null || typeof value !== 'object') return JSON.stringify(value ?? null);
+    let json = jsonKept.get(value);
+    if (json === undefined) jsonKept.set(value, (json = JSON.stringify(value)));
+    return json;
+  };
+  /**
+   * Whether two values write out the same JSON — a table's lines one by one, each line's words written once for each line
+   * object (0.35.1): a key in a line of 200 compares the one line it changed, not the 200 written out whole twice.
+   */
+  const sameJson = (a: unknown, b: unknown): boolean =>
+    a === b || (Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((one, at) => one === b[at] || jsonOf(one ?? null) === jsonOf(b[at] ?? null)) : jsonOf(a) === jsonOf(b));
   function dirtyFields(values: Values): string[] {
     return Object.keys(fields).filter((name) => {
       const value = values[name];
       const base = baseline[name];
       const kept = full ? undefined : dirtyKept.get(name);
       if (kept && kept.value === value && kept.base === base) return kept.dirty;
-      const dirty = JSON.stringify(value ?? null) !== JSON.stringify(base ?? null);
+      const dirty = full ? JSON.stringify(value ?? null) !== JSON.stringify(base ?? null) : !sameJson(value ?? null, base ?? null);
       dirtyKept.set(name, { value, base, dirty });
       return dirty;
     });
@@ -2611,6 +2669,26 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return !!found[path] && !empty();
   }
 
+  /** The paths of a table's cells the form refuses now (`refusedAt`): those its check finds, read once through. */
+  function refusedIn(field: string): string[] {
+    refusedAt(field);
+    const found = refusals?.found.get(full ? '' : field) ?? {};
+    return Object.keys(found).filter((path) => path.startsWith(`${field}.`) && path.split('.').length >= 3 && refusedAt(path));
+  }
+
+  /** What values worked out from others wait for, by what they are worked out from: found once for each state of the form. */
+  let waitsFound: { state: FormState; found: Map<string, WaitsFor | null> } | null = null;
+  function waitsOn(from: readonly string[]): WaitsFor | null {
+    // Worked out in full (`recomputeInFull`), each value asks of every cell, as before: the oracle the quick way is held to.
+    if (full) return waitingOn(page, from, state.values, state.unread, refusedAt);
+    if (waitsFound?.state !== state) waitsFound = { state, found: new Map() };
+    const key = from.join('\u0000');
+    if (waitsFound.found.has(key)) return waitsFound.found.get(key) ?? null;
+    const waits = waitingOn(page, from, state.values, state.unread, refusedAt, refusedIn);
+    waitsFound.found.set(key, waits);
+    return waits;
+  }
+
   /** Warnings for the visible fields of the page, without publishing them. */
   function collectWarnings(dirty: readonly string[] = state.dirty): Record<string, string> {
     const warnings: Record<string, string> = {};
@@ -2660,6 +2738,44 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return undefined;
   }
 
+  /** A table's columns whose options come from the app's lists (`optionsFrom`), checked against the choices loaded for each line. */
+  const listedKept = new Map<string, readonly string[]>();
+  const listedSubs = (name: string, def: Extract<Field, { type: 'one2many' }>): readonly string[] => {
+    let found = listedKept.get(name);
+    if (!found) listedKept.set(name, (found = Object.keys(def.fields).filter((sub) => { const one = def.fields[sub]; return one.type === 'selection' && !!optionsList(one.optionsFrom); })));
+    return found;
+  };
+  /** Each table line's cells' problems as last found, by the table's node and the line's key, and what they were found from. */
+  const lineFound = new Map<string, { inputs: unknown[]; found: Readonly<Record<string, string>> }>();
+  /**
+   * A table line's cells' problems, by their paths — a section or a note answers only for its text; a cell its line
+   * hides, or a column the record hides, asks nothing; one its line requires asks for a value. Found again only once
+   * the line, its rules' state, the columns hidden, the choices its cells are checked against, the day or the words
+   * changed (0.35.1): a key in a record's header checks none of its 200 lines. Each cell checked counts (`workCounts`).
+   */
+  function lineErrors(node: IndexedNode, name: string, def: Extract<Field, { type: 'one2many' }>, line: Line, hidden: readonly string[], day: string): Readonly<Record<string, string>> {
+    const ruled = tables.has(node.id) ? lineStateOf(node.id, line.key) : null;
+    // The choices its cells are checked against: those of its columns whose options come from the app's lists, its own.
+    const listed = listedSubs(name, def);
+    const inputs = full ? null : [line, ruled, hidden.join('\u0000'), day, wordsVersion(), ...listed.map((sub) => state.choices[`${name}.${line.key}.${sub}`])];
+    const id = `${node.id}\u0000${line.key}`;
+    const kept = inputs && lineFound.get(id);
+    if (kept && inputs && sameReads(kept.inputs, inputs)) return kept.found;
+    const found: Record<string, string> = {};
+    const kind = lineKind(def, line.values);
+    for (const [sub, subDef] of Object.entries(def.fields)) {
+      if (kind && sub !== def.lineKinds?.text) continue;
+      const cell = ruled?.cells[sub];
+      if (cell?.invisible || hidden.includes(sub)) continue;
+      workCounts.checks++;
+      const path = `${name}.${line.key}.${sub}`;
+      const message = checkValue(checkedLine(path, subDef), line.values[sub], subDef.required === true || cell?.required === true, messages, day, (node.source as FieldNode).cells?.[sub]?.widget);
+      if (message) found[path] = message;
+    }
+    if (inputs) lineFound.set(id, { inputs, found });
+    return found;
+  }
+
   /**
    * Errors for the visible fields under `root`, without publishing them. `only`, a field's alone — those found by the
    * nodes showing it and the ranges it ends, in the page's order, as the whole check finds them for it.
@@ -2685,19 +2801,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (def.type === 'properties') Object.assign(errors, propertyProblems(name));
       if (besidesRows(name, message)) errors[name] = message as string;
       if (def.type === 'one2many') {
-        for (const line of (state.values[name] as Line[] | null) ?? []) {
-          // A section or note answers only for its text, never for what an item needs.
-          const kind = lineKind(def, line.values);
-          // The table's own rules: a cell its line hides asks nothing, one it requires asks for a value.
-          const ruled = tables.has(node.id) ? lineStateOf(node.id, line.key).cells : {};
-          for (const [sub, subDef] of Object.entries(def.fields)) {
-            if (kind && sub !== def.lineKinds?.text) continue;
-            const cell = ruled[sub];
-            if (cell?.invisible || (tables.has(node.id) && tables.get(node.id)!.compiled.hidden(sub, reading().context, reading().env, userRoles))) continue;
-            const lineMessage = checkValue(checkedLine(`${name}.${line.key}.${sub}`, subDef), line.values[sub], subDef.required === true || cell?.required === true, messages, today(), (node.source as FieldNode).cells?.[sub]?.widget);
-            if (lineMessage) errors[`${name}.${line.key}.${sub}`] = lineMessage;
-          }
-        }
+        const table = tables.get(node.id);
+        // Columns the record hides now, read once for the table rather than once for each of its lines.
+        const hidden = table ? Object.keys(def.fields).filter((sub) => table.compiled.hidden(sub, reading().context, reading().env, userRoles)) : [];
+        const day = today();
+        for (const line of (state.values[name] as Line[] | null) ?? []) Object.assign(errors, lineErrors(node, name, def, line, hidden, day));
       }
     }
     // Text left in a box that does not read answers for its field, in the words it was left with.
@@ -2872,10 +2980,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * those the write no longer offers were offered in (the form's now, unless said).
    */
   function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false, said: Record<string, string> = {}, from: Readonly<Values> = state.values) {
-    let settled = fresh ? startFrom(written) : settle(written);
+    // What the write gives back as the form holds it — an app's server working out every line again, alike — stays the
+    // form's own: worked out, drawn, checked and compared again only where it changed (0.35.1). And so again once worked out.
+    const given = written;
+    if (!fresh) written = keptSame(written, state.values, fields);
+    let settled = fresh ? startFrom(written) : keptSame(settle(written), state.values, fields);
     // A choice written again says no more what was taken out of it — a line's, nor once its line is gone; options a
-    // change no longer offers are taken out now.
-    let takenOut: Record<string, string> = fresh ? {} : { ...Object.fromEntries(Object.entries(state.takenOut).filter(([path]) => sameAt(written, state.values, path))), ...said };
+    // change no longer offers are taken out now. Written again as it was given, though alike what it held.
+    let takenOut: Record<string, string> = fresh ? {} : { ...Object.fromEntries(Object.entries(state.takenOut).filter(([path]) => sameAt(given, state.values, path))), ...said };
     const out = fresh || !optionKit ? null : optionKit.takeOut(from, settled);
     if (out) {
       settled = out.values;
@@ -2930,9 +3042,26 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   const onServer = () => !!options.dataSource?.saveDraft && !!options.dataSource.loadDraft && (page.continueLater === true || !!options.resume);
   /** Where drafts are kept in the browser: the app's store, else a timed page's tab (`timedStore`); none else. */
-  const draftStore = options.drafts?.store ?? timedStore(page);
+  const appStore = options.drafts?.store ?? timedStore(page);
+  /**
+   * Where a part that guards a send could not come — the code check, the payment step — what is typed is kept in the
+   * tab's own store as it is typed, where the app keeps no drafts of its own: the Reload its words ask for, in the same
+   * tab, brings it back, laid as the form opens (0.35.1). Never a secret field's; the person's own (`storeKey`); let go
+   * once sent, as any draft.
+   */
+  let keptForReload = false;
+  /** Where a draft is kept now. */
+  const draftStore = (): DraftStore | undefined => appStore ?? (keptForReload ? (tabStore() as DraftStore | undefined) : undefined);
+  /** Where a draft is looked for, and let go from: the app's store, else the tab's, where one kept for a reload would be. */
+  const draftFound = (): DraftStore | undefined => appStore ?? (tabStore() as DraftStore | undefined);
   /** Whether drafts are kept: in a store, or on the server. */
-  const draftsOn = () => !!draftStore || onServer();
+  const draftsOn = () => !!draftStore() || onServer();
+  /** A part that guards a send is missing: what is typed kept for a reload from now on, what is typed so far at once. */
+  function keepForReload() {
+    if (appStore || onServer()) return;
+    keptForReload = true;
+    if (state.dirty.length) keepHere(draftNow());
+  }
   /** The key of the draft kept on the server for the record shown; null until the source gave one. */
   let serverKey: string | null = null;
   /** Counted each time the draft is let go (sent, discarded, another record shown): a keeping answered after is dropped. */
@@ -2986,7 +3115,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** A draft in the browser's store, where the app gave one: a store that is full keeps none. */
   function keepHere(kept: StoredDraft | { savedAt: string; key: string }) {
     try {
-      draftStore?.setItem(storeKey(), JSON.stringify(kept));
+      draftStore()?.setItem(storeKey(), JSON.stringify(kept));
     } catch {
       // The draft is a convenience: the form goes on without it.
     }
@@ -3070,7 +3199,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     draftEpoch++;
     serverKey = null;
     if (state.resume) set({ resume: null });
-    draftStore?.removeItem(storeKey());
+    draftFound()?.removeItem(storeKey());
   }
 
   /**
@@ -3093,7 +3222,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const source = options.dataSource;
     const given = resumeKey;
     resumeKey = undefined;
-    const kept = given ? null : draftRead(draftStore?.getItem(storeKey()) ?? null);
+    const kept = given ? null : draftRead(draftFound()?.getItem(storeKey()) ?? null);
     if (!given && !kept) return;
     if (kept && !('key' in kept)) return offer(kept);
     const key = given ?? (kept as { key: string }).key;
@@ -3107,7 +3236,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           if (given) set({ status: 'ready' });
           if (!draft) {
             // Sent, or gone: the form starts empty, and says so where it was asked to continue it.
-            draftStore?.removeItem(storeKey());
+            draftFound()?.removeItem(storeKey());
             if (given) set({ resume: { key, missing: true } });
             return;
           }
@@ -3349,6 +3478,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     );
   }
 
+  /** What a send last said of a part that guards it and could not come: said no more once the part is in. */
+  let guardSaid: SaveProblem | null = null;
   async function guardsIn(): Promise<SaveProblem | null> {
     /** A part waited for where it is coming, then asked for once more where it did not come: in, or still missing. */
     const once = async <M,>(part: Part<M>, take: (module: M) => unknown): Promise<boolean> => {
@@ -3369,6 +3500,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     ]);
     const missing = found.find((one) => one !== null);
     if (!missing || disposed) return null;
+    // Nothing goes; what is typed is kept for the Reload the words may ask for — kept before they say so.
+    keepForReload();
     const [words, part] = missing;
     const again = part.asksAgain === false ? messages.guardReload : messages.guardTryAgain;
     return { kind: 'other', message: fillMessage(messages, page.data.kind === 'responses' ? messages.guardNotSent : messages.guardNotSaved, { part: messages[words], again }) };
@@ -3413,9 +3546,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const unguarded = guardsOwed() ? await guardsIn() : null;
     if (asked !== generation) return elsewhere();
     if (unguarded) {
+      guardSaid = unguarded;
       set({ status: 'error', error: unguarded.message, saveProblem: unguarded, conflict: null });
       return { reason: 'save', message: unguarded.message };
     }
+    // Its parts in now (asked for again by Retry): what their absence said is said no more, whatever stops the send next.
+    if (guardSaid && state.saveProblem === guardSaid) set({ status: 'ready', error: null, saveProblem: null });
+    guardSaid = null;
     // Values the app's functions are asked for are waited for — those that failed asked again — so what is saved is worked out.
     if (asking.size || Object.values(state.asked).some((found) => found.failed !== undefined)) {
       set({ status: 'saving', error: null, saveProblem: null });
@@ -3881,7 +4018,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const problem = saveProblemOf(error);
     const opening = !shownLoaded && opened !== null && opened === state.recordId;
     const message = opening
-      ? fillMessage(messages, named(messages.openFailedNoun, messages.openFailed), { id: String(state.recordId), problem: problem.message })
+      ? fillMessage(messages, named(messages.openFailedNoun, messages.openFailed), { id: openedName?.id === state.recordId ? openedName.name : String(state.recordId), problem: problem.message })
       : fillMessage(messages, named(messages.loadFailedNoun, messages.loadFailed), { problem: problem.message });
     set({ status: 'error', error: message, loadProblem: { kind: problem.kind === 'network' ? 'network' : 'other', message } });
   }
@@ -3890,6 +4027,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let notLoadedProblem: SaveProblem | null = null;
   /** The record opened last in the place of another (`openRecord`): named by its id while none of it is shown. */
   let opened: RecordId | null = null;
+  /** And by the name it was picked by, where it was (0.35.1: "Couldn't open customer 32" of a row that said Horus Foods). */
+  let openedName: { id: RecordId | null; name: string } | null = null;
   /**
    * Whether the record shown loaded once from its source. A record an app hands the form with its values and never asks
    * to load (`recordId` with `values`) is the app's to vouch for: it saves as ever.
@@ -3899,9 +4038,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let loads = 0;
 
   /** Another record in this form's place, or a new one, once the one check let what was there go: false when the person kept it. */
-  function openRecord(id: RecordId | null, chain: readonly string[] = []): Promise<boolean> {
+  function openRecord(id: RecordId | null, chain: readonly string[] = [], name?: string): Promise<boolean> {
     const go = letGo({}, chain);
-    return go === true ? showNow(id) : go.then((yes) => (yes ? showNow(id) : false));
+    const show = () => {
+      // Its name, where the person picked it by one that is not its id: kept while it is the one opened (Retry too).
+      openedName = name && name !== String(id) ? { id, name } : null;
+      return showNow(id);
+    };
+    return go === true ? show() : go.then((yes) => (yes ? show() : false));
   }
 
   /** Another record in this form's place, or a new one: what was there let go, the new one loaded and opened. */
@@ -4357,7 +4501,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       return found;
     },
 
-    openRecord: (id) => track(openRecord(id)),
+    openRecord: (id, name) => track(openRecord(id, [], name)),
 
     leave: (how) => Promise.resolve(letGo(how)),
 
@@ -4410,7 +4554,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     waitsFor(name) {
       // What it is worked out from first: an answer that does not read, or that the form refuses, is never asked about.
       const from = workedOut.get(name);
-      const waits = from ? waitingOn(page, from, state.values, state.unread, refusedAt) : null;
+      const waits = from ? waitsOn(from) : null;
       if (waits) return waits;
       const found = state.asked[name];
       return found ? { field: name, asking: true, ...(found.failed !== undefined ? { failed: found.failed } : {}) } : null;
@@ -4483,7 +4627,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (seen.captcha !== undefined) bot.captcha = seen.captcha;
     },
 
-    joined: (name) => (joins[joinParts.findIndex((part) => part.name === name)] ?? null) as never,
+    joined: (name) => joined(name as keyof FormJoins) as never,
     reading: () => readingNow > 0 || [...attached.values()].some((part) => part.inner.form.reading()),
 
     validate(within) {
@@ -4860,7 +5004,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     restoreDraft() {
-      const kept = found ?? draftRead(draftStore?.getItem(storeKey()) ?? null);
+      const kept = found ?? draftRead(draftFound()?.getItem(storeKey()) ?? null);
       if (kept && 'values' in kept) applyDraft(kept);
     },
 
@@ -5078,7 +5222,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // The parts its page or its source asks to join it — a survey's draw made before a draft is laid, which lays its own
   // draw over it; a record's approvals ready by the time its record is loaded; the record made live — each made at once
   // where it has come, else as it does, a draft laid meanwhile laid on it.
-  if (joinParts.length) joining = Promise.all(joinParts.map((part, at) => (part.loaded ? joinMade(at)(part.loaded) : track(part.load().then(joinMade(at), () => undefined)))));
+  if (joinParts.length) joining = Promise.all(joinParts.map((part, at) => (part.loaded ? joinMade(at)(part.loaded) : track(part.load().then(joinMade(at), () => undefined))))).then(() => {
+    // One that guards a send could not come (the code check, the payment step): what is typed is kept for a reload from now.
+    if (!disposed && joinParts.some((part, at) => !joins[at] && joinGate(part, page, options) !== undefined)) keepForReload();
+  });
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {

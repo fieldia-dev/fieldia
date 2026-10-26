@@ -76,6 +76,34 @@ describe('a record opened in the place of another (the owner’s walk of 0.33.0,
     expect(form.getState().loadProblem?.message).toBe('This customer could not be loaded: Gateway Timeout');
     expect(form.getState().values['name']).toBe('Horus Foods');
   });
+
+  it('is named as the person picked it, where they picked it by a name (the walk of 0.35: "customer 32" of a row that said Horus Foods)', async () => {
+    const customers = { ...page, records: { one: 'customer', other: 'customers' } } as Page;
+    let fail: (error: Error) => void = () => undefined;
+    let first = true;
+    const ds: DataSource = {
+      load: (() => (first ? ((first = false), Promise.resolve({ name: 'Nile Traders', amount: 52000 })) : new Promise((_, reject) => (fail = reject)))) as DataSource['load'],
+    };
+    const form = createForm({ page: customers, dataSource: ds, recordId: 1 });
+    await form.load();
+    const opening = form.openRecord(32, 'Horus Foods');
+    await tick();
+    fail(new Error('The server did not answer this once.'));
+    await opening;
+    expect(form.getState().loadProblem?.message).toBe('Couldn’t open customer Horus Foods: The server did not answer this once.');
+    // Its Retry, the same record: the same name.
+    const retried = form.load();
+    await tick();
+    fail(new Error('The server did not answer this once.'));
+    await retried;
+    expect(form.getState().loadProblem?.message).toBe('Couldn’t open customer Horus Foods: The server did not answer this once.');
+    // Another opened by its id alone (a pager): by its id.
+    const next = form.openRecord(33);
+    await tick();
+    fail(new Error('Gateway Timeout'));
+    await next;
+    expect(form.getState().loadProblem?.message).toBe('Couldn’t open customer 33: Gateway Timeout');
+  });
 });
 
 describe('a load that fails, or answers no record', () => {

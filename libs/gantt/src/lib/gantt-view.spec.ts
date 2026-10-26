@@ -162,10 +162,16 @@ describe("a list's Gantt timeline", () => {
     pointer(document, 'pointermove', 160);
     pointer(document, 'pointermove', 181);
     expect(wiring.hasAttribute('data-moving')).toBe(true);
+    // Its arrows wait while it is moved, and are back as it lands (the walk of 0.35: hidden after a drop, a broken link with them).
+    const arrows = () => [...host.querySelectorAll<SVGElement>('.fd-gantt-link')].filter((link) => [link.getAttribute('data-from'), link.getAttribute('data-to')].includes(wiring.getAttribute('data-id')));
+    expect(arrows().length).toBeGreaterThan(0);
+    expect(arrows().every((link) => link.style.visibility === 'hidden')).toBe(true);
     pointer(document, 'pointerup', 181);
+    expect(arrows().filter((link) => link.style.visibility === 'hidden')).toEqual([]);
     await until(() => said(host).includes('Moved'));
     expect(saves(source)[0].values).toEqual({ start: '2026-10-16', finish: '2026-10-18' });
     await settle();
+    expect(arrows().filter((link) => link.style.visibility === 'hidden')).toEqual([]);
     const grip = bar(host, 'Plastering').querySelector('.fd-gantt-grip[data-edge="end"]') as HTMLElement;
     pointer(grip, 'pointerdown', 300);
     pointer(document, 'pointermove', 380);

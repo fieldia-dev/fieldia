@@ -16,6 +16,8 @@ export interface FormulaProblem {
   words: string;
   from?: number;
   to?: number;
+  /** Said as it is, never as a formula's that the page keeps none of: what is typed is no formula (an address as words). */
+  plain?: true;
 }
 
 /** A piece of a formula, and where it is: `from` and `to` count characters from 0, `to` not included. */

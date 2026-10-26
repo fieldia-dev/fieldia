@@ -458,8 +458,9 @@ describe('a refused save', () => {
     button(host, 'Save').click();
     await form.settled();
     await flush();
-    expect(statusText(host)).toBe('The server said no');
-    expect(announced(host)).toBe('The server said no');
+    // Said as not saved (0.35.1: the source's own words alone left it open whether anything was).
+    expect(statusText(host)).toBe('Not saved. The server said no');
+    expect(announced(host)).toBe('Not saved. The server said no');
     letThrough();
     button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry').click();
     await form.settled();
@@ -468,6 +469,23 @@ describe('a refused save', () => {
     // How a save goes is said politely by the status itself.
     expect(host.querySelector('.fd-status')?.getAttribute('aria-live')).toBe('polite');
     expect(button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry')).toBeUndefined();
+  });
+
+  it('says nothing of a save once the person typed after it: never "Saved, but not all your changes." of a save that left nothing out', async () => {
+    // The walk of 0.35: Reset to Draft saved the invoice, a key in its header, and the line beside Save read "Saved, but
+    // not all your changes." though the person had saved nothing.
+    const { host, form, letThrough } = refusing(() => new Error('The server said no'));
+    letThrough();
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Save').click();
+    await form.settled();
+    await flush();
+    expect(statusText(host)).toBe('Saved');
+    type(input(host, 'f-phone'), '+20 2 1111 3333');
+    await flush();
+    expect(form.getState().status).toBe('saved');
+    expect(statusText(host)).toBe('');
   });
 
   it('announces a send the page’s own checks stop, naming the fields', async () => {
@@ -1238,6 +1256,29 @@ describe('the viewer itself', () => {
     button(host, 'Restore').click();
     expect(input(host, 'q-name').value).toBe('Sara');
     expect(visible(host.querySelector('.fd-draft'))).toBe(false);
+  });
+
+  it('offers a record’s draft back as its changes, a form’s as its answers', () => {
+    const at10 = '2026-10-02T10:00:00.000Z';
+    const time = new Date(at10).toLocaleString();
+    const kept = (pageId: string, values: Record<string, unknown>) => {
+      const items = new Map<string, string>([[`fieldia:draft:${ownerOf(null)}:${pageId}:new`, JSON.stringify({ savedAt: at10, values })]]);
+      return { store: { getItem: (k) => items.get(k) ?? null, setItem: (k, v) => void items.set(k, v), removeItem: (k) => void items.delete(k) } as DraftStore };
+    };
+    const said = (host: Element) => host.querySelector('.fd-draft span')?.textContent;
+    // 0.35.1: a customer's record offered its "unsaved answers", a survey's word.
+    let { host } = mount('customer', { dataSource: createMemoryDataSource(), drafts: kept('customer', { name: 'Horus Foods' }) });
+    expect(said(host)).toBe(`You have unsaved changes from ${time}.`);
+    handle?.destroy();
+    ({ host } = mount('survey', { drafts: kept('product-feedback', { name: 'Sara' }) }));
+    expect(said(host)).toBe(`You have unsaved answers from ${time}.`);
+    handle?.destroy();
+    ({ host } = mount('customer', { dataSource: createMemoryDataSource(), locale: 'de', drafts: kept('customer', { name: 'Horus Foods' }) }));
+    expect(said(host)).toBe(`Sie haben ungespeicherte Änderungen vom ${time}.`);
+    handle?.destroy();
+    // An app's own sentence, given for a form's draft alone, is said on a record's page too, as before.
+    ({ host } = mount('customer', { dataSource: createMemoryDataSource(), labels: { draftFound: 'Picked up from {time}.' }, drafts: kept('customer', { name: 'Horus Foods' }) }));
+    expect(said(host)).toBe(`Picked up from ${time}.`);
   });
 
   it('removes itself and stops listening when destroyed', () => {

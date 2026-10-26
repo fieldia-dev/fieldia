@@ -92,6 +92,7 @@ import { isRichButton, nothingToUndo } from './button-parts';
 import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
+import { missingJoin } from './join-missing';
 import type { LimitsKit } from './limits';
 import type { FlowKit } from './survey-flow';
 import { filesPart } from '@fieldia/widgets';
@@ -247,9 +248,10 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * A list page: a row was opened, by a click or by Enter. The app shows the
    * record. When it answers with a promise — the record in a dialog, closed —
    * the list asks for its records again once it settles, and puts the focus
-   * back on the row. Anything else it answers is let be.
+   * back on the row. Anything else it answers is let be. `name`, the row's own name for its record: what the app may
+   * call it (`form.openRecord(id, name)` says it if it cannot be opened).
    */
-  onOpenRecord?: (id: RecordId) => unknown;
+  onOpenRecord?: (id: RecordId, name?: string) => unknown;
   /**
    * A list page: one of its other views asked for a new record with these values filled in — a calendar's empty slot
    * pressed, its start and its end. The app shows it; a promise answered, the list asks again once it settles. Without
@@ -1259,6 +1261,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const why = !mayNot && !fixed && signedNow(state.values).has(node.field) ? labels.signedAnswer : (awaiting ?? reason ?? (mayNot ? (can?.reason ?? labels.fieldNotYours) : undefined));
         const showsLock = lockedNow && (!!why || (wrapper.hasAttribute('data-in-quiet') && !fixed));
         if (showsLock || lockMark) setHidden(lockFor(why), !showsLock);
+        // A lock at the value's start says so on its field, which the stylesheet lays out by (styles-head.ts).
+        if (lockMark && page.look?.lockAt === 'value') setAttr(wrapper, 'data-lock-shown', showsLock ? '' : null);
         if (!lockedNow) point(false);
         setAttr(wrapper, 'data-locked', quiet && showsLock ? '' : null);
         setAttr(wrapper, 'data-empty', quiet && isBlank(state.values[node.field]) ? '' : null);
@@ -2098,15 +2102,34 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function waitingFor(state: FormState): string {
     return waitWords(state, labels, page.data.kind === 'responses', fill);
   }
-  /** Saved, or sent — or not all of it: never "Saved" while a change of the person's is still to save, or a file on its way. */
-  const savedWords = () => (!workAtRisk(form.getState()) ? labels.saved : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotAll);
+  /**
+   * A save the source refused in its own words, said as one not done: "Not saved. The server did not answer this once."
+   * (0.35.1: its words alone never said nothing was saved). Fieldia's own sentences that say so already are said as
+   * they are: a part that guards it could not load, a record not loaded, something broken.
+   */
+  const m = formOptions.messages ?? MESSAGES.en;
+  const ownSentences = [m.guardNotSaved, m.guardNotSent, m.notLoaded, m.notLoadedNoun, m.saveBroken, m.sendBroken, m.saveNoId]
+    .filter((template): template is string => typeof template === 'string' && !!template)
+    .map((template) => new RegExp(`^${template.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{\w+\\\}/g, '[\\s\\S]*')}$`));
+  const notDoneFor = (message: string) => (ownSentences.some((own) => own.test(message)) ? message : `${notDone()}. ${message}`);
+  /** Whether the last save ended with a change of the person's still to save, or a file on its way: noted as it ended. */
+  let shortOfAll = false;
+  let statusWas: FormState['status'] | null = null;
+  /**
+   * Saved, or sent — or not all of it, where the save itself left a change out: never "Saved" while a change is still
+   * to save; and nothing said of a save once the person typed after it (0.35.1: a step's save, Reset to Draft's, then a
+   * key in a box read "Saved, but not all your changes." though the person had saved nothing).
+   */
+  const savedWords = (state: FormState) => (!workAtRisk(state) ? labels.saved : !shortOfAll ? '' : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotAll);
   updaters.push((state) => {
+    if (state.status === 'saved' && statusWas !== 'saved') shortOfAll = workAtRisk(state);
+    statusWas = state.status;
     const problem = state.saveProblem;
     const text =
       waitingFor(state) ||
       (state.status === 'saving' ? labels.saving
-      : state.status === 'saved' ? savedWords()
-      : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
+      : state.status === 'saved' ? savedWords(state)
+      : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? notDoneFor(problem.message) : notDone())
       // A record that could not be loaded is said over the page, with its own Retry.
       : state.status === 'error' && state.loadProblem ? ''
       : state.status === 'error' ? state.error ?? ''
@@ -2114,7 +2137,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // A problem is said once, at once, by the announcer (or the banner, or a dialog): the status shows it and keeps quiet.
     setAttr(statusText, 'aria-live', state.status === 'error' && problem ? 'off' : 'polite');
     setText(statusText, text);
-    setHidden(retry, !(state.status === 'error' && problem?.kind === 'other'));
+    // Retry where it can work: never where the words ask for a reload — a part that guards the send cannot be asked for
+    // again in this page; what is typed is kept for the reload (0.35.1).
+    const reloads = problem?.kind === 'other' && !!formOptions.messages?.guardReload && problem.message.includes(formOptions.messages.guardReload);
+    setHidden(retry, !(state.status === 'error' && problem?.kind === 'other') || reloads);
     const allSaved = state.status === 'saved' && text === labels.saved;
     statusText.classList.toggle('fd-status-error', state.status === 'error');
     statusText.classList.toggle('fd-status-saved', allSaved);
@@ -2189,7 +2215,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (!seenProblem) return;
     if (seenProblem.kind === 'rule') void dialogConfirm(seenProblem.message, { alone: true });
     else if (seenProblem.kind === 'fields') announce(checkText(state), true);
-    else if (seenProblem.kind === 'other') announce(seenProblem.message, true);
+    else if (seenProblem.kind === 'other') announce(notDoneFor(seenProblem.message), true);
   });
 
   // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
@@ -2211,6 +2237,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     cleanups.push(() => watching?.destroy());
   }
 
+  // A record's draft holds its changes, a form's its answers; the app's own sentence for either said for both.
+  const ownDraftWords = (key: string) => Object.prototype.hasOwnProperty.call(options.labels ?? {}, key);
+  const draftWords = () =>
+    page.data.kind === 'responses' || (ownDraftWords('draftFound') && !ownDraftWords('draftFoundRecord')) ? labels.draftFound : labels.draftFoundRecord ?? labels.draftFound;
   const draft = el('div', { class: 'fd-draft', hidden: '' });
   const draftText = el('span');
   const restore = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.restore);
@@ -2220,7 +2250,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   draft.append(draftText, restore, discardDraft);
   updaters.push((state) => {
     setHidden(draft, !state.draft);
-    if (state.draft) draftText.textContent = fill(labels.draftFound, { time: new Date(state.draft.savedAt).toLocaleString() });
+    if (state.draft) draftText.textContent = fill(draftWords(), { time: new Date(state.draft.savedAt).toLocaleString() });
   });
 
   function focusFirstProblem() {
@@ -2267,6 +2297,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * each made as the page is drawn — its part waited for with the page's.
    */
   const joins: PageJoin[] = [];
+  /** Those whose drawing could not come, each asked for anew by a send (`missingJoin`). */
+  const joinRetries: (() => Promise<boolean>)[] = [];
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
   /**
@@ -2307,6 +2339,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (form.getState().can?.edit === false) return;
     // A survey that reviews its answers first shows them in place of sending, until they are shown.
     if (flowKit && !(await flowKit.sending())) return;
+    // What the parts that join it draw, where it could not come — a payment step, a code's box — asked for anew first.
+    if (joinRetries.length) await Promise.all(joinRetries.map((retry) => retry()));
     // A question its save asks first (the page's beforeSave) says in its Yes what the form's own Save or Submit says.
     const saved = await form.save({ yes: root.querySelector('button[type="submit"]')?.textContent ?? undefined });
     if (!saved) {
@@ -2520,19 +2554,19 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       progressText.textContent = fill(labels.stepOf, { n: index + 1, total: steps.length });
       bar.style.width = `${((index + 1) / Math.max(1, steps.length)) * 100}%`;
       for (const { step, panel } of panels) {
-        panel.hidden = step.id !== state.step;
+        setHidden(panel, step.id !== state.step);
         // A step its answers pass over is left off the paper too.
         setAttr(panel, 'data-off', steps.includes(step.id) ? null : '');
       }
       const last = index === steps.length - 1;
-      back.hidden = index === 0;
-      skip.hidden = last || !node.children.find((step) => step.id === state.step)?.optional;
+      setHidden(back, index === 0);
+      setHidden(skip, last || !node.children.find((step) => step.id === state.step)?.optional);
       // Its words as they read now: a page's own may name the answers given ("Send to {branch}").
       const words = last ? flowKit?.finishWords() ?? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
       forward.textContent = words.includes('{') ? form.words(words) : words;
       for (const [id, go] of stepButtons) {
         const at = steps.indexOf(id);
-        (go.parentElement as HTMLElement).hidden = at === -1;
+        setHidden(go.parentElement as HTMLElement, at === -1);
         go.classList.toggle('fd-step-done', at !== -1 && at < index);
         go.classList.toggle('fd-step-skipped', state.skipped.includes(id));
         if (id === state.step) go.setAttribute('aria-current', 'step');
@@ -2567,8 +2601,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const saving = state.status === 'saving';
       const dirty = (state.dirty.length > 0 || (state.uploads ?? []).some(uploadGoing)) && !saving && !locked && state.can?.edit !== false;
       // While it saves, Save stays where it was pressed, busy (`action`); Discard steps aside.
-      save.hidden = saving ? save.hidden : !dirty;
-      discard.hidden = !dirty;
+      setHidden(save, saving ? save.hidden : !dirty);
+      setHidden(discard, !dirty);
     });
     const header = el('div', { class: 'fd-header' }, actions);
     const underTitle = node.statusbar?.position === 'title';
@@ -2618,7 +2652,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         if (helpId) stats.append(el('span', { class: 'fd-sr-only', id: helpId }, stat.help as string));
         button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
         updaters.push((state) => {
-          button.hidden = form.node(stat.id).invisible;
+          setHidden(button, form.node(stat.id).invisible);
           const values = state.values as Values;
           const unit = shownValue(stat.unitField, values) || stat.unit || '';
           const first = shownValue(stat.field, values);
@@ -2633,7 +2667,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       // No empty row while every button is hidden, as with the badges.
       updaters.push(() => {
-        stats.hidden = [...stats.querySelectorAll<HTMLElement>(':scope > .fd-stat')].every((stat) => stat.hidden);
+        setHidden(stats, [...stats.querySelectorAll<HTMLElement>(':scope > .fd-stat')].every((stat) => stat.hidden));
       });
       card.append(stats);
     }
@@ -2685,7 +2719,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (atFoot && options.showActions !== false) {
       card.append(foot);
       updaters.push((state) => {
-        foot.hidden = state.dirty.length === 0 && !statusText.textContent;
+        setHidden(foot, state.dirty.length === 0 && !statusText.textContent);
       });
     }
 
@@ -2736,7 +2770,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         });
         box.append(close);
         updaters.push(() => {
-          box.hidden = dismissed || form.node(alert.id).invisible;
+          setHidden(box, dismissed || form.node(alert.id).invisible);
         });
       } else hideWhen(box, alert.id);
       return box;
@@ -2832,7 +2866,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // What the page's parts draw with it are handed the same: the form, the page, its words, its questions once drawn.
     const drawing = { form, page, doc, el, labels, fill, announce, content: () => questions };
     for (const part of formJoins(page)) {
-      const join = joinDrawings[part.name]?.loaded?.draw({ ...drawing, dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message) => actionHost.ask(message) });
+      const own = joinDrawings[part.name];
+      const ctx = { ...drawing, dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message: string) => actionHost.ask(message) };
+      // One that guards a send whose drawing could not come is said in its place at once, with Retry where it can work (0.35.1).
+      const missing = own && !own.loaded ? missingJoin(part, own, ctx, formOptions.messages ?? MESSAGES[locale], labels.retry) : null;
+      if (missing) joinRetries.push(missing.retry);
+      const join = own?.loaded?.draw(ctx) ?? missing;
       if (!join) continue;
       joins.push(join);
       if (join.update) updaters.push(join.update);

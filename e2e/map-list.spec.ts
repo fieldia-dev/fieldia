@@ -179,6 +179,22 @@ test('a row lights its home on the map, a pin in a bubble drawn over it; a pin l
   expect(id).not.toBe('');
 });
 
+test('a row whose home has no place lights the note that says why it is not on the map; a placed one, its pin', async ({ page }) => {
+  // The owner's walk of 0.35 pointed at the third home — one of the two with no place yet — and nothing on the map changed.
+  await openList(page);
+  const note = page.locator('.fd-map-list-note');
+  await expect(note).toHaveText('2 without a place, not on the map');
+  await rowOf(page, '18').hover();
+  await expect(note).toHaveAttribute('data-hot', '');
+  await expect(page.locator('.fd-map-list .fd-map-ghost')).toHaveCount(0);
+  await screen(page, 'map-list-row-no-place');
+  await rows(page).first().hover();
+  await expect(note).not.toHaveAttribute('data-hot', '');
+  await expect(page.locator('.fd-map-list .fd-map-ghost .fd-map-face[data-hot]')).toHaveCount(1);
+  await page.mouse.move(5, 5);
+  await expect(note).not.toHaveAttribute('data-hot', '');
+});
+
 test('Enter on a bubble zooms in on its pins, as a click does', async ({ page }) => {
   await openList(page);
   const before = await zoomOf(theMap(page));
