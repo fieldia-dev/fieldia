@@ -567,9 +567,9 @@ the canvas in it once they have come (the editor asks for them as it opens, and
 draws the canvas again then). The format's schemas and their whole check
 (`@fieldia/core/schema`, with zod, about 105 KB gzipped) come the same way, in a
 chunk of their own asked for as the designer opens: it draws and takes edits
-meanwhile, each held to the check every viewer draws a page with (`checkPage`,
-the same verdict without zod), checks the page with them once they have come, and
-never publishes a page it has not checked so — `publish()` waits for them. A
+meanwhile, each held to the check every viewer draws a page with (`checkPage`),
+checks the page whole once they have come, and never publishes a page it has not
+checked whole — `publish()` waits for them. A
 version is published stamped with the lowest format its settings need
 (`stampPage`), so a viewer of an older Fieldia that knows every setting it uses
 reads it.

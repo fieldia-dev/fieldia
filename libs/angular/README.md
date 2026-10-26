@@ -76,6 +76,7 @@ ask first while there is a change not saved.
 A part that throws as it is drawn or brought up to date — a field's component, a
 slot's content, the app's widget, a map — shows a small box that names it, and
 the rest of the form goes on; `(partError)` hears `{ error, where }` (not
-`(error)`, the DOM's own event). A page the viewer refuses (one `validatePage`
-refuses) says why in the form's place, `(partError)` hears it with `{ stage:
-'draw', part: 'page' }`, and the app goes on. MIT licensed.
+`(error)`, the DOM's own event). A page the viewer refuses says why in the form's
+place, `(partError)` hears it with `{ stage: 'draw', part: 'page' }`, and the app
+goes on; one it draws whose whole check finds mistakes, `{ stage: 'check', part:
+'page', warning: true }` (0.36; refused from 0.37). MIT licensed.

@@ -86,6 +86,29 @@ A page says the format it is written in (`"fieldia": "0.13"`), and every later F
   *Gate:* `default-changes.spec.ts` — each listed setting reads in both checks and needs no later format than the
   default's; `stamp.spec.ts` — a step that says a page relies on it stamps the page with its format.
 
+## The checks a viewer runs: said in 0.36, refused from 0.37
+
+0.36 brought the whole check of a page to the browser: `validatePage`'s verdict without zod (`checkPageWhole`), held
+to it by `shape-parity.spec.ts`. Refusing every page it refuses at once would stop pages 0.35 drew — a list's
+`pageSize` past 500, a key the format does not have, its least more than its most — with no warning first. So the
+train's own rule applies to it, the deprecation `page.invalid`:
+
+- **0.36.** Before the draw a viewer runs `checkPage`, what 0.35's viewer refused, and a page it refuses is not drawn:
+  its words are where the form would be. The whole check is a part of its own (`fieldia.check.js`, a chunk in an app's
+  bundle), asked for once the page is drawn and the browser idle, never delaying the draw. What only it finds is said
+  once in the console and to `onError` (`stage: "check"`, `warning: true`), and the page stays drawn. A part that
+  cannot come says nothing. `fieldia.js` stays at 191.2 KB gzipped.
+  *Gates:* `refused.spec.ts` (a page 0.35 drew is drawn and said once; one it refused is refused with the words),
+  `shape-parity.spec.ts` (the check before the draw refuses nothing the whole check passes), the script bundle's
+  in-page check (the part never asked for before the draw, a mistake said after it).
+- **0.37, the plan, not built.** The check part is asked for as the script starts, in parallel with the page's other
+  parts, and listed by `partFiles`, so a page's part tags and preload links carry it. The viewer waits for it as it
+  waits for the page's parts, then refuses what it finds before the first draw, as the check before the draw does.
+  `fieldia.js` keeps its size; the part's 17 KB comes beside the page's parts, not after them. Decide before 0.37 what a
+  page does when the check part cannot come: refuse it, as a send a part must check is refused, or draw it on the
+  check before the draw alone. 0.37's Upgrading part cites `page.invalid`, and `tools/release-train.mjs` refuses 0.37
+  if it does not.
+
 ## Releasing
 
 How a release reaches npm, and what refuses one that is not ready: [publishing.md](publishing.md).

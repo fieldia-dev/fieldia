@@ -89,5 +89,5 @@ A field's or a slot's component that throws as it renders is kept to its place:
 it shows a small box that names it, `onError={(error, where) => …}` is told, and
 the rest of the form stays mounted — React would otherwise take down everything
 under the nearest error boundary, the form with it. A page the viewer refuses
-(one `validatePage` refuses) says why in the form's place, `onError` is told, and
-the app stays mounted: nothing is thrown into React. MIT licensed.
+says why in the form's place, `onError` is told, and the app stays mounted:
+nothing is thrown into React. MIT licensed.
