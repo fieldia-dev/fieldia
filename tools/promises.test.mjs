@@ -67,7 +67,7 @@ test('a number the code does not hold is refused: the page written otherwise, or
     };
     edit('e2e/perf.spec.ts', '  viewerKey: 16,', '  viewerKey: 24,');
     edit('libs/viewer/src/lib/import-dialog.ts', 'export const IMPORT_MOST = 50000;', 'export const IMPORT_MOST = 20000;');
-    edit('tools/script-bundle.mjs', 'const GZIP_BUDGET_KB = 206.7;', 'const GZIP_BUDGET_KB = 230.0;');
+    edit('tools/script-bundle.mjs', 'const GZIP_BUDGET_KB = 206.8;', 'const GZIP_BUDGET_KB = 230.0;');
     const moved = numberProblems(doc, copy).map((one) => one.replace(/ \(its row: .*\)$/, ''));
     assert.deepEqual(moved, [
       'the bounds: an import: the code holds "20,000 rows", which the page does not say',

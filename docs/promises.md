@@ -187,7 +187,7 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 | A list | 258.6 KB | 328.4 KB | `tools/npm-first-load.mjs` |
 | The screen designer | 611.7 KB | 827.0 KB | `tools/npm-first-load.mjs` |
 
-The one-tag script, `fieldia.js`, is held to 206.7 KB gzipped, and each part it loads later to its own budget.
+The one-tag script, `fieldia.js`, is held to 206.8 KB gzipped, and each part it loads later to its own budget.
 **Gate:** `tools/script-bundle.mjs`.
 
 These are budgets, not measurements. A count's budget is what the release counted, with a little room; a timing's is
