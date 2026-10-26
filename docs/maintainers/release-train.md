@@ -1,0 +1,80 @@
+# The release train
+
+How Fieldia changes, so an app, a page and a test written against one version can plan for the next: what a patch may
+hold, how often a minor comes, and how anything that is to change is said a minor before it does. The audit behind it:
+R-H7 and R-H8 (October 2026) — 89 breaking changes in 8 days, three of them in patches, and no deprecation path.
+
+Every rule here is held by a check that fails when it is broken; each says which.
+
+## Versions
+
+Before 1.0 every package releases together at one version, `0.minor.patch`.
+
+- **A patch (0.36.1) holds fixes alone.** Nothing an app, a page or a test writes needs to change: its CHANGELOG
+  section has no **Upgrading** part. npm's default range (`^0.36.0`) installs a patch by itself, so anything that
+  changes DOM, wording, timing, defaults or types waits for the next minor.
+  *Gate:* `tools/release-guards.mjs` (`patchProblem`) refuses to publish a patch whose section has an Upgrading part;
+  `tools/release-guards.test.mjs` runs it on every pull request, against the three patches that broke this rule
+  (0.26.1, 0.30.1, 0.31.1).
+- **A minor comes every 2–4 weeks**, with the changes, each listed under its **Upgrading** part, grouped by who it
+  touches: *page authors*, *app code*, *tests and CSS*, *self-hosters*. Fixes ship in patches between.
+  *Gate:* from the train's first minor (0.37) `tools/release-train.mjs` refuses to publish a minor dated less than
+  14 days after the minor before it, by their CHANGELOG headings. The four weeks are a target, not a check.
+
+## Deprecations: a minor's warning first
+
+Anything an app, a page or a test relies on that is to change or go — a page setting, an option, a member, an
+attribute, a default, a DOM contract — is deprecated in one minor and changed in a later one, never in the same.
+
+1. **Write it in the list**, `DEPRECATIONS` in `libs/core/src/lib/deprecations.ts`: its id (`viewer.mount-throws`),
+   `since` (the minor that first warns of it), `changesIn` (a later minor), who it touches, what changes and what to
+   write instead, and how it is said (`warns`).
+2. **Say it where it is used.** Where a use of it can be seen as Fieldia runs — the setting given, the member called,
+   the default relied on — that code calls `deprecated(id, words, changesIn)` from `@fieldia/core`: the console says
+   it once in a page (however many copies of Fieldia the page carries), with the minor it changes in and a link to
+   fieldia.dev/promises/#deprecations. A use of what stays never warns. Where no use can be seen — a class name, the
+   order of a part's elements — `warns` is `"changelog"`, and the CHANGELOG alone says it.
+3. **List it under Deprecated** in the CHANGELOG section of its `since` minor, by its id, with what to write instead.
+4. **Change it in its `changesIn` minor**, whose Upgrading item cites it: `(deprecated in 0.37: \`viewer.mount-throws\`)`.
+   Then take it off the list.
+
+From the train's first minor (0.37), every item of a minor's Upgrading part says what it is:
+
+| Tag | What it is |
+| --- | --- |
+| `(adds)` | Something new an app, a test or a fake may have to follow: a label key, a member of an interface, a part file to serve. Nothing that worked stops working. |
+| `(fix)` | Fieldia made to do what its docs already said. A fix of something wrong never waits for a deprecation. |
+| `(deprecated in 0.N: \`id\`)` | A change that was deprecated in minor 0.N, whose list entry says it changes in this minor. |
+
+*Gates:*
+- `tools/release-train.mjs` (`trainProblems`), run by `release.mjs check` (it warns) and by `release.mjs publish` and
+  the publish workflow's `tools/publish-packs.mjs` (they refuse): an Upgrading item with none of the three tags; a
+  citation of an id the list does not have, or whose `changesIn` is another minor, or whose `since` is this minor; a
+  list entry that changes in this minor and is not cited; a list entry first warned of in this minor and not under
+  **Deprecated**; a malformed entry (an id twice, a `changesIn` not after `since`).
+- `tools/release-train.test.mjs`, on every pull request: those refusals, each shown to bite; the real CHANGELOG and
+  list keep the train for every minor; and every `deprecated(…)` call in the packages names an entry with its
+  `changesIn`, while every entry said in the console has a call.
+- `libs/core/src/lib/deprecations.spec.ts`: a deprecated use warns once in a page; every example page checked,
+  validated and made a form says nothing of a deprecation.
+
+**What is a DOM change.** Anything an app's tests or CSS can reach: a role, an accessible name, a `.fd-*` class, a
+`data-*` attribute, where an element sits among its part's. `@fieldia/testing` finds what a person finds — by roles
+and labels — and is the surface tests should use; it is kept working across minors.
+
+## The page format
+
+A page says the format it is written in (`"fieldia": "0.13"`), and every later Fieldia reads it.
+
+- **Formats only add.** A setting is never renamed, reshaped or removed in place: a release that must do so makes a
+  new format with a step in `PAGE_UPGRADES` that rewrites an older page, and its example.
+  *Gate:* `tools/format-shape.mjs` (run by `release.mjs`) refuses a format whose shape changed under its version;
+  `upgrade.spec.ts` runs every step on its example.
+- **A page is written in the lowest format its settings need**, so an older Fieldia that knows every setting a page
+  uses reads it (see the format's docs, "Versions").
+- **A default that changes is a new format.** A page written in an older format keeps its old behaviour — the new
+  format's step writes the old default into it — or the change is listed with the setting that keeps the old way.
+
+## Releasing
+
+How a release reaches npm, and what refuses one that is not ready: [publishing.md](publishing.md).

@@ -6,12 +6,15 @@
  * - one already on origin/main: merged, pushed and through CI before it is published;
  * - tagged with its version (`v0.34.0`) — the tag is made first, and the publish follows it;
  * - a patch (0.x.**y**, y > 0) holds fixes alone: its CHANGELOG section has no Upgrading part. Anything an app, a page or
- *   a test writes that has to change waits for the next minor (npm's default `^0.34.0` installs a patch by itself).
+ *   a test writes that has to change waits for the next minor (npm's default `^0.34.0` installs a patch by itself);
+ * - a minor changes nothing that was not deprecated in the minor before, and lists what it deprecates
+ *   (release-train.mjs, docs/maintainers/release-train.md).
  *
  * The audits' R-H7, R-M15 and S-H4. Each problem is said in words, with what to do.
  */
 import { execFileSync } from 'node:child_process';
 import { notesFor } from './release-notes.mjs';
+import { trainProblems } from './release-train.mjs';
 
 /** An Upgrading part of a section: `**Upgrading**`, `**Upgrading.**`, `### Upgrading`, at the start of a line. */
 const UPGRADING = /^(?:\*\*Upgrading\b|#{2,6}\s+Upgrading\b)/m;
@@ -52,9 +55,10 @@ export function gitFacts(workspace, git = (args) => execFileSync('git', args, { 
 
 /**
  * Every reason `version` may not be published from where the facts say it is, in words; none when it may. `tag`, where
- * a workflow was started by one, is that tag's name: it must be this release's.
+ * a workflow was started by one, is that tag's name: it must be this release's. `deprecations`, the core's list
+ * (release-train.mjs `readDeprecations`): what a minor changes was deprecated a minor before.
  */
-export function releaseProblems({ version, changelog, facts, tag = null }) {
+export function releaseProblems({ version, changelog, facts, tag = null, deprecations = [] }) {
   const problems = [];
   const wanted = `v${version}`;
   if (facts.changed.length) {
@@ -68,6 +72,7 @@ export function releaseProblems({ version, changelog, facts, tag = null }) {
   else if (!facts.tags.includes(wanted)) problems.push(`HEAD has no tag ${wanted}: tag the release's commit first (\`git tag -a ${wanted} -m "Fieldia ${version}"\`), then publish it`);
   const patch = patchProblem(version, changelog);
   if (patch) problems.push(patch);
+  problems.push(...trainProblems({ version, changelog, deprecations }));
   return problems;
 }
 

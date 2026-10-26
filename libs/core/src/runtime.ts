@@ -138,6 +138,8 @@ export type {
   PrintStep,
 } from './lib/format/actions';
 export { FORMAT_VERSION, FORMAT_VERSIONS, compareFormats, formatProblem, type FormatVersion } from './lib/format/version';
+// What will change, said a minor before it does: the list, and a use of it said once in a page (docs/maintainers/release-train.md).
+export { DEPRECATIONS, deprecated, type Deprecation, type DeprecationWho } from './lib/deprecations';
 export { upgradePage, PAGE_UPGRADES, type FormatHistory, type PageJson, type PageUpgrade } from './lib/format/upgrade';
 export type { Page, PageData, PageLook, BotCheck, PagePrint } from './lib/format/page';
 export { LOADING_DEFAULTS, type LoadingMoment, type LoadingTechnique, type PageLoading } from './lib/format/loading';

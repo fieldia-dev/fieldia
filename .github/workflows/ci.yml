@@ -69,11 +69,12 @@ jobs:
       # written, every <style> made with the page's nonce (tools/csp-source.test.mjs). Every Intl formatter made by
       # intlFormat, once for a language and its options (tools/intl-source.test.mjs).
       # And the release's own guard rails: its checks run with no npm token, a release must be tagged, on main and clean,
-      # a patch holds fixes alone, the packs published are the ones checked, what an app installs has no high or critical
+      # a patch holds fixes alone, a minor changes nothing not deprecated a minor before (and every deprecation the
+      # packages warn of is on the list), the packs published are the ones checked, what an app installs has no high or critical
       # advisory unreviewed, every script tag the docs print names a version and its hash, and the workflows keep their
       # rules. And the demos' size check, which tools/build-demos.mjs runs as it builds them: a page over its budget, a
       # bundle unminified, said (tools/demo-sizes.mjs).
-      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/intl-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs tools/demo-sizes.test.mjs
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/intl-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-train.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs tools/demo-sizes.test.mjs
       # The tools themselves, linted as the packages are (`nx lint` reads the packages alone): four errors hid there in 0.31.
       - run: npx eslint tools eslint.config.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's

@@ -91,6 +91,15 @@ field written in its own framework.
 inside a page. Icons are names, buttons reference actions, and the code a page
 needs is handed to the renderer.
 
+## Stability
+
+A patch holds fixes alone; a minor comes every two to four weeks, and anything
+an app, a page or a test relies on that is to change is deprecated a minor
+first — said once in the console where it is used, and in the changelog. A page
+says the format it is written in, and every later Fieldia reads it. How it
+works, and the check that holds each rule:
+[the release train](docs/maintainers/release-train.md).
+
 ## Develop
 
 ```sh
