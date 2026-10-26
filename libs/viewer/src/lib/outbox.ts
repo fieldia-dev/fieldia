@@ -5,15 +5,21 @@ import { installOutboxStyles } from './outbox-styles';
 /**
  * An offline outbox, on screen — the outbox part (`outbox` on a page): over the form, what waits on this device to be
  * sent and **Send now**, while it is sent, and a send the server refused once it went — its words, **Try again** and
- * **Discard** (asked first). It is sent as the signal comes back (the browser's `online`), every half a minute while
- * something waits, as the page opens (what waited from before a reload), and right after another send went through.
- * "No signal" is said by the last try, never by the browser's `navigator.onLine`: some browsers say offline throughout
- * (WebKit on Linux), others online behind a network that answers nothing — a try costs one failed request. A response
- * kept without signal ends with "Kept on this device" in place of the thanks (`state.outbox.kept`), the bar under it —
- * so what is sent, or refused, is said there too — and back over the form once another response is started.
+ * **Discard** (asked first). It is sent by its own tries, never by the browser's word alone: soon after a send is kept
+ * and less often while it waits — after 2 seconds, then 4, 8 and 16, then every half a minute —, as the signal comes
+ * back (the browser's `online`), as the page comes back into view (a phone unlocked, its tab gone back to: a phone's
+ * timers sleep while its page is out of sight), as the page opens (what waited from before a reload), and right after
+ * another send went through. "No signal" is said by the last try, never by the browser's `navigator.onLine`: some
+ * browsers say offline throughout and never say `online` — WebKit on a Linux whose NetworkManager runs none of its
+ * network says "offline" as its connection comes back —, others online behind a network that answers nothing (a
+ * captive portal, Wi-Fi with no way out) — a try costs one failed request. A response kept without signal ends with
+ * "Kept on this device" in place of the thanks (`state.outbox.kept`), the bar under it — so what is sent, or refused,
+ * is said there too — and back over the form once another response is started.
  */
 
-/** How often what waits is tried again while it waits, in ms. */
+/** The first try again after a send is kept, in ms: each later one waits twice as long, up to `AGAIN_MS`. */
+const FIRST_MS = 2_000;
+/** How often what waits is tried again once it has waited a while, in ms. */
 const AGAIN_MS = 30_000;
 
 /** The outbox part's side of a page (joins.ts): its bar over the questions, and a kept response's ending. */
@@ -29,10 +35,15 @@ export function watchOutbox(ctx: JoinContext): PageJoin & { bar: HTMLElement } {
   const bar = el('div', { class: 'fd-outbox', role: 'status', 'aria-live': 'polite', hidden: '' }, el('div', { class: 'fd-outbox-row' }, said, now), refused);
   const send = () => void form.joined('outbox')?.send();
   now.addEventListener('click', send);
-  // Back online: what waited goes; and every half a minute while something waits, in case the browser did not say so.
+  // Back online, or the page in sight again: what waited goes — besides its own tries, as the browser may say neither.
   const online = () => send();
+  const seen = () => doc.visibilityState === 'visible' && send();
   win?.addEventListener('online', online);
+  doc.addEventListener('visibilitychange', seen);
+  /** The next try while something waits; how many tries came before it since something began to wait; what waited. */
   let timer: number | undefined;
+  let tries = 0;
+  let before = 0;
   /** The refusals drawn, by key, so a redraw keeps the focus where it is. */
   let drawnRefused = '';
   /** Whether something waited since the page opened: once nothing does, "Everything was sent" is said — aloud once. */
@@ -57,10 +68,19 @@ export function watchOutbox(ctx: JoinContext): PageJoin & { bar: HTMLElement } {
       const box = state.outbox;
       const waiting = box?.waiting ?? 0;
       const kept = box?.refused ?? [];
-      if (waiting > 0 && timer === undefined && win) timer = win.setInterval(send, AGAIN_MS);
-      if (waiting === 0 && timer !== undefined) {
-        win?.clearInterval(timer);
+      // A send kept anew: tried again soon, the waits from the first; nothing waiting: no more tries.
+      if (waiting === 0 || waiting > before) {
+        if (timer !== undefined) win?.clearTimeout(timer);
         timer = undefined;
+        tries = 0;
+      }
+      before = waiting;
+      if (waiting > 0 && timer === undefined && win) {
+        timer = win.setTimeout(() => {
+          timer = undefined;
+          tries++;
+          send();
+        }, Math.min(AGAIN_MS, FIRST_MS * 2 ** tries));
       }
       if (waiting > 0) {
         waited = true;
@@ -130,7 +150,8 @@ export function watchOutbox(ctx: JoinContext): PageJoin & { bar: HTMLElement } {
     },
     destroy() {
       win?.removeEventListener('online', online);
-      if (timer !== undefined) win?.clearInterval(timer);
+      doc.removeEventListener('visibilitychange', seen);
+      if (timer !== undefined) win?.clearTimeout(timer);
       home?.remove();
       mine?.remove();
       bar.remove();

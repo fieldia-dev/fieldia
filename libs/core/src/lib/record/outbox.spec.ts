@@ -177,6 +177,29 @@ describe('an offline outbox', () => {
     expect(typeof sent[0].url).toBe('string');
   });
 
+  it('keeps a send made where the memory source learns its signal later, as a request to the network answers', async () => {
+    // A demo's or a test's source asking the network itself — never the browser's word, which some browsers get wrong.
+    let answers = false;
+    const dataSource = createMemoryDataSource({ offline: () => new Promise<boolean>((done) => setTimeout(() => done(!answers))) });
+    const store = memoryOutbox();
+    const form = createForm({ page: visit(), dataSource, outbox: store });
+    form.setValues({ unit: 'E-5' });
+    const bytes = new TextEncoder().encode('a photo');
+    form.upload('photos', [{ name: 'hall.jpg', size: bytes.length, type: 'image/jpeg', arrayBuffer: async () => bytes.buffer }]);
+    await form.settle();
+    await new Promise((done) => setTimeout(done, 0));
+    // The photo found no network: kept as its bytes; the send too.
+    expect((form.getState().values['photos'] as FileValue[])[0]).toMatchObject({ name: 'hall.jpg', data: 'YSBwaG90bw==' });
+    expect(await form.save()).toBe(true);
+    expect(form.getState().outbox).toMatchObject({ waiting: 1, offline: true, kept: true });
+    expect(dataSource.responses).toEqual([]);
+    answers = true;
+    await form.joined('outbox')?.send();
+    expect(dataSource.responses.map((response) => response.values['unit'])).toEqual(['E-5']);
+    expect(form.getState().outbox).toMatchObject({ waiting: 0, offline: false });
+    expect((dataSource.responses[0].values['photos'] as FileValue[])[0]).toMatchObject({ name: 'hall.jpg', url: expect.any(String) });
+  });
+
   it('refuses an outbox on a list of records', () => {
     const checked = checkPage({ ...visit(), data: { kind: 'record', model: 'visit' }, layout: { type: 'list', id: 'visits', columns: ['unit'] } });
     expect(checked.ok ? [] : checked.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(['outbox: an outbox keeps a form’s sends made without signal: a list of records sends none']);

@@ -252,9 +252,11 @@ export interface MemoryDataSourceOptions {
   pay?: (request: PayRequest, count: number) => PayResult | Promise<PayResult>;
   /**
    * Whether there is no signal now: while it says so, a save, a send and a file's upload fail as a network does
-   * (`TypeError: Failed to fetch`) — a demo's "Work offline", a test's outbox. Signal always, unless said.
+   * (`TypeError: Failed to fetch`) — a demo's "Work offline", a test's outbox. Signal always, unless said. Its answer
+   * may come later (a promise): a demo's own request to the network, which says what the network does — never the
+   * browser's word for its connection, which some browsers get wrong.
    */
-  offline?: () => boolean;
+  offline?: () => boolean | Promise<boolean>;
 }
 
 /** What a memory source's AI help answers with (`MemoryDataSourceOptions.assist`): each given, from its records. */
@@ -368,9 +370,9 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
   /** A record's name, or its names in each language it is kept in (`{ ar, en }`). */
   const nameOf = (model: string, id: RecordId) => table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
-  /** No signal now (`offline`): fail as a network does. */
-  const noSignal = () => {
-    if (options.offline?.()) throw new TypeError('Failed to fetch');
+  /** No signal now (`offline`, once it answers): fail as a network does. */
+  const noSignal = async () => {
+    if (await options.offline?.()) throw new TypeError('Failed to fetch');
   };
   /** Each page's record templates, as saved: those given first, then each kept, numbered on. */
   const savedTemplates: Record<string, RecordTemplate[]> = structuredCopy(options.templates ?? {});
@@ -629,7 +631,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     async save(request: SaveRequest): Promise<SaveResult> {
       calls.push({ method: 'save', request });
       await pause();
-      noSignal();
+      await noSignal();
       // A send it kept already, by its key (`key`, or an outbox's `queued.key`): a later try of the same save, written over
       // the record that one made — never a second record, nor a conflict with its own first try.
       const key = request.key ?? request.queued?.key;
@@ -810,7 +812,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
 
     async upload(file: UploadFile, request: UploadRequest): Promise<UploadedFile> {
       calls.push({ method: 'upload', request: { ...request, file } });
-      noSignal();
+      await noSignal();
       const stopped = () => Object.assign(new Error('The upload was stopped'), { name: 'AbortError' });
       // A store slow or failing as `storage` says: a refusal at once, a failure partway, the bytes paced as they go.
       const tried = `${file.name}:${file.size}`;
@@ -853,7 +855,7 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
     async submit(request: SubmitRequest): Promise<SubmitResult> {
       calls.push({ method: 'submit', request });
       await pause();
-      noSignal();
+      await noSignal();
       // A response it kept already, by its key: a later try of the same send, its answers over that one's — never a second.
       const key = request.key ?? request.queued?.key;
       const at = key !== undefined ? responses.findIndex((one) => (one.key ?? one.queued?.key) === key) : -1;

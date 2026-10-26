@@ -21,19 +21,39 @@ const kept = () => {
 let working = kept();
 
 /**
- * The browser's connection, as it says it goes and comes back (`offline`, `online`) — the demo's source is in memory,
- * so it fails as a network does only by the browser's word. Taken as there at first on every other page, as some
- * browsers say offline throughout; the viewing report, opened again with no signal (its service worker's copy), takes
- * the browser's word as it opens too, so what waits waits.
+ * Whether the network answers, as the viewing report's sends find it — the demo's source is in memory, so it fails as
+ * a network does only by asking the network itself: a request for this page's own address (HEAD, never kept by the
+ * browser, never answered by the page's service worker, which answers GET alone), no signal when it fails. Never by
+ * the browser's word for its connection (`navigator.onLine`, `online`, `offline`): some browsers say offline
+ * throughout — WebKit on a Linux whose NetworkManager runs none of its network says "offline" even as it comes back —,
+ * others online behind a network that answers nothing. Asked on the viewing report alone, the one page here that keeps
+ * a send without signal: every other page's source has signal always.
  */
-let away = typeof location !== 'undefined' && new URLSearchParams(location.search).get('page') === 'viewing-report' && navigator.onLine === false;
-if (typeof window !== 'undefined') {
-  window.addEventListener('offline', () => (away = true));
-  window.addEventListener('online', () => (away = false));
+const asking = typeof location !== 'undefined' && new URLSearchParams(location.search).get('page') === 'viewing-report';
+/** What the last request found: no answer from the network. */
+let away = false;
+/** The bar's words, said again as a request finds the network gone or back. */
+let told: (() => void) | null = null;
+async function noAnswer(): Promise<boolean> {
+  try {
+    await fetch(location.href, { method: 'HEAD', cache: 'no-store' });
+    away = false;
+  } catch {
+    away = true;
+  }
+  told?.();
+  return away;
+}
+if (asking && typeof window !== 'undefined') {
+  // The browser's word taken as a reason to ask, never as the answer: as the page opens (again with no signal, its
+  // service worker's copy), and as the browser says its connection went or came back.
+  void noAnswer();
+  window.addEventListener('offline', () => void noAnswer());
+  window.addEventListener('online', () => void noAnswer());
 }
 
-/** Whether the demo works offline now: by its bar's button, or because the browser said its network went. */
-export const demoOffline = (): boolean => working || away;
+/** Whether the demo works offline now: by its bar's button, or because the network does not answer the viewing report. */
+export const demoOffline = (): boolean | Promise<boolean> => working || (asking && noAnswer());
 
 /**
  * A bar over the visit: Work offline, as a compound with no signal would have it — the demo's source fails as a network
@@ -52,9 +72,8 @@ export function offlineBar(doc: Document): HTMLElement {
     button.textContent = working ? 'Back online' : 'Work offline';
     said.textContent = working || away ? 'No signal: what you send is kept on this device.' : 'Press Work offline to visit as in a compound with no signal.';
   };
-  // The browser's own connection going and coming back, said as the button's is.
-  doc.defaultView?.addEventListener('offline', () => show());
-  doc.defaultView?.addEventListener('online', () => show());
+  // The network going and coming back, as a request finds it, said as the button's is.
+  told = show;
   button.addEventListener('click', () => {
     working = !working;
     try {
