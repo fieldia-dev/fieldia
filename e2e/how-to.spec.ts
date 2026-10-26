@@ -61,7 +61,8 @@ for (const area of AREAS as { id: string; label: string }[]) {
         });
         // A person, not a test browser: the frame draws its menu, its how-to panel and its code drawer.
         await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
-        await page.goto(`/${demoHref(demo)}`);
+        const address = `/${demoHref(demo)}`;
+        await page.goto(replay.slower ? `${address}${address.includes('?') ? '&' : '?'}${replay.slower.query}` : address);
         await expect(page.locator('.dh-title')).toHaveText(demo.name);
         const { hand, seen } = handFor(page, isMobile);
         const steps: string[] = demo.howTo.map(stepText);

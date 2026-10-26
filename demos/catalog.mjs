@@ -495,7 +495,7 @@ export const DEMOS = [
     id: 'enquiry',
     name: 'A buyer’s enquiry and the conversation with them',
     category: 'records',
-    query: 'page=enquiry&skin=underline',
+    query: 'page=enquiry&skin=underline&now=2026-10-21T09:00:00',
     blurb: 'The request page of a buyer’s enquiry about a home, the conversation beside it as an agency has it: WhatsApp, e-mail, a text message and the team’s notes mixed, each saying its channel, ticks on what went out — sent, delivered, read, or why it failed —, a reply by the buyer’s own channel, messages arriving while you read, and follow-ups at an hour on the office’s clock.',
     howTo: [
       'Press Send message: the reply goes by WhatsApp, the channel Yasmin last wrote on, to her number. Type a few words and press Send by WhatsApp: one tick, then two as her phone gets it.',
@@ -1541,7 +1541,7 @@ export const DEMOS = [
     howTo: [
       'Fill in the form — its code is always 246810 — and send it: under it, what the page round it was told — fieldia-ready, then fieldia-send with the reference, never the answers.',
       '[See it in a frame](?as=frame&utm_source=newsletter&agent=mona&unit=B-12), as a partner’s one script tag places it: the frame grows as you go and shrinks once it is sent, and the unit comes from the link.',
-      '[See it in Arabic](?as=element&locale=ar&unit=B-12): the element’s locale attribute, right to left, Fieldia’s own words in Arabic.',
+      '[See it in Arabic](?locale=ar&unit=B-12&as=element): the element’s locale attribute, right to left, Fieldia’s own words in Arabic.',
     ],
   },
   {

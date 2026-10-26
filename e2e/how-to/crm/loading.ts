@@ -7,13 +7,16 @@ const loadingPane = (page: Page, name: string) => page.locator(`section.ld-pane[
 
 /** The loading demo’s how-to steps, replayed by hand (e2e/how-to.spec.ts). */
 export const replay: DemoReplay = {
+  // Each wait its steps look at — the skeleton, the bar, "Loading more…", "Searching…" — lasts the stand-in network's
+  // 1.5 s, which a busy runner's phone can spend drawing the page: 4 s, still under "Still loading…"'s 5.
+  slower: { query: 'slow=4000', why: 'a wait a step looks at outlasts a busy runner drawing the page' },
   steps: [
     {
       says: 'Watch the page open on a slow network:',
       async run({ page, see }) {
         const list = loadingPane(page, 'Customers').locator('.fd-list-records');
         const customer = loadingPane(page, 'Customer').locator('.fd-content').first();
-        // The 1.5 s the network takes: the list's rows and the customer's boxes as shapes, until they come.
+        // The time the network takes: the list's rows and the customer's boxes as shapes, until they come.
         await see(list.locator('.fd-sk-row').first()).toBeVisible();
         await see(list).toHaveAttribute('data-fd-way', 'skeleton');
         await see(customer).toHaveAttribute('data-fd-way', 'skeleton');

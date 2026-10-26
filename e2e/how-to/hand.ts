@@ -61,6 +61,12 @@ export interface DemoReplay {
   notOnPhone?: string;
   /** More time than the 60 s a replay is given, for a demo whose steps are many or slow by their nature. */
   timeout?: number;
+  /**
+   * More in the address the demo is opened at, and why — only to give a wait a step looks at the time a busy runner
+   * needs to look at it (a slower stand-in network: `slow=4000`), as e2e/support.ts's `unhurried` does for the loading
+   * specs; never to change what the demo shows or what a step does.
+   */
+  slower?: { query: string; why: string };
 }
 
 /** Each area's replays, by demo id. */
