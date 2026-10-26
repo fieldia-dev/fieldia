@@ -53,6 +53,9 @@ one reader.
   those words is kept. 0.35.1 dropped any `{word}` from them.
 - A quiz question's `feedback` and a picture's `alt` in a pins widget's settings
   are words `translatePage` and `pageWords` go through, translated with the rest.
+- Dependencies, patch releases only: zod 4.6.7, and the code editor's
+  `@codemirror/language` 6.13.1, `@codemirror/legacy-modes` 6.5.5 and
+  `@codemirror/view` 6.43.14.
 
 Behaviour you may notice in an app's own tests:
 
