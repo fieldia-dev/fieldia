@@ -56,7 +56,8 @@ one reader.
 - **Ctrl+Enter pressed twice while a save is on its way is one save**, even
   when an `onchange` answer that changed nothing lands between the presses.
   0.34–0.35.1 took that answer for a change and sent a second save once the
-  first answered, moving the record's version.
+  first answered, moving the record's version. A save a page's own moment asks
+  for (an `afterSave` step saving again) goes as before.
 - Dependencies, patch releases only: zod 4.6.7, and the code editor's
   `@codemirror/language` 6.13.1, `@codemirror/legacy-modes` 6.5.5 and
   `@codemirror/view` 6.43.14.
@@ -81,7 +82,7 @@ Behaviour you may notice in an app's own tests:
 
 **Size:** `fieldia.js` 578.3 KB, 193.6 gzipped (0.35.1: 576.6, 192.9): the one
 reader, and every word read once where it is drawn, +1.6 KB, +0.62 gzipped; a
-save on its way joined by what its values hold +0.06, +0.06. Of
+save on its way joined by what its values hold +0.09, +0.07. Of
 the parts, raw: answers 4.41 (4.35), head 42.42 (42.35), import 38.94 (38.89),
 pay 7.83 (7.80), print 16.52 (16.49), evidence 9.21 (9.18); the rest within
 0.05 KB.
