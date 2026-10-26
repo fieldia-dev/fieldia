@@ -5,9 +5,10 @@ import { coreData } from '../core-data.mjs';
 /** The defaults that changed between formats, with what keeps the old way: @fieldia/core's own list. */
 const { DEFAULT_CHANGES } = await coreData('libs/core/src/lib/format/default-changes.ts');
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const defaultsTable = `<table><thead><tr><th scope="col">Format</th><th scope="col">What a page does now</th><th scope="col">What it did before</th><th scope="col">To keep the old way</th></tr></thead><tbody>${DEFAULT_CHANGES.map(
+// Wider than a phone, it scrolls on its own, by keyboard too.
+const defaultsTable = `<div class="table-scroll" tabindex="0" role="region" aria-label="The defaults that changed between formats"><table><thead><tr><th scope="col">Format</th><th scope="col">What a page does now</th><th scope="col">What it did before</th><th scope="col">To keep the old way</th></tr></thead><tbody>${DEFAULT_CHANGES.map(
   (change) => `<tr><td>${change.format} (Fieldia ${change.release})</td><td>${escape(change.now)}</td><td>${escape(change.before)}</td><td>${change.keep ? escape(change.keep) : 'Nothing keeps it: a value the list no longer offers could be sent, which no list would take.'}</td></tr>`
-).join('')}</tbody></table>`;
+).join('')}</tbody></table></div>`;
 
 /** Fieldia's own icons, read from its source so this page never drifts from it. */
 const ICONS = [
