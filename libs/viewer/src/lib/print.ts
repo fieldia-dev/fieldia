@@ -41,6 +41,8 @@ export interface PrintContext {
   values(): Readonly<Values>;
   /** Every part drawn and brought up to date for paper: each tab not opened yet. */
   drawAll(): void;
+  /** Words said over the page, as a toast: the print part could not come, so the page prints as it is shown. */
+  say?: (message: string) => void;
 }
 
 /** A printout's own words, a line each (value-words.ts). */
@@ -169,8 +171,11 @@ function watchPrinting(doc: Document): void {
     waiting.add(doc);
     void loadPrint().then((part) => {
       waiting.delete(doc);
-      if (part) print(part);
-      else win.print();
+      if (part) return print(part);
+      // Never in silence: the page prints as it is on the screen, and says so.
+      const shown = [...forms].find((form) => form.context.doc === doc && form.context.root.isConnected);
+      shown?.context.say?.(shown.context.labels.printNotLoaded);
+      win.print();
     });
   });
   // The browser's own print before the part came: the plain look to its end; the part asked for, the next print whole.
@@ -229,8 +234,11 @@ export function paperFor(context: PrintContext): Paper {
         : loadPrint().then((part) => {
             giveLooks(true);
             if (form.look) return form.look.print();
-            // The part could not come (offline): the plain look, as the browser prints the page. Gone meanwhile: nothing.
-            if (!part && forms.has(form)) doc.defaultView?.print();
+            // The part could not come (offline): the plain look, as the browser prints the page, said. Gone meanwhile: nothing.
+            if (!part && forms.has(form)) {
+              context.say?.(context.labels.printNotLoaded);
+              doc.defaultView?.print();
+            }
             return undefined;
           }),
     destroy() {

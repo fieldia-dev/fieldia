@@ -140,7 +140,7 @@ export type FunctionsPart = typeof FunctionsModule;
 export const functionsPart: Part<FunctionsPart> = lazyPart('functions', () => import('./functions-part'));
 
 /** The key the functions part is asked by, as an app's function that asks is (`ExpressionEnv.answer`). */
-const PART_ASKED = 'fieldia:functions';
+export const PART_ASKED = 'fieldia:functions';
 
 /**
  * One of Fieldia's functions whose body is in the functions part. Before the part has come, a value worked out from it
@@ -158,10 +158,16 @@ function inPart(name: string, takes: readonly [number, number], check?: Expressi
  * form) — gives nothing meanwhile, the part asked for.
  */
 export function partComing(call: Call): null {
+  // Answered already for the record shown — the part could not come, said under what reads it until a save asks again:
+  // never asked for anew by each working out (each a request, each failure a rejection no one heard).
+  const kept = call.env.answer?.(PART_ASKED);
+  if (kept === 'asking') throw new Asking();
+  if (kept !== undefined) return null;
   const coming = functionsPart.load();
+  // Its failure the form's to say, as an app's function's that failed; nobody's where nothing can wait.
+  coming.catch(() => undefined);
   const asked = call.env.answer?.(PART_ASKED, coming);
   if (asked === 'asking') throw new Asking();
-  if (!call.env.answer) coming.catch(() => undefined);
   return null;
 }
 

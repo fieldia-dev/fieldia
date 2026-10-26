@@ -101,6 +101,46 @@ describe('<fieldia-form>', () => {
   });
 });
 
+describe('<fieldia-form> whose part cannot come', () => {
+  it('says in its place that its form could not be loaded — never an empty box — and tells fieldia-error; with one script tag, Retry draws it once it can come', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const offline = { now: true };
+      jest.doMock('./element-part', () => {
+        if (offline.now) throw new Error('offline');
+        return jest.requireActual('./element-part');
+      });
+      const { defineFieldiaForm: define } = await import('./element');
+      define('fieldia-form-offline');
+      const element = document.createElement('fieldia-form-offline') as FieldiaFormElement;
+      element.page = callBack;
+      element.source = createMemoryDataSource();
+      const heard: unknown[] = [];
+      element.addEventListener('fieldia-error', (event) => heard.push((event as CustomEvent).detail));
+      document.body.append(element);
+      await settled();
+      const said = element.querySelector('.fd-element-broken') as HTMLElement;
+      expect(said.textContent).toBe('This form could not be loaded.');
+      expect(said.getAttribute('role')).toBe('alert');
+      // An app's modules, kept failed by the browser for the page's life: no Retry that could not bring it.
+      expect(said.querySelector('button')).toBeNull();
+      expect(heard).toEqual([{ message: expect.any(String) }]);
+      element.remove();
+      // With one script tag, asked anew: Retry, the part come by then, draws the form in its place.
+      (await import('@fieldia/core')).partsComeByScriptTag();
+      document.body.append(element);
+      await settled();
+      const retry = element.querySelector('.fd-element-broken button') as HTMLButtonElement;
+      expect(retry.textContent).toBe('Retry');
+      offline.now = false;
+      retry.click();
+      for (let i = 0; i < 20 && !element.querySelector('.fd-form'); i++) await settled();
+      expect(element.querySelector('.fd-form [data-node="f-name"]')).not.toBeNull();
+      expect(element.querySelector('.fd-element-broken')).toBeNull();
+      jest.dontMock('./element-part');
+    });
+  });
+});
+
 describe('fieldia-embed.js', () => {
   it('places an iframe of the form page with what the tag and the link pass on, and grows it as the form tells', () => {
     window.history.replaceState(null, '', '/listing?utm_source=newsletter&agent=mona&token=secret');

@@ -1554,7 +1554,17 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // person's keys never written over by what an onchange, a step, the app or a line's dialog makes of their change —
 // held back and laid once the box is left (form.ts: `keepTyped`, `layHeldBack`) — 657 more, 582,884, to 569.3
 // (gzipped 190.13, inside its 190.2).
-const BUDGET_KB = 569.3;
+// The part-failure matrix (e2e/part-failures.spec.ts; the audits' R-H1, R-M13): a part that could not come is said,
+// never silent — so what says it is here, as what could not come cannot say it (tools/part-words.mjs). Under a field
+// whose box its part draws, the plain box kept, "Part of this field could not load, so it is shown plainly." and Retry
+// (widget-parts.ts `unloaded`, viewer.ts `partNote`); once over the page for any other part of it (viewer.ts
+// `partUnloaded`, the parts said in their own place in viewer-parts.ts); a record's related list whose list part never
+// came said in its place, never an empty box; Ctrl+Z's and printing's own words; a `<fieldia-form>` whose part never
+// came says its form could not be loaded, with Retry, never an empty box (element.ts, `formNotLoaded` now this
+// script's); a value worked out by a function whose part could not come said in the page's words, asked for once
+// (functions.ts, form.ts) — five sentences and their two notes' rules: 582,019 measured before, 584,573 after (+2,554),
+// to 570.9.
+const BUDGET_KB = 570.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1899,7 +1909,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // perf-lists 0, perf-form +2.95 (189.64), the words that come late +0.16 — 189.79, to 189.8.
 // 0.36 (p3-real-tests, F1), listed with the raw budget above: a refusal's words let go from the alert, 189.79 measured
 // before, 189.87 after; the box under the keys never written over, 190.13 — to 190.2.
-const GZIP_BUDGET_KB = 190.2;
+// The part-failure matrix (listed with the raw budget above): what says a part could not come — under a field, over the
+// page, as Ctrl+Z, printing and an element ask for one — every page's, as any page may meet a part that never came
+// (offline, a cache that kept an older fieldia.js beside a newer part): 189.79 measured before, 190.60 after (+0.81),
+// to 190.6.
+const GZIP_BUDGET_KB = 190.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2267,7 +2281,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 166.85 and 23.11, 167.26 and 23.17, to 167.3, inside 23.2; Urdu's 169.60 and 23.19, 169.98 and 23.24, to 170.0 and
 // 23.3; Spanish's 58.29 and 18.21, 58.39 and 18.26, to 58.4, inside 18.3. Its English is the list part's alone
 // (tools/part-words.mjs): fieldia.js the same.
-const ADD_ON_BUDGET_KB = { ar: [134.4, 21.6], de: [60.3, 18.5], fr: [61.2, 18.5], tr: [68.3, 18.9], fa: [167.3, 23.2], ur: [170.0, 23.3], es: [58.4, 18.3] };
+// The part-failure matrix: a part that could not come said in every add-on — under a field, over the page, Undo's and
+// printing's, a value a function could not work out (the words machine-assisted, not yet reviewed by a native speaker) —
+// Arabic's 135.43 and 21.66 after, to 135.5 and 21.7; German's 60.67 and 18.57, to 60.7 and 18.6; French's 61.66 and
+// 18.56, to 61.7 and 18.6; Turkish's 68.70 and 18.90, inside 68.7, to 19.0; Persian's 168.57 and 23.29, to 168.6 and
+// 23.3; Urdu's 171.37 and 23.39, to 171.4 and 23.4; Spanish's 58.80 and 18.35, inside 58.8, to 18.4.
+const ADD_ON_BUDGET_KB = { ar: [135.5, 21.7], de: [60.7, 18.6], fr: [61.7, 18.6], tr: [68.7, 19.0], fa: [168.6, 23.3], ur: [171.4, 23.4], es: [58.8, 18.4] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

@@ -89,7 +89,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import type { LimitsKit } from './limits';
@@ -922,7 +922,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         label.append(mark);
       }
       // How it waits — a link's suggestions, its choices from the app — its own `options.loading` over the page's.
-      const context: WidgetContext = { form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report, loading: loadingOver(loading, node.options?.['loading'] as PageLoading | undefined) };
+      const context: WidgetContext = { form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report, loading: loadingOver(loading, node.options?.['loading'] as PageLoading | undefined), unloaded: (part, retry) => partNote(part, retry) };
       // Choices whose words show the answers given follow them, as the answers part draws them.
       const draw = (own: WidgetContext) => createWidget(own, options.widgets);
       const widget = answersPart.loaded?.wordedWidget(context, draw) ?? draw(context);
@@ -1051,6 +1051,31 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
       const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
       wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
+      /** What asks again for each part of its box that could not come, as Retry is pressed. */
+      const retries = new Set<() => Promise<boolean>>();
+      let unloadedNote: HTMLElement | null = null;
+      /**
+       * A part of its box that could not come: the plain box stays, and works; said under it, before its error — "Part
+       * of this field could not load, so it is shown plainly." — with Retry where asking again can bring it (every part
+       * of it that failed asked again, each box taking its part's place as it comes, what was typed in it kept), else how
+       * to. Said again where one fails again.
+       */
+      function partNote(part: Part, retry: () => Promise<boolean>): void {
+        retries.add(retry);
+        if (!unloadedNote) {
+          const again = part.asksAgain ? el('button', { type: 'button', class: 'fd-button fd-button-link fd-retry' }, labels.retry) : null;
+          const note = el('div', { class: 'fd-part-unloaded', role: 'status' }, labels.partPlainField, ' ', again ?? againWords(part));
+          again?.addEventListener('click', () => {
+            note.hidden = true;
+            const asked = [...retries];
+            retries.clear();
+            for (const one of asked) void one();
+          });
+          error.before(note);
+          unloadedNote = note;
+        }
+        unloadedNote.hidden = false;
+      }
       // AI help's tools under its box, and the place a value proposed for it is said.
       if (scope.root) assistKit?.field(node, wrapper, widget.element);
       // Read-only, as words in place of the box, when the page draws them so.
@@ -1823,9 +1848,24 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       };
       watch((state) => part?.update(state));
       cleanups.push(() => part?.destroy());
-      // The part has come; where it could not, it is asked for again.
+      // The part has come; where it could not, it is asked for again — and where it cannot come again, said in the list's
+      // place, never an empty box: the list's own words, with Retry where asking again can bring it (else how to).
+      const bring = () =>
+        void listPart.load().then(
+          (module) => gone || take(module),
+          () => {
+            if (gone) return;
+            const retry = listPart.asksAgain ? el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.retry) : null;
+            const failed = el('p', { class: 'fd-list-failed', role: 'alert' }, labels.loadFailed, ' ', retry ?? againWords(listPart));
+            retry?.addEventListener('click', () => {
+              failed.remove();
+              bring();
+            });
+            box.append(failed);
+          }
+        );
       if (listPart.loaded) take(listPart.loaded);
-      else void listPart.load().then((module) => gone || take(module), () => undefined);
+      else bring();
       hideWhen(box, node.id);
       return box;
     }
@@ -2090,6 +2130,26 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const bannerRetry = el('button', { type: 'button', class: 'fd-button fd-retry' }, labels.retry);
   bannerRetry.addEventListener('click', () => void submitOrSave());
   const banner = el('div', { class: 'fd-banner fd-tone-warning', role: 'alert', hidden: '' }, el('span', { class: 'fd-banner-text' }, labels.offline), bannerRetry);
+  /**
+   * What tells a person to try again where a part could not come: Try again where asking anew can bring it (the one-tag
+   * script's parts), else a reload (an app's modules, which the browser keeps failed for the page's life) — and for what
+   * is drawn once with the page (null), a reload too.
+   */
+  const againWords = (part: Part | null) => (options.messages ?? MESSAGES[locale] ?? MESSAGES.en)[part?.asksAgain ? 'guardTryAgain' : 'guardReload'];
+  /**
+   * A part of the page that could not come (offline, or not the file its fieldia.js was built with) and has no place of
+   * its own to say so — a record's head, AI help, templates, a list's cards, columns or filter bar, a send's steps drawn
+   * with the page, possible duplicates, a list's saved views, a page's own look (its theme, the quiet skin, a wait's
+   * shapes): the page drawn plainly without it, which works, and said once over it, with a reload to try again (what it
+   * would have drawn is drawn as the page is, once). A field's own box says so under the field (`unloaded`), the list in
+   * its place, and a send a part guards as it is refused.
+   */
+  const partsNotice = el('div', { class: 'fd-parts-unloaded', role: 'status', hidden: '' });
+  function partUnloaded(): void {
+    if (gone || !partsNotice.hidden) return;
+    partsNotice.replaceChildren(el('span', { class: 'fd-banner-text' }, `${labels.partPlainPage} ${againWords(null)}`));
+    partsNotice.hidden = false;
+  }
   // A record that could not be loaded is said in its place, at the top of the form, with a Retry of its own — the record
   // asked for again, never a save: the record's wait's failure (below), in the words of `state.loadProblem`. Until a
   // record's first load ends well its parts are inert (its record bar, with the pager, stays live): nothing typed or
@@ -2145,8 +2205,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         if (gone) return;
         watching = part.watchDuplicates({ form, page, root, doc, el, labels, locale, tag, icons: options.icons, preferences, fill, say: (message, tone) => actionHost.say(message, tone), editable: () => !locked });
       },
-      // A part that could not come: nothing is said, as without the source's duplicates.
-      () => undefined
+      // A part that could not come: the page works as without the source's duplicates, and says part of it could not load.
+      () => partUnloaded()
     );
     cleanups.push(() => watching?.destroy());
   }
@@ -2632,7 +2692,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const layout = el('div', { class: 'fd-sheet-layout' }, card);
     if (node.attachmentPreview) {
       // Beside the sheet on a wide form, the side panel then under the sheet; under the sheet on a narrow one.
-      const preview = attachmentPreview({ doc, el, form, page, node: node.attachmentPreview, dataSource, labels, fill });
+      const preview = attachmentPreview({ doc, el, form, page, node: node.attachmentPreview, dataSource, labels, fill, unloaded: () => partUnloaded() });
       layout.classList.add('fd-has-preview');
       layout.append(preview.element);
       updaters.push(preview.update);
@@ -2825,6 +2885,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         ...newListRecord(),
         // An export's end said, Edit's question asked and its value asked in a dialog, as the page's own steps are.
         say: (message, tone) => actionHost.say(message, tone),
+        // Its saved views' part that could not come: said over the page.
+        unloaded: partUnloaded,
         ask: (message, how) => actionHost.ask(message, how),
         editValues: (request) => dialogs.editValues(request),
         // A phone column's call and WhatsApp links, in the phone field's own words.
@@ -2855,7 +2917,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     questions = body;
     // Over the record's sections where no sheet placed it under its alerts.
     const band = approvalBand && !approvalBand.parentElement ? [approvalBand] : [];
-    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), banner, ...(limitsKit?.before ?? []), ...joins.flatMap((join) => join.before ?? []), ...safety.elements, draft, ...band, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...joins.flatMap((join) => join.after ?? []), ...(limitsKit?.after ?? [])];
+    const drawnParts = [...(bar ? [bar] : []), ...(head ? [head] : []), partsNotice, banner, ...(limitsKit?.before ?? []), ...joins.flatMap((join) => join.before ?? []), ...safety.elements, draft, ...band, ...(assistKit && !assistKit.bar.parentElement ? [assistKit.bar] : []), body, ...joins.flatMap((join) => join.after ?? []), ...(limitsKit?.after ?? [])];
     // Before the printout's footer where it is in already (the page drawn once its parts came): the footer stays last.
     const end = content.querySelector(':scope > .fd-print-end');
     if (end) end.before(...drawnParts);
@@ -2936,6 +2998,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // The viewer's own parts made before the page's language's words came: in them now, as the page is drawn.
       if (words) inOwnWords(ownParts(), locale);
       drawPage();
+      // A part that could not come, with no place of its own to say so: said over the page.
+      if (awaited.some((part) => !part.loaded && !SAID_IN_PLACE.has(part))) partUnloaded();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
       placeStatus();
       root.removeAttribute('aria-busy');
@@ -2952,7 +3016,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // A theme or the quiet skin the app gives, not the page, is worn as its part comes, the page drawn meanwhile
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
-  const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => undefined) : drawn;
+  const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => void (worn.some((part) => !part.loaded) && partUnloaded())) : drawn;
   // On paper, the app's logo and words, the record's title and the day over the page, its footer under it — its look
   // the print part's, as a person shows they mean to print (print.ts).
   const paper = paperFor({
@@ -2970,6 +3034,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // Each tabs' own drawing may draw tabs inside its own, which join the list as they come.
       for (const draw of printers) draw();
     },
+    say: (message) => actionHost.say(message, 'warning'),
   });
   cleanups.push(() => paper.destroy());
   // Its footer the content's last part: on paper the footer of the table the content is, under every sheet.
@@ -3115,7 +3180,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     };
     const take = (redo: boolean, written: () => void) => {
       if (undoPart.loaded) return step(undoPart.loaded, redo, written);
-      void undoPart.load().then((part) => gone || step(part, redo, written), () => undefined);
+      // A key whose part could not come takes back nothing: said, never silent — pressed again, it is asked for anew.
+      void undoPart.load().then((part) => gone || step(part, redo, written), () => gone || actionHost.say(`${labels.undoNotLoaded} ${againWords(undoPart)}`, 'warning'));
       return true;
     };
     root.addEventListener(

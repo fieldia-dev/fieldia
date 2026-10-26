@@ -157,6 +157,11 @@ export interface Messages {
   /** A value worked out from an app's function that asks its server: still asked, and its answer not come (`{problem}`, the app's words). */
   stillWorkedOut: string;
   notWorkedOut: string;
+  /**
+   * Why a value worked out by one of Fieldia's functions in the functions part was not (`{problem}` of `notWorkedOut`):
+   * the part could not come — offline, or not the file its fieldia.js was built with.
+   */
+  partNotLoaded: string;
   /** A choice taken out of an answer because a change of other answers no longer offers it: `{name}`, its label; several (`notOfferedNowMany`), their labels joined. */
   notOfferedNow: string;
   notOfferedNowMany: string;
@@ -344,6 +349,7 @@ const en: Messages = {
   patternBroken: 'The pattern of {label} is not a valid pattern: {problem}',
   stillWorkedOut: '{label} is still being worked out',
   notWorkedOut: '{label} could not be worked out: {problem}',
+  partNotLoaded: 'part of this page could not load',
   notOfferedNow: '{name} is no longer offered, so it was taken out',
   notOfferedNowMany: '{name} are no longer offered, so they were taken out',
   formOpens: 'This form opens on {when}.',

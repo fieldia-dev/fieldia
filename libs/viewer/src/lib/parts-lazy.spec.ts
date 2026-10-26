@@ -656,8 +656,102 @@ describe('a part that cannot come', () => {
       expect(host.querySelector('.fd-head')).toBeNull();
       expect(host.querySelector('.fd-sheet-page')).not.toBeNull();
       expect(host.querySelector('[data-node="f-notes"]')).not.toBeNull();
+      // Said once over the page: the head has no place of its own to say it. An app's modules, kept failed by the
+      // browser for the page's life: a reload brings it.
+      const said = host.querySelector('.fd-parts-unloaded') as HTMLElement;
+      expect(said.hidden).toBe(false);
+      expect(said.getAttribute('role')).toBe('status');
+      expect(said.textContent).toBe('Part of this page could not load, so it is shown plainly. Reload the page and try again.');
+      expect(host.querySelectorAll('.fd-parts-unloaded')).toHaveLength(1);
       handle.destroy();
       jest.dontMock('./head-part');
+    });
+  });
+
+  it('says nothing over a page whose parts all came', async () => {
+    const { host } = mount(PLAIN);
+    await until(() => host.querySelector('[data-node="f-name"]'));
+    expect((host.querySelector('.fd-parts-unloaded') as HTMLElement).hidden).toBe(true);
+  });
+
+  /** A date field's page in a viewer of its own, whose date part cannot come while `offline.now` holds. */
+  async function offlineDate(byScriptTag: boolean) {
+    const offline = { now: true };
+    jest.doMock('../../../widgets/src/lib/date-part', () => {
+      if (offline.now) throw new Error('offline');
+      return jest.requireActual('../../../widgets/src/lib/date-part');
+    });
+    if (byScriptTag) (await import('@fieldia/core')).partsComeByScriptTag();
+    const { mountViewer: fresh } = await import('./viewer');
+    const { datePart: freshDate } = await import('@fieldia/widgets');
+    const host = document.createElement('div');
+    document.body.append(host);
+    const shown = page(sections({ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-due', field: 'due' }), { name: { type: 'char', label: 'Name' }, due: { type: 'date', label: 'Due' } });
+    const handle = fresh(host, { page: shown, dataSource: createMemoryDataSource() });
+    handles.push(handle);
+    await handle.drawn;
+    const field = host.querySelector('[data-node="f-due"]') as HTMLElement;
+    await until(() => field.querySelector('.fd-part-unloaded'));
+    return { offline, host, field, freshDate, note: field.querySelector('.fd-part-unloaded') as HTMLElement };
+  }
+
+  it('leaves a field whose box it draws plain, and working, and says so under it — a reload, where asking again cannot bring it', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { host, field, freshDate, note } = await offlineDate(false);
+      expect(freshDate.loaded).toBeUndefined();
+      // The plain box, which works; said under it, before its error, and nowhere over the page (the field says it).
+      const box = field.querySelector('input') as HTMLInputElement;
+      expect(box.classList.contains('fd-date')).toBe(true);
+      expect(note.textContent).toBe('Part of this field could not load, so it is shown plainly. Reload the page and try again.');
+      expect(note.getAttribute('role')).toBe('status');
+      expect(note.nextElementSibling?.classList.contains('fd-error')).toBe(true);
+      expect(note.querySelector('button')).toBeNull();
+      expect((host.querySelector('.fd-parts-unloaded') as HTMLElement).hidden).toBe(true);
+      jest.dontMock('../../../widgets/src/lib/date-part');
+    });
+  });
+
+  it('with one script tag, Retry under the field asks for its part again: its box in the plain one’s place, the note gone', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { offline, field, freshDate, note } = await offlineDate(true);
+      const retry = note.querySelector('button') as HTMLButtonElement;
+      expect(note.textContent).toBe('Part of this field could not load, so it is shown plainly. Retry');
+      // Still offline: said again.
+      retry.click();
+      expect(note.hidden).toBe(true);
+      await until(() => !note.hidden);
+      expect(field.querySelectorAll('.fd-part-unloaded')).toHaveLength(1);
+      // Back online: the date part's box in place, said no more.
+      offline.now = false;
+      retry.click();
+      await until(() => freshDate.loaded && field.querySelector('.fd-date-pick'));
+      expect(note.hidden).toBe(true);
+      jest.dontMock('../../../widgets/src/lib/date-part');
+    });
+  });
+
+  it('Ctrl+Z whose undo part cannot come takes back nothing, and says so', async () => {
+    await jest.isolateModulesAsync(async () => {
+      jest.doMock('./undo-part', () => {
+        throw new Error('offline');
+      });
+      const { mountViewer: fresh } = await import('./viewer');
+      const host = document.createElement('div');
+      document.body.append(host);
+      const handle = fresh(host, { page: PLAIN, dataSource: createMemoryDataSource() });
+      handles.push(handle);
+      await handle.drawn;
+      const box = host.querySelector('[data-node="f-name"] input') as HTMLInputElement;
+      box.focus();
+      box.value = 'Nile';
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      box.dispatchEvent(new Event('change', { bubbles: true }));
+      box.blur();
+      host.querySelector<HTMLElement>('.fd-form')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', code: 'KeyZ', ctrlKey: true, bubbles: true }));
+      await until(() => host.querySelector('.fd-says')?.textContent?.includes('Undo could not load.'));
+      expect(host.querySelector('.fd-says .fd-say')?.textContent).toContain('Undo could not load. Reload the page and try again.');
+      expect(box.value).toBe('Nile');
+      jest.dontMock('./undo-part');
     });
   });
 
@@ -712,6 +806,32 @@ describe('a part that cannot come', () => {
       // The app's reload is the list's own now.
       await handle.reload();
       expect(host.querySelectorAll('.fd-list-table tbody tr.fd-list-row')).toHaveLength(2);
+      jest.dontMock('./list-part');
+    });
+  });
+
+  it('leaves a record’s related list said in its place, never an empty box: the records could not be loaded, and how to try again', async () => {
+    await jest.isolateModulesAsync(async () => {
+      jest.doMock('./list-part', () => {
+        throw new Error('offline');
+      });
+      const { mountViewer: fresh } = await import('./viewer');
+      const host = document.createElement('div');
+      document.body.append(host);
+      const shown = page(
+        sections({ type: 'field', id: 'f-name', field: 'name' }, { type: 'related', id: 'r-invoices', title: 'Invoices', model: 'invoice', field: 'partner_id', fields: { name: { type: 'char', label: 'Number' }, partner_id: { type: 'many2one', label: 'Customer', relation: 'x' } }, columns: ['name'] })
+      );
+      const handle = fresh(host, { page: shown, dataSource: createMemoryDataSource({ records: { x: { 1: { name: 'Nile Traders' } }, invoice: { 1: { name: 'INV/1', partner_id: 1 } } } }), recordId: 1 });
+      handles.push(handle);
+      await handle.drawn;
+      const box = host.querySelector('[data-node="r-invoices"]') as HTMLElement;
+      await until(() => box.querySelector('.fd-list-failed'));
+      const failed = box.querySelector('.fd-list-failed') as HTMLElement;
+      expect(failed.getAttribute('role')).toBe('alert');
+      // An app's modules, kept failed for the page's life: a reload brings it, no Retry that could not.
+      expect(failed.textContent).toBe('Could not load the records. Reload the page and try again.');
+      // Said in its place: not over the page too.
+      expect((host.querySelector('.fd-parts-unloaded') as HTMLElement).hidden).toBe(true);
       jest.dontMock('./list-part');
     });
   });

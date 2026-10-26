@@ -97,6 +97,11 @@ export interface ListContext {
   /** Words said over the page, as a toast: an export done, or why it was not. Unsaid without it. */
   say?: (message: string, tone: Tone) => void;
   /**
+   * Told when a part the list draws from as it opens could not come (offline, or not the file its fieldia.js was built
+   * with) — its saved views: the list works without it, and the page says part of it could not load.
+   */
+  unloaded?: () => void;
+  /**
    * A question answered Yes or No, as a button's confirmation asks it: "Update 24 records?", `how.yes` what Yes does
    * ("Update"). Without it, Edit is not offered.
    */
@@ -1362,7 +1367,10 @@ export function listView(context: ListContext): ListView {
           part.installViewStyles(doc);
           return part.savedViews({ page, node, model, source: viewSource, el, labels, fill, doc, state: viewState, put: putView, ...(context.icons ? { icons: context.icons } : {}), ...(context.ask ? { ask: context.ask } : {}), ...(context.say ? { say: context.say } : {}) });
         },
-        () => null
+        () => {
+          context.unloaded?.();
+          return null;
+        }
       )
     : null;
   // The search bar, or a keyword and a list of values for each of a few fields.

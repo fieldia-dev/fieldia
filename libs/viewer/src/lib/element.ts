@@ -1,4 +1,5 @@
 import type { DataSource, Page } from '@fieldia/core';
+import { ownLocale, viewerWords } from './labels';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 import { elementPart } from './viewer-parts';
 export { elementPart, type ElementPart } from './viewer-parts';
@@ -35,14 +36,45 @@ export function defineFieldiaForm(name = 'fieldia-form', registry: CustomElement
       name,
       class extends HTMLElement {
         connectedCallback() {
-          elementPart.load().then(
-            (part) => part.connect(this as unknown as FieldiaFormElement, mountViewer),
-            () => this.dispatchEvent(new Event('fieldia-error', { bubbles: true }))
-          );
+          drawFrom(this);
         }
         disconnectedCallback() {
           elementPart.loaded?.disconnect(this as unknown as FieldiaFormElement);
         }
       }
     );
+}
+
+/**
+ * An element's part asked for, and its form drawn from it. Where it cannot come (offline, or not the file its fieldia.js
+ * was built with), the element is never an empty box: it says in its place that its form could not be loaded — in the
+ * main script's words, as what could not come cannot say it — with Retry where asking again can bring it, and tells
+ * `fieldia-error` with why.
+ */
+function drawFrom(element: HTMLElement): void {
+  elementPart.load().then(
+    (part) => part.connect(element as FieldiaFormElement, mountViewer),
+    (error: unknown) => {
+      if (!element.isConnected) return;
+      const doc = element.ownerDocument;
+      const words = viewerWords(ownLocale(element.getAttribute('locale') ?? undefined), (element as Partial<FieldiaFormElement>).options?.labels);
+      const box = doc.createElement('p');
+      box.className = 'fd-element-broken';
+      box.setAttribute('role', 'alert');
+      box.append(words.formNotLoaded);
+      if (elementPart.asksAgain) {
+        const retry = doc.createElement('button');
+        retry.type = 'button';
+        retry.className = 'fd-button fd-button-link';
+        retry.textContent = words.retry;
+        retry.addEventListener('click', () => {
+          box.remove();
+          drawFrom(element);
+        });
+        box.append(' ', retry);
+      }
+      element.replaceChildren(box);
+      element.dispatchEvent(new CustomEvent('fieldia-error', { bubbles: true, composed: true, detail: { message: error instanceof Error ? error.message : String(error) } }));
+    }
+  );
 }

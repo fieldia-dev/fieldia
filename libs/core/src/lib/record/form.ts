@@ -10,7 +10,7 @@ import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
-import { callsPartFunctions, functionsPart, steadyCalls, type Answered, type ExpressionEnv, type FunctionTable } from '../expression/functions';
+import { callsPartFunctions, functionsPart, PART_ASKED, steadyCalls, type Answered, type ExpressionEnv, type FunctionTable } from '../expression/functions';
 import { functionTable, type AppFunctions } from '../expression/app-functions';
 import { dayIn, ownZone } from './zones';
 import { checkProperties, checkValue } from './check';
@@ -1164,7 +1164,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     };
     const going: Promise<void> = Promise.resolve(asked).then(
       (value) => land({ value: value === undefined ? null : value }),
-      (error: unknown) => land({ value: null, failed: error instanceof Error ? error.message : String(error) })
+      // The functions part that could not come: said in the page's words, never the loader's (a file's address, a hash).
+      (error: unknown) => land({ value: null, failed: key === PART_ASKED ? messages.partNotLoaded : error instanceof Error ? error.message : String(error) })
     );
     asking.add(going);
     track(going);

@@ -87,6 +87,7 @@ export const ar: Messages = {
   patternBroken: 'نمط {label} غير صالح: {problem}',
   stillWorkedOut: 'ما زال {label} قيد الحساب',
   notWorkedOut: 'تعذّر حساب {label}: {problem}',
+  partNotLoaded: 'تعذّر تحميل جزء من هذه الصفحة',
   notOfferedNow: '{name} لم يعد متاحًا، فأُزيل',
   notOfferedNowMany: '{name} لم تعد متاحة، فأُزيلت',
   formOpens: 'يُفتح هذا النموذج في {when}.',

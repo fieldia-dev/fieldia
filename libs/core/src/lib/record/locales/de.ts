@@ -89,6 +89,7 @@ export const de: Messages = {
   patternBroken: 'Das Muster von {label} ist ungültig: {problem}',
   stillWorkedOut: '{label} wird noch berechnet',
   notWorkedOut: '{label} konnte nicht berechnet werden: {problem}',
+  partNotLoaded: 'ein Teil dieser Seite konnte nicht geladen werden',
   notOfferedNow: '{name} steht nicht mehr zur Wahl und wurde entfernt',
   notOfferedNowMany: '{name} stehen nicht mehr zur Wahl und wurden entfernt',
   formOpens: 'Dieses Formular öffnet am {when}.',

@@ -92,6 +92,7 @@ export const es: Messages = {
   patternBroken: 'El patrón de {label} no es válido: {problem}',
   stillWorkedOut: '{label} todavía se está calculando',
   notWorkedOut: 'No se pudo calcular {label}: {problem}',
+  partNotLoaded: 'parte de esta página no se pudo cargar',
   notOfferedNow: '{name} ya no está disponible, por lo que se quitó',
   notOfferedNowMany: '{name} ya no están disponibles, por lo que se quitaron',
   formOpens: 'Este formulario se abre el {when}.',

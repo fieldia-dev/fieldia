@@ -283,7 +283,8 @@ function goQuietly(box: Element): () => void {
  * before its part came, by something that did not wait for it as the viewer does — it is drawn by `plain` and asks for
  * the part; when that comes, the part's widget takes the plain one's place in the page, with the last state the plain
  * one was given (the form's unread text with it), and the focus if the plain one had it. A part that cannot come leaves
- * the plain widget, which works.
+ * the plain widget, which works, and tells the field so (`WidgetContext.unloaded`), with a way to ask for it again: as
+ * it then comes, its widget takes the plain one's place just the same, what was typed in the plain one with it.
  *
  * Text typed in the plain one's box and not yet read is never read as it goes, nor dropped: the part's widget takes it
  * as typed (`takeTyped`) — "2." stays "2.", never 2 made "2" under the next key — or, where it cannot take it as it
@@ -316,51 +317,71 @@ export function partWidget<M>(part: Part<M>, context: WidgetContext, real: (modu
   standIn.addEventListener('change', read, true);
   standIn.addEventListener('focusout', read, true);
 
-  part.load().then(
-    (module) => {
-      if (gone) return;
-      const was = current;
-      const next = real(module);
-      const active = doc.activeElement;
-      const focused = !!active && was.element.contains(active);
-      const box = focused && active === typedIn ? typedIn : null;
-      // As typed: keys the plain one's guard holds after a refused one are part of it ("1x" where the box shows "1"), the
-      // caret after them.
-      const text = box ? (was.typedText?.() ?? box.value) : '';
-      const [start, end] = box && text === box.value ? [box.selectionStart ?? text.length, box.selectionEnd ?? text.length] : [text.length, text.length];
-      const typed: TypedText | null = box ? { text, start, end, entered } : null;
-      current = next;
-      if (typed && box) {
-        // The part's widget beside the plain one, then asked to take what was typed: the plain one's box, losing the focus
-        // to it, reads nothing as it goes.
-        was.element.before(next.element);
-        if (last) next.update(last);
-        const loud = goQuietly(box);
-        if (next.takeTyped?.(typed)) {
-          was.element.remove();
-          was.destroy?.();
-          return;
-        }
-        // Not as it stands: the plain one's box stays where the person types, after the part's widget, until it is left —
-        // it reads what it holds then, as it would have, and goes.
-        loud();
-        lingering = was;
-        box.addEventListener('focusout', () => queueMicrotask(() => {
-          if (lingering !== was) return;
-          lingering = null;
-          was.element.remove();
-          was.destroy?.();
-        }), { once: true });
+  /** Whether the part's widget has taken the plain one's place. */
+  let came = false;
+  /**
+   * The part asked for, its widget put in the plain one's place as it comes: true once it has; false where it could not
+   * come. A part that cannot come leaves the plain widget, which works — and the field is told (`unloaded`), so it says
+   * that part of it could not load, with a way to ask again (this, once more) where asking again can bring it.
+   */
+  const bring = (): Promise<boolean> =>
+    came || gone
+      ? Promise.resolve(came)
+      : part.load().then(
+          (module) => {
+            if (gone || came) return came;
+            came = true;
+            swap(module);
+            return true;
+          },
+          () => {
+            if (!gone) context.unloaded?.(part, bring);
+            return false;
+          }
+        );
+  void bring();
+
+  function swap(module: M): void {
+    const was = current;
+    const next = real(module);
+    const active = doc.activeElement;
+    const focused = !!active && was.element.contains(active);
+    const box = focused && active === typedIn ? typedIn : null;
+    // As typed: keys the plain one's guard holds after a refused one are part of it ("1x" where the box shows "1"), the
+    // caret after them.
+    const text = box ? (was.typedText?.() ?? box.value) : '';
+    const [start, end] = box && text === box.value ? [box.selectionStart ?? text.length, box.selectionEnd ?? text.length] : [text.length, text.length];
+    const typed: TypedText | null = box ? { text, start, end, entered } : null;
+    current = next;
+    if (typed && box) {
+      // The part's widget beside the plain one, then asked to take what was typed: the plain one's box, losing the focus
+      // to it, reads nothing as it goes.
+      was.element.before(next.element);
+      if (last) next.update(last);
+      const loud = goQuietly(box);
+      if (next.takeTyped?.(typed)) {
+        was.element.remove();
+        was.destroy?.();
         return;
       }
-      if (focused && active) goQuietly(active);
-      was.element.replaceWith(next.element);
-      was.destroy?.();
-      if (last) next.update(last);
-      if (focused) next.focus();
-    },
-    () => undefined
-  );
+      // Not as it stands: the plain one's box stays where the person types, after the part's widget, until it is left —
+      // it reads what it holds then, as it would have, and goes.
+      loud();
+      lingering = was;
+      box.addEventListener('focusout', () => queueMicrotask(() => {
+        if (lingering !== was) return;
+        lingering = null;
+        was.element.remove();
+        was.destroy?.();
+      }), { once: true });
+      return;
+    }
+    if (focused && active) goQuietly(active);
+    was.element.replaceWith(next.element);
+    was.destroy?.();
+    if (last) next.update(last);
+    if (focused) next.focus();
+  }
   return {
     get element() {
       return current.element;

@@ -184,6 +184,13 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  */
 const EVERY_PART: readonly Part[] = [loadingPart, headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart];
 
+/**
+ * The parts a page draws from that say in their own place that they could not come: those that draw a field's own box
+ * (each through `partWidget`: the field drawn plainly, and says so under itself, with Retry) and the list part (in the
+ * list's place, with Retry). What says a page's part could not load, once over the page, leaves them out.
+ */
+export const SAID_IN_PLACE: ReadonlySet<Part> = new Set<Part>([listPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart]);
+
 /** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
   const only = node.children.length === 1 ? node.children[0] : undefined;

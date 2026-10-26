@@ -99,6 +99,7 @@ export const ur: Messages = {
   patternBroken: '{label} کا پیٹرن درست نہیں ہے: {problem}',
   stillWorkedOut: '{label} کا حساب ابھی جاری ہے',
   notWorkedOut: '{label} کا حساب نہیں لگایا جا سکا: {problem}',
+  partNotLoaded: 'اس صفحے کا کچھ حصہ لوڈ نہیں ہو سکا',
   notOfferedNow: '{name} اب دستیاب نہیں، اس لیے اسے ہٹا دیا گیا',
   notOfferedNowMany: '{name} اب دستیاب نہیں، اس لیے انہیں ہٹا دیا گیا',
   formOpens: 'یہ فارم {when} کو کھلے گا۔',

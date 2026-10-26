@@ -13,6 +13,8 @@ export interface PreviewContext {
   dataSource: DataSource | undefined;
   labels: ViewerLabels;
   fill(template: string, values: Record<string, string | number>): string;
+  /** Told when the files part, which shows the files, could not come: the page says part of it could not load. */
+  unloaded?: () => void;
 }
 
 const filesOf = (value: unknown): FileValue[] => (Array.isArray(value) ? (value as FileValue[]) : value ? [value as FileValue] : []).filter((file) => file && typeof file === 'object' && 'name' in file);
@@ -78,7 +80,7 @@ export function attachmentPreview(context: PreviewContext): { element: HTMLEleme
 
   /**
    * The files a browser shows itself — a picture or a PDF, by the formats Fieldia shows, never HTML named .pdf — once
-   * the files part has come; none, said by nothing shown, where it cannot.
+   * the files part has come; none where it cannot, the page saying part of it could not load (`unloaded`).
    */
   const take = (found: FileValue[]) => {
     const mine = ++takes;
@@ -91,7 +93,10 @@ export function attachmentPreview(context: PreviewContext): { element: HTMLEleme
       show();
     };
     if (!found.length || filesPart.loaded) return shownBy(filesPart.loaded ?? null);
-    filesPart.load().then(shownBy, () => shownBy(null));
+    filesPart.load().then(shownBy, () => {
+      shownBy(null);
+      context.unloaded?.();
+    });
   };
   const show = () => setHidden(element, form.node('#preview').invisible || !files.length);
 
