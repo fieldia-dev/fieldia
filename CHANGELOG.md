@@ -53,14 +53,10 @@ one reader.
   those words is kept. 0.35.1 dropped any `{word}` from them.
 - A quiz question's `feedback` and a picture's `alt` in a pins widget's settings
   are words `translatePage` and `pageWords` go through, translated with the rest.
-- **A save of a record with nothing changed since its last answer sends
-  nothing** (0.34–0.35.1 sent it again, moving its version, so another person's
-  tab could see a conflict that was none). It says "Saved" at once, as before.
-  A save still goes when one is on its way (it joins it), for a new record with
-  nothing typed, after a save refused, with changes typed, set by the app,
-  answered by `onchange` or set aside by Reload, with a draft kept on the
-  server, and while files are on their way or failed to reach the store. A
-  record its own checks refuse is still checked, and its problems said.
+- **Ctrl+Enter pressed twice while a save is on its way is one save**, even
+  when an `onchange` answer that changed nothing lands between the presses.
+  0.34–0.35.1 took that answer for a change and sent a second save once the
+  first answered, moving the record's version.
 - Dependencies, patch releases only: zod 4.6.7, and the code editor's
   `@codemirror/language` 6.13.1, `@codemirror/legacy-modes` 6.5.5 and
   `@codemirror/view` 6.43.14.
@@ -79,17 +75,13 @@ Behaviour you may notice in an app's own tests:
   fields and layout as the page writes them.
 - `recordSentence` takes a sentence's own values as a fifth argument and fills
   them in the same pass as the page's words for its records.
-- `form.save()` on a stored record with nothing changed makes no source call:
-  it carries no key, runs no `beforeSave` or `afterSave` steps and says no
-  `save` event. A test that saves an unchanged record to have a save on its way
-  changes a value first.
 - New in `@fieldia/core`: `literalWords`, `literalPage`, and the reader's parts
   the packages draw with — `plainWords`, `plainPart`, `wordsRead`, `writtenPart`,
   `READ_WORDS`.
 
-**Size:** `fieldia.js` 578.6 KB, 193.6 gzipped (0.35.1: 576.6, 192.9): the one
+**Size:** `fieldia.js` 578.3 KB, 193.6 gzipped (0.35.1: 576.6, 192.9): the one
 reader, and every word read once where it is drawn, +1.6 KB, +0.62 gzipped; a
-save with nothing changed sending nothing +0.3, +0.08. Of
+save on its way joined by what its values hold +0.06, +0.06. Of
 the parts, raw: answers 4.41 (4.35), head 42.42 (42.35), import 38.94 (38.89),
 pay 7.83 (7.80), print 16.52 (16.49), evidence 9.21 (9.18); the rest within
 0.05 KB.
