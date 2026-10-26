@@ -3,7 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { DesignerWords } from './designer-words';
 import { segmented } from './panel-controls';
 import { formulaBox } from './rules-formula-box';
-import { formulaProblem } from './rules-formula';
+import { formulaProblem, literalOf } from './rules-formula';
 import type { SavedFormRef } from './saved-forms';
 import { shownTitle } from './saved-forms';
 import { SETTABLE, type StepPatch } from './steps-commands';
@@ -39,6 +39,28 @@ export interface StepSettings {
 }
 
 const focused = (node: Element) => node.ownerDocument.activeElement === node;
+
+/**
+ * What is typed in a step's Address as an address is typed — a scheme (`https:`, `mailto:`), or a path of this site
+ * (`/help`) — with no space and no quotes of both kinds in it: its words; null where it is a formula.
+ */
+export function addressWords(typed: string): string | null {
+  const words = typed.trim();
+  if (!words || /\s/.test(words) || /^['"]/.test(words) || (words.includes("'") && words.includes('"'))) return null;
+  return /^[a-z][a-z\d+.-]*:/i.test(words) || /^\/(?!\/)/.test(words) ? words : null;
+}
+
+/** An address's words as a formula holds them: in quotes it does not hold. */
+const quotedWords = (words: string) => (words.includes("'") ? `"${words}"` : `'${words}'`);
+
+/**
+ * Whether a button may open an address that starts so, as the page's checks read it (@fieldia/core's references.ts): a
+ * web, mail or phone address, or a path of this site — never a script, nor a page written as data.
+ */
+export function opensHere(words: string): boolean {
+  const scheme = /^([a-z][a-z\d+.-]*):/i.exec(words.replace(/[\t\n\r]/g, '').replace(/^[\0- ]+/, ''))?.[1].toLowerCase();
+  return !scheme || ['http', 'https', 'mailto', 'tel'].includes(scheme);
+}
 const ANOTHER = '#another';
 
 /** A field's words for a choice of fields: its label, or its name. */
@@ -108,6 +130,39 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     updates.push((step) => box.update(ctx.page(), String((step as unknown as Record<string, unknown>)[key] ?? '')));
   };
 
+  /**
+   * The address a step opens, typed as an address is — `https://example.com/portal`, `/help`, `mailto:…`, `tel:…` — kept
+   * as its words (the page stores them quoted), and shown back so; a formula where it is one (`'https://' + website`: a
+   * quote, a field's name, a sign). An address no button may open (`javascript:`, a page written as data), words or a
+   * formula's own first words, is said under the box in plain words, the typing kept and the page's address as it was
+   * (0.35.1: an address typed plainly was refused as a formula, and a quoted script took its step away with it).
+   */
+  const address = () => {
+    const box = formulaBox(el, {
+      words,
+      label: w.address,
+      placeholder: w.addressPlaceholder,
+      asWords: (typed) => addressWords(typed) !== null,
+      check: (page, typed) => {
+        const plain = addressWords(typed);
+        const opens = plain ?? /^\s*(['"])([\s\S]*?)\1/.exec(typed)?.[2] ?? null;
+        if (opens !== null && !opensHere(opens)) return { words: w.addressOnly, plain: true };
+        return plain !== null ? null : formulaProblem(page, typed, words, ctx.functions);
+      },
+      commit: (typed) => {
+        const plain = addressWords(typed);
+        ctx.change({ url: plain !== null ? quotedWords(plain) : typed }, true);
+      },
+    });
+    parts.push(row(el, w.address, box.element, box.problem));
+    firstIs(box.input);
+    updates.push((step) => {
+      const url = step.do === 'openUrl' ? step.url : '';
+      const words = literalOf(url)?.value;
+      box.update(ctx.page(), typeof words === 'string' && addressWords(words) === words ? words : url);
+    });
+  };
+
   switch (kind) {
     case 'open':
       openSettings();
@@ -157,7 +212,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       break;
     }
     case 'openUrl': {
-      formula(w.address, 'url', w.addressPlaceholder);
+      address();
       // A new tab is the default, so only "no" is written.
       const newTab = el('input', { type: 'checkbox', class: 'fd-check' }) as HTMLInputElement;
       newTab.addEventListener('change', () => ctx.change({ newTab: newTab.checked ? null : false }));

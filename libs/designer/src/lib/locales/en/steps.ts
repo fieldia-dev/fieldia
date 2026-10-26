@@ -167,7 +167,9 @@ export const steps = {
   needsAction: 'Type the action’s name.',
   needsAddress: 'Type the address it opens.',
   address: 'Address',
-  addressPlaceholder: "'https://' + website — type a field’s name, or @",
+  addressPlaceholder: "https://… as it is, or a formula: 'https://' + website — type a field’s name, or @",
+  /** An address a button may not open, said under its box (a script, a page written as data): the typing kept. */
+  addressOnly: 'Only a web, mail or phone address, or a page of this site, can open here',
   inNewTab: 'In a new tab',
   reloadHint: 'After the app changed the record on its server — say, a run of its action: the form shows it as it is now.',
   recordHint: 'Through the app’s data source when it can; otherwise the app’s action of the same name is run.',

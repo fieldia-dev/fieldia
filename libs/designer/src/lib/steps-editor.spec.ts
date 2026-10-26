@@ -189,6 +189,58 @@ describe('When clicked, on a body button', () => {
     expect(sayings(clicked(host)).at(-1)).toBe('Open the web address “https://portal.example/” + Customer, in this tab');
   });
 
+  it('takes an address typed as an owner types it as its words, and shows it back so (the walk of 0.35)', async () => {
+    const { designer } = await order();
+    designer.select('new-customer');
+    const { host } = mount(designer, { mode: 'advanced' });
+    button(clicked(host), 'Add a step')?.click();
+    pick_('Open a web address');
+    const address = field(clicked(host), 'Address') as HTMLInputElement;
+    typeAndLeave(address, 'https://example.com/portal');
+    address.dispatchEvent(new Event('change', { bubbles: true }));
+    // Kept as its words, quoted as a formula holds them: a button that opens it, never "“:” cannot be in a formula".
+    expect(pressed(designer).steps?.at(-1)).toEqual({ do: 'openUrl', url: "'https://example.com/portal'" });
+    expect((address.closest('.fd-answer-rule-field')?.querySelector('.fd-formula-problem') as HTMLElement).hidden).toBe(true);
+    expect(sayings(clicked(host)).at(-1)).toBe('Open the web address “https://example.com/portal”');
+    // Drawn again as the page changes, it reads as typed, never quoted; a path of this site, a mail address the same.
+    const newTab = [...clicked(host).querySelectorAll('label')].find((l) => l.textContent === 'In a new tab')?.querySelector('input') as HTMLInputElement;
+    newTab.click();
+    expect(address.value).toBe('https://example.com/portal');
+    for (const [typed, kept] of [['/help/portal', "'/help/portal'"], ['mailto:sales@homes.example', "'mailto:sales@homes.example'"], ["https://homes.example/?q=it's", '"https://homes.example/?q=it\'s"']]) {
+      typeAndLeave(address, typed);
+      expect(pressed(designer).steps?.at(-1)).toEqual({ do: 'openUrl', url: kept, newTab: false });
+      newTab.click();
+      newTab.click();
+      expect(address.value).toBe(typed);
+    }
+    // A formula is a formula, as before: quoted words and a field's name.
+    typeAndLeave(address, "'https://portal.example/' + customer");
+    expect(pressed(designer).steps?.at(-1)).toEqual({ do: 'openUrl', url: "'https://portal.example/' + customer", newTab: false });
+  });
+
+  it('says under the box, in plain words, an address no button may open — typed plainly or quoted — and keeps the typing and its step', async () => {
+    const { designer } = await order();
+    designer.select('new-customer');
+    const { host } = mount(designer, { mode: 'advanced' });
+    button(clicked(host), 'Add a step')?.click();
+    pick_('Open a web address');
+    const address = field(clicked(host), 'Address') as HTMLInputElement;
+    typeAndLeave(address, 'https://example.com/portal');
+    address.dispatchEvent(new Event('change', { bubbles: true }));
+    for (const typed of ['javascript:alert(document.domain)', "'javascript:alert(document.domain)'", " 'JavaScript:alert(1)' + customer", 'data:text/html,<b>hi</b>']) {
+      type(address, typed);
+      const problem = address.closest('.fd-answer-rule-field')?.querySelector('.fd-formula-problem') as HTMLElement;
+      expect(problem.hidden).toBe(false);
+      expect(problem.textContent).toBe('Only a web, mail or phone address, or a page of this site, can open here');
+      address.dispatchEvent(new Event('change', { bubbles: true }));
+      address.dispatchEvent(new Event('blur'));
+      // The step and the address it had stay; what was typed stays in the box.
+      expect(pressed(designer).steps?.at(-1)).toEqual({ do: 'openUrl', url: "'https://example.com/portal'" });
+      expect(address.value).toBe(typed);
+    }
+    expect(document.querySelector('.fd-refusal, [role="alert"].fd-banner')?.textContent ?? '').not.toContain('layout.buttons');
+  });
+
   it('moves a step with Alt and the arrows on its sentence, the cursor going with it', async () => {
     const { designer } = await order();
     designer.addStep({ press: 'new-customer' }, { do: 'check' });

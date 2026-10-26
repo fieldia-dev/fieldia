@@ -157,6 +157,7 @@ export const steps: DesignerWords['steps'] = {
   needsAddress: 'Escriba la dirección que abre.',
   address: 'Dirección',
   addressPlaceholder: "'https://' + sitio_web — escriba el nombre de un campo, o @",
+  addressOnly: 'Aquí solo puede abrirse una dirección web, de correo o de teléfono, o una página de este sitio',
   inNewTab: 'En una pestaña nueva',
   reloadHint: 'Después de que la aplicación haya cambiado el registro en su servidor — por ejemplo, al ejecutar una de sus acciones —, el formulario lo muestra tal como está ahora.',
   recordHint: 'A través de la fuente de datos de la aplicación cuando puede; si no, se ejecuta la acción de la aplicación con el mismo nombre.',

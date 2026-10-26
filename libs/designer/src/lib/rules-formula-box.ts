@@ -35,6 +35,8 @@ export interface FormulaBoxOptions {
   commit(source: string): void;
   /** Said after each change: the result on made-up values — or `{ warn }`, a fix to make that stops nothing. */
   said?(page: Page, source: string): string | { warn: string };
+  /** Whether what is typed is words the box takes as they are, never read as a formula (an address typed plainly). */
+  asWords?(source: string): boolean;
 }
 
 export interface FormulaBox {
@@ -159,7 +161,7 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
     const source = input.value;
     const wrong = source.trim() ? options.check(page, source) : null;
     showProblem(source, wrong);
-    say(page, wrong || !source.trim() ? '' : source);
+    say(page, wrong || !source.trim() || options.asWords?.(source) ? '' : source);
   }
 
   /** The box left (or Enter pressed): the whole formula handed on when it reads, or an empty box; else the page keeps its own. */
@@ -176,6 +178,12 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
     // While a name is being picked, the half-typed name is not yet wrong.
     problem.hidden = !wrong || !list.hidden;
     if (!wrong) return;
+    // Words that are no formula say what is wrong with them as it is (an address no button may open).
+    if (wrong.plain) {
+      words.textContent = wrong.words;
+      copy.hidden = true;
+      return;
+    }
     // What is wrong, and what the page keeps meanwhile: the formula it had, or none; a decimal comma said to be a point.
     const what = problemWords(wrong, options.words);
     const kept = lastKept.trim() ? options.words.inputs.formulaKept(what, lastKept.trim()) : options.words.inputs.formulaNone(what);
@@ -248,7 +256,7 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
       // A formula that does not read stays as typed until another is kept.
       if (problem.hidden || source !== lastKept) input.value = source;
       lastKept = source;
-      if (problem.hidden) say(next, source);
+      if (problem.hidden) say(next, options.asWords?.(source) ? '' : source);
     },
     insert(text, back = 0) {
       const from = input.selectionStart ?? input.value.length;

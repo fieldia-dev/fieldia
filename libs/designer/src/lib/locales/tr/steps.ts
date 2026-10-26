@@ -158,6 +158,7 @@ export const steps: DesignerWords['steps'] = {
   needsAddress: 'Açacağı adresi yazın.',
   address: 'Adres',
   addressPlaceholder: "'https://' + website — bir alanın adını veya @ yazın",
+  addressOnly: 'Burada yalnızca bir web, e-posta ya da telefon adresi veya bu sitenin bir sayfası açılabilir',
   inNewTab: 'Yeni sekmede',
   reloadHint: 'Uygulama kaydı kendi sunucusunda değiştirdikten sonra — örneğin bir eylemini çalıştırarak: form kaydı şimdiki hâliyle gösterir.',
   recordHint: 'Mümkünse uygulamanın veri kaynağı üzerinden; değilse uygulamanın aynı adlı eylemi çalıştırılır.',
