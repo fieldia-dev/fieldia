@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Download, type Page } from '@playwright/test';
 import { test } from './fixtures';
 
 /** Open a demo and fail the test on any console error or uncaught exception. */
@@ -69,3 +69,13 @@ export async function expectNoSidewaysScroll(page: Page) {
  * "Searching…", "Loading more…"), never "Still loading…" past the 5 s of `slowAfter`, unless the test names its own.
  */
 export const unhurried = (query: string) => `/loading/?${/(^|&)slowAfter=/.test(query) ? query : `${query}${query ? '&' : ''}slowAfter=600000`}`;
+
+/**
+ * The name a download was offered under, as the page wrote it: WebKit 27.2 (Playwright 1.64.1) hands it over with each
+ * space an underscore ("Contacts_2026-10-26.xlsx"), a name the page never wrote; Chromium and Firefox as written. The
+ * page's own names have no underscore, so WebKit's are read back with their spaces.
+ */
+export function offeredName(download: Download): string {
+  const name = download.suggestedFilename();
+  return download.page().context().browser()?.browserType().name() === 'webkit' ? name.replace(/_/g, ' ') : name;
+}

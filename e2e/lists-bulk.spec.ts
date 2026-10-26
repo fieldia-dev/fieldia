@@ -2,7 +2,7 @@ import { type Download, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 import { expect, test } from './fixtures';
-import { expectNoSidewaysScroll, open, screen } from './support';
+import { expectNoSidewaysScroll, offeredName, open, screen } from './support';
 
 /**
  * A list people take away and change in bulk (the plain demo's Contacts:
@@ -108,7 +108,7 @@ test.describe('a list people take away and change in bulk', () => {
     const { problems } = await contacts(page);
     const first = await cell(page, 0, 1).textContent();
     const download = await exportAs(page, 'Excel (.xlsx)');
-    expect(download.suggestedFilename()).toBe(`Contacts ${today()}.xlsx`);
+    expect(offeredName(download)).toBe(`Contacts ${today()}.xlsx`);
     await expect(toast(page).filter({ hasText: '1,284 contacts exported.' })).toBeVisible();
     const files = unzip(readFileSync(await download.path()));
     const sheet = files.get('xl/worksheets/sheet1.xml') as string;
@@ -133,7 +133,7 @@ test.describe('a list people take away and change in bulk', () => {
     await expect(menu(page)).toBeHidden();
     await expect(exportButton(page)).toBeFocused();
     const download = await exportAs(page, 'CSV (.csv)');
-    expect(download.suggestedFilename()).toBe(`Contacts ${today()}.csv`);
+    expect(offeredName(download)).toBe(`Contacts ${today()}.csv`);
     const lines = readFileSync(await download.path(), 'utf8').split('\r\n');
     // The owner's walk: "E£ 51,086.00" was words a spreadsheet cannot add. An amount is a number now, its currency in a
     // column of its own; a day is ISO's.
@@ -214,9 +214,9 @@ test.describe('a list people take away and change in bulk', () => {
     await expect(toast(page).filter({ hasText: `Contacts ${today()}.xlsx is being made on the server: it will be emailed to you.` })).toBeVisible();
     await rows(page).first().locator('.fd-list-checkbox').check();
     const download = await exportAs(page, 'CSV (.csv)');
-    expect(download.suggestedFilename()).toBe(`Contacts ${today()} (server).csv`);
+    expect(offeredName(download)).toBe(`Contacts ${today()} (server).csv`);
     // A small workbook the server leaves to the browser.
-    expect((await exportAs(page, 'Excel (.xlsx)')).suggestedFilename()).toBe(`Contacts ${today()}.xlsx`);
+    expect(offeredName(await exportAs(page, 'Excel (.xlsx)'))).toBe(`Contacts ${today()}.xlsx`);
     expect(problems).toEqual([]);
   });
 
