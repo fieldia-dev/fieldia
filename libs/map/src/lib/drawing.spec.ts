@@ -16,7 +16,9 @@ import { tiles } from './providers';
  * the next press on the shape for a drag and drop of the words, its pointer taken from the shape (pointercancel): the
  * shape moved 5 pixels for a drag of 60 (with the demo's frame round it). Asked here as the browser asks: whether a
  * selection or a drag and drop may start (`selectstart`, `dragstart`), each cancelled while held.
- * The browser's side is driven in e2e/map-area.spec.ts.
+ *
+ * The bar over the map says one point as one ("1 point", never "1 points"). The browser's side of each is driven in
+ * e2e/map-area.spec.ts and e2e/map-list.spec.ts.
  */
 
 const provider = tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } });
@@ -116,3 +118,32 @@ async function waitFor<T>(find: () => T | null | undefined): Promise<T> {
   }
   throw new Error('never came');
 }
+
+describe('the bar over the map while a tool is in hand', () => {
+  /** A polygon begun, a point put at the map's centre by Space for each of `n`: the bar's words, and what was said. */
+  async function polygonOf(n: number, locale: Locale = 'en') {
+    const box = boxOnPage(locale);
+    await new Promise<void>((ready) => box.ready(() => ready()));
+    const said: string[] = [];
+    const drawing = shapeDrawing({ box, labels: mapLabels(locale), locale, keys: box.element, announce: (words) => said.push(words), armed: () => undefined, done: () => undefined, escaped: () => undefined });
+    drawing.arm('polygon');
+    const bar = box.element.querySelector('.fd-map-hint p')!;
+    const steps = [bar.textContent];
+    for (let i = 0; i < n; i++) {
+      box.element.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+      steps.push(bar.textContent);
+    }
+    box.destroy();
+    return { steps, said };
+  }
+
+  it('says one point as one, in English and in each language: “1 point”, then “2 points”', async () => {
+    const { steps, said } = await polygonOf(2);
+    expect(steps[1]).toBe('Click to add points. Click the first point, double-click or press Enter to finish. 1 point.');
+    expect(steps[2]).toMatch(/ 2 points\.$/);
+    expect(said.slice(-2)).toEqual(['1 point', '2 points']);
+    expect((await polygonOf(1, 'de')).steps[1]).toMatch(/ 1 Punkt\.$/);
+    expect((await polygonOf(1, 'fr')).steps[1]).toMatch(/ 1 point\.$/);
+  });
+
+});

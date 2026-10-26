@@ -31,6 +31,7 @@ export const map: MapLabels = {
   drawBox: 'Über die Karte ziehen, um ein Rechteck zu zeichnen.',
   drawCircle: 'Von der Mitte aus ziehen, um einen Kreis zu zeichnen.',
   points: '{n} Punkte',
+  pointsOne: '{n} Punkt',
   finish: 'Fertig',
   cancel: 'Abbrechen',
   chooseArea: 'Gebiet wählen',

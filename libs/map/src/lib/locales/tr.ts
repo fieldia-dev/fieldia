@@ -35,6 +35,7 @@ export const map: MapLabels = {
   drawBox: 'Dikdörtgen çizmek için harita üzerinde sürükleyin.',
   drawCircle: 'Daire çizmek için merkezden dışa doğru sürükleyin.',
   points: '{n} nokta',
+  pointsOne: '{n} nokta',
   finish: 'Bitir',
   cancel: 'İptal',
   chooseArea: 'Bir bölge seçin',

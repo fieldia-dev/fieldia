@@ -167,6 +167,7 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
   const drawing = shapeDrawing({
     box,
     labels,
+    locale,
     keys: element,
     announce,
     armed: (mode) => {

@@ -35,6 +35,7 @@ export const map: MapLabels = {
   drawBox: 'Arrastre sobre el mapa para dibujar un rectángulo.',
   drawCircle: 'Arrastre desde el centro para dibujar un círculo.',
   points: '{n} puntos',
+  pointsOne: '{n} punto',
   finish: 'Terminar',
   cancel: 'Cancelar',
   chooseArea: 'Seleccionar una zona',

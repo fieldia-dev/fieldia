@@ -37,6 +37,7 @@ export const map: MapLabels = {
   drawBox: 'مستطیل بنانے کے لیے نقشے پر گھسیٹیں۔',
   drawCircle: 'دائرہ بنانے کے لیے مرکز سے گھسیٹیں۔',
   points: '{n} نقطے',
+  pointsOne: '{n} نقطہ',
   finish: 'ختم کریں',
   cancel: 'منسوخ کریں',
   chooseArea: 'علاقہ منتخب کریں',

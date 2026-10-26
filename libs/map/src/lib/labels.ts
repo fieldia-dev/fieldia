@@ -57,7 +57,9 @@ export interface MapLabels {
   drawPolygon: string;
   drawBox: string;
   drawCircle: string;
+  /** A polygon's points so far: `{n}` how many, and the words for one. */
   points: string;
+  pointsOne: string;
   finish: string;
   cancel: string;
   chooseArea: string;
@@ -130,6 +132,7 @@ export const MAP_LABELS = /* @__PURE__ */ inChunks<MapLabels>({
     drawBox: 'Drag across the map to draw a box.',
     drawCircle: 'Drag from the centre to draw a circle.',
     points: '{n} points',
+    pointsOne: '{n} point',
     finish: 'Finish',
     cancel: 'Cancel',
     chooseArea: 'Choose an area',

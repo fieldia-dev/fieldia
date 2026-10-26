@@ -33,6 +33,7 @@ export const map: MapLabels = {
   drawBox: 'برای رسم مستطیل، روی نقشه بکشید.',
   drawCircle: 'برای رسم دایره، از مرکز بکشید.',
   points: '{n} نقطه',
+  pointsOne: '{n} نقطه',
   finish: 'پایان',
   cancel: 'لغو',
   chooseArea: 'یک ناحیه انتخاب کنید',

@@ -31,6 +31,7 @@ export const map: MapLabels = {
   drawBox: 'Faites glisser sur la carte pour tracer un rectangle.',
   drawCircle: 'Faites glisser depuis le centre pour tracer un cercle.',
   points: '{n} points',
+  pointsOne: '{n} point',
   finish: 'Terminer',
   cancel: 'Annuler',
   chooseArea: 'Choisir une zone',

@@ -1,6 +1,8 @@
 import type * as Leaflet from 'leaflet';
+import type { Locale } from '@fieldia/core';
+import { inPlural } from '@fieldia/widgets';
 import { boxFrom, metresBetween, type Area, type LatLng, type Shape } from './geo';
-import { fill, type MapLabels } from './labels';
+import { type MapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import type { MapBox } from './map-core';
 
@@ -41,6 +43,8 @@ export function holdBrowserDrag(L: LeafletModule): () => void {
 export interface ShapeDrawingOptions {
   box: MapBox;
   labels: MapLabels;
+  /** The page's language: its words for one point and for more. */
+  locale?: Locale;
   /** Where the drawing's keys are heard, wherever the focus is inside it: a field, or a list's map. */
   keys: HTMLElement;
   announce(words: string): void;
@@ -99,10 +103,13 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
   box.shield(hint);
   box.follow(hint);
 
+  /** How many points so far, in the page's language: "1 point", "4 points". */
+  const counted = () => inPlural(labels.points, labels.pointsOne, points.length, options.locale);
+
   function sayStep() {
     if (!mode) return;
     const words = mode === 'polygon' ? labels.drawPolygon : mode === 'box' ? labels.drawBox : labels.drawCircle;
-    hintWords.textContent = mode === 'polygon' && points.length ? `${words} ${fill(labels.points, { n: points.length })}.` : words;
+    hintWords.textContent = mode === 'polygon' && points.length ? `${words} ${counted()}.` : words;
     finishButton.hidden = mode !== 'polygon' || points.length < 3;
   }
 
@@ -181,7 +188,7 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
       sayStep();
       remark();
       retrace();
-      announce(fill(labels.points, { n: points.length }));
+      announce(counted());
       return;
     }
     if (!anchor) {
@@ -275,7 +282,7 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
       sayStep();
       remark();
       retrace();
-      announce(fill(labels.points, { n: points.length }));
+      announce(counted());
     } else if (event.key === ' ' && onMap && map) {
       event.preventDefault();
       const c = map.getCenter();

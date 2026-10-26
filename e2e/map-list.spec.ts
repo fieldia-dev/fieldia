@@ -670,7 +670,8 @@ test('a polygon drawn by the keys, the pins letting every press through while it
   // A press on a pin is a point of the polygon, not the pin's card.
   await bubbles(page).first().click({ force: true });
   await expect(card(page)).toHaveCount(0);
-  await expect(page.locator('.fd-map-list .fd-map-hint')).toContainText('1 points');
+  // One point, said as one (0.35 said "1 points").
+  await expect(page.locator('.fd-map-list .fd-map-hint')).toContainText('Click the first point, double-click or press Enter to finish. 1 point.');
   // By the keys: Space puts a point at the cross, the arrows move the map under it, Enter finishes.
   await theMap(page).focus();
   for (const key of ['ArrowLeft', 'ArrowDown']) {

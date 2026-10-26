@@ -31,6 +31,7 @@ export const map: MapLabels = {
   drawBox: 'اسحب على الخريطة لرسم مستطيل.',
   drawCircle: 'اسحب من المركز لرسم دائرة.',
   points: 'النقاط: {n}',
+  pointsOne: 'النقاط: {n}',
   finish: 'إنهاء',
   cancel: 'إلغاء',
   chooseArea: 'اختر منطقة',

@@ -133,6 +133,7 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
     const drawing = shapeDrawing({
       box,
       labels,
+      locale: context.locale,
       keys: element,
       announce,
       armed: (mode) => {
