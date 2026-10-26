@@ -28,6 +28,29 @@ test('a new setting, or a renamed one, is a new shape', () => {
   assert.notEqual(shapeOf(renamed), shapeOf(schema()));
 });
 
+test('a setting named as a word is the page\'s own: reshaping a `title` setting is a new shape', () => {
+  // A page's own `title` setting, as page.schema.json has it, and a section's `description` in $defs.
+  const page = (title, description = { type: 'string' }) => ({
+    ...schema({ title, sections: { type: 'array', items: { $ref: '#/$defs/Section' } } }),
+    $defs: { Section: { type: 'object', description: 'A section.', properties: { description, examples: { type: 'array' }, $comment: { type: 'string' } } } },
+  });
+  const before = shapeOf(page({ type: 'string' }));
+  assert.notEqual(shapeOf(page({ type: 'object', properties: { field: { type: 'string' } } })), before, 'a reshaped title setting');
+  assert.notEqual(shapeOf(page({ type: 'string', maxLength: 300 })), before, 'a title setting given a bound');
+  assert.notEqual(shapeOf(page({ type: 'string' }, { type: 'number' })), before, 'a reshaped description setting in $defs');
+  const named = page({ type: 'string' });
+  delete named.$defs.Section.properties.examples;
+  assert.notEqual(shapeOf(named), before, 'a setting named examples taken away');
+  // Still the words where they annotate a schema, at any depth: the page's, a definition's, a setting's own.
+  const reworded = page({ type: 'string', title: 'The page title', description: 'Shown above the form.' });
+  reworded.$defs.Section.description = 'A titled group of fields.';
+  reworded.$defs.Section.properties.description.examples = ['Your details'];
+  reworded.$defs.Section.properties.$comment.$comment = 'kept for notes';
+  assert.equal(shapeOf(reworded), before);
+  // A default or a const is data: a key in it named `title` is kept.
+  assert.notEqual(shapeOf(schema({ ending: { type: 'object', default: { title: 'Thanks' } } })), shapeOf(schema({ ending: { type: 'object', default: {} } })));
+});
+
 /** A workspace of its own: the version the source says, the schema, and the shapes recorded. */
 function workspace(version, page, shapes) {
   const root = mkdtempSync(join(tmpdir(), 'fieldia-format-'));

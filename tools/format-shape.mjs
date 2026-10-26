@@ -4,7 +4,10 @@
  * version that older Fieldia believes it reads.
  *
  * The shape is the page's JSON Schema (libs/core/schema/page.schema.json) without its words — descriptions, titles,
- * examples — as a short hash. tools/format-shapes.json keeps the shape of each format version released.
+ * examples — as a short hash. A word is dropped where it annotates a schema, never where it names a setting: a page's
+ * `title` and a section's `description` are the page's own, and reshaping one is a new shape (until 0.36 they were
+ * dropped too, and every recorded shape was hashed again from its release's schema). tools/format-shapes.json keeps the
+ * shape of each format version released.
  *
  *   node tools/format-shape.mjs            say whether the format still has the shape recorded for its version
  *   node tools/format-shape.mjs --record   record the shape of a new FORMAT_VERSION (never rewrites one recorded)
@@ -15,20 +18,42 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
+/** A schema's words: annotations where a schema is, never where they are a setting's name (a page's `title`). */
 const WORDS = new Set(['description', 'title', 'examples', '$comment']);
+/** Keywords whose value names settings or definitions, each a schema: the names are the page's, kept. */
+const NAMED = new Set(['properties', 'patternProperties', 'dependentSchemas', '$defs', 'definitions']);
+/** Keywords whose value is a schema, or a list of them. */
+const SCHEMA = new Set(['items', 'additionalItems', 'additionalProperties', 'unevaluatedItems', 'unevaluatedProperties', 'propertyNames', 'contains', 'not', 'if', 'then', 'else']);
+const SCHEMAS = new Set(['allOf', 'anyOf', 'oneOf', 'prefixItems']);
+
+/** Any JSON as data — a `const`, an `enum`, a `default` — its keys in order, nothing dropped. */
+const sorted = (value) => {
+  if (Array.isArray(value)) return value.map(sorted);
+  if (value === null || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, sorted(value[key])]));
+};
+
+/** A schema without its words, its keys in order: what each keyword holds read as that keyword holds it. */
+const strip = (schema) => {
+  if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) return sorted(schema);
+  return Object.fromEntries(
+    Object.keys(schema)
+      .filter((key) => !WORDS.has(key))
+      .sort()
+      .map((key) => {
+        const value = schema[key];
+        if (NAMED.has(key) && value && typeof value === 'object' && !Array.isArray(value)) {
+          return [key, Object.fromEntries(Object.keys(value).sort().map((name) => [name, strip(value[name])]))];
+        }
+        if (SCHEMAS.has(key) && Array.isArray(value)) return [key, value.map(strip)];
+        if (SCHEMA.has(key)) return [key, Array.isArray(value) ? value.map(strip) : strip(value)];
+        return [key, sorted(value)];
+      })
+  );
+};
 
 /** The schema's structure alone, its keys in order: the same for two schemas that differ only in their words. */
 export function shapeOf(schema) {
-  const strip = (value) => {
-    if (Array.isArray(value)) return value.map(strip);
-    if (value === null || typeof value !== 'object') return value;
-    return Object.fromEntries(
-      Object.keys(value)
-        .filter((key) => !WORDS.has(key))
-        .sort()
-        .map((key) => [key, strip(value[key])])
-    );
-  };
   return `sha256:${createHash('sha256').update(JSON.stringify(strip(schema))).digest('hex').slice(0, 16)}`;
 }
 
