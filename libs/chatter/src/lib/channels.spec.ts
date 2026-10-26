@@ -400,6 +400,36 @@ describe('messages arriving while the conversation is shown, asked for again', (
     }
   });
 
+  it('asks four times less often while the browser says it is offline — never not at all: some say so throughout — and at once as it says it is back', async () => {
+    // WebKit on a Linux whose NetworkManager runs none of its network says offline throughout and never `online`.
+    jest.useFakeTimers();
+    const { polled, asked } = counted();
+    const onLine = jest.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      const host = document.createElement('div');
+      document.body.append(host);
+      handle = mountChatter(host, { source: polled, record: enquiry, channels: CHANNELS, live: { every: 1000 } });
+      await jest.advanceTimersByTimeAsync(0);
+      expect(asked).toHaveLength(1);
+      // Asked at its time, the browser's word maybe wrong; then at the slowest pace.
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(asked).toHaveLength(2);
+      await jest.advanceTimersByTimeAsync(3999);
+      expect(asked).toHaveLength(2);
+      await jest.advanceTimersByTimeAsync(1);
+      expect(asked).toHaveLength(3);
+      // Back, as it says: asked at once, then at the usual pace again.
+      onLine.mockReturnValue(true);
+      window.dispatchEvent(new Event('online'));
+      await jest.advanceTimersByTimeAsync(0);
+      expect(asked).toHaveLength(4);
+      await jest.advanceTimersByTimeAsync(2000);
+      expect(asked).toHaveLength(5);
+    } finally {
+      onLine.mockRestore();
+    }
+  });
+
   it('never asks again where the app turned it off, nor for a chatter without channels (as before)', async () => {
     jest.useFakeTimers();
     const { polled, asked } = counted();

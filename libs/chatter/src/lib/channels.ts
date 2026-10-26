@@ -201,7 +201,9 @@ const newestFirst = (messages: ChatterMessage[]) => messages.map((message, i) =>
  * The conversation kept up to date while it is shown: through the source's `subscribe` where it has one — what it
  * pushes for a record no longer shown laid nowhere, what it pushes while the conversation is fetched laid once it has
  * come —, else by asking its `messages` again politely: never while an answer is on its way, never while the page is
- * out of sight or offline (asked again as it comes back), and less often while nothing changes. Nothing is fetched
+ * out of sight (asked again as it comes back), at the slowest pace while the browser says it is offline (asked at once
+ * as it says it is back) — never not at all: some browsers say offline throughout and never `online`, WebKit on a
+ * Linux whose NetworkManager runs none of its network —, and less often while nothing changes. Nothing is fetched
  * again whole: what changed is laid in place (the chatter's `lay`), a delivery never going back (`furthest`), and
  * what arrives is said.
  */
@@ -292,12 +294,15 @@ export function liveConversation(context: ChatterContext, options: LiveOptions) 
     timer = null;
     if (stopped || !context.record()) return;
     if (doc.hidden) return until(doc, 'visibilitychange', () => !doc.hidden);
-    if (view?.navigator && view.navigator.onLine === false) return until(view, 'online', () => true);
     // An answer that failed changed nothing: asked again later, less often.
     const changed = await ask().catch(() => false);
     if (stopped) return;
-    delay = changed ? options.every : Math.min(delay * 2, options.every * 4);
+    // The browser saying it is offline: its word taken for a slower pace, never for no asking at all.
+    const offline = view?.navigator?.onLine === false;
+    delay = offline ? options.every * 4 : changed ? options.every : Math.min(delay * 2, options.every * 4);
     schedule();
+    // Back, as it says: asked at once, at the usual pace again.
+    if (offline) until(view, 'online', () => ((delay = options.every), true));
   }
 
   return {

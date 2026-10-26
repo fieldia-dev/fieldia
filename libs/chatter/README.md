@@ -72,7 +72,8 @@ as they happen (`{ type: 'message', message }`, `{ type: 'delivery', id,
 delivery, failure }`) and returns what stops it; without it, a chatter with
 channels asks `messages` again every 15 seconds while something changes, up
 to four times less often while nothing does, never while the page is out of
-sight or offline. `live: false` turns it off, `live: { every }` sets the pace
+sight, four times less often while the browser says it is offline (some say
+so throughout). `live: false` turns it off, `live: { every }` sets the pace
 (or turns it on for a chatter without channels). Nothing is fetched again
 whole: what changed is laid in place, a delivery never goes back, what
 arrives is said politely, and a reply being typed is never disturbed. What is
