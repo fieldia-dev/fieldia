@@ -176,8 +176,11 @@ const going = new WeakMap<Element, Going>();
 const failures = new WeakMap<Element, { box: HTMLElement; letGo?: () => void }>();
 /** Where a loader went in, taken away with it — a row of a table, an item of a list — whichever wait it was handed on to. */
 const holders = new WeakMap<HTMLElement, HTMLElement>();
-/** Which wait said what a live region says now: only it takes its words away, never another's said since. */
-const speakers = new WeakMap<HTMLElement, object>();
+/**
+ * The waits going on whose words a live region says: they stay said until the last of them ends — never taken away by
+ * one that ends while another still waits there (the page's wait for a list's part ending as the list's own goes on).
+ */
+const speakers = new WeakMap<HTMLElement, Set<object>>();
 
 /** A failure said in a region's place taken away: what failed came after all (a record answered past its timeout). */
 export function letFailureGo(region: Element): void {
@@ -251,15 +254,32 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
   };
   voiceOf();
   fresh = false;
-  /** Said in the live region; taken away only where this wait said what it says now. */
+  /** Asked to say words while its region was not in the page yet: asked again at once, then every 50 ms until it is. */
+  let late = 0;
+  /**
+   * Said in the live region, the words it says already (another wait's) kept as they are, never said twice; taken
+   * away ('') as the last wait that said words there ends. Said while its region is not in the page yet — a list drawn
+   * at once, going on from the page's wait in sight, the list put in the page a moment after — said once it is: never
+   * lost as the page's wait ends and takes its own away.
+   */
   const say = (text: string) => {
     const said = text ? voiceOf() : voice;
-    if (!said || (!text && speakers.get(said) !== mine)) return;
-    speakers.set(said, mine);
-    if (!fresh || !text) return void (said.textContent = text);
+    if (!said) {
+      if (text && !over && moment !== 'action') setTimeout(() => !over && say(text), late++ && 50);
+      return;
+    }
+    const those = speakers.get(said) ?? new Set<object>();
+    speakers.set(said, those);
+    if (!text) {
+      if (those.delete(mine) && !those.size) said.textContent = '';
+      return;
+    }
+    those.add(mine);
+    if (said.textContent === text) return;
+    if (!fresh) return void (said.textContent = text);
     fresh = false;
     setTimeout(() => {
-      if (!over && speakers.get(said) === mine) said.textContent = text;
+      if (!over && those.has(mine)) said.textContent = text;
     }, 50);
   };
   region.setAttribute('aria-busy', 'true');
@@ -419,10 +439,13 @@ export function startLoading(region: HTMLElement, moment: LoadingMoment, loading
     },
   };
   going.set(region, mine);
-  // What a wait taken over said is this one's to take away.
+  // What a wait taken over said is this one's to take away; what it had still to say (its region not in the page yet),
+  // this one's to say.
   if (taken && before && moment !== 'action') {
-    const said = voiceOf();
-    if (said && speakers.get(said) === before) speakers.set(said, mine);
+    const voiced = voiceOf();
+    const those = voiced ? speakers.get(voiced) : undefined;
+    if (those?.delete(before)) those.add(mine);
+    else say(said);
   }
   // Drawn at once where it goes on from one in sight: never after the delay, never gone and back.
   if (taken || how.now) show();

@@ -384,6 +384,44 @@ describe('a wait, on its clock', () => {
     expect(said(root)).toBe('');
   });
 
+  it('keeps its words said as the page’s wait it goes on from ends, though its place came into the page after it was drawn', async () => {
+    // The loading demo in WebKit, 1 run in 20: the page's wait said "Loading…"; the list's part came, the list drew its
+    // records' wait at once (the page's in sight) before the list was in the page, so said nothing; the page's wait,
+    // ending, took its words away — the list still waiting, nothing said.
+    const { region, root } = form();
+    const page = startLoading(region, 'first', loading({ set: { first: 'text' } }));
+    jest.advanceTimersByTime(150);
+    expect(said(root)).toBe('Loading…');
+    const records = document.createElement('div');
+    const list = startLoading(records, 'first', loading({ set: { first: 'text' } }), { now: true });
+    region.append(records);
+    void page.done();
+    jest.advanceTimersByTime(300);
+    expect(page.shown).toBe(false);
+    expect(records.getAttribute('aria-busy')).toBe('true');
+    expect(said(root)).toBe('Loading…');
+    // Said once: the words it found said, never written again.
+    expect(root.querySelectorAll('.fd-loading-said')).toHaveLength(1);
+    list.stop();
+    expect(said(root)).toBe('');
+  });
+
+  it('keeps the words said while any wait that said them goes on: the one that said them last ending first takes nothing', () => {
+    const { region, root } = form();
+    const other = document.createElement('div');
+    root.append(other);
+    const first = startLoading(region, 'first', loading({ set: { first: 'text' } }));
+    jest.advanceTimersByTime(150);
+    const second = startLoading(other, 'search', loading({ set: { search: 'inline' } }));
+    jest.advanceTimersByTime(150);
+    expect(said(root)).toBe('Searching…');
+    second.stop();
+    expect(said(root)).toBe('Searching…');
+    expect(region.getAttribute('aria-busy')).toBe('true');
+    first.stop();
+    expect(said(root)).toBe('');
+  });
+
   it('draws a part’s own shapes where it has them, and stops at once when let go', () => {
     const { region } = form();
     const shape = { show: jest.fn(), hide: jest.fn() };

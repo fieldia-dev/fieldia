@@ -1567,7 +1567,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.36's merge of its fix lanes (p3-real-tests), set once from the merged build: F1's typing and alert (+865), F4's
 // record's keys (+89), F7's outbox (0), the part-failure matrix's words (+2,554), each measured alone above —
 // 582,019 at 0.35, 585,508 merged, to 571.9.
-const BUDGET_KB = 571.9;
+// 0.36 (p3-real-tests, F8): a wait's words said once its place is in the page (a list drawn at once in the page's wait,
+// put in the page a moment after), and kept said while any wait that said them goes on (loading.ts) — 585,508
+// measured before, 585,735 after (+227), to 572.1.
+const BUDGET_KB = 572.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1919,7 +1922,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.36's merge of its fix lanes, set once from the merged build (listed with the raw budget above): 189.79 at 0.35,
 // 190.92 merged (+1.13: the parts' failure words 0.81, a typed box never written over and the alert let go 0.34) —
 // to 191.0.
-const GZIP_BUDGET_KB = 191.0;
+// 0.36 (p3-real-tests, F8), a wait's words kept said (listed with the raw budget above): 190.91 measured before, 191.01
+// after, to 191.1.
+const GZIP_BUDGET_KB = 191.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
