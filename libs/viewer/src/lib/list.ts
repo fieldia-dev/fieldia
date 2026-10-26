@@ -43,7 +43,7 @@ import { daysFilter, periodDays } from './list-days';
 import { askBulkValue, bulkOffered, bulkQuestion, lockedOut, writeBulk, type BulkList, type KnownRecord } from './list-bulk';
 import { everyId } from './list-every';
 import { csvOf, csvSeparator, exportList, saveFile, type ExportFormat, type ExportList, type ExportWhich } from './list-export';
-import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, type Row } from './list-groups';
+import { drawGroups, groupKey, type GroupContext, type GroupKey, type Heading, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
 import { listTotals } from './list-totals';
 import { keepFootRoom, printout, PRINT_MOST } from './list-print';
@@ -1129,6 +1129,12 @@ export function listView(context: ListContext): ListView {
     });
   };
 
+  /**
+   * The groups the person opened, each by its values from the first field's down: kept while the list is grouped the
+   * same way, so a sort, an Archive or a search draws them open again; another grouping starts closed.
+   */
+  const openGroups = { by: '', opened: new Set<string>() };
+
   const grouped = (source: DataSource): GroupContext => ({
     page,
     el,
@@ -1146,6 +1152,7 @@ export function listView(context: ListContext): ListView {
     recordRow: row,
     step: (tr, down) => focusRow(shownBeside(tr, down)),
     changed,
+    opened: openGroups.opened,
   });
 
   async function load(): Promise<void> {
@@ -1166,6 +1173,11 @@ export function listView(context: ListContext): ListView {
     try {
       const filter = currentFilter();
       const grouping = groupByFields(facets).map((text) => groupKey(page, text));
+      const by = JSON.stringify(grouping);
+      if (by !== openGroups.by) {
+        openGroups.by = by;
+        openGroups.opened.clear();
+      }
       const source = context.dataSource;
       // The totals of every record the search finds, asked beside them.
       totals?.refresh(filter);
@@ -1173,11 +1185,14 @@ export function listView(context: ListContext): ListView {
         // Grouped: a row for each value of the first field (or span of a date), each opening into the rest.
         const groups = await headings(source, grouping[0], filter);
         if (stale()) return wait.stop();
+        // Those open when it was drawn last come open, their rows asked for again.
+        const headed = await drawGroups(grouped(source), groups, 0, filter, grouping);
+        if (stale()) return wait.stop();
         rows = [];
         total = 0;
         groupedNow = true;
         matching = groups.reduce((sum, group) => sum + group.count, 0);
-        drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
+        drawn = headed;
       } else {
         // Loaded as it is scrolled: every row it held, asked again from the first.
         // A tree loaded as it opens: its records with no parent, while no search is on.

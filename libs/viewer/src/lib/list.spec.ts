@@ -201,6 +201,63 @@ describe('a list grouped by its fields', () => {
     expect(rows(host)).toEqual([]);
   });
 
+  it('keeps the groups opened open as the list is drawn again — sorted by a header — their records in the new order', async () => {
+    // The how-to's replay of the customers: grouped, the groups opened, the Credit limit header pressed — and every
+    // group closed, no records left to see sorted.
+    const host = await mount();
+    await groupBy(host, 'Country');
+    group(host, 'Egypt').click();
+    group(host, 'None').click();
+    await until(() => rows(host).length === 3);
+    const header = () => [...host.querySelectorAll('.fd-list-table thead th')].find((th) => th.textContent?.startsWith('Credit limit')) as HTMLElement;
+    header().querySelector('button')!.click();
+    await until(() => header().getAttribute('aria-sort') === 'ascending');
+    header().querySelector('button')!.click();
+    await until(() => header().getAttribute('aria-sort') === 'descending');
+    await until(() => rows(host).length === 3 && cells(rows(host)[0])[0] === 'Nile Traders');
+    expect(rows(host).map((r) => cells(r)[0])).toEqual(['Nile Traders', 'Amira Clinics', 'Zamalek Studio']);
+    expect(['Egypt', 'Jordan', 'None'].map((name) => group(host, name).getAttribute('aria-expanded'))).toEqual(['true', 'false', 'true']);
+    // Each group's records under it, before the next one.
+    expect(rows(host)[1].nextElementSibling?.textContent).toBe('Jordan (1)');
+    // Closed by the person, it stays closed when drawn again.
+    group(host, 'None').click();
+    header().querySelector('button')!.click();
+    await until(() => header().getAttribute('aria-sort') !== 'descending');
+    await until(() => rows(host).length === 2 && cells(rows(host)[0])[0] === 'Amira Clinics');
+    expect(group(host, 'None').getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('keeps a group opened inside another open; closed, the groups inside it are forgotten; another grouping starts closed', async () => {
+    const host = await mount();
+    await groupBy(host, 'Country', 'Status');
+    group(host, 'Egypt').click();
+    await until(() => groups(host).length === 5);
+    group(host, 'Draft').click();
+    await until(() => rows(host).length === 1);
+    const header = () => [...host.querySelectorAll('.fd-list-table thead th')].find((th) => th.textContent?.startsWith('Credit limit')) as HTMLElement;
+    header().querySelector('button')!.click();
+    await until(() => header().getAttribute('aria-sort') === 'ascending');
+    await until(() => rows(host).length === 1);
+    expect(groups(host)).toEqual(['Egypt (2)', '  Active (1)', '  Draft (1)', 'Jordan (1)', 'None (1)']);
+    expect(group(host, 'Draft').getAttribute('aria-expanded')).toBe('true');
+    expect(cells(rows(host)[0])[0]).toBe('Amira Clinics');
+    expect(rows(host)[0].dataset['level']).toBe('2');
+    // Egypt closed and opened again: Draft inside it closed, as it always came.
+    group(host, 'Egypt').click();
+    group(host, 'Egypt').click();
+    await until(() => groups(host).length === 5);
+    expect(group(host, 'Draft').getAttribute('aria-expanded')).toBe('false');
+    expect(rows(host)).toEqual([]);
+    // Status taken out of the grouping, Egypt open: by Country alone, a new grouping, every group comes closed.
+    const panel = () => host.querySelector('.fd-search-panel [data-group-kind="groupBy"]') as HTMLElement;
+    if (!button(panel(), 'Status')) button(host, 'Search options')!.click();
+    button(panel(), 'Status')!.click();
+    await until(() => groups(host).length === 3);
+    expect(groups(host)).toEqual(['Egypt (2)', 'Jordan (1)', 'None (1)']);
+    expect([...host.querySelectorAll('.fd-group-toggle')].map((b) => b.getAttribute('aria-expanded'))).toEqual(['false', 'false', 'false']);
+    expect(rows(host)).toEqual([]);
+  });
+
   /** The ARIA a treegrid's row may carry and a table's may not: a table's rows claim no tree. */
   const TREE = ['aria-level', 'aria-expanded', 'aria-setsize', 'aria-posinset'];
   const treeClaims = (host: Element) => [...host.querySelectorAll('.fd-list-table tr')].flatMap((tr) => TREE.filter((name) => tr.hasAttribute(name)).map((name) => `${tr.textContent}: ${name}`));
