@@ -1,11 +1,15 @@
-import { MAP_LABELS } from './labels';
+import type * as Leaflet from 'leaflet';
+import { mapLabels, MAP_LABELS } from './labels';
+import { loadLeaflet } from './leaflet';
+import { createMapBox } from './map-core';
 import { distanceWords } from './measure';
-import { insideRings, readBorders, shadeOf, shadeSteps } from './regions';
+import { tiles } from './providers';
+import { drawRegions, insideRings, readBorders, shadeOf, shadeSteps, type Border } from './regions';
 
 /**
  * Areas shaded by colour: borders read from the app's GeoJSON, their numbers
- * in up to five steps of round numbers, a place found inside one; and a way
- * measured, said as people read lengths.
+ * in up to five steps of round numbers, a place found inside one, their
+ * legend; and a way measured, said as people read lengths.
  */
 
 const square = (x: number, y: number, size: number): [number, number][] => [
@@ -77,5 +81,65 @@ describe('a way measured', () => {
     expect(distanceWords(340.4, MAP_LABELS.en, 'en')).toBe('340 m');
     expect(distanceWords(1234, MAP_LABELS.en, 'en')).toBe('1.2 km');
     expect(distanceWords(12_480, MAP_LABELS.ar, 'ar')).toBe('12.5 كم');
+  });
+});
+
+/**
+ * The legend folds to its title, a button, and opens again; folded at first on a phone's map. 0.35's could not fold: on a
+ * 390-pixel phone it covered most of the map and two of the buttons under the zoom (the zones demo: a tap on Zamalek
+ * landed on the legend's title). Leaflet in jsdom, the map's box as wide as a phone's or a desktop's (jsdom lays nothing
+ * out); how it looks, and the taps that reach the map, in e2e/map-areas.spec.ts.
+ */
+describe('the legend', () => {
+  const borders: Border[] = [
+    { key: 'a', value: 'a', name: 'Dokki', properties: {}, polygons: [[square(31.2, 30.03, 0.02)]] },
+    { key: 'b', value: 'b', name: 'Zamalek', properties: {}, polygons: [[square(31.22, 30.05, 0.02)]] },
+  ];
+  afterEach(() => {
+    jest.restoreAllMocks();
+    document.body.replaceChildren();
+  });
+
+  async function legendOn(width: number) {
+    const { L } = await loadLeaflet();
+    // jsdom draws no SVG: Leaflet's paths are SVG elements here, as a browser's are.
+    jest.replaceProperty(L.Browser, 'svg', true);
+    const labels = mapLabels('en');
+    const box = createMapBox({ document, provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } }), locale: 'en', labels, name: 'Orders', center: { lat: 30.05, lng: 31.23 }, zoom: 12 });
+    Object.defineProperty(box.element, 'clientWidth', { value: width });
+    document.body.append(box.element);
+    const map = await new Promise<Leaflet.Map>((ready) => box.ready((m) => ready(m)));
+    const layer = drawRegions({ box, map, L, document, locale: 'en', labels, borders, title: 'Orders this week, by district', legend: true });
+    layer.shade(new Map([['a', 4], ['b', 17]]), null);
+    const legend = box.element.querySelector<HTMLElement>('.fd-map-legend')!;
+    const title = legend.querySelector<HTMLButtonElement>('button.fd-map-legend-title')!;
+    return { layer, legend, title };
+  }
+
+  it('on a phone’s map: folded to its title at first, a button that opens it and folds it again, as the person left it when the shades change', async () => {
+    const { layer, legend, title } = await legendOn(358);
+    expect(legend.hidden).toBe(false);
+    expect(title.textContent).toBe('Orders this week, by district');
+    expect(title.getAttribute('aria-expanded')).toBe('false');
+    expect(legend.hasAttribute('data-folded')).toBe(true);
+    title.click();
+    expect(title.getAttribute('aria-expanded')).toBe('true');
+    expect(legend.hasAttribute('data-folded')).toBe(false);
+    expect(legend.querySelectorAll('li').length).toBeGreaterThan(1);
+    // The shades change (another search): the legend drawn again, open as the person left it.
+    layer.shade(new Map([['a', 9], ['b', 30]]), null);
+    expect(legend.querySelector('button.fd-map-legend-title')).toBe(title);
+    expect(title.getAttribute('aria-expanded')).toBe('true');
+    title.click();
+    expect(legend.hasAttribute('data-folded')).toBe(true);
+    layer.destroy();
+  });
+
+  it('on a desktop’s map: open at first, and folds by a press all the same', async () => {
+    const { legend, title } = await legendOn(900);
+    expect(title.getAttribute('aria-expanded')).toBe('true');
+    expect(legend.hasAttribute('data-folded')).toBe(false);
+    title.click();
+    expect(legend.hasAttribute('data-folded')).toBe(true);
   });
 });
