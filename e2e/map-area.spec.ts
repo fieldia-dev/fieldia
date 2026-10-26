@@ -230,6 +230,49 @@ test('the whole area drags to move, every point by the same', async ({ page }) =
   expect(shifts[0][0]).toBeGreaterThan(0);
 });
 
+test('in the demo’s frame, as a person opens it: a box drawn across the map selects nothing, and the area then drags the whole way', async ({ page }) => {
+  // A person, not a test browser: the frame draws its menu, its how-to and its code drawer round the form. In 0.35 the
+  // box's drag selected the zoom's "+ −" there, and the browser took the next press on the area for a drag and drop of
+  // the words (dragstart, pointercancel): the area moved 5 pixels of 60.
+  await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
+  const { map, field } = await openArea(page);
+  await expect(page.locator('.dh-title')).toBeVisible();
+  await field.getByRole('button', { name: 'Box' }).click();
+  await drag(page, await at(map, 0.25, 0.4), await at(map, 0.6, 0.8));
+  await expect.poll(() => zone(page)).toMatchObject({ properties: { shape: 'box' } });
+  expect(await page.evaluate(() => String(getSelection()))).toBe('');
+  await dragsWhole(page, map);
+});
+
+test('words left selected over the map: a press on the area drags the area, never the words', async ({ page }) => {
+  const { map, field } = await openArea(page);
+  await field.getByRole('button', { name: 'Box' }).click();
+  await drag(page, await at(map, 0.25, 0.4), await at(map, 0.6, 0.8));
+  await expect.poll(() => zone(page)).toMatchObject({ properties: { shape: 'box' } });
+  // Every word over the map selected (its zoom's, its credits'), as a person's Ctrl+A selects them.
+  await map.evaluate((element) => getSelection()!.selectAllChildren(element));
+  await dragsWhole(page, map);
+});
+
+/** The area dragged 60 pixels across and 20 down from its middle: all of it moves the whole way, the browser dragging nothing of its own. */
+async function dragsWhole(page: Page, map: Locator) {
+  const dropped: string[] = [];
+  await page.exposeFunction('fieldiaDropped', (type: string) => dropped.push(type));
+  // A drag and drop the browser began and was let begin (read once the event is through), and a pointer taken from the drag.
+  await page.evaluate(() =>
+    ['dragstart', 'pointercancel'].forEach((type) =>
+      document.addEventListener(type, (event) => setTimeout(() => event.defaultPrevented || (window as unknown as { fieldiaDropped(type: string): void }).fieldiaDropped(type)), true)
+    )
+  );
+  const shape = map.locator('path.fd-map-shape');
+  const was = (await shape.boundingBox())!;
+  const inside = { x: was.x + was.width / 2, y: was.y + was.height / 2 };
+  await drag(page, inside, { x: inside.x + 60, y: inside.y + 20 });
+  await expect.poll(async () => Math.round((await shape.boundingBox())!.x - was.x)).toBe(60);
+  expect(Math.round((await shape.boundingBox())!.y - was.y)).toBe(20);
+  expect(dropped).toEqual([]);
+}
+
 test('by keyboard alone: Space puts points at the cross, the arrow keys move the map between them, Enter finishes', async ({ page }) => {
   const { map, field } = await openArea(page);
   await field.getByRole('button', { name: 'Polygon' }).focus();
