@@ -319,7 +319,8 @@ test('in the designer: Address search from the toolbox makes a char field; its s
   await picked.getByLabel('Addresses in').selectOption({ label: 'Egypt' });
   await expect.poll(async () => (await page.evaluate(() => (window as any).fieldiaDesigner.designer.getPage())).layout.children[0].children[0].options).toEqual({ countries: 'EG' });
   // The page it makes checks clean.
-  await expect(page.getByRole('button', { name: /^Checks/ })).toHaveText('Checks✓');
+  // Its word and its tick apart in its text, as on screen (WCAG 2.5.3).
+  await expect(page.getByRole('button', { name: /^Checks/ })).toHaveText('Checks ✓');
   await screen(page, 'map-address-designer', { viewport: true });
 
   await page.getByRole('button', { name: 'Try it' }).click();
