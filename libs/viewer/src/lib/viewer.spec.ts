@@ -471,6 +471,23 @@ describe('a refused save', () => {
     expect(button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry')).toBeUndefined();
   });
 
+  it('says nothing of a save once the person typed after it: never "Saved, but not all your changes." of a save that left nothing out', async () => {
+    // The walk of 0.35: Reset to Draft saved the invoice, a key in its header, and the line beside Save read "Saved, but
+    // not all your changes." though the person had saved nothing.
+    const { host, form, letThrough } = refusing(() => new Error('The server said no'));
+    letThrough();
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Save').click();
+    await form.settled();
+    await flush();
+    expect(statusText(host)).toBe('Saved');
+    type(input(host, 'f-phone'), '+20 2 1111 3333');
+    await flush();
+    expect(form.getState().status).toBe('saved');
+    expect(statusText(host)).toBe('');
+  });
+
   it('announces a send the page’s own checks stop, naming the fields', async () => {
     const { host, form } = mount('signup', { dataSource: createMemoryDataSource() });
     button(host, 'Submit').click();
