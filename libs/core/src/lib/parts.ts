@@ -13,6 +13,8 @@
  * and a widget made before its part has come is drawn plainly, then by its
  * part in the same place as soon as it comes (`partWidget`).
  */
+import { safeUrl } from './safe-url';
+
 export interface Part<M = unknown> {
   /** Its name: the script bundle's file for it is `fieldia.<name>.js`. */
   readonly name: string;
@@ -111,8 +113,11 @@ interface PageDocument {
  * `integrity`, with its `crossorigin` and the page's nonce), so the file is still checked by its hash.
  */
 function importAnew(address: string, again: number): Promise<unknown> {
-  const anew = new Url(address);
-  anew.searchParams.set('fd-again', String(again));
+  const asked = new Url(address);
+  asked.searchParams.set('fd-again', String(again));
+  // The browser's own address for the module, as its error named it: a web address, or not asked for again.
+  const anew = safeUrl(asked.href, ['http', 'https']);
+  if (!anew) return Promise.reject(new Error(`${address} could not be asked for again`));
   const doc = (globalThis as { document?: PageDocument }).document;
   if (doc?.head) {
     const said = [...Array.from(doc.querySelectorAll('link[integrity][href], script[integrity][src]'))].find((tag) => {
@@ -130,12 +135,12 @@ function importAnew(address: string, again: number): Promise<unknown> {
       preload.crossOrigin = said?.getAttribute('crossorigin') ?? null;
       const nonce = said?.getAttribute('nonce') ?? (doc.querySelectorAll('script[nonce]')[0]?.getAttribute('nonce') || '');
       if (nonce) preload.setAttribute('nonce', nonce);
-      preload.href = anew.href;
+      preload.href = safeUrl(anew, ['http', 'https']) ?? '';
       doc.head.append(preload);
     }
   }
   // Left as the browser's own import, never a bundler's: the address is the browser's, known only now.
-  return import(/* webpackIgnore: true */ /* @vite-ignore */ anew.href);
+  return import(/* webpackIgnore: true */ /* @vite-ignore */ anew);
 }
 
 /**
