@@ -3447,6 +3447,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return { reason: 'save', message };
   }
 
+  /**
+   * Whether the record shown is stored and as its last load or save left it — nothing typed, set aside, on its way,
+   * still worked out or failed to reach the store, no save before it refused, no draft on the server to end: a save of
+   * it has nothing to send.
+   */
+  function unchangedSince(): boolean {
+    return (
+      page.data.kind === 'record' &&
+      state.recordId != null &&
+      state.loaded !== false &&
+      !unsavedWork(state) &&
+      !state.saveProblem &&
+      !state.conflict &&
+      !serverKey &&
+      !asking.size &&
+      !Object.values(state.asked).some((found) => found.failed !== undefined) &&
+      !filesGoing() &&
+      !Object.keys(fileProblems()).length
+    );
+  }
+
   async function savingNow(chain: readonly string[], yes?: string): Promise<Stopped | null> {
     // A record its source does not let this person change is refused here, in its words or the form's: no source is asked.
     if (page.data.kind === 'record' && state.can?.edit === false) {
@@ -3468,6 +3489,17 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const waiting = readTyped();
     if (waiting) await waiting;
     if (asked !== generation) return elsewhere();
+    // A stored record with nothing changed since it was loaded or its last save answered — nothing typed, set aside, on
+    // its way or still worked out, no save before it refused, no draft on the server to end — has nothing to send: saved
+    // as it is, at once, and never sent again to move its version (another person's tab would see a change that is none).
+    // One its own checks refuse, or whose checking parts have not come, is checked as any save is: its problems said.
+    if (unchangedSince() && !guardsOwed() && !Object.keys(collectErrors()).length) {
+      forgetDraft();
+      // The record as this save left it, as one that went: a change made from here on is one no save took.
+      sentAs = baseline;
+      set({ status: 'saved', error: null, saveProblem: null });
+      return null;
+    }
     // Every part that guards a send in before anything goes (fail closed): one that could not come is asked for once more,
     // and still missing, nothing is sent — the person told which, in words, with Retry. Options by condition among them:
     // what is saved never holds one they would take out; a text in several languages checked in each.
