@@ -1,6 +1,6 @@
 import { createForm, saveRefused, type DataSource, type Field, type FieldNode, type FileValue, type Page, type UploadedFile, type UploadFile, type UploadRequest } from '@fieldia/core';
 import { createWidget } from './widgets';
-import { INLINE_FILE_WARNING } from './files';
+import { INLINE_FILE_WARNING, letGoOnceLoaded } from './files';
 import { fileShown } from './file-formats';
 import { WIDGET_LABELS } from './labels';
 
@@ -97,9 +97,17 @@ describe('a file field where the source stores files', () => {
     expect(bar.value).toBe(50);
     expect(words(first.querySelector('.fd-file-state'))).toBe('50%');
     expect(first.querySelector('.fd-file-cancel')?.getAttribute('aria-label')).toBe('Cancel uploading Living room.jpg');
+    const shownMeanwhile = going(el).map((item) => item.querySelector('img') as HTMLImageElement);
     store.sent[0].end();
     store.sent[1].end();
     await until(() => !going(el).length);
+    // Stored before their pictures loaded from the files: their addresses kept while they load (the how-to replay of
+    // 0.35: let go then, WebKit said "Failed to load resource"), let go as each has loaded.
+    const addresses = shownMeanwhile.map((picture) => picture.getAttribute('src'));
+    expect(addresses).toEqual([expect.stringMatching(/^blob:/), expect.stringMatching(/^blob:/)]);
+    expect(revoked.filter((url) => addresses.includes(url))).toEqual([]);
+    for (const picture of shownMeanwhile) picture.dispatchEvent(new Event('load'));
+    expect(revoked).toEqual(expect.arrayContaining(addresses));
     expect(value()).toEqual([
       { url: 'https://files.example/Living room.jpg', name: 'Living room.jpg', size: 6, type: 'image/jpeg' },
       { url: 'https://files.example/Kitchen.jpg', name: 'Kitchen.jpg', size: 6, type: 'image/jpeg' },
@@ -248,6 +256,38 @@ describe('a file field where the source does not store files', () => {
     expect(await shown?.ready).toBe('blob:1');
     expect(shown?.url).toBe('blob:1');
     expect(shown?.element.getAttribute('src')).toMatch(/^blob:1#/);
+  });
+});
+
+describe("a picture's address, shown while its file is on its way", () => {
+  const shown = (url: string) => {
+    const item = document.createElement('li');
+    item.append(Object.assign(document.createElement('img'), { src: url }));
+    return { item, picture: item.querySelector('img') as HTMLImageElement };
+  };
+
+  it('is let go once its picture has loaded or failed, never while it still loads', () => {
+    const loads = shown('blob:loads');
+    letGoOnceLoaded('blob:loads', loads.item);
+    expect(revoked).toEqual([]);
+    loads.picture.dispatchEvent(new Event('load'));
+    expect(revoked).toEqual(['blob:loads']);
+    const fails = shown('blob:fails');
+    letGoOnceLoaded('blob:fails', fails.item);
+    expect(revoked).toEqual(['blob:loads']);
+    fails.picture.dispatchEvent(new Event('error'));
+    expect(revoked).toEqual(['blob:loads', 'blob:fails']);
+  });
+
+  it('is let go at once where its picture has loaded already, or none shows it (its file icon stood in)', () => {
+    const loaded = shown('blob:loaded');
+    Object.defineProperty(loaded.picture, 'complete', { value: true });
+    letGoOnceLoaded('blob:loaded', loaded.item);
+    expect(revoked).toEqual(['blob:loaded']);
+    const icon = document.createElement('li');
+    icon.append(Object.assign(document.createElement('span'), { className: 'fd-file-icon', textContent: 'JPG' }));
+    letGoOnceLoaded('blob:icon', icon);
+    expect(revoked).toEqual(['blob:loaded', 'blob:icon']);
   });
 });
 
