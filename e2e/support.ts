@@ -57,6 +57,30 @@ export async function screen(page: Page, name: string, options: { viewport?: boo
     .toBe(true);
 }
 
+/**
+ * A list's layout for `rows` rows: a page of the format holds 500 at the most (`pageSize`, which every viewer's check
+ * holds a page to), so a longer list is an endless one — its rows loaded 500 at a time as a person scrolls to its end.
+ */
+export const longList = (rows: number) => (rows > 500 ? { pageSize: 500, endless: true } : { pageSize: rows });
+
+/**
+ * Every row of an endless list of `rows` loaded before a spec looks at it, its Show more pressed until they have all
+ * come — in the page, so the view never moves: the list as a page of them all would have opened, its rows counted
+ * (`aria-rowcount`). `table` is the list's table.
+ */
+export async function everyRowLoaded(page: Page, rows: number, table = page.locator('#app .fd-list-table'), timeout = 120_000) {
+  await expect
+    .poll(
+      async () => {
+        // Its records' Show more (list.ts, list-endless.ts), beside its table.
+        await table.evaluate((el) => el.closest('.fd-list-records')?.querySelector<HTMLButtonElement>('.fd-list-more-rows:not([hidden]) button')?.click());
+        return table.getAttribute('aria-rowcount');
+      },
+      { timeout, intervals: [100, 250, 500, 1000] }
+    )
+    .toBe(String(rows + 1));
+}
+
 /** Nothing on the page may scroll sideways. */
 export async function expectNoSidewaysScroll(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
