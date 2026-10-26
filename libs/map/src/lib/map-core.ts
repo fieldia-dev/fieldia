@@ -365,6 +365,17 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     };
     zoomIn.addEventListener('click', () => step(1));
     zoomOut.addEventListener('click', () => step(-1));
+    // The keys' zoom too (+ and -, three steps with Shift, as Leaflet's keyboard takes them): a key pressed while the map
+    // still zooms is kept as a press of the buttons is, never dropped. Before Leaflet's keyboard, which hears the page.
+    const zoomKey = (event: KeyboardEvent) => {
+      const by = event.key === '+' || event.key === '=' ? 1 : event.key === '-' || event.key === '_' ? -1 : 0;
+      if (!zooming || !by || event.target !== element || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      step(event.shiftKey ? by * 3 : by);
+    };
+    element.addEventListener('keydown', zoomKey, true);
+    cleanups.push(() => element.removeEventListener('keydown', zoomKey, true));
     // The tools under the zoom, when the page asks for any: their code comes with the first map that has them.
     if (tools.size)
       void import('./tools').then(({ wireTools }) => {

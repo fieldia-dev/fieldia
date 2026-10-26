@@ -341,6 +341,28 @@ test('the zoom buttons zoom, and a press on them is not a place', async ({ page 
   await expect(field.locator('.fd-map-pin')).toHaveCount(0);
 });
 
+test('the keys zoom as the buttons do: a second key pressed while the map still zooms from the first is kept, never dropped', async ({ page }) => {
+  const { map } = await openPlace(page);
+  const zoom = await zoomOf(map);
+  await map.focus();
+  // Two quick presses of each, the second 120 ms after the first, while the map still glides (0.35 dropped it).
+  const twice = (key: string, keyCode: number) =>
+    map.evaluate(
+      (element, { key, keyCode }) =>
+        new Promise<void>((done) => {
+          const press = () => element.dispatchEvent(new KeyboardEvent('keydown', { key, keyCode, bubbles: true, cancelable: true } as KeyboardEventInit));
+          press();
+          setTimeout(() => (press(), done()), 120);
+        }),
+      { key, keyCode }
+    );
+  await twice('+', 187);
+  await expect.poll(() => zoomOf(map)).toBe(zoom + 2);
+  await mapSettled(map);
+  await twice('-', 189);
+  await expect.poll(() => zoomOf(map)).toBe(zoom);
+});
+
 test('in Arabic, right to left: the map’s words are Arabic, its buttons on the left, the map itself not mirrored', async ({ page }) => {
   const { map, field } = await openPlace(page, `${QUERY}&locale=ar&dir=rtl`);
   await expect(field.getByRole('combobox')).toHaveAttribute('placeholder', 'ابحث عن عنوان');
