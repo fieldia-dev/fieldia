@@ -51,6 +51,7 @@ import { loadPrint, printIntent, printSoon } from './print';
 import { searchBar } from './search-bar';
 import { markSort, pressedSort, sortWith } from './list-sort';
 import { endlessRows } from './list-endless';
+import { cameBack, keepPlace, placeKept, topRow, type ListPlace } from './list-place';
 import { rowWindow, type RowWindow, type WindowRow } from './list-window';
 import type { SavedViews, ViewsSource } from './saved-views';
 import { assistPart, cardsPart, columnsPart, editablePart, filtersPart, importPart, rowsPart, viewsPart, type AssistPart, type ColumnsPart } from './viewer-parts';
@@ -290,6 +291,18 @@ export function listView(context: ListContext): ListView {
    */
   const viewSource = node.search !== 'fields' && context.inRecord !== true && context.dataSource?.views ? (context.dataSource as ViewsSource) : null;
   let facets: Facet[] = context.search ? [...context.search] : viewSource ? defaultFacets(node) : startingFacets(node, context.preferences, page);
+  /**
+   * Where the list stood as a row of it opened its record on a page of its own, kept in this page's history entry
+   * (list-place.ts): come back to (Back), it opens there — its search, order, page or rows loaded, the row at its top —
+   * the keyboard on the row it opened. A list in a record, or given its search, opens as it says.
+   */
+  const placeKey = `${page.id}:${node.id}`;
+  let place = context.inRecord || context.search || !cameBack(doc) ? null : placeKept(doc, placeKey);
+  if (place) {
+    facets = place.facets;
+    offset = place.offset;
+    reach = endless ? Math.max(pageSize, place.reach) : pageSize;
+  }
   /** In the order they were chosen, which is the order the app gets them. */
   const chosen = new Set<RecordId>();
   /** Each record's version and what the person may do with it, from the rows shown: what Edit sends and keeps to. */
@@ -483,6 +496,11 @@ export function listView(context: ListContext): ListView {
       return [name, th] as const;
     })
   );
+  // The order the list had as a row of it opened, come back to (`place`).
+  if (place) {
+    keys = sortable ? place.keys.filter((one) => !one.near && headers.has(one.field)) : [];
+    sort = sortWith(keys, defaultSort);
+  }
   // Every parent opened, or closed, at once.
   const expandAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.expandAll, title: labels.expandAll }, el('span', { 'aria-hidden': 'true' }, '+'));
   const collapseAll = el('button', { type: 'button', class: 'fd-list-fold', 'aria-label': labels.collapseAll, title: labels.collapseAll }, el('span', { 'aria-hidden': 'true' }, '\u2212'));
@@ -541,8 +559,11 @@ export function listView(context: ListContext): ListView {
    * ask again once it settles and go back to its row.
    */
   async function openRow(id: RecordId, lit = true, name?: string) {
+    // Where the list stands, kept for Back: let go again where the record opens over the list, which stays.
+    if (!context.inRecord && !context.search) keepPlace(doc, placeKey, { facets, keys, offset, reach: endless ? rows.length : pageSize, ...topRow(body.querySelectorAll<HTMLElement>('.fd-list-row')), open: String(id) });
     const answer = context.onOpenRecord?.(id, name);
     if (!isPromise(answer)) return;
+    keepPlace(doc, placeKey, null);
     if (lit) openId = id;
     markOpen();
     try {
@@ -1232,6 +1253,27 @@ export function listView(context: ListContext): ListView {
     drawPager();
     changed();
     context.onCount?.(matching, facets.length > 0);
+    if (place) backInPlace(place);
+  }
+
+  /** Come back to: the row that was at the window's top where it was, the keyboard on the row it opened (`place`). */
+  function backInPlace(kept: ListPlace) {
+    place = null;
+    // Come back to once: drawn again in this page later, the list opens as it would.
+    keepPlace(doc, placeKey, null);
+    const row = (id: string | undefined) => (id === undefined ? null : win && windowing() ? win.reveal(id) : ([...body.querySelectorAll<HTMLElement>('.fd-list-row')].find((tr) => tr.dataset['id'] === id) ?? null));
+    const view = doc.defaultView;
+    // Put where it was, and again over the next frames as the rows round it are drawn (where the browser keeps no
+    // place as they come, WebKit, the window's own keeping moves it as they do).
+    const settle = (frames: number) => {
+      const at = row(kept.at);
+      const by = at && kept.top !== undefined ? at.getBoundingClientRect().top - kept.top : 0;
+      if (Math.abs(by) >= 1) view?.scrollBy(0, by);
+      if (frames > 0 && at) view?.requestAnimationFrame(() => settle(frames - 1));
+    };
+    settle(3);
+    const opened = row(kept.open);
+    if (opened && !element.contains(doc.activeElement)) opened.focus({ preventScroll: true });
   }
 
   /** Its records could not be loaded: none shown, its own sentence and why where the source said, with Retry. */
