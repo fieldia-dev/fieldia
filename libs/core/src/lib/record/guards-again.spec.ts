@@ -59,8 +59,23 @@ const enquiry = (): Page =>
     id: 'unit-enquiry',
     data: { kind: 'responses' },
     payment: { label: 'Reservation fee', amount: 10000, currency: 'EGP' },
-    fields: { name: { type: 'char', label: 'Full name', required: true }, message: { type: 'text', label: 'Anything else?' }, pin: { type: 'char', label: 'PIN', secret: true } },
-    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-message', field: 'message' }, { type: 'field', id: 'f-pin', field: 'pin' }] },
+    fields: {
+      name: { type: 'char', label: 'Full name', required: true },
+      message: { type: 'text', label: 'Anything else?' },
+      pin: { type: 'char', label: 'PIN', secret: true },
+      passcode: { type: 'char', label: 'Portal password' },
+    },
+    layout: {
+      type: 'sections',
+      id: 'root',
+      children: [
+        { type: 'field', id: 'f-name', field: 'name' },
+        { type: 'field', id: 'f-message', field: 'message' },
+        { type: 'field', id: 'f-pin', field: 'pin' },
+        // Drawn as a password box: never kept in the browser, as a field marked `secret` is not.
+        { type: 'field', id: 'f-passcode', field: 'passcode', widget: 'password' },
+      ],
+    },
   }) as Page;
 
 const settled = () => new Promise((resolve) => setTimeout(resolve, 600));
@@ -118,6 +133,39 @@ describe('a payment step that could not come', () => {
     const again = (await fresh()).createForm({ page: enquiry(), dataSource: (await fresh()).createMemoryDataSource() });
     await settled();
     expect(again.getState().values['name']).toBe('Hana Mostafa');
+  });
+
+  it('keeps for a reload what drafts keep, through the same draft: never a secret field’s value or a password box’s, and none of it once sent', async () => {
+    mockFailing['pay'] = [WEBKIT, WEBKIT];
+    const { createForm, createMemoryDataSource } = await fresh();
+    const dataSource = createMemoryDataSource();
+    const form = createForm({ page: enquiry(), dataSource });
+    await settled();
+    // Typed once the part is missing: kept as it is typed (drafts' own pause), the draft drafts keep.
+    form.setValue('name', 'Hana Mostafa');
+    form.setValue('pin', '4321');
+    form.setValue('passcode', 'hunter2-sesame');
+    await settled();
+    const kept = () => drafts().map((key) => tab.get(key) as string);
+    expect(kept()).toHaveLength(1);
+    expect(kept()[0]).toContain('Hana Mostafa');
+    expect(kept()[0]).not.toContain('4321');
+    expect(kept()[0]).not.toContain('hunter2-sesame');
+    expect(Object.keys(JSON.parse(kept()[0]).values)).not.toEqual(expect.arrayContaining(['pin']));
+    expect(Object.keys(JSON.parse(kept()[0]).values)).not.toEqual(expect.arrayContaining(['passcode']));
+    expect(JSON.parse(kept()[0]).answered ?? []).not.toEqual(expect.arrayContaining(['pin', 'passcode']));
+    // A send refused for the missing part keeps it at once, the same way: still no secret.
+    form.setValue('message', 'Is the price final?');
+    expect(await form.save()).toBe(false);
+    expect(kept()).toHaveLength(1);
+    expect(kept()[0]).toContain('Is the price final?');
+    expect(kept()[0]).not.toContain('4321');
+    expect(kept()[0]).not.toContain('hunter2-sesame');
+    // The part comes as the send asks once more: sent, and nothing of it is left in the tab.
+    expect(await form.save()).toBe(true);
+    expect(dataSource.responses).toHaveLength(1);
+    expect(drafts()).toHaveLength(0);
+    expect([...tab.values()].some((value) => value.includes('Hana Mostafa') || value.includes('4321') || value.includes('hunter2-sesame'))).toBe(false);
   });
 
   it('once the part comes and the answers go, what was kept for a reload goes with them; a page whose parts came keeps nothing', async () => {
