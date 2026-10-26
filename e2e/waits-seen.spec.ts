@@ -118,7 +118,7 @@ test.describe('a wait seen where a person looks', () => {
     await hold(page);
     await rows(page).filter({ hasText: 'Horus Foods' }).first().click();
     await demo(page, "(d.net.failNext = true, d.release((ask) => ask.member === 'load'), 0)");
-    await expect(customer(page).locator('.fd-loader[data-way="failed"]')).toContainText('Couldn’t open customer 32');
+    await expect(customer(page).locator('.fd-loader[data-way="failed"]')).toContainText('Couldn’t open customer Horus Foods');
     await letGo(page);
     await expect(invoices.locator('.fd-loader')).toHaveCount(0);
     await expect(invoices.locator('.fd-list-row')).toHaveCount(0);
@@ -197,7 +197,7 @@ test.describe('a wait seen where a person looks', () => {
       if (size.width === 1440) await screen(page, 'waits-seen-save-busy', { viewport: true });
       // Its answer fails — that answer alone let go, every other still held: Save and Discard back, side by side.
       await demo(page, "(d.net.failNext = true, d.release((ask) => ask.member === 'save'), 0)");
-      await expect(pane(page, 'Customer').locator('.fd-status')).toHaveText('The server did not answer this once.');
+      await expect(pane(page, 'Customer').locator('.fd-status')).toHaveText('Not saved. The server did not answer this once.');
       await expect(discard).toBeVisible();
       await expect(save).not.toHaveAttribute('aria-busy', /.*/);
       // Its ring gone once seen its minimum; Save where it was pressed, Discard beside it, what failed under them.
@@ -282,6 +282,9 @@ test.describe('a wait seen where a person looks', () => {
     await expect.poll(() => demo<number>(page, 'd.held')).toBeGreaterThan(0);
     await demo(page, "(d.net.failNext = true, d.release((ask) => ask.member === 'search'), 0)");
     await expect(page.locator('.fd-say').filter({ hasText: 'search' })).toContainText('Account manager: Couldn’t search. The server did not answer this once.');
+    // Said in the toast, the box's list holds nothing: closed, never an empty frame left over the form (the walk of 0.35).
+    await expect(manager).toHaveAttribute('aria-expanded', 'false');
+    await expect(pane(page, 'Customer').locator('[data-node="f-manager"] [role="listbox"]')).toBeHidden();
     await letGo(page);
     expect(problems).toEqual([]);
   });
@@ -359,6 +362,23 @@ test.describe('Fieldia’s own words on a page right to left, left in English', 
 });
 
 test.describe('a part’s wait drawn one way, as its code comes', () => {
+  test('a list’s map whose code is on its way holds its place with a block as big as the map, never a bar across its top', async ({ page }) => {
+    // The owner's walk of 0.35 on Slow 4G: one thin bar across the map's top, then a grey block, then the pins.
+    const code = await holdScript(page, /view-part[-\w]*\.js$/);
+    await page.goto('/plain/?page=map-homes&skin=outlined', { waitUntil: 'domcontentloaded' });
+    await expect.poll(() => code.seen()).toBeGreaterThan(0);
+    const block = page.locator('.fd-map-holder > .fd-sk-block');
+    await expect(block).toBeVisible();
+    const held = (await page.locator('.fd-map-holder').boundingBox())!;
+    const shown = (await block.boundingBox())!;
+    expect(shown.height).toBeGreaterThan(300);
+    expect(Math.abs(shown.height - held.height)).toBeLessThanOrEqual(2);
+    expect(Math.abs(shown.y - held.y)).toBeLessThanOrEqual(1);
+    await screen(page, 'waits-seen-map-holder', { viewport: true });
+    code.go();
+    await expect(page.locator('.leaflet-container').first()).toBeVisible();
+  });
+
   test('a map drawn the first time: its skeleton, never “Loading…” in words first', async ({ page }) => {
     const leaflet = await holdScript(page, /leaflet-src[-\w]*\.js$/);
     // The loading part as a slow network brings it: wherever the page asks for it, well after a wait's delay.

@@ -411,6 +411,8 @@ const SKINS_CSS = /* css */ `
   color: var(--fd-text); border-radius: var(--fd-control-radius); min-width: 34px; height: 34px; padding: 0 8px;
 }
 .fd-points button.fd-on { background: var(--fd-accent); color: var(--fd-accent-text); border-color: var(--fd-accent); }
+/* Stars spaced by their own padding: five fit a column a third of a form's width (0.35.1: the fifth wrapped there). */
+.fd-points.fd-rating { gap: 2px; }
 .fd-rating button { border: none; background: none; font-size: 24px; color: var(--fd-border-strong); padding: 0 2px; min-width: 0; }
 .fd-rating button.fd-on { background: none; color: #f5a623; }
 .fd-points button:disabled, .fd-choice input:disabled { cursor: default; }
@@ -527,6 +529,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-richtext-tool svg circle { fill: currentColor; stroke: none; }
 .fd-link-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border: 1px solid var(--fd-border); border-block-end: none; background: var(--fd-surface); }
 .fd-link-row > .fd-input { flex: 1 1 200px; min-width: 0; }
+.fd-link-row > .fd-link-problem { flex: 1 0 100%; margin: 0; }
 .fd-richtext.fd-blank[contenteditable="true"]::before { content: attr(data-placeholder); position: absolute; color: var(--fd-muted); opacity: 0.8; pointer-events: none; }
 .fd-richtext[contenteditable="false"] { background: transparent; border-color: transparent; padding-inline: 0; min-height: 0; }
 .fd-richtext p { margin: 0 0 6px; }

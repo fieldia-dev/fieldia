@@ -297,7 +297,10 @@ function combobox(options: {
         found = await options.search(asQuery(query));
       } catch (error) {
         if (mine !== seq || doc.activeElement !== input) return wait.stop();
-        return wait.fail(error);
+        wait.fail(error);
+        // Said elsewhere (a toast), the list holds nothing: closed, never an empty frame over the form (0.35.1).
+        if (!list.children.length) close();
+        return;
       }
       if (mine !== seq || doc.activeElement !== input) return wait.stop(); // a newer search, or the person left
       await wait.done();

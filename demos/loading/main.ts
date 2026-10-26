@@ -327,15 +327,15 @@ function mountAll() {
   waiting.clear();
   indicator.removeAttribute('data-on');
   const loading: LoadingOptions = { ...settings, custom };
-  handles.list = mountViewer(listHost, { page: listPage, dataSource, loading, dir, listViews: demoListViews, onOpenRecord: (id) => void openCustomer(id) });
+  handles.list = mountViewer(listHost, { page: listPage, dataSource, loading, dir, listViews: demoListViews, onOpenRecord: (id, name) => void openCustomer(id, name) });
   handles.record = mountViewer(recordHost, { page: recordPage, dataSource, loading, dir, recordId: customer });
   handles.twins = TWINS.map((theme, i) => mountViewer(twinHosts[i], { page: recordPage, dataSource, loading, dir, recordId: customer, theme, showActions: false }));
   for (const handle of [handles.list, handles.record, ...handles.twins]) hear(handle);
 }
-/** A customer opened from the list: the record beside it asked for the other one, as it is asked again. */
-function openCustomer(id: RecordId) {
+/** A customer opened from the list: the record beside it asked for the other one, as it is asked again — by its row's name. */
+function openCustomer(id: RecordId, name?: string) {
   customer = id;
-  return Promise.all([handles.record, ...handles.twins].map((handle) => handle?.form.openRecord(id)));
+  return Promise.all([handles.record, ...handles.twins].map((handle) => handle?.form.openRecord(id, name)));
 }
 againButton.addEventListener('click', () => void Promise.all([handles.list, handles.record, ...handles.twins].map((handle) => handle?.reload())));
 mountAll();

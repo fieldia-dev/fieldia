@@ -34,6 +34,7 @@ export const es: ViewerLabels = {
   submitAnother: 'Enviar otra respuesta',
   leaveEmpty: 'Deje este campo vacío',
   draftFound: 'Tiene respuestas sin guardar del {time}.',
+  draftFoundRecord: 'Tiene cambios sin guardar del {time}.',
   restore: 'Restaurar',
   discardDraft: 'Descartar',
   ok: 'Aceptar',

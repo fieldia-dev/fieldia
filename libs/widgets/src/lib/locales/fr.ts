@@ -138,6 +138,7 @@ export const fr: WidgetLabels = {
   close: 'Fermer',
   fileAt: '{n} sur {total}',
   noPreview: 'Pas d’aperçu pour ce type de fichier',
+  notAPicture: 'Ce fichier n’est pas une image, même si son nom le dit : il n’est pas affiché',
   cannotPlay: 'Ce navigateur ne peut pas le lire : téléchargez-le pour le lire.',
   recordVoice: 'Enregistrer une note vocale',
   recordVideo: 'Enregistrer une vidéo',

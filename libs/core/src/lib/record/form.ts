@@ -681,9 +681,10 @@ export interface Form {
    * Show another record of the page's model in this form, loaded from the
    * data source as a pager moves to it, or a new one for null. Changes not
    * saved are dropped: save first. The page's `open` steps run for it. It
-   * goes through `leave()` first: false when the person kept their work.
+   * goes through `leave()` first: false when the person kept their work. `name`, the record's name where the person
+   * picked it by one (a list's row): what a failure to open it calls it, rather than its id.
    */
-  openRecord(id: RecordId | null): Promise<boolean>;
+  openRecord(id: RecordId | null, name?: string): Promise<boolean>;
   /**
    * The one check every way out of the form goes through — another record,
    * the record loaded again, the form closed, reset by a step — and the app's
@@ -3945,7 +3946,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const problem = saveProblemOf(error);
     const opening = !shownLoaded && opened !== null && opened === state.recordId;
     const message = opening
-      ? fillMessage(messages, named(messages.openFailedNoun, messages.openFailed), { id: String(state.recordId), problem: problem.message })
+      ? fillMessage(messages, named(messages.openFailedNoun, messages.openFailed), { id: openedName?.id === state.recordId ? openedName.name : String(state.recordId), problem: problem.message })
       : fillMessage(messages, named(messages.loadFailedNoun, messages.loadFailed), { problem: problem.message });
     set({ status: 'error', error: message, loadProblem: { kind: problem.kind === 'network' ? 'network' : 'other', message } });
   }
@@ -3954,6 +3955,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let notLoadedProblem: SaveProblem | null = null;
   /** The record opened last in the place of another (`openRecord`): named by its id while none of it is shown. */
   let opened: RecordId | null = null;
+  /** And by the name it was picked by, where it was (0.35.1: "Couldn't open customer 32" of a row that said Horus Foods). */
+  let openedName: { id: RecordId | null; name: string } | null = null;
   /**
    * Whether the record shown loaded once from its source. A record an app hands the form with its values and never asks
    * to load (`recordId` with `values`) is the app's to vouch for: it saves as ever.
@@ -3963,9 +3966,14 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   let loads = 0;
 
   /** Another record in this form's place, or a new one, once the one check let what was there go: false when the person kept it. */
-  function openRecord(id: RecordId | null, chain: readonly string[] = []): Promise<boolean> {
+  function openRecord(id: RecordId | null, chain: readonly string[] = [], name?: string): Promise<boolean> {
     const go = letGo({}, chain);
-    return go === true ? showNow(id) : go.then((yes) => (yes ? showNow(id) : false));
+    const show = () => {
+      // Its name, where the person picked it by one that is not its id: kept while it is the one opened (Retry too).
+      openedName = name && name !== String(id) ? { id, name } : null;
+      return showNow(id);
+    };
+    return go === true ? show() : go.then((yes) => (yes ? show() : false));
   }
 
   /** Another record in this form's place, or a new one: what was there let go, the new one loaded and opened. */
@@ -4420,7 +4428,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       return found;
     },
 
-    openRecord: (id) => track(openRecord(id)),
+    openRecord: (id, name) => track(openRecord(id, [], name)),
 
     leave: (how) => Promise.resolve(letGo(how)),
 

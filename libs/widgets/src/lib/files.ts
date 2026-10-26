@@ -4,7 +4,7 @@ import { goingItem, type GoingItem } from './files-going';
 import { shrinkable, shrinkFor, shrinkPhoto } from './shrink';
 import { drawIcon } from './icons';
 import { bytesOf, extension, INLINE_FILE_WARNING, readFile, source } from './file-shown';
-import { shownFile, whenShown, type Shown } from './file-formats';
+import { formatOf, shownFile, whenShown, type Shown } from './file-formats';
 import { kindOfFile as kindOf, recordedKinds, recordSeconds } from './media';
 export { INLINE_FILE_WARNING, readFile };
 import { askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor, type Make } from './kind-parts';
@@ -214,7 +214,7 @@ export function viewFiles(context: ViewFiles): void {
   };
   /** Its size in words, where it is known: an app's file at its own address may not say. */
   const sized = (file: FileValue) => (Number.isFinite(file.size) ? formatBytes(file.size) : '');
-  const none = (file: FileValue) => make('div', { class: 'fd-file-none' }, icon(make, file), make('strong', {}, file.name), sized(file), make('p', {}, words.noPreview));
+  const none = (file: FileValue, said = words.noPreview) => make('div', { class: 'fd-file-none' }, icon(make, file), make('strong', {}, file.name), sized(file), make('p', {}, said));
   function show(to: number) {
     at = (to + all.length) % all.length;
     const file = all[at];
@@ -244,6 +244,9 @@ export function viewFiles(context: ViewFiles): void {
     if (made?.kind === 'audio') return body.replaceChildren(make('div', { class: 'fd-file-none fd-file-sound' }, icon(make, file), make('strong', {}, file.name), sized(file), player(make, made.kind, file, made.url, () => make('p', {}, words.cannotPlay))));
     if (made?.kind === 'pdf') return body.replaceChildren(make('iframe', { src: safeUrl(made.url, MEDIA_URL), title: file.name }));
     const from = safeUrl(file.url, MEDIA_URL);
+    // A picture by its name whose bytes are none: said so, not only that it has no preview (0.35.1).
+    const claimed = formatOf(file);
+    if (!made && data && claimed?.kind === 'image' && !claimed.markup && !claimed.starts(data)) return body.replaceChildren(none(file, words.notAPicture));
     if (!asText(file) || (!data && !from)) return body.replaceChildren(none(file));
     const pre = make('pre', { tabindex: '0' });
     body.replaceChildren(pre);

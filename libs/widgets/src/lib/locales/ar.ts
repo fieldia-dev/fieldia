@@ -138,6 +138,7 @@ export const ar: WidgetLabels = {
   close: 'إغلاق',
   fileAt: '{n} من {total}',
   noPreview: 'لا معاينة لهذا النوع من الملفات',
+  notAPicture: 'هذا الملف ليس صورة وإن قال اسمه ذلك، فلا يُعرض',
   cannotPlay: 'لا يستطيع هذا المتصفح تشغيله: نزّله لتشغيله.',
   recordVoice: 'تسجيل ملاحظة صوتية',
   recordVideo: 'تسجيل فيديو',

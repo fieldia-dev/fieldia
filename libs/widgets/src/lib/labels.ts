@@ -178,6 +178,8 @@ export interface WidgetLabels {
   close: string;
   fileAt: string;
   noPreview: string;
+  /** A file whose name says it is a picture and whose bytes are not one: never shown (0.35.1: it said only "No preview"). */
+  notAPicture: string;
   /**
    * A film or a sound the browser cannot play (its format is not one it reads): said where its player would be.
    */
@@ -917,6 +919,7 @@ const en: WidgetLabels = {
   close: 'Close',
   fileAt: '{n} of {total}',
   noPreview: 'No preview for this kind of file',
+  notAPicture: 'This file is not a picture, though its name says so: it is not shown',
   cannotPlay: 'This browser cannot play it: download it to play it.',
   recordVoice: 'Record a voice note',
   recordVideo: 'Record a video',

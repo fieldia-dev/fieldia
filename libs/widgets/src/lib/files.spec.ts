@@ -230,7 +230,14 @@ describe('formatted text toolbar', () => {
     address.value = 'javascript:alert(1)';
     (el.querySelector('button.fd-link-apply') as HTMLButtonElement).click();
     expect(commands).toEqual([]);
+    // Said why, under it, as a web address field says it (the walk of 0.35: red, and no word).
+    const why = el.querySelector('.fd-link-problem') as HTMLElement;
+    expect(why.hidden).toBe(false);
+    expect(why.textContent).toBe('Only a web address (http or https) can go here');
+    expect(address.getAttribute('aria-describedby')).toBe(why.id);
     address.value = 'niletraders.example/terms';
+    address.dispatchEvent(new Event('input'));
+    expect(why.hidden).toBe(true);
     (el.querySelector('button.fd-link-apply') as HTMLButtonElement).click();
     expect(commands).toEqual([['createLink', 'https://niletraders.example/terms']]);
   });

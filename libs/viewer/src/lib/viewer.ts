@@ -248,9 +248,10 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * A list page: a row was opened, by a click or by Enter. The app shows the
    * record. When it answers with a promise — the record in a dialog, closed —
    * the list asks for its records again once it settles, and puts the focus
-   * back on the row. Anything else it answers is let be.
+   * back on the row. Anything else it answers is let be. `name`, the row's own name for its record: what the app may
+   * call it (`form.openRecord(id, name)` says it if it cannot be opened).
    */
-  onOpenRecord?: (id: RecordId) => unknown;
+  onOpenRecord?: (id: RecordId, name?: string) => unknown;
   /**
    * A list page: one of its other views asked for a new record with these values filled in — a calendar's empty slot
    * pressed, its start and its end. The app shows it; a promise answered, the list asks again once it settles. Without
@@ -2061,15 +2062,34 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function waitingFor(state: FormState): string {
     return waitWords(state, labels, page.data.kind === 'responses', fill);
   }
-  /** Saved, or sent — or not all of it: never "Saved" while a change of the person's is still to save, or a file on its way. */
-  const savedWords = () => (!workAtRisk(form.getState()) ? labels.saved : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotAll);
+  /**
+   * A save the source refused in its own words, said as one not done: "Not saved. The server did not answer this once."
+   * (0.35.1: its words alone never said nothing was saved). Fieldia's own sentences that say so already are said as
+   * they are: a part that guards it could not load, a record not loaded, something broken.
+   */
+  const m = formOptions.messages ?? MESSAGES.en;
+  const ownSentences = [m.guardNotSaved, m.guardNotSent, m.notLoaded, m.notLoadedNoun, m.saveBroken, m.sendBroken, m.saveNoId]
+    .filter((template): template is string => typeof template === 'string' && !!template)
+    .map((template) => new RegExp(`^${template.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{\w+\\\}/g, '[\\s\\S]*')}$`));
+  const notDoneFor = (message: string) => (ownSentences.some((own) => own.test(message)) ? message : `${notDone()}. ${message}`);
+  /** Whether the last save ended with a change of the person's still to save, or a file on its way: noted as it ended. */
+  let shortOfAll = false;
+  let statusWas: FormState['status'] | null = null;
+  /**
+   * Saved, or sent — or not all of it, where the save itself left a change out: never "Saved" while a change is still
+   * to save; and nothing said of a save once the person typed after it (0.35.1: a step's save, Reset to Draft's, then a
+   * key in a box read "Saved, but not all your changes." though the person had saved nothing).
+   */
+  const savedWords = (state: FormState) => (!workAtRisk(state) ? labels.saved : !shortOfAll ? '' : page.data.kind === 'responses' ? labels.sentNotLatest : labels.savedNotAll);
   updaters.push((state) => {
+    if (state.status === 'saved' && statusWas !== 'saved') shortOfAll = workAtRisk(state);
+    statusWas = state.status;
     const problem = state.saveProblem;
     const text =
       waitingFor(state) ||
       (state.status === 'saving' ? labels.saving
-      : state.status === 'saved' ? savedWords()
-      : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
+      : state.status === 'saved' ? savedWords(state)
+      : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? notDoneFor(problem.message) : notDone())
       // A record that could not be loaded is said over the page, with its own Retry.
       : state.status === 'error' && state.loadProblem ? ''
       : state.status === 'error' ? state.error ?? ''
@@ -2119,7 +2139,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (!seenProblem) return;
     if (seenProblem.kind === 'rule') void dialogConfirm(seenProblem.message, { alone: true });
     else if (seenProblem.kind === 'fields') announce(checkText(state));
-    else if (seenProblem.kind === 'other') announce(seenProblem.message);
+    else if (seenProblem.kind === 'other') announce(notDoneFor(seenProblem.message));
   });
 
   // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
@@ -2141,6 +2161,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     cleanups.push(() => watching?.destroy());
   }
 
+  // A record's draft holds its changes, a form's its answers; the app's own sentence for either said for both.
+  const ownDraftWords = (key: string) => Object.prototype.hasOwnProperty.call(options.labels ?? {}, key);
+  const draftWords = () =>
+    page.data.kind === 'responses' || (ownDraftWords('draftFound') && !ownDraftWords('draftFoundRecord')) ? labels.draftFound : labels.draftFoundRecord ?? labels.draftFound;
   const draft = el('div', { class: 'fd-draft', hidden: '' });
   const draftText = el('span');
   const restore = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.restore);
@@ -2150,7 +2174,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   draft.append(draftText, restore, discardDraft);
   updaters.push((state) => {
     setHidden(draft, !state.draft);
-    if (state.draft) draftText.textContent = fill(labels.draftFound, { time: new Date(state.draft.savedAt).toLocaleString() });
+    if (state.draft) draftText.textContent = fill(draftWords(), { time: new Date(state.draft.savedAt).toLocaleString() });
   });
 
   function focusFirstProblem() {

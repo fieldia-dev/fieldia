@@ -1,5 +1,5 @@
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
-import type { JsonValue } from '@fieldia/core';
+import { MESSAGES, webAddress, type JsonValue, type Locale } from '@fieldia/core';
 import { fillIn } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 import { jsonProblem, readJson } from './json-problem';
@@ -57,7 +57,7 @@ const TOOLS: [keyof WidgetLabels, string, string][] = [
 export const htmlWidget: WidgetFactory = partFactory(textPart, (part) => part.modernHtml, (context) => classicHtml(context), (node) => usesEditor(node.options));
 
 /** The classic formatted text: its toolbar on top, always, as it was before a page could ask for more. */
-const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {
+const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en, locale }) => {
   const area = document.createElement('div');
   area.id = id;
   area.className = 'fd-input fd-richtext';
@@ -105,7 +105,7 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
     // Show what was stored: anything unsafe that was typed or pasted is gone.
     if (area.innerHTML !== last) showHtml(area, last);
   });
-  const toolbar = withToolbar ? formattingToolbar(area, document, labels) : null;
+  const toolbar = withToolbar ? formattingToolbar(area, document, labels, locale, id) : null;
   let element: HTMLElement = area;
   if (toolbar) {
     // The box is labelled by the field's label; the text inside it says so too.
@@ -156,7 +156,7 @@ const classicHtml: WidgetFactory = ({ form, name, node, id, document, labels = W
  * (they act on mousedown's behalf), a text-style choice, and a row for a link's
  * address. One button takes Tab; the arrow keys move along the bar.
  */
-function formattingToolbar(area: HTMLElement, doc: Document, labels: WidgetLabels) {
+function formattingToolbar(area: HTMLElement, doc: Document, labels: WidgetLabels, locale: Locale = 'en', id = 'fd-richtext') {
   const bar = doc.createElement('div');
   bar.className = 'fd-richtext-bar';
   bar.setAttribute('role', 'toolbar');
@@ -209,13 +209,29 @@ function formattingToolbar(area: HTMLElement, doc: Document, labels: WidgetLabel
   unlink.type = 'button';
   unlink.className = 'fd-button fd-button-link fd-link-remove';
   unlink.textContent = labels.removeLink;
-  linkRow.append(address, apply, unlink);
+  // Why an address is refused, under it, as a web address field says it (0.35.1: a script's address went red and said nothing).
+  const refused = doc.createElement('p');
+  refused.className = 'fd-error fd-link-problem';
+  refused.id = `${id}-link-problem`;
+  refused.setAttribute('role', 'status');
+  refused.hidden = true;
+  linkRow.append(address, apply, unlink, refused);
+  const said = (words: string | null) => {
+    refused.hidden = !words;
+    refused.textContent = words ?? '';
+    if (words) address.setAttribute('aria-describedby', refused.id);
+    else address.removeAttribute('aria-describedby');
+  };
+  address.addEventListener('input', () => said(null));
   apply.addEventListener('click', () => {
     const url = linkAddress(address.value);
     if (!url) {
       address.setAttribute('aria-invalid', 'true');
+      const messages = MESSAGES[locale] ?? MESSAGES.en;
+      said(webAddress(address.value) === 'scheme' ? messages.urlScheme : messages.url);
       return;
     }
+    said(null);
     address.setAttribute('aria-invalid', 'false');
     restore();
     doc.execCommand?.('createLink', false, url);

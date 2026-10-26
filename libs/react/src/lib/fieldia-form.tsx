@@ -273,7 +273,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       // The newest handler, as for actions: told of a part that failed.
       onError: (error, where) => latest.current.onError?.(error, where),
       // The newest handler, as for actions; rows look openable only when there is one.
-      onOpenRecord: options.onOpenRecord && ((id) => latest.current.onOpenRecord?.(id)),
+      onOpenRecord: options.onOpenRecord && ((id, name) => latest.current.onOpenRecord?.(id, name)),
       // A page a step opens: the newest way of the app's, else the viewer's.
       onOpen: (request) => latest.current.onOpen?.(request),
     });

@@ -1340,8 +1340,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       distributions.set(column, params);
       return {
         ...base,
-        // Its accounts' names take room, as words do.
-        minWidth: node.fit === 'shrink' ? 96 : 180,
+        // Its accounts' names take room, as words do: a word column's least, never so much that the line's last column
+        // (an invoice's Tax excl.) is cut under the line's own buttons at a desktop's width (0.35.1, the walk's 1440 px).
+        minWidth: node.fit === 'shrink' ? 96 : 120,
         flex: 2,
         cellRendererSelector: (p) => (kindOf(p.data) || p.node.rowPinned ? undefined : { component: DistributionRenderer, params }),
         // Tab goes round the lines of its open editor; from its last box, on to the next cell.

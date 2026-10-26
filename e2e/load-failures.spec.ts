@@ -77,7 +77,8 @@ test.describe('a failure stays said, with Retry, and names what failed', () => {
     // Its answer fails (the customer's own load, asked first).
     await demo(page, "(d.net.failNext = true, d.release((ask) => ask.member === 'load'), 0)");
     const failed = customer(page).locator('.fd-loader[data-way="failed"]');
-    await expect(failed).toHaveText('Couldn’t open customer 32: The server did not answer this once. Retry');
+    // Named as the person picked it: the row's name (the walk of 0.35 read "customer 32").
+    await expect(failed).toHaveText('Couldn’t open customer Horus Foods: The server did not answer this once. Retry');
     await expect(failed).toHaveAttribute('role', 'alert');
     await expect(customer(page).getByRole('button', { name: 'Retry' })).toHaveCount(1);
     // Nothing of another customer under it, nothing to type into.
