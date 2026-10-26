@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { loadavg } from 'node:os';
-import { type Page } from '@playwright/test';
+import { type Browser, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { asAPhone } from './perf-counts';
 
@@ -45,6 +45,12 @@ const BUDGET = {
   viewerMount: 400,
   /** One frame. */
   viewerKey: 16,
+  /**
+   * What a key's frame paints (PrePaint and Paint, Chromium's trace), in a field nothing reads: the section it is in
+   * alone (0.36: each section a paint layer of its own). 0.35 painted the page's 500 fields for each key: 11 ms on a
+   * desktop (load 32) and 29 of a phone's 35 (load 10), against about 2 and 4 now.
+   */
+  viewerKeyPaint: 3,
   /** A choice that shows or hides fields, and a send refused: a click answered at once. */
   viewerClick: 100,
   /** A designer opening the page: mount until first paint. */
@@ -140,6 +146,33 @@ function record(scenario: string, action: string, budget: number, runs: Timing[]
   expect.soft(row.median, `${row.scenario}: ${action} — runs ${work.join(', ')} ms`).toBeLessThanOrEqual(row.budget * SLACK);
 }
 
+/**
+ * What `act` makes the page paint, RUNS times, from Chromium's own trace: the PrePaint and Paint the page's main thread
+ * runs from each act until the next (a mark put down before each), held to the budget as a timing is.
+ */
+async function timePaint(page: Page, browser: Browser, scenario: string, action: string, budget: number, act: () => Promise<void>) {
+  await settle(page);
+  await browser.startTracing(page, { categories: ['devtools.timeline', 'disabled-by-default-devtools.timeline', 'blink.user_timing'] });
+  for (let run = 0; run < RUNS; run++) {
+    await page.evaluate(() => performance.mark('fieldia-paint'));
+    await act();
+    // Past the frame it changed; a caret blinks again only half a second after a key.
+    await page.waitForTimeout(250);
+  }
+  const { traceEvents } = JSON.parse((await browser.stopTracing()).toString()) as { traceEvents: { name: string; ph: string; ts: number; dur?: number; pid: number; tid: number; args?: { name?: string } }[] };
+  const marks = traceEvents.filter((event) => event.name === 'fieldia-paint').sort((a, b) => a.ts - b.ts);
+  const pid = marks[0]?.pid;
+  const main = traceEvents.find((event) => event.name === 'thread_name' && event.pid === pid && event.args?.name === 'CrRendererMain');
+  const painted = traceEvents.filter((event) => event.pid === pid && event.tid === main?.tid && event.ph === 'X' && (event.name === 'PrePaint' || event.name === 'Paint'));
+  const runs = marks.map((mark, i) => {
+    const until = marks[i + 1]?.ts ?? Infinity;
+    const ms = painted.filter((event) => event.ts >= mark.ts && event.ts < until).reduce((sum, event) => sum + (event.dur ?? 0) / 1000, 0);
+    return { work: ms, total: ms, longest: 0 };
+  });
+  expect(runs.length, 'a mark for each run, in the trace').toBe(RUNS);
+  record(scenario, action, budget, runs);
+}
+
 /** Let what the last action put off finish, so it is not timed with the next. */
 async function settle(page: Page) {
   await page.waitForTimeout(120);
@@ -173,7 +206,7 @@ test.afterAll(() => {
   for (const r of results) console.log(`${`${r.scenario}: ${r.action}`.padEnd(58)} ${String(r.median).padStart(7)}  budget ${String(r.budget).padStart(4)}  longest task ${r.longest}  load ${r.load}`);
 });
 
-test('the viewer fills in 500 fields without a frame dropped', async ({ page }) => {
+test('the viewer fills in 500 fields without a frame dropped', async ({ page, browser }) => {
   const scenario = 'viewer';
   const url = '/plain/?page=big&skin=outlined';
   test.setTimeout(phone() ? 400_000 : 180_000);
@@ -193,6 +226,8 @@ test('the viewer fills in 500 fields without a frame dropped', async ({ page }) 
   // Typing in a field nothing reads.
   await page.locator('[data-node="f-s13-reference"] input').click();
   await timeIt(page, scenario, 'type in a field nothing reads', BUDGET.viewerKey, 'input', () => page.keyboard.type('x'));
+  // And what it paints: its section alone.
+  await timePaint(page, browser, scenario, 'paint a key in a field nothing reads', BUDGET.viewerKeyPaint, () => page.keyboard.type('x'));
 
   // One choice shows or hides ten addresses across the page.
   const type = page.locator('[data-node="f-supplier-type"]');
