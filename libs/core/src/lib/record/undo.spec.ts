@@ -92,6 +92,45 @@ describe('undo and redo while filling', () => {
     expect(form.getState().values['note']).toBe('');
   });
 
+  it("takes a box's own undo through its typing as Undo takes it back: Redo makes it again, the box left, its own redo in it", async () => {
+    // The how-to replay of 0.35: the price's own undo (the browser's), then the notes taken back and made again, and
+    // Ctrl+Shift+Z had nothing of the record's left — the price typed was gone from its history.
+    const form = await opened();
+    form.setValue('note', 'Call first');
+    form.boxLeft('note');
+    // Typed over: emptied, then the new name.
+    form.setValue('name', '');
+    form.setValue('name', 'Delta Co.');
+    const own = (how: 'undo' | 'redo', value: string) => {
+      form.boxHistory(how);
+      form.setValue('name', value);
+      form.boxHistory(null);
+    };
+    // Its own undo, a step at a time as some browsers take it: to nothing, then to the name it held.
+    own('undo', '');
+    own('undo', 'Nile Traders');
+    form.boxLeft('name');
+    // Taken back: Undo passes over it, to the note.
+    expect(form.undo()).toEqual({ field: 'note' });
+    expect(form.redo()).toEqual({ field: 'note' });
+    // Its undos since its typing are one change, as that typing is: made again whole.
+    expect(form.redo()).toEqual({ field: 'name' });
+    expect(form.getState().values['name']).toBe('Delta Co.');
+    expect(form.redo()).toBeNull();
+    // In the box: its own redo makes again what its own undo took back — then nothing is left for Redo to make again,
+    // and Undo takes back the typing as it stands.
+    form.setValue('name', 'Delta');
+    own('undo', 'Delta Co.');
+    own('redo', 'Delta');
+    expect(form.history().redo).toBeNull();
+    own('undo', 'Delta Co.');
+    form.setValue('name', 'Delta Co. Ltd');
+    // Typed after its undo: what it took back is let go, as the browser lets go of its redo.
+    expect(form.history().redo).toBeNull();
+    expect(form.undo()).toEqual({ field: 'name' });
+    expect(form.getState().values['name']).toBe('Delta Co.');
+  });
+
   it('passes over a change typed back to where it started', async () => {
     const form = await opened();
     form.setValue('name', 'Nile');

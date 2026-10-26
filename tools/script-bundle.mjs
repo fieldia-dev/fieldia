@@ -1546,7 +1546,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // out and of each part drawn, so a problem kept and a part left alone are said again in them (form.ts, viewer.ts and
 // lines-table.ts: `wordsVersion`; the packages' redraw as they come is left out of this script, whose languages are
 // its add-ons), 283 more — 582,019, to 568.4 (gzipped 189.79, inside its 189.8).
-const BUDGET_KB = 568.4;
+// 0.36's fix lane F4: what a box's own undo and redo write noted for the record's Redo (form.ts, `boxHistory`; heard in
+// the undo part, undo-history.ts), and the record's keys kept from the browser's own (undo-keys.ts): 582,019 measured
+// before, 582,108 after, to 568.5 (gzipped 189.80, inside its 189.8).
+const BUDGET_KB = 568.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -3016,7 +3019,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // (outbox.ts) — outbox 10.97 and 4.67 measured before, 11.17 and 4.76 after, to 11.2 and 4.8; the memory source's
 // `offline` answered later, as a request to the network answers (memory-data-source.ts) — memory 25.19 and 9.12, 25.22
 // and 9.12, to 25.3.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [153.3, 49.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.2, 4.8], loading: [9.5, 3.1] };
+// 0.36's fix lane F4: what a box's own undo and redo write, heard and noted for the record's Redo (undo-history.ts,
+// history-steps.ts) — undo 6.39 and 3.01 measured before, 6.91 and 3.16 after, to 7.0 and 3.2.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [153.3, 49.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.5, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.2, 4.8], loading: [9.5, 3.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

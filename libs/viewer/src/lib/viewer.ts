@@ -3089,7 +3089,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // typed in, the browser's own undo first. As the person first enters the form, its keys are heard — each box known as
   // it was entered, each key decided as it is pressed (undo-keys.ts) — and the undo part is asked for, whose step takes
   // the record's (undo-step.ts): at once when it has come, else as it comes. A key pressed while the part is on its way
-  // is still the record's, never the browser's, which would take back the last typing in another box.
+  // is still the record's, never the browser's, which would take back the last typing in another box. What a box's own
+  // undo and redo write is the record's history too, heard once the part has come (undo-history.ts).
   if (options.keys?.undo !== false && layout.type !== 'list') {
     const step = (part: UndoPart, redo: boolean, written: () => void) => {
       const took = part.undoStep(root, form, page, el, labels, (words) => actionHost.say(words, 'info'), redo);
@@ -3106,7 +3107,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       () => {
         if (gone) return;
         cleanups.push(undoKeys(root, hotkeysHere, take));
-        void undoPart.load().catch(() => undefined);
+        void undoPart.load().then((part) => gone || cleanups.push(part.boxHistory(root, form)), () => undefined);
       },
       { once: true }
     );

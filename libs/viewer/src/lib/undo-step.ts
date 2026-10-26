@@ -7,7 +7,7 @@ import type { ViewerLabels } from './labels';
  * (undo-keys.ts), in the undo part: the person's last change taken back or made again (`form.undo()`, `form.redo()`),
  * the field it was in taking the focus where it is shown and the person is not in it, and what was done said politely.
  * Right after a save, nothing is taken back — a change saved is none to take back — and Ctrl+Z says so ("Nothing to
- * undo since it was saved."). Whether the key was answered: when it was not, it is the browser's own.
+ * undo since it was saved."). Whether the key was answered: when it was not, nothing is done (undo-keys.ts).
  */
 export function undoStep(
   root: HTMLElement,

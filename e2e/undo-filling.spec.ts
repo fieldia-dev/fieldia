@@ -79,6 +79,52 @@ test.describe('plain · undo while filling', () => {
   });
 });
 
+test.describe('plain · undo through a money box', () => {
+  test('its own undo, then the notes taken back and made again: Ctrl+Shift+Z makes the price again, as typed', async ({ page }) => {
+    // The how-to replay of 0.35 (a course, step 2): after the price's own undo and the notes taken back and made again,
+    // Ctrl+Shift+Z was the browser's, whose history put "11000" after the price grouped as it was left —
+    // "9,500.0011000", "takes at most 2 decimal places", and Mark done refused after it.
+    const { problems } = await open(page, 'plain', 'page=treatment-course&record=1&skin=outlined');
+    const notes = page.getByRole('textbox', { name: 'Notes' });
+    const price = page.getByRole('textbox', { name: 'Course price' });
+    const was = await notes.inputValue();
+    await notes.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.type('Moved to Thursdays.');
+    await price.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.type('11000');
+    // Its own undo, each engine's: the price as it was.
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(price).toHaveValue(/^9,?500\.00$/);
+    await expect(notes).toHaveValue('Moved to Thursdays.');
+    // The record's: the notes back, then made again.
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(notes).toHaveValue(was);
+    await expect(price).toHaveValue('9,500.00');
+    await page.keyboard.press('ControlOrMeta+Shift+z');
+    await expect(notes).toHaveValue('Moved to Thursdays.');
+    // The price made again, as it was typed — the record's Redo, the price's box written whole.
+    await page.keyboard.press('ControlOrMeta+Shift+z');
+    await expect(price).toHaveValue(/^11,?000\.00$/);
+    await expect(notes).toHaveValue('Moved to Thursdays.');
+    // Nothing left to make again: nothing is, the browser's own kept out of it.
+    await page.keyboard.press('ControlOrMeta+Shift+z');
+    await page.keyboard.press('ControlOrMeta+Shift+z');
+    await expect(price).toHaveValue(/^11,?000\.00$/);
+    await expect(notes).toHaveValue('Moved to Thursdays.');
+    await page.keyboard.press('Tab');
+    await expect(price).toHaveValue('11,000.00');
+    await screen(page, 'undo-money-box-redone', { viewport: true });
+    expect(await page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.price)).toBe(11000);
+    await page.locator('[data-node="b-done"]').click();
+    await expect(page.locator('.fd-say').filter({ hasText: 'Course marked done' })).toBeVisible();
+    await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Done');
+    await expect(page.getByText('Check: Course price')).toHaveCount(0);
+    expect(problems).toEqual([]);
+  });
+});
+
 test.describe('plain · undo after Save', () => {
   test('Ctrl+Z right after Save takes nothing back, and says nothing changed since it was saved', async ({ page }) => {
     // The owner's walk of 0.31: the course's price saved, then Ctrl+Z brought the old price back as a change not saved.

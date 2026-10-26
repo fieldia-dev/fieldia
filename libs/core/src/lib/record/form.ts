@@ -989,6 +989,14 @@ export interface Form {
    * A save starts them afresh (not on a page with `autosave`): a change saved is none to take back.
    */
   history(): { undo: HistoryStep | null; redo: HistoryStep | null };
+  /**
+   * The box the person is in is going through its own undo or redo — the browser's, taking back or making again their
+   * typing there (an input's `historyUndo`, `historyRedo`) — until this is called again with null: what it writes
+   * meanwhile is noted as Undo and Redo note theirs, so `redo` makes again what the box's own undo took back, once the
+   * box is left too, as the browser's own redo cannot then: the box has written its text again since (a number grouped
+   * as it is left). The viewer's, around each such input.
+   */
+  boxHistory(how: 'undo' | 'redo' | null): void;
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
   /**
@@ -1657,13 +1665,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** The person's changes to the record shown, as made (history.ts); and whether one is being taken back or made again now. */
   let noted: Noted[] = [];
   let replaying = false;
+  /** The box the person is in going through its own undo or redo now (`boxHistory`): what it types is noted as that. */
+  let boxOwn: 'undo' | 'redo' | null = null;
   /**
    * A person's change written to `field` (on `line`), noted for Undo with what it held `before`: typing on joins it
    * (`joins`). The undo part takes them as they come, asked for with the first: in by the time the person presses Ctrl+Z.
    */
   const noteChange = (field: string, line: string | undefined, before: Value | undefined, joins: boolean) => {
     if (replaying) return;
-    noted.push([field, line, before ?? null, state.values[field] ?? null, joins]);
+    noted.push([field, line, before ?? null, state.values[field] ?? null, (joins && boxOwn) || joins]);
     const part = pressUndoPart.loaded;
     if (part) part.takeNoted(noted, inner.same);
     // Kept while it comes; where it cannot, the oldest let go.
@@ -4908,6 +4918,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     undo: () => replay(true),
     redo: () => replay(false),
     history: () => pressUndoPart.loaded?.nextSteps(noted, inner.same) ?? { undo: null, redo: null },
+    boxHistory: (how) => void (boxOwn = how),
 
     async settled() {
       while (pending.size) await Promise.allSettled([...pending]);

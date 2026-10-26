@@ -9,9 +9,11 @@ const textOf = (box: HTMLElement) => (box.isContentEditable ? box.innerHTML : (b
  * main script, so no key waits for a part to decide whose it is). In a box whose
  * text was changed since it was entered, the browser's own undo goes through it first, and its own redo through its
  * undos since; in a formatted text, always its own. Every other is the record's, given to `take` — the undo part's
- * step (undo-step.ts), which says whether it answered it: answered, the browser's own undo is kept out of it. A key
- * pressed before that part has come is the record's all the same, its step taken as the part comes (`take` answers
- * true): never meanwhile the browser's, which takes back the last typing anywhere on the page, in another box. Each
+ * step (undo-step.ts) — and the browser's own is kept out of it, answered or not: the browser's history is the page's
+ * (the last typing anywhere, in another box) and knows nothing of what a box wrote since — a number grouped as its
+ * box was left, a field the record's Undo wrote — so its redo would put "11000" after "9,500.00". What the box's own
+ * undo and redo write is the record's history too (undo-history.ts), whose Redo makes it again instead. A key
+ * pressed before that part has come is the record's all the same, its step taken as the part comes. Each
  * box is known as it showed when it was entered, from the first: the decision is made at once, as the key is pressed.
  * `written` is called once the record's step has written the field: what the box the person is in shows then is what
  * it shows as entered, so the next Ctrl+Z is the record's too. Gives back what takes the keys away again.
@@ -20,7 +22,7 @@ export function undoKeys(
   root: HTMLElement,
   /** Whether a key pressed on this target is this form's: not a dialog's over it, nor another form's. */
   hotkeysHere: (target: EventTarget | null) => boolean,
-  take: (redo: boolean, written: () => void) => boolean
+  take: (redo: boolean, written: () => void) => void
 ): () => void {
   const doc = root.ownerDocument;
   /** What a box showed as it was entered, and the browser's own undos in it since its last typing: what its redo has. */
@@ -52,7 +54,8 @@ export function undoKeys(
     // its own redo, its undos since.
     const edits = editable(target) ? boxEdits.get(target) : undefined;
     if (edits && (redo ? edits.undone > 0 : textOf(target as HTMLElement) !== edits.text)) return;
-    if (take(redo, written)) event.preventDefault();
+    take(redo, written);
+    event.preventDefault();
   };
   // The box the person is entering as the keys are first heard: as its own focus has written it, before they type.
   queueMicrotask(() => entered(doc.activeElement));
