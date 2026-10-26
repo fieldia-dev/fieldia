@@ -406,8 +406,6 @@ describe('saving twice in a row is never a conflict with yourself', () => {
     const form = await opened(ds);
     form.setValue('phone', '+201009998887');
     const first = form.save();
-    // Changed once the first is on its way to the source, so it is not in it.
-    while (!saves(ds).length) await new Promise((resolve) => setTimeout(resolve, 1));
     form.setValue('stage', 'visit');
     const second = form.save();
     expect([await first, await second]).toEqual([true, true]);

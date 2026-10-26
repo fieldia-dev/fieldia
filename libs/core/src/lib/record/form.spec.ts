@@ -659,7 +659,7 @@ describe('createForm — a save the server refuses', () => {
   it('keeps a business rule for a dialog, and nothing under the fields', async () => {
     const { form } = refusing(() => saveRefused({ kind: 'rule', message: 'A blocked customer cannot be given credit.' }));
     await form.load();
-    form.setValue('credit_limit', 7500);
+    form.setValue('credit_limit', 5000);
     expect(await form.save()).toBe(false);
     expect(form.getState().saveProblem).toEqual({ kind: 'rule', message: 'A blocked customer cannot be given credit.' });
     expect(form.getState().errors).toEqual({});

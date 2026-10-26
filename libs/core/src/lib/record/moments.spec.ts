@@ -208,7 +208,7 @@ describe('moments — before and after saving', () => {
     const source = orderSource();
     const actions: string[] = [];
     const form = createForm({
-      page: orderPage({ on: { afterSave: [{ do: 'call', action: 'after' }, { do: 'set', field: 'ref', value: "'SO9-A'" }, { do: 'save' }] } }),
+      page: orderPage({ on: { afterSave: [{ do: 'call', action: 'after' }, { do: 'save' }] } }),
       dataSource: source,
       onAction: (request) => void actions.push(request.action),
     });
