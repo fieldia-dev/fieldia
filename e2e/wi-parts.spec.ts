@@ -172,8 +172,8 @@ test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
     await page.goto('/script/');
     await expect(page.locator('.fd-form')).toBeVisible();
     await page.waitForLoadState('networkidle');
-    // The page of plain parts asked for none.
-    expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path))).toEqual(['/script/fieldia.js']);
+    // The page of plain parts asked for none — but the whole check, as every page is drawn (page-check.spec).
+    expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path) && !path.endsWith('/fieldia.check.js'))).toEqual(['/script/fieldia.js']);
     const drawnAtOnce = await page.evaluate((shown) => {
       const fieldia = (window as any).Fieldia;
       const demo = (window as any).fieldiaDemo;
@@ -193,8 +193,8 @@ test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
     await expect(page.locator('#app .fd-links-box').first()).toBeVisible();
     expect(await page.locator('#app .fd-md-field').count()).toBeGreaterThan(0);
     // Its tags', a link to other records: the relations part. And its look's: the Fluent theme and the quiet skin its page
-    // names. Beside them the loading part, for the page's skeleton while they come.
-    expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path)).sort()).toEqual([
+    // names. Beside them the loading part, for the page's skeleton while they come. The whole check aside, as above.
+    expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path) && !path.endsWith('/fieldia.check.js')).sort()).toEqual([
       '/script/fieldia.choice.js',
       '/script/fieldia.files.js',
       '/script/fieldia.head.js',
