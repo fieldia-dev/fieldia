@@ -15,9 +15,9 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
 - **No code made from text, under a strict Content-Security-Policy.** No `eval`, no `new Function`, no style
   attribute and no `<style>` without the page's nonce, in any package; the page check runs with zod's JIT off. Forms,
   records, lists, surveys, every field, the designer and the one-tag script draw and work under a policy of
-  `script-src 'nonce-…'`, `style-src 'nonce-…'` and `connect-src 'self'`, nothing refused. **Gates:** `tools/csp-source.test.mjs` ("no Fieldia source makes code from text"),
-  `libs/core/src/lib/format/jitless.spec.ts`, `e2e/csp.spec.ts` ("under a strict Content-Security-Policy, nothing
-  refused") in Chromium, Firefox and WebKit.
+  `script-src 'nonce-…'`, `style-src 'nonce-…'` and `connect-src 'self'`, nothing refused. **Gates:**
+  `tools/csp-source.test.mjs` ("no Fieldia source makes code from text"), `libs/core/src/lib/format/jitless.spec.ts`,
+  `e2e/csp.spec.ts` ("under a strict Content-Security-Policy, nothing refused") in Chromium, Firefox and WebKit.
 - **No request of its own.** Fieldia asks only the data source the app gives it, and the files the app serves. It
   sends nothing to fieldia.dev or anywhere else, and counts nothing about its use. A map fetches its tiles, places
   and routes from the map provider the app chooses. **Gate:** `e2e/csp.spec.ts`, whose policy (`tools/csp-policy.mjs`)
@@ -39,8 +39,9 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
   HTML named `.pdf` is never framed: its words are shown as words. **Gate:** `libs/widgets/src/lib/file-shown.spec.ts`
   ("never shows an uploader’s HTML named .pdf"). These tests run in jsdom; no browser test covers previews yet.
 - **A spreadsheet never runs what a person typed.** Every CSV file Fieldia writes — a list's export, a designer's
-  translations — keeps a cell a spreadsheet would run as a formula (`=`, `+`, `-`, `@`, a tab or a line break, and their full-width forms) as words, a `'`
-  before it. An imported file reads such a cell back as it was written. **Gates:** `libs/core/src/lib/csv.spec.ts`,
+  translations — keeps a cell a spreadsheet would run as a formula as words, a `'` before it: one that starts with
+  `=`, `+`, `-`, `@`, a tab or a line break, or their full-width forms. An imported file reads such a cell back as it
+  was written. **Gates:** `libs/core/src/lib/csv.spec.ts`,
   `libs/viewer/src/lib/list-export.spec.ts`, `libs/designer/src/lib/translations-csv.spec.ts`,
   `libs/viewer/src/lib/import-file.spec.ts` ("kept as words").
 - **A framed form talks only to the sites it names.** `<fieldia-form>` in another site's page tells only the origins
@@ -122,8 +123,9 @@ Fieldia releases on a train ([docs/maintainers/release-train.md](maintainers/rel
 - **A minor's warning comes first.** A setting, an option, a member, a default or a DOM contract that is to change is
   deprecated in one minor and changed in a later one. Where its use can be seen, the console says so once in a page,
   with the minor it changes in. From 0.37 the release check refuses a minor with a change that does not say it was
-  deprecated a minor before, only adds, or is a fix. **Gates:** `libs/core/src/lib/deprecations.spec.ts` ("says a deprecated use once in a page"),
-  `tools/release-train.test.mjs` ("a change not deprecated a minor before is refused").
+  deprecated a minor before, only adds, or is a fix. **Gates:** `libs/core/src/lib/deprecations.spec.ts` ("says a
+  deprecated use once in a page"), `tools/release-train.test.mjs` ("a change not deprecated a minor before is
+  refused").
 - **What tests should use.** `@fieldia/testing` finds what a person finds, by roles and labels, and is kept working
   across minors. A `.fd-*` class, a `data-*` attribute or an element's place among its part's changes only after a
   deprecation. **Gates:** `libs/testing/src/lib/dom.spec.ts`, `e2e/testing-kit.spec.ts` in Chromium, Firefox and
