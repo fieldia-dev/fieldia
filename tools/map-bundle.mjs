@@ -155,8 +155,13 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // asks for its images once its records place it, never a screenful at its starting view first (`imagesAfter`,
 // map-core.ts and list-view.ts) — a list's map 22,037 bytes at perf-bytes, 22,079 with the pins, 22,174 with its images
 // held, to 21.7; a form's 19,826, 19,852, inside its 19.5; the fields' 18,379, 18,416, 18,442, to 18.1.
-const BUDGET = { fields: 11.7, all: 13.3, embed: 10.7, leaflet: 47, routes: 2 };
-const PART_BUDGET = { 'view-part': 21.7, 'form-part': 19.5, 'widgets-part': 18.1 };
+// 0.35.1, the owner's walk of 0.35: a map whose code is on its way holds its place with one block as big as the map,
+// never a bar across its top then a grey block (map-parts.ts, in every part), and a pointed row whose home has no place
+// lights the note that says so (list-view.ts) — with a list's map and a form's 13,584 bytes measured before, 13,630
+// after, to 13.4; a list's map 22,174, 22,342, to 21.9; a form's 19,852, 19,964, inside its 19.5; the fields' 18,442,
+// 18,556, to 18.2.
+const BUDGET = { fields: 11.7, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
+const PART_BUDGET = { 'view-part': 21.9, 'form-part': 19.5, 'widgets-part': 18.2 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

@@ -1547,7 +1547,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // out and of each part drawn, so a problem kept and a part left alone are said again in them (form.ts, viewer.ts and
 // lines-table.ts: `wordsVersion`; the packages' redraw as they come is left out of this script, whose languages are
 // its add-ons), 283 more — 582,019, to 568.4 (gzipped 189.79, inside its 189.8).
-const BUDGET_KB = 568.4;
+// 0.35.1, the owner's walk of 0.35, every page's: a key in a long table of lines worked out for the line it changed
+// alone, an onchange's answer keeping the lines it left as they were, the styles marked by Fieldia rather than matched
+// by :has() at each key (form.ts, values.ts, waits.ts, viewer.ts, loading.ts) — 568.38 KB measured before, 572.23
+// after; a part that guards a send asked for anew by Retry, the typing kept for the reload it may suggest, a code
+// check's missing words said at once under its fields (parts.ts, form.ts, join-missing.ts) — 575.34; a failed save
+// said as not saved, no "Saved, but not all your changes." nobody's save left, a record's draft its changes, a record
+// that could not open named by its row (viewer.ts, form.ts) — 576.64 (590,475 bytes), to 576.7.
+const BUDGET_KB = 576.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1890,7 +1897,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // types: 186.54 measured before, 189.48 after, to 189.5.
 // 0.35's merge, set once from the merged build (listed with the raw budget above): 186.54 at 0.34.1; perf-bytes +0.14,
 // perf-lists 0, perf-form +2.95 (189.64), the words that come late +0.16 — 189.79, to 189.8.
-const GZIP_BUDGET_KB = 189.8;
+// 0.35.1, the owner's walk of 0.35 (listed with the raw budget above): 189.79 measured before; a key in a long table
+// +1.44, a guarding part's Retry and the typing kept +1.23, a save's words, a draft's and an open's +0.48 — 192.94, to
+// 193.0.
+const GZIP_BUDGET_KB = 193.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2258,7 +2268,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 166.85 and 23.11, 167.26 and 23.17, to 167.3, inside 23.2; Urdu's 169.60 and 23.19, 169.98 and 23.24, to 170.0 and
 // 23.3; Spanish's 58.29 and 18.21, 58.39 and 18.26, to 58.4, inside 18.3. Its English is the list part's alone
 // (tools/part-words.mjs): fieldia.js the same.
-const ADD_ON_BUDGET_KB = { ar: [134.4, 21.6], de: [60.3, 18.5], fr: [61.2, 18.5], tr: [68.3, 18.9], fa: [167.3, 23.2], ur: [170.0, 23.3], es: [58.4, 18.3] };
+// 0.35.1, the owner's walk of 0.35: a record's draft offered as its changes (viewer `draftFoundRecord`) and a file named
+// as a picture that is none said so (widgets `notAPicture`) in every add-on — Arabic's 134.34 and 21.54 measured
+// before, 134.74 and 21.59 after, to 134.8, inside 21.6; German's 60.23 and 18.46, 60.39 and 18.52, to 60.4 and 18.6;
+// French's 61.17 and 18.46, 61.35 and 18.50, to 61.4 and 18.6; Turkish's 68.25 and 18.80, 68.43 and 18.84, to 68.5,
+// inside 18.9; Persian's 167.26 and 23.17, 167.78 and 23.23, to 167.8 and 23.3; Urdu's 169.98 and 23.24, 170.52 and
+// 23.31, to 170.6 and 23.4; Spanish's 58.39 and 18.26, 58.53 and 18.30, to 58.6 and 18.4.
+const ADD_ON_BUDGET_KB = { ar: [134.8, 21.6], de: [60.4, 18.6], fr: [61.4, 18.6], tr: [68.5, 18.9], fa: [167.8, 23.3], ur: [170.6, 23.4], es: [58.6, 18.4] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3012,7 +3028,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 46.3, inside 16.1. A ring or words over a tall place kept in the middle of what of it is in view as the place takes its
 // size under them, a form's parts coming after its wait began (loading-part.ts) — loading 9.21 and 2.98, 9.43 and 3.06,
 // to 9.5 and 3.1.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [153.3, 49.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1] };
+// 0.35.1, the owner's walk of 0.35: far down a list, an entry opened and Back finds the list where it was left, its
+// rows loaded, the opened row's keyboard (list-place.ts, list.ts) — list 153.23 and 49.88 measured before, 154.80 and
+// 50.50 after, to 154.9 and 50.6; a refused link's address said why under it (formatted-text.ts) — text 72.83 and 24.58,
+// 72.95 and 24.64, to 73.0 and 24.7; a file named as a picture that is none said so (files.ts) — files 50.49 and 18.82,
+// 50.68 and 18.90, to 50.7 and 19.0; a search that failed in a toast closes its empty list, a list closed writing only
+// what changed (relations.ts) — relations 20.98 and 7.99, 21.10 and 8.01, to 21.1 and 8.1.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [73.0, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [154.9, 50.6], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.7, 19.0], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
