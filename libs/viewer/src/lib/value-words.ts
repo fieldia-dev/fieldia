@@ -1,4 +1,4 @@
-import { splitValues, type Fields, type LineField, type Locale, type Value, type Values } from '@fieldia/core';
+import { plainPart, plainWords, splitValues, type Fields, type LineField, type Locale, type Value, type Values } from '@fieldia/core';
 import { displayValue } from '@fieldia/widgets';
 
 /** How a value is written inside words: `displayValue`'s way, or another's (a sentence's, the answers part's). */
@@ -13,7 +13,7 @@ export type ValueWriter = (def: LineField, value: Value | undefined, values: Rec
  */
 export function valueWords(doc: Document, fields: Fields, text: string, locale: Locale, write?: ValueWriter): { nodes: (Node | string)[]; update(values: Readonly<Values>): void } {
   const parts = splitValues(text);
-  if (!parts.some((part) => part.field)) return { nodes: [text], update: () => undefined };
+  if (!parts.some((part) => part.field)) return { nodes: [plainWords(text)], update: () => undefined };
   const values: { field: string; span: HTMLElement; fallback?: string }[] = [];
   const nodes = parts.map((part) => {
     if (!part.field) return part.text;
@@ -30,7 +30,7 @@ export function valueWords(doc: Document, fields: Fields, text: string, locale: 
       for (const { field, span, fallback } of values) {
         const def = fields[field];
         const value = record[field] as Value | undefined;
-        const words = !def ? '' : write ? write(def as LineField, value, record as Record<string, Value>) : displayValue(def as LineField, value, record as Record<string, Value>, locale);
+        const words = !def ? '' : write ? write(def as LineField, value, record as Record<string, Value>) : displayValue(plainPart(def) as LineField, value, record as Record<string, Value>, locale);
         const shown = words || (fallback ?? '');
         if (span.textContent !== shown) span.textContent = shown;
         span.toggleAttribute('data-empty', !words && !!fallback);

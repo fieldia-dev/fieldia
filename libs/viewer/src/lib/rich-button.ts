@@ -1,4 +1,4 @@
-import type { ActionStep, ButtonNode, MenuItem, RunResult } from '@fieldia/core';
+import { plainWords, type ActionStep, type ButtonNode, type MenuItem, type RunResult } from '@fieldia/core';
 import { drawIcon } from '@fieldia/widgets';
 import { nothingToUndo, onlyResets, type ButtonContext } from './button-parts';
 import { setAttr, setHidden, setText } from './dom';
@@ -59,7 +59,7 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
   const chevron = drawIcon(context.doc, node.menuIcon ?? 'chevron-down', context.icons);
   const opener = own ? el('button', { type: 'button', class: 'fd-button fd-split-more', id: `${id}-button`, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': id }) : main;
   // Its own name, never the button's: a reader hears two buttons, not one twice.
-  const menuName = node.menuLabel ?? labels.optionsFor.replace('{label}', label());
+  const menuName = plainWords(node.menuLabel) ?? labels.optionsFor.replace('{label}', () => label());
   if (own) {
     opener.setAttribute('aria-label', menuName);
     opener.title = menuName;
@@ -72,7 +72,7 @@ export function richButton(context: ButtonContext, node: ButtonNode): HTMLElemen
     opener.append(chevron);
   }
   const list = el('div', { class: 'fd-record-menu fd-button-menu', role: 'menu', id, 'aria-labelledby': opener.id, hidden: '' });
-  const itemWords = (item: MenuItem) => item.label ?? item.id;
+  const itemWords = (item: MenuItem) => plainWords(item.label) ?? item.id;
   const items = menuEntries(context, menu, itemWords, (item) => {
     close(true);
     void context.press(opener, () => form.runAction(item.id));

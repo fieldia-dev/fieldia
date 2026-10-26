@@ -8,6 +8,8 @@ import {
   functionsPart,
   isRightToLeft,
   localizePage,
+  plainPart,
+  plainWords,
   translatePage,
   wideColumns,
   formJoins,
@@ -493,6 +495,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const localized = tag ? localizePage(checked.page, tag) : checked.page;
   // Its time zone written into each date and time field naming none, for whatever shows one from its field alone.
   const page = zonedPage(options.translate ? translatePage(localized, options.translate) : localized);
+  // The page as its parts that show no values draw it — a list, its filters, its cards: each escaped brace a brace (the
+  // page itself where none is). What reads a value, and the forms, read the page as written.
+  const shownPage = plainPart(page);
   /** Another page as this one is shown: in its language, through the app's translator. */
   const shownAs = (other: Page) => {
     const own = tag ? localizePage(other, tag) : other;
@@ -512,7 +517,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
   const labels: ViewerLabels = viewerWords(locale, options.labels);
   /** One of the viewer's sentences in the words the page names its records by (`records`), else as it says them plainly. */
-  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
+  const sentence = (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(page.records, noun, words, locale, values);
   /** A sentence of the viewer's filled in, each field's label at `keys` small inside it where the page asks (`labelAt`). */
   const labelled = (template: string, values: Record<string, string | number>, ...keys: string[]) => {
     const own = { ...values };
@@ -595,8 +600,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       return widgetLabels.no;
     },
   };
-  /** So, once the answers part has come (a page that says the answers loads it first); else as each field shows its value. */
-  const asSaid: ValueWriter = (def, value, values) => answersPart.loaded?.sentenceValue(def, value, values, locale, sentenceWords) ?? displayValue(def, value, values, locale);
+  /** So, once the answers part has come (a page that says the answers loads it first); else as each field shows its value — its choices' words as a person reads them. */
+  const asSaid: ValueWriter = (given, value, values) => {
+    const def = plainPart(given);
+    return answersPart.loaded?.sentenceValue(def, value, values, locale, sentenceWords) ?? displayValue(def, value, values, locale);
+  };
   /** What the page's form is made with; and each row's of a list whose cells change in place, but its drafts, autosave and record. */
   // Every request this viewer makes of its source — its record's load, its lists' rows, a map's places, its sends —
   // under one deadline (`timeout`, 30 s unless the app says, 0 for none: deadline.ts in @fieldia/core), its form's and
@@ -663,7 +671,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    */
   function tabFace(tab: TabNode): (Node | string)[] {
     const pill = tab.count !== undefined ? [el('span', { class: 'fd-tab-count', 'aria-hidden': 'true' }, '0')] : [];
-    if (!tab.iconOnly) return [...withIcon(tab.icon, tab.label), ...pill];
+    if (!tab.iconOnly) return [...withIcon(tab.icon, plainWords(tab.label)), ...pill];
     const icon = drawIcon(doc, tab.icon, options.icons);
     return [...(icon ? [icon] : []), ...pill];
   }
@@ -881,7 +889,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     function breakPart(part: KeptPart, error: unknown, stage: FailureStage): HTMLElement {
       const { node } = part;
       report(error, { stage, part: node.type, node: node.id, ...(node.type === 'field' ? { field: node.field } : {}), ...(node.type === 'slot' ? { name: node.name } : {}) });
-      const name = node.type === 'field' ? (node.label ?? page.fields[node.field]?.label ?? node.field) : partName(node);
+      const name = plainWords(node.type === 'field' ? (node.label ?? page.fields[node.field]?.label ?? node.field) : partName(node));
       const words = node.type === 'field' ? labelled(widgetLabels.brokenField, { label: name ?? '' }, 'label') : name ? fill(widgetLabels.brokenPartNamed, { label: name }) : widgetLabels.brokenPart;
       const box = brokenBox(doc, words);
       box.dataset['node'] = node.id;
@@ -923,11 +931,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         mark.classList.add('fd-valid-mark');
         label.append(mark);
       }
+      // Its widget draws the field's and the part's words as they are: each escaped brace a brace (`plainPart`).
+      const shownDef = plainPart(def);
+      const shownNode = plainPart(node);
       // How it waits — a link's suggestions, its choices from the app — its own `options.loading` over the page's.
-      const context: WidgetContext = { form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report, loading: loadingOver(loading, node.options?.['loading'] as PageLoading | undefined) };
-      // Choices whose words show the answers given follow them, as the answers part draws them.
+      const context: WidgetContext = { form, name: node.field, field: shownDef, node: shownNode, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report, loading: loadingOver(loading, node.options?.['loading'] as PageLoading | undefined) };
+      // Choices whose words show the answers given follow them, as the answers part draws them, read from the page's own words.
       const draw = (own: WidgetContext) => createWidget(own, options.widgets);
-      const widget = answersPart.loaded?.wordedWidget(context, draw) ?? draw(context);
+      const widget = answersPart.loaded?.wordedWidget(context, draw, def) ?? draw(context);
       // Its own tools (a Markdown text's Edit and Done), for a group that holds it alone to put in its heading.
       keepTools(wrapper, widget);
       // The field that takes the focus as the record opens (Flectra's default_focus): the page's own, not a saved form's inside it.
@@ -956,7 +967,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const hint = page.look?.quietHints === false ? null : quietHint(labelNow(), locale, labels);
       const restWords = () => (!ownWords && wrapper.hasAttribute('data-quiet') ? hint : drawnPlaceholder);
       // Where no box can hold a placeholder (a choice's blank, a state's words), the page's own words come first.
-      const blankWords = node.placeholder || (labelsAt === 'hidden' ? labelNow() : (hint ?? ''));
+      const blankWords = shownNode.placeholder || (labelsAt === 'hidden' ? labelNow() : (hint ?? ''));
       const quietSelect = widget.element instanceof HTMLSelectElement ? widget.element.querySelector<HTMLOptionElement>(':scope > option[value=""]') : null;
       const richText = widget.element.matches('.fd-richtext') ? widget.element : widget.element.querySelector<HTMLElement>(':scope > .fd-richtext');
       const stateWords = widget.element.querySelector<HTMLElement>(':scope > .fd-dot-label');
@@ -1011,7 +1022,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // A rule keeping it read-only: a lock by its label (after the box when the label is out of sight) in the quiet look,
       // and in any skin when the page says why — why, it says in a bubble, as the (?) does, pointed at or focused. Made
       // the first time it is needed: a field never locked has none.
-      const reason = node.readonlyReason ?? around.reason;
+      const reason = plainWords(node.readonlyReason) ?? around.reason;
       // Read-only by its nature — worked out from others, or always read-only where the page puts it — a value is shown,
       // not locked: it has a lock only when the page says why.
       const fixed = node.readonly === true || def.readonly === true || def.compute !== undefined;
@@ -1056,7 +1067,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // AI help's tools under its box, and the place a value proposed for it is said.
       if (scope.root) assistKit?.field(node, wrapper, widget.element);
       // Read-only, as words in place of the box, when the page draws them so.
-      const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node, page) ? readText({ document: doc, field: def, node, id, locale, labels: widgetLabels, dialogs }) : null;
+      const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node, page) ? readText({ document: doc, field: shownDef, node: shownNode, id, locale, labels: widgetLabels, dialogs }) : null;
       if (asText) widget.element.after(asText.element);
       if (asText && reason) for (const [event, on] of [['mouseenter', true], ['mouseleave', false]] as const) asText.element.addEventListener(event, () => point(on));
       // A value worked out from others while one of them holds text that does not read — a total from a table whose
@@ -1188,7 +1199,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           setAttr(wrapper, 'data-tone', look.tone);
           wrapper.classList.toggle('fd-value-bold', look.bold);
         }
-        if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? restWords());
+        if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', plainWords(form.placeholder(node.id)) ?? restWords());
         // A label out of sight that shows answers: its empty box says it as it reads now.
         if (worded && labelsAt === 'hidden' && !node.placeholder && textBox && drawnPlaceholder !== labelNow()) {
           drawnPlaceholder = labelNow();
@@ -1504,11 +1515,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const line = el('div', { class: 'fd-field fd-oneline', 'data-node': node.id, 'data-style': 'inline', 'data-labels': place.labels });
       spans(line, node.colspan);
       const row = el('div', { class: 'fd-oneline-row', role: 'group' }, ...onelineRuns(node.children).map((run) => {
-        const parts = run.map((child) => item(child, { columns: 1, onPage: false, inline: true, quiet: node.quiet ?? place.quiet, reason: node.readonlyReason ?? place.reason }));
+        const parts = run.map((child) => item(child, { columns: 1, onPage: false, inline: true, quiet: node.quiet ?? place.quiet, reason: plainWords(node.readonlyReason) ?? place.reason }));
         return parts.length === 1 ? parts[0] : el('span', { class: 'fd-oneline-pair' }, ...parts);
       }));
       if (node.title) {
-        const title = el('span', { class: 'fd-label', id: uid(`${node.id}-label`) }, node.title);
+        const title = el('span', { class: 'fd-label', id: uid(`${node.id}-label`) }, plainWords(node.title));
         row.setAttribute('aria-labelledby', title.id);
         line.append(title);
       }
@@ -1540,7 +1551,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const row = labelledRow(node, plan);
       if (row) section.setAttribute('data-row', row);
       if (node.labelWidth) section.style.setProperty('--fd-label-width', `${node.labelWidth}px`);
-      const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
+      const description = node.description ? el('p', { class: 'fd-section-description' }, plainWords(node.description)) : null;
       const content = grid(node.children, plan.at === 'tracks' ? null : node.columns, plan.inner);
       // Its own column widths and gap; a heading with tools at its end, as a work item's group has.
       applyTracks(content, node);
@@ -1557,7 +1568,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           'button',
           { type: 'button', class: 'fd-section-toggle', 'aria-controls': content.id },
           el('span', { class: 'fd-section-chevron', 'aria-hidden': 'true' }),
-          ...withIcon(node.icon, node.title)
+          ...withIcon(node.icon, plainWords(node.title))
         );
         let open = node.collapsed !== true;
         const show = (next: boolean) => {
@@ -1572,7 +1583,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         show(open);
         section.append(el('legend', { class: 'fd-section-title' }, toggle));
       } else if (node.title) {
-        section.append(el('legend', { class: 'fd-section-title' }, ...withIcon(node.icon, node.title)));
+        section.append(el('legend', { class: 'fd-section-title' }, ...withIcon(node.icon, plainWords(node.title))));
       }
       if (description) section.append(description);
       section.append(content);
@@ -1600,11 +1611,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...tabFace(tab));
         if (tab.iconOnly) {
           button.classList.add('fd-tab-icon-only');
-          button.setAttribute('aria-label', tab.label);
-          button.title = tab.label;
+          button.setAttribute('aria-label', plainWords(tab.label));
+          button.title = plainWords(tab.label);
         }
         // On paper every tab shows, one after another, under its name.
-        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId, 'data-fd-tab': tab.label, ...(tab.print === false ? { 'data-print': 'off' } : {}) });
+        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId, 'data-fd-tab': plainWords(tab.label), ...(tab.print === false ? { 'data-print': 'off' } : {}) });
         /**
          * A tab's parts are drawn when it is first shown, and kept up to date
          * only while it is shown: a page of many tabs costs one tab's work.
@@ -1669,7 +1680,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           const value = state.values[count];
           const n = Array.isArray(value) ? value.length : typeof value === 'number' ? value : Number(value ?? 0) || 0;
           setText(pill, String(n));
-          setAttr(p.button, 'aria-label', fill(labels.countOf, { label: p.tab.label, count: n }));
+          setAttr(p.button, 'aria-label', fill(labels.countOf, { label: plainWords(p.tab.label), count: n }));
         });
       }
       // On paper, every tab shown: drawn, and brought up to date.
@@ -1778,7 +1789,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     function countRelated(node: RelatedNode, tab: TabNode, button: HTMLElement, pill: HTMLElement) {
       let counter: RelatedCount | null = null;
       const take = (module: NonNullable<typeof listPart.loaded>) => {
-        counter = module.relatedCount({ node, form, dataSource, tab, button, pill, labels, locale, fill });
+        counter = module.relatedCount({ node: plainPart(node), form, dataSource, tab: plainPart(tab), button, pill, labels, locale, fill });
         relatedCounts.set(node.id, counter);
         counter.update(form.getState());
       };
@@ -1801,8 +1812,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       let part: RelatedPart | null = null;
       const take = (module: NonNullable<typeof listPart.loaded>) => {
+        // A list that shows no values: its words as a person reads them (`plainPart`).
         part = module.relatedList({
-          page, node, form, box, doc, el, labels, locale, fill, press, withIcon, uid, preferences, dialogs,
+          page: shownPage, node: plainPart(node), form, box, doc, el, labels, locale, fill, press, withIcon, uid, preferences, dialogs,
           dataSource,
           icons: options.icons,
           now: options.now,
@@ -1852,7 +1864,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         warnedMaps = true;
         return el('div', { class: 'fd-map-part', 'data-node': node.id, hidden: '' });
       }
-      const part = options.maps({ node, page, form, document: doc, locale, icons: options.icons, loading: loadingOver(loading, node.loading) });
+      // Its words, its layers' and the page's fields' as a person reads them (`plainPart`): a map shows no values in words.
+      const part = options.maps({ node: plainPart(node), page: plainPart(page), form, document: doc, locale, icons: options.icons, loading: loadingOver(loading, node.loading) });
       part.element.classList.add('fd-map-part');
       part.element.dataset['node'] = node.id;
       // The whole row unless its page says: a map is read across.
@@ -1876,13 +1889,13 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
 
     /** A picture as wide and where its page says, opening its link in a new tab — a web or mail address only — its caption under it. */
     function figure(node: ImageNode): HTMLElement {
-      const image = el('img', { class: 'fd-image', src: safeUrl(node.src, PICTURE_URL), alt: node.alt, loading: 'lazy' });
+      const image = el('img', { class: 'fd-image', src: safeUrl(node.src, PICTURE_URL), alt: plainWords(node.alt), loading: 'lazy' });
       const href = safeUrl(node.href, ['http', 'https', 'mailto']);
       const element = el(
         'figure',
         { class: 'fd-block fd-figure', 'data-node': node.id, 'data-align': node.align },
         href ? el('a', { href: safeUrl(href, LINK_URL), target: '_blank', rel: 'noopener noreferrer' }, image) : image,
-        ...(node.caption ? [el('figcaption', { class: 'fd-caption' }, node.caption)] : [])
+        ...(node.caption ? [el('figcaption', { class: 'fd-caption' }, plainWords(node.caption))] : [])
       );
       const width = typeof node.width === 'number' ? `${node.width}px` : node.width && { small: '160px', medium: '320px', large: '480px', full: '100%' }[node.width];
       if (width) element.style.setProperty('--fd-image-width', width);
@@ -1931,7 +1944,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           console.warn(`Fieldia: the saved form "${found.id}" cannot be shown: ${(error as Error).message}`);
           return refuse(fill(labels.formBroken, { page: name }));
         }
-        const title = node.title ?? saved.title ?? '';
+        const title = plainWords(node.title ?? saved.title ?? '');
         box.setAttribute('data-title', title);
         if (title) box.prepend(el('legend', { class: 'fd-section-title' }, ...withIcon(undefined, title)));
         const own = drawer({
@@ -1972,7 +1985,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     form,
     page,
     prefix: '',
-    chain: [{ id: page.id, title: page.title || page.id }],
+    chain: [{ id: page.id, title: plainWords(page.title) || page.id }],
     locked: () => false,
     path: '',
   });
@@ -2293,7 +2306,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function recordName(): string {
     const state = form.getState();
     if (state.recordId == null) return '';
-    return ownName() || page.title || '';
+    return ownName() || plainWords(page.title) || '';
   }
 
   /**
@@ -2361,8 +2374,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   function pageHead(): HTMLElement | null {
     if (!page.title && !page.description) return null;
     const head = el('header', { class: 'fd-page-head' });
-    if (page.title) head.append(el('h1', { class: 'fd-page-title' }, page.title));
-    if (page.description) head.append(el('p', { class: 'fd-page-description' }, page.description));
+    if (page.title) head.append(el('h1', { class: 'fd-page-title' }, plainWords(page.title)));
+    if (page.description) head.append(el('p', { class: 'fd-page-description' }, plainWords(page.description)));
     return head;
   }
 
@@ -2538,7 +2551,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       // The ribbons are clipped to the card's corner by their own frame, so the card itself never clips: lists open past it.
       const frame = el('div', { class: 'fd-ribbon-frame' });
       const drawn = ribbons.map((ribbon) => {
-        const element = el('div', { class: `fd-ribbon fd-tone-${ribbon.tone ?? 'muted'}`, 'data-node': ribbon.id, title: ribbon.tooltip }, ribbon.label);
+        const element = el('div', { class: `fd-ribbon fd-tone-${ribbon.tone ?? 'muted'}`, 'data-node': ribbon.id, title: plainWords(ribbon.tooltip) }, plainWords(ribbon.label));
         frame.append(element);
         return { ribbon, element };
       });
@@ -2551,7 +2564,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           setHidden(element, !show);
           if (!show) continue;
           const from = ribbon.labelField ? displayValue(page.fields[ribbon.labelField] as LineField, state.values[ribbon.labelField], state.values, locale) : '';
-          setText(element, from || ribbon.label);
+          setText(element, from || plainWords(ribbon.label));
         }
       });
       card.append(frame);
@@ -2563,29 +2576,29 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         name && page.fields[name] ? displayValue(page.fields[name] as LineField, values[name], values, locale) : '';
       for (const stat of node.statButtons) {
         const value = el('span', { class: 'fd-stat-value' });
-        const label = el('span', { class: 'fd-stat-label' }, stat.label);
+        const label = el('span', { class: 'fd-stat-label' }, plainWords(stat.label));
         // A second value with words of its own: the two one over the other, each after its words.
-        const second = stat.secondField && stat.secondLabel !== undefined ? { value: el('span', { class: 'fd-stat-value' }), label: el('span', { class: 'fd-stat-label' }, stat.secondLabel) } : null;
+        const second = stat.secondField && stat.secondLabel !== undefined ? { value: el('span', { class: 'fd-stat-value' }), label: el('span', { class: 'fd-stat-label' }, plainWords(stat.secondLabel)) } : null;
         const icon = drawIcon(doc, stat.icon, options.icons);
         const words = second
           ? el('span', { class: 'fd-stat-words fd-stat-pair' }, el('span', { class: 'fd-stat-row' }, label, value), el('span', { class: 'fd-stat-row' }, second.label, second.value))
           : el('span', { class: 'fd-stat-words' }, value, label);
         // Its help, as Flectra's help=: its tooltip, and its description for a screen reader — never its name.
         const helpId = stat.help ? uid(`${stat.id}-help`) : undefined;
-        const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id, title: stat.help || undefined, 'aria-describedby': helpId }, ...(icon ? [icon, words] : [words]));
-        if (helpId) stats.append(el('span', { class: 'fd-sr-only', id: helpId }, stat.help as string));
+        const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id, title: plainWords(stat.help) || undefined, 'aria-describedby': helpId }, ...(icon ? [icon, words] : [words]));
+        if (helpId) stats.append(el('span', { class: 'fd-sr-only', id: helpId }, plainWords(stat.help as string)));
         button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
         updaters.push((state) => {
           setHidden(button, form.node(stat.id).invisible);
           const values = state.values as Values;
-          const unit = shownValue(stat.unitField, values) || stat.unit || '';
+          const unit = shownValue(stat.unitField, values) || plainWords(stat.unit) || '';
           const first = shownValue(stat.field, values);
           const other = shownValue(stat.secondField, values);
           if (second) {
             setText(value, first);
             setText(second.value, [other, unit].filter(Boolean).join(' '));
           } else setText(value, [[first, other].filter(Boolean).join(' / '), first || other ? unit : ''].filter(Boolean).join(' '));
-          setText(label, shownValue(stat.labelField, values) || stat.label);
+          setText(label, shownValue(stat.labelField, values) || plainWords(stat.label));
         });
         stats.append(button);
       }
@@ -2599,7 +2612,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (node.badges?.length) {
       const badges = el('div', { class: 'fd-badges' });
       for (const badge of node.badges) {
-        const chip = el('span', { class: `fd-badge fd-tone-${badge.tone ?? 'muted'}`, 'data-node': badge.id }, ...withIcon(badge.icon, badge.label));
+        const chip = el('span', { class: `fd-badge fd-tone-${badge.tone ?? 'muted'}`, 'data-node': badge.id }, ...withIcon(badge.icon, plainWords(badge.label)));
         hideWhen(chip, badge.id);
         badges.append(chip);
       }
@@ -2611,7 +2624,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (node.title) {
       const title = el('div', { class: 'fd-title' });
       // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
-      if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, node.title.label));
+      if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, plainWords(node.title.label)));
       if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
       // The record's name, and its subtitle, wrap on a narrow screen rather than be cut: a long name reads from its start.
       const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder, ...(node.title.placeholderWhen ? { placeholderWhen: node.title.placeholderWhen } : {}), ...(node.title.focus ? { focus: true } : {}), options: { wraps: true } });
@@ -2821,8 +2834,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
     else if (layout.type === 'list') {
       const context: ListContext = {
-        page,
-        node: layout,
+        page: shownPage,
+        node: shownPage.layout as typeof layout,
+        source: page,
         form,
         dataSource,
         doc,
@@ -2857,7 +2871,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
         ...(layout.editable && !locked
           ? {
               newForm: (made: Parameters<NonNullable<ListContext['newForm']>>[0]) => createForm({ ...formOptions, drafts: undefined, autosave: undefined, resume: undefined, values: undefined, ...made }),
-              drawField: (given: WidgetContext) => createWidget({ ...given, onError: report }, options.widgets),
+              drawField: (given: WidgetContext) => createWidget({ ...given, field: plainPart(given.field), node: plainPart(given.node), onError: report }, options.widgets),
               dialogs,
               letGo: letGoAsked,
             }

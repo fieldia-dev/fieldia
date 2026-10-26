@@ -85,7 +85,7 @@ export function drawApprovals(ctx: ApprovalsContext): ApprovalsKit {
   /** Who has yet to decide at a level: its approvers who have not, by name. */
   const toDecide = (level: ApprovalLevel) => level.approvers.filter((one) => !one.decision).map((one) => one.name);
   const decidedBy = (level: ApprovalLevel, decision: ApprovalDecision) => level.approvers.filter((one) => one.decision === decision).map((one) => one.name);
-  const sentence = (noun: string | undefined, plain: string) => recordSentence(page.records, noun, plain, locale);
+  const sentence = (noun: string | undefined, plain: string, values?: Record<string, string | number>) => recordSentence(page.records, noun, plain, locale, values);
 
   /** Where it stands, in a line. */
   function headline(approval: FormApproval): string {

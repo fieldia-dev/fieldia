@@ -171,8 +171,8 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
     if (found) {
       const name = found.version.by || labels.someoneElse;
       const time = found.version.at ? timeWords(found.version.at, context.tag, context.locale) : '';
-      const said = (noun: string | undefined, words: string) => recordSentence(context.page.records, noun, words, context.locale);
-      setText(title, time ? fill(said(labels.conflictAtNoun, labels.conflictAt), { name, time }) : fill(said(labels.conflictSinceNoun, labels.conflictSince), { name }));
+      const said = (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(context.page.records, noun, words, context.locale, values);
+      setText(title, time ? said(labels.conflictAtNoun, labels.conflictAt, { name, time }) : said(labels.conflictSinceNoun, labels.conflictSince, { name }));
       const theirs = found.changed.length ? fill(labels.conflictChanged, { fields: list(found.changed.map(labelIn(labels.conflictChanged, 'fields'))) }) : '';
       const both = found.both.length ? fill(labels.conflictBoth, { fields: list(found.both.map(labelIn(labels.conflictBoth, 'fields'))) }) : '';
       setText(changed, [theirs, both].filter(Boolean).join(' '));

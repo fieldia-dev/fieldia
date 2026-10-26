@@ -1,5 +1,5 @@
 import { displayValue, drawIcon, type IconSet, type Loading } from '@fieldia/widgets';
-import type { ButtonNode, FieldNode, Form, FormState, HeadLink, LabelPlace, LayoutNode, LineField, Locale, MenuItem, Page, RootLayout, RunResult, SheetHead, SheetNode, Tone, Values } from '@fieldia/core';
+import { plainPart, plainWords, type ButtonNode, type FieldNode, type Form, type FormState, type HeadLink, type LabelPlace, type LayoutNode, type LineField, type Locale, type MenuItem, type Page, type RootLayout, type RunResult, type SheetHead, type SheetNode, type Tone, type Values } from '@fieldia/core';
 import { dayTag, intlFormat } from '@fieldia/core';
 import { setAttr, setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -176,8 +176,8 @@ export function recordHead(context: RecordHeadContext): RecordHead {
     const def = kind.field ? page.fields[kind.field] : undefined;
     const key = value === null || value === undefined ? '' : typeof value === 'object' && !Array.isArray(value) && 'id' in value ? String((value as { id: unknown }).id) : String(value);
     const look = key ? kind.looks?.[key] : undefined;
-    const label = def && key ? displayValue(def as LineField, value, state.values as Values, context.locale) : '';
-    const words = [(label || kind.label || '').toLocaleUpperCase(context.locale), numberWords(state)].filter(Boolean).join(' ');
+    const label = def && key ? displayValue(plainPart(def) as LineField, value, state.values as Values, context.locale) : '';
+    const words = [(label || plainWords(kind.label) || '').toLocaleUpperCase(context.locale), numberWords(state)].filter(Boolean).join(' ');
     return { key, colour: look?.colour ?? kind.colour ?? null, icon: look?.icon ?? kind.icon, words };
   }
 
@@ -204,7 +204,7 @@ export function recordHead(context: RecordHeadContext): RecordHead {
       const raw = state.values[link.field];
       const count = typeof raw === 'number' ? raw : Number(raw ?? 0) || 0;
       const form_ = plural.select(count) as keyof HeadLink['words'];
-      setText(words, `${count} ${link.words[form_] ?? link.words.other}`);
+      setText(words, `${count} ${plainWords(link.words[form_] ?? link.words.other)}`);
     });
     return button;
   }

@@ -1,4 +1,4 @@
-import { LINK_URL, safeUrl, recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
+import { LINK_URL, plainWords, safeUrl, recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
 import { drawIcon, type IconSet, type Loading } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
@@ -64,7 +64,7 @@ const GEAR: IconSet = {
 const same = (a: RecordId | null | undefined, b: RecordId | null | undefined) => a != null && b != null && String(a) === String(b);
 
 /** One of the bar's sentences in the words the form's page names its records by (`records`), else as it says them plainly. */
-const sentenceOf = (context: Pick<RecordBarContext, 'form' | 'locale'>) => (noun: string | undefined, words: string) => recordSentence(context.form.page.records, noun, words, context.locale);
+const sentenceOf = (context: Pick<RecordBarContext, 'form' | 'locale'>) => (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(context.form.page.records, noun, words, context.locale, values);
 
 /**
  * The bar over a record, as Flectra's control panel: the breadcrumbs the app
@@ -213,7 +213,7 @@ export function recordMenu(context: RecordMenuContext, items: readonly MenuItem[
   if (look === 'gear') gear.append(el('span', { class: 'fd-record-gear-words' }, labels.actions));
   const menu = el('div', { class: 'fd-record-menu', role: 'menu', id, 'aria-labelledby': gear.id, hidden: '' });
   // The built-in Print is under its Print heading: "This record".
-  const words = (item: MenuItem) => item.label ?? (item.builtin === 'print' ? sentenceOf(context)(labels.printRecordNoun, labels.printRecord) : item.builtin ? labels[item.builtin] : item.id);
+  const words = (item: MenuItem) => plainWords(item.label) ?? (item.builtin === 'print' ? sentenceOf(context)(labels.printRecordNoun, labels.printRecord) : item.builtin ? labels[item.builtin] : item.id);
   const drawn = menuEntries(context, items, words, (item) => {
     close(true);
     void context.press(gear, () => form.runAction(item.id));

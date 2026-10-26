@@ -45,8 +45,8 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
   const model = page.data.kind === 'record' ? page.data.model : '';
   const labels: CalendarLabels = calendarLabels(locale, settings.labels?.[locale]);
   /** One of its sentences in the words the list's page names its records by (`records`), else as it says them plainly. */
-  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
-  const holds = (n: number) => (n === 1 ? sentence(labels.holdsNounOne, labels.holdsOne) : fill(sentence(labels.holdsNoun, labels.holds), { n }));
+  const sentence = (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(page.records, noun, words, locale, values);
+  const holds = (n: number) => (n === 1 ? sentence(labels.holdsNounOne, labels.holdsOne) : sentence(labels.holdsNoun, labels.holds, { n }));
   const kind = kindOf(page, spec);
   /** The zone its clock is: its start's, else its page's, else the reader's own (dates.ts). */
   const zone = zoneOfCalendar(page, spec);

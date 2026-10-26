@@ -1,4 +1,4 @@
-import { languagesOf, hijriWords, monthWords, placesOf, placesOfCurrency, precisionOf, dayTag, type LineField, type Locale, type Value, intlFormat } from '@fieldia/core';
+import { languagesOf, hijriWords, monthWords, placesOf, plainPart, placesOfCurrency, precisionOf, dayTag, type LineField, type Locale, type Value, intlFormat } from '@fieldia/core';
 import { anyText, languagesPart } from './widget-parts';
 import { formatMoney, formatNumber } from './numbers';
 import { writeMoney } from './money';
@@ -53,7 +53,9 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
     case 'many2many':
       return ((value as { label: string }[]) ?? []).map((r) => r.label).join(', ');
     case 'selection': {
-      const label = (v: unknown) => def.options.find((o) => o.value === v)?.label ?? String(v);
+      // Its choices' words as a person reads them, read once (`plainPart`).
+      const options = plainPart(def).options;
+      const label = (v: unknown) => options.find((o) => o.value === v)?.label ?? String(v);
       return Array.isArray(value) ? value.map(label).join(', ') : label(value);
     }
     case 'integer':

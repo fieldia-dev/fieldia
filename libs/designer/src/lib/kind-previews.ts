@@ -1,4 +1,4 @@
-import type { FieldNode, Page } from '@fieldia/core';
+import { plainPart, type FieldNode, type Page } from '@fieldia/core';
 import { appKindPreview } from './app-kinds-ui';
 import type { ElementFactory } from './chrome';
 import { ADDRESS_PARTS, USUAL_ADDRESS } from './kind-commands';
@@ -16,13 +16,15 @@ import { en } from './locales/en';
 
 export function kindPreview(el: ElementFactory, page: Page, node: FieldNode, kind: string | null, words: DesignerWords = en): HTMLElement | null {
   const w = words.questions;
-  const def = page.fields[node.field];
-  const option = (key: string) => node.options?.[key];
+  // A preview of the form: the field's and the part's words as it shows them (`plainPart`).
+  const def = plainPart(page.fields[node.field]);
+  const shown = plainPart(node);
+  const option = (key: string) => shown.options?.[key];
   const line = (words: string) => el('div', { class: 'fd-q-preview-part' }, words);
   switch (kind) {
     case 'signature': {
       // The page's words on the pad, and those kept under it.
-      const pad = el('div', { class: 'fd-q-preview fd-q-preview-signature' }, node.placeholder || w.signHere);
+      const pad = el('div', { class: 'fd-q-preview fd-q-preview-signature' }, shown.placeholder || w.signHere);
       const under = option('footerLabel');
       return typeof under === 'string' && under ? el('div', { class: 'fd-q-preview-lines' }, pad, el('span', { class: 'fd-q-preview-under' }, under)) : pad;
     }

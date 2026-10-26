@@ -1,4 +1,4 @@
-import { fill, type FileValue, type Form, type FormApproval, type FormState, type Locale, type RecordRequest, type Value } from '@fieldia/core';
+import { fill, plainPart, type FileValue, type Form, type FormApproval, type FormState, type Locale, type RecordRequest, type Value } from '@fieldia/core';
 import { displayValue, textPart, type Part, type TextReference } from '@fieldia/widgets';
 import { mountChatter, textToHtml, wantsChannels, type ChatterHandle, type ChatterOptions } from './chatter';
 import { chatterLabels, type ChatterLabels } from './labels';
@@ -90,7 +90,7 @@ export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement
       return def ? displayValue(def as never, value, form.getState().values, (rest.locale ?? 'en') as Locale) : String(value);
     };
     const told = (approval: FormApproval | null | undefined) =>
-      approvalEntries(approval, words, said).map((entry) => (entry.tracking ? { ...entry, tracking: entry.tracking.map((change) => ({ ...change, label: form.page.fields[change.field]?.label ?? change.label })) } : entry));
+      approvalEntries(approval, words, said).map((entry) => (entry.tracking ? { ...entry, tracking: entry.tracking.map((change) => ({ ...change, label: plainPart(form.page.fields[change.field])?.label ?? change.label })) } : entry));
     let history = form.getState().approval?.history;
     // A discussion's code, and the editor of its comment box, come the first time one is shown: drawn whole once they have.
     const discussion = (part: NonNullable<typeof discussionPart.loaded>, record: RecordRef | null) =>

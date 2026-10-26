@@ -1,4 +1,4 @@
-import type { JsonValue } from '@fieldia/core';
+import { plainPart, type JsonValue } from '@fieldia/core';
 import { decorateLinks, formattedText, type TextReference } from './formatted-text';
 import { headedTables } from './rich-table';
 import { drawIcon } from './icons';
@@ -110,7 +110,7 @@ export function modernHtml(context: WidgetContext): Widget {
   // (A rich one empty and open to change is its editor at rest, its placeholder saying what to add.)
   const view = make('div', { class: 'fd-md-view', id, role: 'textbox', 'aria-multiline': 'true', 'aria-readonly': 'false', tabindex: '0', 'aria-labelledby': `${id}-label` });
   if (node.placeholder && !rich) view.setAttribute('data-placeholder', node.placeholder);
-  const label = () => document.getElementById(`${id}-label`)?.textContent?.trim() || form.page.fields[name]?.label || name;
+  const label = () => document.getElementById(`${id}-label`)?.textContent?.trim() || plainPart(form.page.fields[name])?.label || name;
   const editButton = make('button', { type: 'button', class: 'fd-field-tool', 'data-tool': 'edit' });
   const doneButton = make('button', { type: 'button', class: 'fd-field-tool', 'data-tool': 'done', hidden: '' });
   const pencil = drawIcon(document, 'edit');

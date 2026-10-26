@@ -1,4 +1,4 @@
-import { evidenceOf, labelAt, type FieldNode, type FileValue, type Form, type Locale, type Value, type Values, intlFormat } from '@fieldia/core';
+import { evidenceOf, labelAt, type FieldNode, type FileValue, type Form, type Locale, type Value, type Values, intlFormat, plainPart } from '@fieldia/core';
 import { fillIn, maker, setAttr, setHidden, setText } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { restingText, zoneOf } from './date-text';
@@ -84,7 +84,7 @@ export function signingFor(context: SigningContext): Signing {
   /** "Not signed yet: first put right …", naming the answers `wrong`. */
   function notSignedWords(wrong: string[]): string {
     const asLabel = labelAt(words.notSignedYet, 'fields', form.page.lowerLabels, locale);
-    const labelsOf = wrong.map((field) => asLabel(form.page.fields[field]?.label ?? field));
+    const labelsOf = wrong.map((field) => asLabel(plainPart(form.page.fields[field])?.label ?? field));
     let list: string;
     try {
       list = intlFormat('ListFormat', locale ?? 'en', { type: 'conjunction' }).format(labelsOf);

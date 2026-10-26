@@ -122,7 +122,7 @@ function sheetCellOf(cell: FileCell): SheetCell {
 export function openImport(context: ImportContext): Promise<ImportEnd | null> {
   const { page, doc, labels, fill, number, locale } = context;
   /** One of its sentences in the words the page names its records by (`records`), else as it says them plainly. */
-  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
+  const sentence = (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(page.records, noun, words, locale, values);
   const failedWords = sentence(labels.importFailedNoun, labels.importFailed);
   const most = context.most ?? IMPORT_MOST;
   installImportStyles(doc);
@@ -521,7 +521,7 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
       parts.push(make('h3', { class: 'fd-import-heading' }, labels.importPreview), make('div', { class: 'fd-import-scroll' }, preview));
     }
     body.replaceChildren(...parts);
-    steps({ back: () => showMatch(), ...(ready.length ? { primary: { words: plural(ready.length, sentence(labels.importStartNoun, labels.importStart), sentence(labels.importStartNounOne, labels.importStartOne)), act: () => void write(ready, refused) } } : {}) });
+    steps({ back: () => showMatch(), ...(ready.length ? { primary: { words: sentence(...(intlFormat('PluralRules', locale).select(ready.length) === 'one' ? ([labels.importStartNounOne, labels.importStartOne] as const) : ([labels.importStartNoun, labels.importStart] as const)), { n: number(ready.length) }), act: () => void write(ready, refused) } } : {}) });
     (ready.length ? primary : back).focus();
   }
 

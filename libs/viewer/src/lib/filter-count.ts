@@ -14,7 +14,7 @@ type CountWords = Pick<ViewerLabels, 'groupCount' | 'groupCountNoun' | 'groupCou
 export function countMark(el: El, n: number, page: Page, labels: CountWords, fill: (template: string, values: Record<string, string | number>) => string, locale: Locale = 'en'): { mark: HTMLElement; named: (words: string) => string } {
   const shown = formatNumber(n, 0, locale);
   const one = intlFormat('PluralRules', locale).select(n) === 'one';
-  const said = fill(one ? recordSentence(page.records, labels.groupCountNounOne, labels.groupCountOne, locale) : recordSentence(page.records, labels.groupCountNoun, labels.groupCount, locale), { n: shown });
+  const said = one ? recordSentence(page.records, labels.groupCountNounOne, labels.groupCountOne, locale, { n: shown }) : recordSentence(page.records, labels.groupCountNoun, labels.groupCount, locale, { n: shown });
   const comma = listComma(locale);
   return { mark: el('span', { class: 'fd-filter-count', 'aria-hidden': 'true' }, shown), named: (words) => `${words}${comma}${said}` };
 }

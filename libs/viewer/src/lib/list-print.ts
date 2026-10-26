@@ -155,10 +155,7 @@ export async function printout(list: PrintList, progress: (done: number, total: 
   const about = [
     ...(filters.length ? [list.fill(labels.printFilters, { filters: filters.join(' · ') })] : []),
     ...(grouped.length ? [list.fill(labels.printGroups, { groups: grouped.join(' > ') })] : []),
-    list.fill(
-      intlFormat('PluralRules', list.locale).select(total) === 'one' ? recordSentence(page.records, labels.printCountNounOne, labels.printCountOne, list.locale) : recordSentence(page.records, labels.printCountNoun, labels.printCount, list.locale),
-      { n: number(total) }
-    ),
+    intlFormat('PluralRules', list.locale).select(total) === 'one' ? recordSentence(page.records, labels.printCountNounOne, labels.printCountOne, list.locale, { n: number(total) }) : recordSentence(page.records, labels.printCountNoun, labels.printCount, list.locale, { n: number(total) }),
   ];
   const sheet = el(
     'div',

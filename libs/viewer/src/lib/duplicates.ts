@@ -1,4 +1,4 @@
-import { labelAt, recordSentence, listComma, type DuplicateMatch, type Form, type JsonValue, type Locale, type Page, type RecordId, type Tone, type Values } from '@fieldia/core';
+import { labelAt, plainWords, recordSentence, listComma, type DuplicateMatch, type Form, type JsonValue, type Locale, type Page, type RecordId, type Tone, type Values } from '@fieldia/core';
 import { afterPress, drawIcon, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { installDuplicateStyles } from './duplicates-styles';
@@ -71,8 +71,8 @@ export interface MergeSide {
 export function watchDuplicates(context: DuplicatesContext): { destroy(): void } {
   const { form, page, root, doc, el, labels, fill } = context;
   /** One of its sentences in the words the page names its records by (`records`), else as it says them plainly. */
-  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, context.locale);
-  const labelOf = (field: string) => page.fields[field]?.label ?? field;
+  const sentence = (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(page.records, noun, words, context.locale, values);
+  const labelOf = (field: string) => plainWords(page.fields[field]?.label) ?? field;
   const setting = page.duplicates;
   if (!setting || page.data.kind !== 'record' || !form.canFindDuplicates()) return { destroy: () => undefined };
   installDuplicateStyles(doc);
@@ -193,13 +193,14 @@ export function watchDuplicates(context: DuplicatesContext): { destroy(): void }
   const wordsOf = (match: DuplicateMatch, values: Readonly<Values>): [string, string] => {
     const typedName = nameField ? values[nameField] : null;
     const nameLike = !!nameField && match.why.includes(nameField) && fold(match.name) !== fold(typeof typedName === 'string' ? typedName : '');
-    const template = nameLike ? (match.why.length > 1 ? sentence(labels.duplicateNamedWithNoun, labels.duplicateNamedWith) : sentence(labels.duplicateNamedNoun, labels.duplicateNamed)) : sentence(labels.duplicateWithNoun, labels.duplicateWith);
+    // The page's words for its records filled in with the fields in one pass, never read again; its name's place kept.
+    const said = (values?: Record<string, string>) => (nameLike ? (match.why.length > 1 ? sentence(labels.duplicateNamedWithNoun, labels.duplicateNamedWith, values) : sentence(labels.duplicateNamedNoun, labels.duplicateNamed, values)) : sentence(labels.duplicateWithNoun, labels.duplicateWith, values));
     // Each label small inside the sentence where the page asks (`lowerLabels`), by the one rule (labelAt).
-    const small = labelAt(template, 'fields', page.lowerLabels, context.tag ?? context.locale);
+    const small = labelAt(said(), 'fields', page.lowerLabels, context.tag ?? context.locale);
     const same = match.why.filter((field) => !(nameLike && field === nameField)).map((field) => small(labelOf(field)));
-    const [before, after = ''] = template.split('{name}');
     const fields = joined(same.length || nameLike ? same : setting.fields.filter((field) => page.fields[field]).map((field) => small(labelOf(field))));
-    return [fill(before, { fields }), fill(after, { fields })];
+    const [before, after = ''] = said({ fields, name: '\u0000' }).split('\u0000');
+    return [before, after];
   };
 
   /** Merge is offered on two records that are stored, by a source that merges them: never a new record, nor one only to be read. */

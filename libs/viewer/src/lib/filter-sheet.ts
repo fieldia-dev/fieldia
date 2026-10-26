@@ -178,7 +178,7 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
   function showWords(n: number | null): string {
     if (n === null) return labels.showResultsSome;
     const one = intlFormat('PluralRules', locale).select(n) === 'one';
-    return fill(one ? recordSentence(page.records, labels.showResultsNounOne, labels.showResultsOne, locale) : recordSentence(page.records, labels.showResultsNoun, labels.showResults, locale), { n: formatNumber(n, 0, locale) });
+    return one ? recordSentence(page.records, labels.showResultsNounOne, labels.showResultsOne, locale, { n: formatNumber(n, 0, locale) }) : recordSentence(page.records, labels.showResultsNoun, labels.showResults, locale, { n: formatNumber(n, 0, locale) });
   }
   function changed(field?: string) {
     for (const f of lists.keys()) if (f === field) drawValues(f);

@@ -1,4 +1,4 @@
-import type { Field, Option } from '@fieldia/core';
+import { wordsRead, type Field, type Option } from '@fieldia/core';
 import type { Widget, WidgetContext } from '@fieldia/widgets';
 
 /**
@@ -8,15 +8,16 @@ import type { Widget, WidgetContext } from '@fieldia/widgets';
  * one) and where it shows them already. Its value, its box and its focus stay as they are. Any other field's widget is
  * drawn as it is.
  */
-export function wordedWidget(context: WidgetContext, draw: (context: WidgetContext) => Widget): Widget {
+export function wordedWidget(context: WidgetContext, draw: (context: WidgetContext) => Widget, source: Field = context.field): Widget {
   const { form, field } = context;
   // Any other field, or a choice whose words name no answer: its widget as it is. A choice whose options change — a
   // list's, a condition's, carried from another question — is drawn afresh as they do, its words filled in (choices-from.ts).
-  if (field.type !== 'selection' || field.optionsFrom || form.offersChange?.(context.name) || !field.options.some((option) => option.label.includes('{'))) return draw(context);
-  const written = field.options.map((option) => option.label);
+  if (field.type !== 'selection' || source.type !== 'selection' || field.optionsFrom || form.offersChange?.(context.name) || !source.options.some((option) => option.label.includes('{'))) return draw(context);
+  // Read from the page's own words (`source`); the rest of each option as the widget is given it.
+  const written = source.options.map((option) => option.label);
   // The widget's own options: their words written over as the answers they show change.
-  const options: Option[] = field.options.map((option) => ({ ...option, label: form.words(option.label) }));
-  const inner = draw({ ...context, field: { ...field, options } as Field });
+  const options: Option[] = field.options.map((option, i) => ({ ...option, label: form.words(written[i]) }));
+  const inner = draw({ ...context, field: wordsRead({ ...field, options } as Field) });
   return {
     ...inner,
     // Its options' words follow other answers: drawn every time.

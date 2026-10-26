@@ -1,4 +1,4 @@
-import { saveProblemOf, type DataSource, type PaidPayment, type PaymentDue, type PayRequest, intlFormat } from '@fieldia/core';
+import { plainWords, saveProblemOf, type DataSource, type PaidPayment, type PaymentDue, type PayRequest, intlFormat } from '@fieldia/core';
 import { setHidden, setText } from './dom';
 import type { JoinContext, PageJoin } from './joins';
 import { installPayStyles } from './pay-styles';
@@ -143,9 +143,10 @@ export function drawPay(ctx: PayContext): PayKit {
       return new Promise((settle) => {
         asked = { due, request, settle };
         const written = amountWords(due.amount, due.currency, ctx.tag);
-        setText(title, due.label);
+        // The page's own words, as a person reads them.
+        setText(title, plainWords(due.label));
         setText(amount, written);
-        setText(words, due.description ?? '');
+        setText(words, plainWords(due.description) ?? '');
         setHidden(words, !due.description);
         setText(payButton, fill(labels.payAmount, { amount: written }));
         say('');
