@@ -23,7 +23,7 @@ export default [
     blurb:
       'A survey’s settings, as its owner edits them: the sections and questions in order, one page or several, who may answer, scores and certificates, exam mode and live sessions — options that appear and switch off as the survey’s type changes.',
     howTo: [
-      'Add a question at the end of a section, then move it up with its grip or Alt+↑.',
+      'Add a question at the end of a section, then move it up with its grip or Alt+↑ — on a phone, with the ↑ on its card.',
       'Pick Assessment over the title: Time & Scoring appears, scoring turns on and access becomes invitation only.',
       'Tick Is a Certification, then Require Login: Give Badge appears; untick Require Login and it goes.',
       'Press Close: the survey is archived and Reopen takes its place.',

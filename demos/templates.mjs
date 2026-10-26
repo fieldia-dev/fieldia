@@ -37,7 +37,7 @@ export default [
       "Before a branch is picked, the next question asks how your visit to us was. Pick a branch: it asks of that one by its name, and follows another.",
       "Give it four stars and pick a number on the scale.",
       "Turn on You may contact me: Email appears, and is now required.",
-      "Give it one star and send: the page says sorry, names who at that branch reads it, and offers no second response.",
+      "Give it one star, fill in your email and send: the page says sorry, names who at that branch reads it and will write to you, and offers no second response.",
     ],
   },
   {
@@ -49,7 +49,7 @@ export default [
     howTo: [
       "Choose VIP: the price changes to $250. Choose Student: Student card number appears, required.",
       "Tick two workshops, then pick a food need.",
-      "Fill in your name and email and press Submit: the page names your ticket, its price and your workshops, and the email the ticket goes to.",
+      "Fill in your name, email and student card number and press Submit: the page names your ticket, its price and your workshops, and the email the ticket goes to.",
     ],
   },
   {
@@ -138,9 +138,10 @@ export default [
     query: 'page=template-invoice&theme=odoo&record=new',
     blurb: "A customer invoice: its status, the customer and terms, lines whose subtotals and totals work themselves out, then Confirm — once it has lines to bill — and Register payment.",
     howTo: [
+      "Pick a customer and press Confirm: with no lines yet, it says why it cannot.",
       "Add a line: pick a product, type a quantity and a price, and the subtotal and the totals under it follow.",
       "Type a discount on a line: its subtotal drops by that much.",
-      "Press Confirm with no lines: it says why it cannot. Add a line and press Confirm: the invoice gets its number, moves to Posted, and Register payment takes its place.",
+      "Press Confirm: the invoice gets its number, moves to Posted, and Register payment takes its place.",
     ],
   },
   {
@@ -162,7 +163,7 @@ export default [
     blurb: "An employee's expenses, one line each with its date, kind and amount, totalled, then submitted and approved.",
     howTo: [
       "Add two expenses with their dates, kinds and amounts: the total adds them up.",
-      "Press Submit: Approve and Send back take its place, as the approver sees them.",
+      "Write what it was for in the title and pick an Employee, then press Submit: Approve and Send back take its place, as the approver sees them.",
     ],
   },
   {

@@ -7,11 +7,11 @@ export default [
     query: 'page=real-sale-order&record=7101&skin=underline',
     blurb: 'A full sales order from a working business system, from quotation to confirmed order: the buttons each stage needs, lines with sections and notes priced by the business’s own rules, optional products, delivery and invoicing details in four groups, and the conversation with your team beside it.',
     howTo: [
-      'Press Send by Email: the quotation is emailed and moves to Quotation Sent; press Confirm and it becomes a sales order, the Delivery counter appears and Expiration gives way to Order Date.',
       'In the grid, change the patient monitors’ Quantity from 4 to 5: the line’s Tax excl. and the totals under the grid follow.',
       'Add a product and pick the Defibrillator AED-3: its description, unit, VAT 14% and the hospital price come with it.',
-      'Show Analytic Distribution from the grid’s column chooser (⋮): each line’s accounts with their shares; click a cell to change them. [Opened as someone without the analytic accounting role](?roles=base.group_user), the column is not there.',
       'Change the Customer to Delta Care Clinics: the addresses, pricelist and terms follow, and the credit-limit warning shows over the sheet.',
+      'Press Send by Email: the quotation is emailed and moves to Quotation Sent; press Confirm and it becomes a sales order, the Delivery counter appears, Expiration gives way to Order Date, and the customer is fixed.',
+      'Show Analytic Distribution from the grid’s column chooser (⋮): each line’s accounts with their shares; click a cell to change them. [Opened as someone without the analytic accounting role](?roles=base.group_user), the column is not there.',
       '[Open S00068](?record=7102) and press Create Invoice: the Create invoices dialog opens over the order.',
     ],
   },

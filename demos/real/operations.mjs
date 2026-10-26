@@ -23,11 +23,11 @@ export default [
     blurb:
       'Goods coming into the warehouse: a receipt of timber from Alexandria, each product with what was ordered, what came and what is in stock, the buttons that move it from Draft to Ready to Done, and the question of what to do with the rest when less arrives than was ordered.',
     howTo: [
+      'Add a product in the grid: its unit and the stock on hand come with it.',
+      'Click Operation Type: opened from Receipts, it offers only incoming types.',
       'Press Mark as ready: the receipt moves from Draft to Ready, and every line’s Quantity is what was ordered (its Demand).',
       'Set the table legs’ Quantity to 12 of 16, then press Validate.',
       'Create Backorder? asks what to do with the rest: press Create Backorder. The receipt is Done, and the rest goes to a backorder.',
-      'Add a product in the grid: its unit and the stock on hand come with it.',
-      'Click Operation Type: opened from Receipts, it offers only incoming types.',
     ],
   },
   {
@@ -40,7 +40,7 @@ export default [
     howTo: [
       'Change To Produce to 6: the components, the offcuts and the work orders’ minutes follow.',
       'The glue, consumed by hand, leads the components; each has its × while the order is a draft.',
-      'Press Confirm: the components are reserved, and the badge says they are not all available — WH/Stock has 12 table legs of 16. Confirmed, they can no longer be deleted.',
+      'Press Confirm: the components are reserved, and the badge says they are not all available — WH/Stock has 12 of the 24 table legs. Confirmed, they can no longer be deleted.',
       'Open Work Orders and press Plan: each operation gets its start and end.',
       'Press Produce All: the tables are made, the components consumed, and the order is Done and locked.',
     ],

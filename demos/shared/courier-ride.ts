@@ -28,15 +28,23 @@ function heading([lng1, lat1]: [number, number], [lng2, lat2]: [number, number])
   return Math.round(((Math.atan2(y, x) * 180) / Math.PI + 360) % 360);
 }
 
-/** Sends the courier's place along the road, a point every `every` milliseconds, from `start`; returns what stops it. */
-export function rideCourier(form: Form, every = 2000, start = 6): () => void {
+/**
+ * Sends the courier's place along the road, a point every `every` milliseconds, from `start`; returns what stops it.
+ * Once at the door the order is delivered and the ride ends — or, with `loop`, the courier sets off from `start` again
+ * (the kitchen's next order), so whatever waits for them on the way is reached however late it is set.
+ */
+export function rideCourier(form: Form, { every = 2000, start = 6, loop = false } = {}): () => void {
   let at = start;
   const send = () => {
     const [lng, lat] = ROAD[at];
     const next = ROAD[Math.min(at + 1, ROAD.length - 1)];
-    form.setValues({ courier_lat: lat, courier_lng: lng, courier_heading: heading(ROAD[at], next), ...(at === ROAD.length - 1 ? { state: 'delivered' } : {}) });
+    const delivered = at === ROAD.length - 1 && !loop;
+    form.setValues({ courier_lat: lat, courier_lng: lng, courier_heading: heading(ROAD[at], next), ...(delivered ? { state: 'delivered' } : {}) });
     at++;
-    if (at >= ROAD.length) clearInterval(timer);
+    if (at >= ROAD.length) {
+      if (loop) at = start;
+      else clearInterval(timer);
+    }
   };
   const timer = setInterval(send, every);
   send();

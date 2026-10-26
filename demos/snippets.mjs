@@ -389,12 +389,12 @@ import { createMemoryDataSource } from '@fieldia/core';
 import page from './${name}.page.json';
 
 // The demo's store: the memory source, as slow as a phone sending on mobile data
-// (150 KB a second), the balcony's photo failing on its first try so Retry shows.
+// (50 KB a second), the balcony's photo failing on its first try so Retry shows.
 // Your app gives its own upload() instead: see Your store.
 const dataSource = createMemoryDataSource({
   records: { listing: { 1: { name: 'Garden flat with a view of the Nile', offer: 'sale', price: 9800000, district: 'zamalek', bedrooms: 3, photos: [] } } },
   storage: {
-    bytesPerSecond: 150_000,
+    bytesPerSecond: 50_000,
     fails: (file, attempt) => /^Balcony/.test(file.name) && attempt === 1,
   },
 });

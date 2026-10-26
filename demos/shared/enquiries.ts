@@ -1,4 +1,5 @@
 import { assistStandIn, type MemoryAssist, type Option, type RewriteRequest, type Values } from '@fieldia/core';
+import { SERVER_MS } from './functions';
 
 /**
  * AI help in the demos (enquiry-reply, customer-from-email, homes-search): the memory source answers it with Fieldia's
@@ -31,8 +32,19 @@ export function enquiryDraft(values: Values, request: RewriteRequest): string {
   ].join('\n');
 }
 
-/** What the demos' memory source answers AI help with. */
-export const demoAssist: MemoryAssist = assistStandIn({ drafts: { 'buyer.enquiry.reply': enquiryDraft } });
+const standIn = assistStandIn({ drafts: { 'buyer.enquiry.reply': enquiryDraft } });
+
+/**
+ * What the demos' memory source answers AI help with. A draft takes a moment to write, as a model's does (the app's
+ * server's moment, shared/functions.ts): long enough to start typing in the reply before it comes, and see it let go.
+ */
+export const demoAssist: MemoryAssist = {
+  ...standIn,
+  rewrite: async (request) => {
+    if (request.how === 'draft') await new Promise((done) => setTimeout(done, SERVER_MS));
+    return standIn.rewrite(request);
+  },
+};
 
 /** Two buyers' enquiries: Hana's as it came in, nothing read from it yet; Omar's read, a rough reply typed. */
 export function sampleEnquiries(): Record<string, Values> {
