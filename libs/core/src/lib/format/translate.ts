@@ -143,3 +143,20 @@ export function isRightToLeft(tag: string): boolean {
 
 /** What parts a list of names, as a sentence writes them: ", ", or the Arabic comma "، " in a language written in Arabic's script (Arabic, Persian, Urdu). */
 export const listComma = (tag: string): string => (/^(ar|fa|ur)(-|$)/i.test(tag) ? '\u060c ' : ', ');
+
+/** A text's words, as a person reads them out: letters and digits, in the language's lower case. */
+const wordsOf = (text: string, tag: string): string[] => text.toLocaleLowerCase(tag).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
+/**
+ * A control's name holding the words it shows (WCAG 2.5.3, label in name): a person who sees "Sat 24" on a button and
+ * says "click Sat 24" reaches it, and a screen reader still hears the whole of it. The name as it is when its words hold
+ * what is shown, one after another; else the name, then what is shown — "Saturday 24 October, Sat 24" — or, `first`,
+ * what is shown, then the name: "15K, 15,076 here. Zoom in to see them."
+ */
+export function nameShowing(name: string, shown: string, tag: string, first = false): string {
+  const seen = wordsOf(shown, tag);
+  if (!seen.length) return name;
+  const said = wordsOf(name, tag);
+  for (let at = 0; at + seen.length <= said.length; at++) if (seen.every((word, i) => said[at + i] === word)) return name;
+  return first ? `${shown}${listComma(tag)}${name}` : `${name}${listComma(tag)}${shown}`;
+}

@@ -1554,7 +1554,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // check's missing words said at once under its fields (parts.ts, form.ts, join-missing.ts) — 575.34; a failed save
 // said as not saved, no "Saved, but not all your changes." nobody's save left, a record's draft its changes, a record
 // that could not open named by its row (viewer.ts, form.ts) — 576.64 (590,475 bytes), to 576.7.
-const BUDGET_KB = 576.7;
+// 0.36, axe 4.14's label in name (WCAG 2.5.3, its label-content-name-mismatch now a rule of its own): a control's name
+// holds the words it shows, one after another — `nameShowing` (core), which the parts' controls name themselves with,
+// and a tab's count apart from its words in its text (viewer.ts); the rest in their parts, listed with the part budgets
+// below — 590,475 bytes measured before, 590,772 after (+297), to 577.0.
+const BUDGET_KB = 577.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1900,7 +1904,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.35.1, the owner's walk of 0.35 (listed with the raw budget above): 189.79 measured before; a key in a long table
 // +1.44, a guarding part's Retry and the typing kept +1.23, a save's words, a draft's and an open's +0.48 — 192.94, to
 // 193.0.
-const GZIP_BUDGET_KB = 193.0;
+// 0.36, a control's name holding the words it shows (listed with the raw budget above): 192.94 measured before, 193.06
+// after, to 193.1.
+const GZIP_BUDGET_KB = 193.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -3034,7 +3040,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 72.95 and 24.64, to 73.0 and 24.7; a file named as a picture that is none said so (files.ts) — files 50.49 and 18.82,
 // 50.68 and 18.90, to 50.7 and 19.0; a search that failed in a toast closes its empty list, a list closed writing only
 // what changed (relations.ts) — relations 20.98 and 7.99, 21.10 and 8.01, to 21.1 and 8.1.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [73.0, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [154.9, 50.6], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.7, 19.0], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1] };
+// 0.36, a control's name holding the words it shows (WCAG 2.5.3, axe 4.14's label-content-name-mismatch): a file's
+// size apart from its name in its button's text, its kind's letters drawn on its icon (files.ts) — files 50.68 and
+// 18.90 measured before, 50.75 and 18.93 after, to 50.8; a phone's country named with the code it shows, its call with
+// its word (phone-box.ts) — phone 45.12 and 19.25, 45.22 and 19.28, to 45.3; a scan's button with its word (scan.ts) —
+// scan 20.47 and 8.50, 20.53 and 8.53, to 20.6.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [73.0, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [154.9, 50.6], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.8, 19.0], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

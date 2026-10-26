@@ -149,7 +149,7 @@ export { checkPage } from './lib/format/check-page';
 export { fillValues, splitValues, valuesIn } from './lib/format/words';
 export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
-export { translatePage, localizePage, pageWords, isRightToLeft, listComma } from './lib/format/translate';
+export { translatePage, localizePage, pageWords, isRightToLeft, listComma, nameShowing } from './lib/format/translate';
 export { firstWeekday } from './lib/format/week';
 // Every Intl formatter, made once for a language and its options (0.34): the one place Fieldia makes them.
 export { intlFormat, type IntlKind } from './lib/intl-format';
