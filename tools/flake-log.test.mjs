@@ -43,10 +43,13 @@ test('every test of a report is known by its project, its file and its titles, w
   assert.deepEqual(tests, [{ id: 'webkit › lists.spec.ts › a list › sorts', project: 'webkit', file: 'lists.spec.ts', line: 12, title: 'a list › sorts', outcome: 'unexpected', error: 'Error: expect(locator).toHaveText' }]);
 });
 
-test('what failed is run again by its file and line, once a line, in its own project, from where the run starts', () => {
-  const first = report([['sorts', 12, 'unexpected', 'Error: sorted wrong'], ['groups', 30, 'expected'], ['pages', 44, 'unexpected', 'Error: timed out'], ['pages again', 44, 'unexpected', 'Error: timed out'], ['skipped', 50, 'skipped']]);
+test('what failed is run again by its file and line, once a line, and by its title, in its own project, from where the run starts', () => {
+  const first = report([['sorts', 12, 'unexpected', 'Error: sorted wrong'], ['groups', 30, 'expected'], ['pages (2+)', 44, 'unexpected', 'Error: timed out'], ['pages again', 44, 'unexpected', 'Error: timed out'], ['skipped', 50, 'skipped']]);
   assert.equal(failedIn(first).length, 3);
-  assert.deepEqual(rerunPlan(first, '/work'), [{ project: 'webkit', places: ['e2e/lists.spec.ts:12', 'e2e/lists.spec.ts:44'] }]);
+  // A loop's line makes many tests: only those that failed are run again, by their titles, its marks taken as words.
+  assert.deepEqual(rerunPlan(first, '/work'), [{ project: 'webkit', places: ['e2e/lists.spec.ts:12', 'e2e/lists.spec.ts:44'], grep: 'pages \\(2\\+\\)|pages again|sorts' }]);
+  assert.ok(new RegExp(rerunPlan(first, '/work')[0].grep).test('lists.spec.ts a list pages (2+)'));
+  assert.ok(!new RegExp(rerunPlan(first, '/work')[0].grep).test('lists.spec.ts a list groups'));
 });
 
 test('failed then passed on the same commit is a flake; failed again is a failure; not run again is said so', () => {

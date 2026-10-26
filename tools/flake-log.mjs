@@ -64,8 +64,8 @@ const firstLine = (message) =>
 export const failedIn = (report) => testsOf(report).filter((test) => test.outcome === 'unexpected' || test.outcome === 'flaky');
 
 /**
- * What to run again, by project: each failed test by its file and line (`e2e/x.spec.ts:12`), once — a line that makes
- * several tests (a loop over variants) runs them all, and only the failed ones are judged.
+ * What to run again, by project: each failed test by its file and line (`e2e/x.spec.ts:12`), once, and by its own
+ * title (`grep`) — a line that makes several tests (a loop over demos, over variants) runs only those that failed.
  */
 export function rerunPlan(report, cwd = process.cwd()) {
   const plan = new Map();
@@ -73,11 +73,13 @@ export function rerunPlan(report, cwd = process.cwd()) {
   const root = report.config?.rootDir;
   for (const test of failedIn(report)) {
     const at = `${root ? relative(cwd, join(root, test.file)) : test.file}:${test.line}`;
-    const places = plan.get(test.project) ?? new Set();
-    places.add(at);
-    plan.set(test.project, places);
+    const one = plan.get(test.project) ?? { places: new Set(), titles: new Set() };
+    one.places.add(at);
+    one.titles.add(test.title.split(' › ').pop());
+    plan.set(test.project, one);
   }
-  return [...plan].map(([project, places]) => ({ project, places: [...places].sort() }));
+  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return [...plan].map(([project, { places, titles }]) => ({ project, places: [...places].sort(), grep: [...titles].sort().map(escape).join('|') }));
 }
 
 /**
@@ -144,11 +146,11 @@ function main(argv) {
       console.log(`${failed.length} tests failed, more than ${MOST_TO_RERUN}: a build that broke, not flakes — nothing is run again.`);
       return 0;
     }
-    for (const { project, places } of rerunPlan(first)) {
-      console.log(`Run again in ${project}: ${places.join(' ')}`);
+    for (const { project, places, grep } of rerunPlan(first)) {
+      console.log(`Run again in ${project}: ${places.join(' ')} — ${grep}`);
       // One report per project, joined in `log`: Playwright writes one file per run.
       const out = resolve(dir, `rerun-${project}.json`);
-      spawnSync('npx', ['playwright', 'test', ...places, `--project=${project}`, '--output=test-results/rerun', ...rest], {
+      spawnSync('npx', ['playwright', 'test', ...places, `--project=${project}`, '--grep', grep, '--output=test-results/rerun', ...rest], {
         stdio: 'inherit',
         env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: out },
       });
