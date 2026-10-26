@@ -16,6 +16,8 @@ export interface ListPlace {
   /** The row at the window's top, by its record's id, and its top's distance from the window's. */
   at?: string;
   top?: number;
+  /** That row's place among the rows loaded (the first 0), where the list kept only those near its view: asked for first. */
+  index?: number;
   /** The row whose record was opened. */
   open?: string;
 }
