@@ -186,6 +186,25 @@ test.describe('a code scanned with the camera', () => {
     expect(problems).toEqual([]);
   });
 
+  test('the camera refused, the box it falls back to has its words chosen: the scanner gun’s code replaces the patient', async ({ page }) => {
+    // The how-to replay of 0.35 (clinic-treatment, step 5): the Patient box took the focus with "Hana Fouad" in it, the
+    // caret after her name, and the scanner's "P-1043" ran on after it — 'nothing is called "Hana FouadP-1043" yet'.
+    await camera(page, 'NotAllowedError');
+    const { problems } = await open(page, 'plain', 'page=clinic-treatment&record=1&skin=outlined');
+    const patient = node(page, 'f-patient');
+    const box = patient.locator('input');
+    await expect(box).toHaveValue('Mona Adel');
+    await patient.getByRole('button', { name: 'Scan a code into Patient' }).click();
+    await expect(patient.locator('.fd-scan-note')).toHaveText('The camera is not allowed here. Allow it in the browser’s settings and press Scan again, or type the code.');
+    await expect(box).toBeFocused();
+    await page.keyboard.type(String(PATIENTS[2]['card']), { delay: 5 });
+    await page.keyboard.press('Enter');
+    await expect(box).toHaveValue('Hana Fouad');
+    await expect(patient).not.toContainText('nothing is called');
+    expect((await state(page)).patient_id).toEqual({ id: 2, label: 'Hana Fouad' });
+    expect(problems).toEqual([]);
+  });
+
   test('a scanner gun types a code: Enter, or leaving the box, reads it as the camera does — her card, a box’s code', async ({ page }) => {
     // The owner's walk of 0.29: "P-1043" and Enter said "nothing is called P-1043", and the box's code typed into Lot
     // stayed as typed, no product, no expiry.
@@ -274,5 +293,9 @@ test.describe('a code scanned with the camera', () => {
     await expect(sheet).toBeHidden();
     await expect(patient.locator('input')).toBeFocused();
     await expect(patient.locator('input')).toHaveValue('Mona Adel');
+    // Its words chosen: the code typed replaces them.
+    await page.keyboard.type(String(PATIENTS[2]['card']), { delay: 5 });
+    await page.keyboard.press('Enter');
+    await expect(patient.locator('input')).toHaveValue('Hana Fouad');
   });
 });
