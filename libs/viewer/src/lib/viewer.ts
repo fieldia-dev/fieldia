@@ -92,6 +92,7 @@ import { isRichButton, nothingToUndo } from './button-parts';
 import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
+import { missingJoin } from './join-missing';
 import type { LimitsKit } from './limits';
 import type { FlowKit } from './survey-flow';
 import { filesPart } from '@fieldia/widgets';
@@ -2076,7 +2077,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // A problem is said once, at once, by the announcer (or the banner, or a dialog): the status shows it and keeps quiet.
     setAttr(statusText, 'aria-live', state.status === 'error' && problem ? 'off' : 'polite');
     setText(statusText, text);
-    setHidden(retry, !(state.status === 'error' && problem?.kind === 'other'));
+    // Retry where it can work: never where the words ask for a reload — a part that guards the send cannot be asked for
+    // again in this page; what is typed is kept for the reload (0.35.1).
+    const reloads = problem?.kind === 'other' && !!formOptions.messages?.guardReload && problem.message.includes(formOptions.messages.guardReload);
+    setHidden(retry, !(state.status === 'error' && problem?.kind === 'other') || reloads);
     const allSaved = state.status === 'saved' && text === labels.saved;
     statusText.classList.toggle('fd-status-error', state.status === 'error');
     statusText.classList.toggle('fd-status-saved', allSaved);
@@ -2193,6 +2197,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * each made as the page is drawn — its part waited for with the page's.
    */
   const joins: PageJoin[] = [];
+  /** Those whose drawing could not come, each asked for anew by a send (`missingJoin`). */
+  const joinRetries: (() => Promise<boolean>)[] = [];
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
   /**
@@ -2233,6 +2239,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (form.getState().can?.edit === false) return;
     // A survey that reviews its answers first shows them in place of sending, until they are shown.
     if (flowKit && !(await flowKit.sending())) return;
+    // What the parts that join it draw, where it could not come — a payment step, a code's box — asked for anew first.
+    if (joinRetries.length) await Promise.all(joinRetries.map((retry) => retry()));
     // A question its save asks first (the page's beforeSave) says in its Yes what the form's own Save or Submit says.
     const saved = await form.save({ yes: root.querySelector('button[type="submit"]')?.textContent ?? undefined });
     if (!saved) {
@@ -2758,7 +2766,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // What the page's parts draw with it are handed the same: the form, the page, its words, its questions once drawn.
     const drawing = { form, page, doc, el, labels, fill, announce, content: () => questions };
     for (const part of formJoins(page)) {
-      const join = joinDrawings[part.name]?.loaded?.draw({ ...drawing, dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message) => actionHost.ask(message) });
+      const own = joinDrawings[part.name];
+      const ctx = { ...drawing, dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message: string) => actionHost.ask(message) };
+      // One that guards a send whose drawing could not come is said in its place at once, with Retry where it can work (0.35.1).
+      const missing = own && !own.loaded ? missingJoin(part, own, ctx, formOptions.messages ?? MESSAGES[locale], labels.retry) : null;
+      if (missing) joinRetries.push(missing.retry);
+      const join = own?.loaded?.draw(ctx) ?? missing;
       if (!join) continue;
       joins.push(join);
       if (join.update) updaters.push(join.update);

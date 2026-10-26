@@ -151,16 +151,17 @@ const CORE_RUNTIME = join(WORKSPACE, 'libs/core/src/runtime.ts');
  * `fieldia:shared` is the table of what the parts take from the main script's modules: for each module, an object of
  * the names the parts use of it, in a fixed order (`table`: [file, names][]), each by its place. Names alone, so the main script carries
  * nothing more than it would — no module's every export kept for one name. (Every export the packages share is a const,
- * a function or a class: a name's value never changes once the main script has started.) Any other import() would be
- * bundled in whole, where it saves nothing: refused.
+ * a function or a class: a name's value never changes once the main script has started.) Any other import() of a
+ * module named in the code would be bundled in whole, where it saves nothing: refused. One of an address known only as
+ * the page runs (a part asked for anew after a failure, parts.ts) is left to the browser, as it is in an app's bundle.
  */
 const asksForParts = (table, parts) => ({
   name: 'asks-for-parts',
   setup(builder) {
     builder.onLoad({ filter: /libs\/(core|widgets|viewer)\/src\/lib\/([a-z-]+\/)?[a-z-]+\.ts$/ }, ({ path }) => {
       const source = readFileSync(path, 'utf8');
-      /** Whether code, its comments aside, calls import(). */
-      const callsImport = (code) => /\bimport\s*\(/.test(code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1'));
+      /** Whether code, its comments aside, calls import() of a module it names (a string: what a bundler would bundle). */
+      const callsImport = (code) => /\bimport\s*\(\s*['"`]/.test(code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1'));
       if (!callsImport(source)) return undefined;
       const asking = source.replace(/\bimport\('\.\/([a-z]+)-part'\)/g, (_, part) => {
         const file = join(dirname(path), `${part}-part.ts`);

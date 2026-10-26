@@ -71,27 +71,105 @@ export function inTime<M>(coming: Promise<M>, ms: number, why: string): Promise<
   });
 }
 
-/** A part, asked for by `load` (a dynamic import of the part's module) the first time something needs it. */
+/** The URL parser every runtime has, as far as a part's address needs it (core is typed for none: safe-url.ts). */
+interface Address {
+  href: string;
+  protocol: string;
+  readonly searchParams: { set(name: string, value: string): void };
+}
+const Url = (globalThis as unknown as { URL: new (url: string, base?: string) => Address }).URL;
+
+/**
+ * The address of the module an `import()` could not fetch, as the browser says it — Chromium "Failed to fetch dynamically
+ * imported module: <address>", Firefox "error loading dynamically imported module: <address>" — or null where it says
+ * none (WebKit's "Importing a module script failed."), or the failure was of another kind (the module's own error).
+ */
+export function failedModule(error: unknown): string | null {
+  const said = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+  const found = /dynamically imported module:?\s+(\S+)/i.exec(said);
+  if (!found) return null;
+  try {
+    const address = new Url(found[1]);
+    return address.protocol === 'http:' || address.protocol === 'https:' ? address.href : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The page's document as far as asking for a part anew reads it: core names no DOM types. */
+interface PageDocument {
+  readonly head: { append(node: unknown): void } | null;
+  readonly baseURI: string;
+  querySelectorAll(selectors: string): ArrayLike<{ getAttribute(name: string): string | null }>;
+  createElement(tag: 'link'): { rel: string; href: string; integrity: string; crossOrigin: string | null; nonce?: string; setAttribute(name: string, value: string): void };
+}
+
+/**
+ * A module asked for again at an address of its own — the same file, `fd-again` beside it — which the browser has not
+ * kept failed: it keeps a failed `import()` failed for the page's life, the same address never asked of the network
+ * again. Its request carries what the page said of the first: its integrity (a module preload's or a script's
+ * `integrity`, with its `crossorigin` and the page's nonce), so the file is still checked by its hash.
+ */
+function importAnew(address: string, again: number): Promise<unknown> {
+  const anew = new Url(address);
+  anew.searchParams.set('fd-again', String(again));
+  const doc = (globalThis as { document?: PageDocument }).document;
+  if (doc?.head) {
+    const said = [...Array.from(doc.querySelectorAll('link[integrity][href], script[integrity][src]'))].find((tag) => {
+      try {
+        return new Url(tag.getAttribute('href') ?? tag.getAttribute('src') ?? '', doc.baseURI).href === address;
+      } catch {
+        return false;
+      }
+    });
+    const integrity = said?.getAttribute('integrity');
+    if (integrity) {
+      const preload = doc.createElement('link');
+      preload.rel = 'modulepreload';
+      preload.integrity = integrity;
+      preload.crossOrigin = said?.getAttribute('crossorigin') ?? null;
+      const nonce = said?.getAttribute('nonce') ?? (doc.querySelectorAll('script[nonce]')[0]?.getAttribute('nonce') || '');
+      if (nonce) preload.setAttribute('nonce', nonce);
+      preload.href = anew.href;
+      doc.head.append(preload);
+    }
+  }
+  // Left as the browser's own import, never a bundler's: the address is the browser's, known only now.
+  return import(/* webpackIgnore: true */ /* @vite-ignore */ anew.href);
+}
+
+/**
+ * A part, asked for by `load` (a dynamic import of the part's module) the first time something needs it. One whose
+ * module failed is asked for anew at its own address where the browser said which (`failedModule`), as Retry asks; where
+ * it said none, it asks no more (`asksAgain`).
+ */
 export function lazyPart<M>(name: string, load: () => Promise<M>): Part<M> {
   let pending: Promise<M> | undefined;
   let loaded: M | undefined;
+  /** Where the browser said the part's module failed, and how often it was asked for anew since. */
+  let failedAt: string | null = null;
+  let tries = 0;
+  /** A bundler's own loading that asks the network again itself (webpack's chunks: a `ChunkLoadError`). */
+  let asksItself = false;
   return {
     name,
     get loaded() {
       return loaded;
     },
     get asksAgain() {
-      return byScriptTag;
+      return byScriptTag || asksItself || failedAt !== null;
     },
     get coming() {
       return pending !== undefined && loaded === undefined;
     },
     load() {
       // One that does not come in time settles as failed — asked for again by the next use — never waited on for ever.
-      return (pending ??= inTime(load(), PART_WAIT_MS, `fieldia.${name}.js did not come within ${PART_WAIT_MS / 1000} s`).then(
+      return (pending ??= inTime(failedAt && !byScriptTag ? (importAnew(failedAt, ++tries) as Promise<M>) : load(), PART_WAIT_MS, `fieldia.${name}.js did not come within ${PART_WAIT_MS / 1000} s`).then(
         (module) => (loaded = module),
         (error: unknown) => {
           pending = undefined;
+          if ((error as { name?: unknown } | null)?.name === 'ChunkLoadError') asksItself = true;
+          else failedAt ??= failedModule(error);
           throw error;
         }
       ));

@@ -21,7 +21,7 @@ interface KeyedStore {
 }
 
 /** The tab's own store (sessionStorage), or none where the browser has none or refuses it. */
-function tabStore(): KeyedStore | undefined {
+export function tabStore(): KeyedStore | undefined {
   try {
     return (globalThis as { sessionStorage?: KeyedStore }).sessionStorage;
   } catch {

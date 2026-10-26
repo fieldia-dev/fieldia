@@ -61,7 +61,7 @@ import type { FormApproval } from './approving';
 import { draftRead, resumeStep, timedStore } from './drafts';
 import { envelopeOf, valuesFromSource } from './from-source';
 import { DISCARD_GRACE_MS, stopSends, withDeadlines } from './deadline';
-import { ownerOf } from './browser-kept';
+import { ownerOf, tabStore } from './browser-kept';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -1239,8 +1239,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (loadedOnce) join.loaded?.();
     };
   }
-  /** A part's side of this form, by its name, once it came. */
-  const joined = <K extends keyof FormJoins>(name: K): FormJoins[K] | null => (joins[joinParts.findIndex((part) => part.name === name)] ?? null) as FormJoins[K] | null;
+  /** A part's side of this form, by its name, once it came — one that came since it first failed (its Retry) made now. */
+  const joined = <K extends keyof FormJoins>(name: K): FormJoins[K] | null => {
+    const at = joinParts.findIndex((part) => part.name === name);
+    const came = at === -1 || joins[at] ? undefined : joinParts[at].loaded;
+    if (came) joinMade(at)(came);
+    return (joins[at] ?? null) as FormJoins[K] | null;
+  };
   /** Whether a part that joins the form says so of a part of the page, or of a field. */
   const anyJoin = (says: (join: FormJoin) => boolean | undefined) => joins.some((join) => join && says(join));
   /**
@@ -2966,9 +2971,26 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   const onServer = () => !!options.dataSource?.saveDraft && !!options.dataSource.loadDraft && (page.continueLater === true || !!options.resume);
   /** Where drafts are kept in the browser: the app's store, else a timed page's tab (`timedStore`); none else. */
-  const draftStore = options.drafts?.store ?? timedStore(page);
+  const appStore = options.drafts?.store ?? timedStore(page);
+  /**
+   * Where a part that guards a send could not come — the code check, the payment step — what is typed is kept in the
+   * tab's own store as it is typed, where the app keeps no drafts of its own: the Reload its words ask for, in the same
+   * tab, brings it back, laid as the form opens (0.35.1). Never a secret field's; the person's own (`storeKey`); let go
+   * once sent, as any draft.
+   */
+  let keptForReload = false;
+  /** Where a draft is kept now. */
+  const draftStore = (): DraftStore | undefined => appStore ?? (keptForReload ? (tabStore() as DraftStore | undefined) : undefined);
+  /** Where a draft is looked for, and let go from: the app's store, else the tab's, where one kept for a reload would be. */
+  const draftFound = (): DraftStore | undefined => appStore ?? (tabStore() as DraftStore | undefined);
   /** Whether drafts are kept: in a store, or on the server. */
-  const draftsOn = () => !!draftStore || onServer();
+  const draftsOn = () => !!draftStore() || onServer();
+  /** A part that guards a send is missing: what is typed kept for a reload from now on, what is typed so far at once. */
+  function keepForReload() {
+    if (appStore || onServer()) return;
+    keptForReload = true;
+    if (state.dirty.length) keepHere(draftNow());
+  }
   /** The key of the draft kept on the server for the record shown; null until the source gave one. */
   let serverKey: string | null = null;
   /** Counted each time the draft is let go (sent, discarded, another record shown): a keeping answered after is dropped. */
@@ -3022,7 +3044,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** A draft in the browser's store, where the app gave one: a store that is full keeps none. */
   function keepHere(kept: StoredDraft | { savedAt: string; key: string }) {
     try {
-      draftStore?.setItem(storeKey(), JSON.stringify(kept));
+      draftStore()?.setItem(storeKey(), JSON.stringify(kept));
     } catch {
       // The draft is a convenience: the form goes on without it.
     }
@@ -3106,7 +3128,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     draftEpoch++;
     serverKey = null;
     if (state.resume) set({ resume: null });
-    draftStore?.removeItem(storeKey());
+    draftFound()?.removeItem(storeKey());
   }
 
   /**
@@ -3129,7 +3151,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const source = options.dataSource;
     const given = resumeKey;
     resumeKey = undefined;
-    const kept = given ? null : draftRead(draftStore?.getItem(storeKey()) ?? null);
+    const kept = given ? null : draftRead(draftFound()?.getItem(storeKey()) ?? null);
     if (!given && !kept) return;
     if (kept && !('key' in kept)) return offer(kept);
     const key = given ?? (kept as { key: string }).key;
@@ -3143,7 +3165,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
           if (given) set({ status: 'ready' });
           if (!draft) {
             // Sent, or gone: the form starts empty, and says so where it was asked to continue it.
-            draftStore?.removeItem(storeKey());
+            draftFound()?.removeItem(storeKey());
             if (given) set({ resume: { key, missing: true } });
             return;
           }
@@ -3384,6 +3406,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     );
   }
 
+  /** What a send last said of a part that guards it and could not come: said no more once the part is in. */
+  let guardSaid: SaveProblem | null = null;
   async function guardsIn(): Promise<SaveProblem | null> {
     /** A part waited for where it is coming, then asked for once more where it did not come: in, or still missing. */
     const once = async <M,>(part: Part<M>, take: (module: M) => unknown): Promise<boolean> => {
@@ -3404,6 +3428,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     ]);
     const missing = found.find((one) => one !== null);
     if (!missing || disposed) return null;
+    // Nothing goes; what is typed is kept for the Reload the words may ask for — kept before they say so.
+    keepForReload();
     const [words, part] = missing;
     const again = part.asksAgain === false ? messages.guardReload : messages.guardTryAgain;
     return { kind: 'other', message: fillMessage(messages, page.data.kind === 'responses' ? messages.guardNotSent : messages.guardNotSaved, { part: messages[words], again }) };
@@ -3448,9 +3474,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const unguarded = guardsOwed() ? await guardsIn() : null;
     if (asked !== generation) return elsewhere();
     if (unguarded) {
+      guardSaid = unguarded;
       set({ status: 'error', error: unguarded.message, saveProblem: unguarded, conflict: null });
       return { reason: 'save', message: unguarded.message };
     }
+    // Its parts in now (asked for again by Retry): what their absence said is said no more, whatever stops the send next.
+    if (guardSaid && state.saveProblem === guardSaid) set({ status: 'ready', error: null, saveProblem: null });
+    guardSaid = null;
     // Values the app's functions are asked for are waited for — those that failed asked again — so what is saved is worked out.
     if (asking.size || Object.values(state.asked).some((found) => found.failed !== undefined)) {
       set({ status: 'saving', error: null, saveProblem: null });
@@ -4514,7 +4544,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (seen.captcha !== undefined) bot.captcha = seen.captcha;
     },
 
-    joined: (name) => (joins[joinParts.findIndex((part) => part.name === name)] ?? null) as never,
+    joined: (name) => joined(name as keyof FormJoins) as never,
     reading: () => readingNow > 0 || [...attached.values()].some((part) => part.inner.form.reading()),
 
     validate(within) {
@@ -4890,7 +4920,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     restoreDraft() {
-      const kept = found ?? draftRead(draftStore?.getItem(storeKey()) ?? null);
+      const kept = found ?? draftRead(draftFound()?.getItem(storeKey()) ?? null);
       if (kept && 'values' in kept) applyDraft(kept);
     },
 
@@ -5107,7 +5137,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   // The parts its page or its source asks to join it — a survey's draw made before a draft is laid, which lays its own
   // draw over it; a record's approvals ready by the time its record is loaded; the record made live — each made at once
   // where it has come, else as it does, a draft laid meanwhile laid on it.
-  if (joinParts.length) joining = Promise.all(joinParts.map((part, at) => (part.loaded ? joinMade(at)(part.loaded) : track(part.load().then(joinMade(at), () => undefined)))));
+  if (joinParts.length) joining = Promise.all(joinParts.map((part, at) => (part.loaded ? joinMade(at)(part.loaded) : track(part.load().then(joinMade(at), () => undefined))))).then(() => {
+    // One that guards a send could not come (the code check, the payment step): what is typed is kept for a reload from now.
+    if (!disposed && joinParts.some((part, at) => !joins[at] && joinGate(part, page, options) !== undefined)) keepForReload();
+  });
   // A new form has its values now — a draft continued from its key once it is laid — and opens once whoever made it
   // has had the chance to listen.
   if (state.recordId == null) {
