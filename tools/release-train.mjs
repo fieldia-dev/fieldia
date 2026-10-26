@@ -15,9 +15,10 @@
  * `release.mjs check` says what is wrong; `publish` (and the publish workflow's tools/publish-packs.mjs) refuses it, as
  * it refuses a patch with an Upgrading part (release-guards.mjs).
  */
-import { readFileSync } from 'node:fs';
-import { stripTypeScriptTypes } from 'node:module';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { notesFor } from './release-notes.mjs';
 
 /** The first minor the train holds to: 0.36 brought the deprecations list, so nothing could be deprecated before it. */
@@ -32,13 +33,19 @@ const MINOR = /^(\d+)\.(\d+)$/;
 const PART = /^\*\*([A-Z][^*]*)\*\*/;
 
 /**
- * The deprecations recorded in the workspace: the core's own list, its file read as a module with its types left out
- * (it imports nothing).
+ * The deprecations recorded in the workspace: the core's own list, its file run as a module, its types left out (it
+ * imports nothing).
  */
 export async function readDeprecations(workspace) {
-  const source = stripTypeScriptTypes(readFileSync(join(workspace, 'libs/core/src/lib/deprecations.ts'), 'utf8'));
-  const module = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
-  return module.DEPRECATIONS;
+  // Copied as a module of its own, which Node runs as TypeScript: the core's package says CommonJS for its .ts files.
+  const dir = mkdtempSync(join(tmpdir(), 'fieldia-deprecations-'));
+  const copy = join(dir, 'deprecations.mts');
+  writeFileSync(copy, readFileSync(join(workspace, 'libs/core/src/lib/deprecations.ts'), 'utf8'));
+  try {
+    return (await import(pathToFileURL(copy).href)).DEPRECATIONS;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 /** `[major, minor]` of `0.36` or `0.36.2`, or null. */

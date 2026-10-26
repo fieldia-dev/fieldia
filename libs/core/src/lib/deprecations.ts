@@ -31,8 +31,17 @@ export interface Deprecation {
   warns: 'console' | 'changelog';
 }
 
-/** Everything deprecated and not yet changed, oldest first. Nothing yet: the train runs from 0.36. */
-export const DEPRECATIONS: readonly Deprecation[] = [];
+/** Everything deprecated and not yet changed, oldest first. */
+export const DEPRECATIONS: readonly Deprecation[] = [
+  {
+    id: 'format.under-stamped',
+    since: '0.36',
+    changesIn: '0.37',
+    who: 'page authors',
+    words: 'A page that says an older format than a setting it uses came in is read as it is in 0.36, and refused from 0.37 — an older Fieldia believing its stamp would read it without that setting. Stamp it with stampPage(page), or write the format lowestFormat(page) gives.',
+    warns: 'console',
+  },
+];
 
 /** The ids warned of in this page so far: one set however many copies of Fieldia the page carries. */
 const SAID = Symbol.for('fieldia.deprecations.said');

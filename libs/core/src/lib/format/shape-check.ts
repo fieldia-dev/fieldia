@@ -13,7 +13,7 @@ import { RULES, type RuleContext, type RuleName } from './rules';
  * `dependentSchemas`, an array's `items`, `prefixItems`, `minItems`, `maxItems` and `uniqueItems`, a string's
  * `minLength`, `maxLength` and `pattern` (with `x-flags`, a pattern's flags), a number's bounds; `x-rule`, a rule of
  * rules.ts run on a value whose shape held; and `x-with`, the sets of settings an object has beside its own, each a
- * definition written once (page-shape-source.ts).
+ * definition written once (test-shape-source.ts).
  */
 
 /** A node of the schema: an object of keywords, or `true` (anything) or `false` (nothing). */
@@ -102,6 +102,9 @@ export const KEYWORDS: Record<string, string> = {
   '~w': 'x-with',
   '~R': 'x-rule',
   '~F': 'x-flags',
+  '~s': 'x-since',
+  '~S': 'x-since-values',
+  '~b': 'x-before',
 };
 export const TYPES: Record<string, string> = { s: 'string', n: 'number', i: 'integer', b: 'boolean', o: 'object', a: 'array', z: 'null' };
 
@@ -125,6 +128,8 @@ export function pathWords(path: Path): string {
   return path.map((segment, i) => (typeof segment === 'number' ? `[${segment}]` : i === 0 ? segment : `.${segment}`)).join('');
 }
 
+/** What a place says beside its schema: the format it, its values and its older limits came in. */
+const NOTES = new Set(['x-since', 'x-since-values', 'x-before']);
 /** Each pattern made once, by its flags and source. */
 const PATTERNS = new Map<string, RegExp>();
 /** Each union's discriminator found once, by its branches. */
@@ -136,8 +141,67 @@ const SETTINGS = new WeakMap<object, Record<string, Shape>>();
 class ShapeCheck {
   private readonly patterns = PATTERNS;
   private readonly keys = KEYS;
+  /**
+   * The newest format a part of the value checked so far came in, by its index (`x-since`), and where: the lowest
+   * format the value needs. -1 while it needs none past the first.
+   */
+  need = -1;
+  needAt: Path = [];
 
   constructor(private readonly data: ShapeData) {}
+
+  /** A part of the value that came in format `index`, at `path`: the value needs that format at least. */
+  private needs(index: number, path: Path) {
+    if (index > this.need) [this.need, this.needAt] = [index, path];
+  }
+
+  /**
+   * What the value uses at this place, by the format each came in: the place itself (`x-since`), the value it takes
+   * (`x-since-values`), and any limit an older format held that the value goes past (`x-before`) — written by the
+   * format's history (tools/format-since.json).
+   */
+  private since(s: Record<string, unknown>, value: unknown, path: Path) {
+    if (typeof s['x-since'] === 'number') this.needs(s['x-since'], path);
+    const values = s['x-since-values'] as Record<string, number> | undefined;
+    if (values) {
+      const said = JSON.stringify(value);
+      if (has(values, said)) this.needs(values[said], path);
+    }
+    const before = s['x-before'] as Record<string, [number, unknown][]> | undefined;
+    if (!before) return;
+    for (const [limit, held] of Object.entries(before)) for (const [index, was] of held) if (index > this.need && !this.heldTo(limit, was, value)) this.needs(index, path);
+  }
+
+  /** Whether a value holds to a limit as an older format had it. */
+  private heldTo(limit: string, was: unknown, value: unknown): boolean {
+    const size = typeof value === 'string' || Array.isArray(value) ? value.length : undefined;
+    switch (limit) {
+      case 'minimum':
+        return typeof value !== 'number' || value >= (was as number);
+      case 'maximum':
+        return typeof value !== 'number' || value <= (was as number);
+      case 'exclusiveMinimum':
+        return typeof value !== 'number' || value > (was as number);
+      case 'exclusiveMaximum':
+        return typeof value !== 'number' || value < (was as number);
+      case 'minLength':
+      case 'minItems':
+        return size === undefined || size >= (was as number);
+      case 'maxLength':
+      case 'maxItems':
+        return size === undefined || size <= (was as number);
+      case 'pattern':
+        return typeof value !== 'string' || this.pattern(was as string).test(value);
+      case 'uniqueItems':
+        return !Array.isArray(value) || !was || !value.some((one, i) => value.findIndex((other) => same(one, other)) !== i);
+      case 'required':
+        return !isObject(value) || (was as string[]).every((key) => has(value, key) && value[key] !== undefined);
+      case 'type':
+        return (was as string[]).some((one) => ofType(one, value));
+      default:
+        return true;
+    }
+  }
 
   /** A `$ref` (`#/$defs/Field`) read. */
   private resolve(ref: string): Shape {
@@ -190,10 +254,10 @@ class ShapeCheck {
     return found;
   }
 
-  /** A branch with its `$ref` read. */
+  /** A branch with its `$ref` read — through a place that says no more than the format it came in. */
   private flat(shape: Shape): Shape {
     let at = shape;
-    for (let depth = 0; typeof at === 'object' && typeof at['$ref'] === 'string' && Object.keys(at).length === 1 && depth < 16; depth++) at = this.resolve(at['$ref'] as string);
+    for (let depth = 0; typeof at === 'object' && typeof at['$ref'] === 'string' && Object.keys(at).every((key) => key === '$ref' || NOTES.has(key)) && depth < 16; depth++) at = this.resolve(at['$ref'] as string);
     return at;
   }
 
@@ -213,8 +277,14 @@ class ShapeCheck {
       if (!types.some((one) => ofType(one, value))) return [{ path, message: `Invalid input: expected ${types.map((one) => (one === 'integer' ? 'int' : one)).join(' or ')}, received ${kindOf(value)}` }];
     }
     if (has(s, 'const') && !same(value, s['const'])) return [{ path, message: `Invalid input: expected ${JSON.stringify(s['const'])}` }];
+    this.since(s, value, path);
     if (Array.isArray(s['enum']) && !s['enum'].some((one) => same(one, value))) return [{ path, message: `Invalid option: expected one of ${s['enum'].map((one) => JSON.stringify(one)).join('|')}` }];
-    if (s['not'] !== undefined && !this.check(s['not'] as Shape, value, path).length) return [{ path, message: 'Invalid input' }];
+    if (s['not'] !== undefined) {
+      const kept = [this.need, this.needAt] as const;
+      const refused = !this.check(s['not'] as Shape, value, path).length;
+      [this.need, this.needAt] = kept;
+      if (refused) return [{ path, message: 'Invalid input' }];
+    }
     if (typeof value === 'string') this.string(s, value, path, found);
     else if (typeof value === 'number') this.number(s, value, path, found);
     else if (Array.isArray(value)) this.array(s, value, path, found);
@@ -290,7 +360,10 @@ class ShapeCheck {
     }
     let closest: Found[] | null = null;
     let fitting = 0;
+    // What a branch tried and refused uses is never the value's: the format it needs is the branch it takes.
+    const kept = [this.need, this.needAt] as const;
     for (const branch of branches) {
+      [this.need, this.needAt] = kept;
       const found = this.check(branch, value, path);
       if (!found.length) return [];
       const flat = this.flat(branch);
@@ -300,6 +373,7 @@ class ShapeCheck {
         closest = found;
       }
     }
+    [this.need, this.needAt] = kept;
     return fitting === 1 && closest ? closest : [{ path, message: 'Invalid input' }];
   }
 
@@ -318,7 +392,18 @@ class ShapeCheck {
   }
 }
 
+/**
+ * A page checked against the format's schema `data`: every problem of its shape, as `validatePage` says where each is,
+ * and the newest format a part of it came in (`need`, an index into the formats; -1 for the first) with where that
+ * part is (`needAt`) — the lowest format the page needs.
+ */
+export function shapeCheck(page: unknown, data: ShapeData): { issues: PageIssue[]; need: number; needAt: string } {
+  const check = new ShapeCheck(data);
+  const issues = check.check(data.page, page, []).map((found) => ({ path: pathWords(found.path), message: found.message }));
+  return { issues, need: check.need, needAt: pathWords(check.needAt) };
+}
+
 /** Every problem of a page's shape against the format's schema `data`, as `validatePage` says where each is. */
 export function shapeIssues(page: unknown, data: ShapeData): PageIssue[] {
-  return new ShapeCheck(data).check(data.page, page, []).map((found) => ({ path: pathWords(found.path), message: found.message }));
+  return shapeCheck(page, data).issues;
 }

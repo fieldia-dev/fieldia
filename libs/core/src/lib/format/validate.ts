@@ -5,6 +5,7 @@ import type { PageValidation } from './references';
 import type { FunctionsKnown } from '../expression/app-functions';
 import { kindCheck } from './page-warnings';
 import { makeSchemasJitless } from './jitless';
+import { needOf, warnUnderStamped } from './stamp';
 
 // zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
 makeSchemasJitless();
@@ -27,10 +28,14 @@ export type { PageIssue, PageValidation } from './references';
  * date first (`upgradePage`), as every reader of it does.
  */
 export function validatePage(input: unknown, options: { functions?: FunctionsKnown } = {}): PageValidation {
-  const parsed = PageSchema.safeParse(upgradePage(input));
+  const upgraded = upgradePage(input);
+  const parsed = PageSchema.safeParse(upgraded);
   if (!parsed.success) {
     return { ok: false, issues: parsed.error.issues.map((issue) => ({ path: formatPath(issue.path), message: describe(issue) })) };
   }
+  // Read by its stamp: a page that says an older format than a setting it uses came in (stamp.ts) — a warning in 0.36,
+  // said in the console as checkPage says it, refused from 0.37 (`format.under-stamped`).
+  const stamp = warnUnderStamped(input, needOf(upgraded));
   const page: Page = parsed.data;
   const check = kindCheck(page, options.functions);
   let issues;
@@ -40,7 +45,8 @@ export function validatePage(input: unknown, options: { functions?: FunctionsKno
     // As the viewer's check says it (checkPage): a part it cannot read is a problem of the page, never a throw.
     return { ok: false, issues: [{ path: '(page)', message: `a part of this page cannot be read: ${(error as Error).message}` }] };
   }
-  const warned = check.warnings.length ? { warnings: check.warnings } : {};
+  const warnings = stamp ? [stamp, ...check.warnings] : check.warnings;
+  const warned = warnings.length ? { warnings } : {};
   return issues.length ? { ok: false, issues, ...warned } : { ok: true, page, ...warned };
 }
 

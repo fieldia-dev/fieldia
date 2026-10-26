@@ -1,4 +1,6 @@
 export * from './runtime';
+// The defaults that changed between formats, with the setting that keeps the old way (default-changes.ts).
+export { DEFAULT_CHANGES, type DefaultChange } from './lib/format/default-changes';
 // Why a page takes no answers now, in words: the limits part's (`formLimitsPart`), whole here.
 export { takingWords, whenWords } from './lib/record/form-limits';
 // A quiz's results for answers sent: the survey part's (`formSurveyPart`), whole here — for an app's own marking.

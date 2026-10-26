@@ -9,36 +9,87 @@ import { KEYWORDS, TYPES, type Shape, type ShapeData } from './shape-check';
 makeSchemasJitless();
 
 /**
- * The format's schema as the viewer's check reads it (shape-check.ts), made from the zod definitions `validatePage`
- * parses with: their JSON Schema, words left out, each rule named where it runs (`x-rule`) and each pattern's flags
- * (`x-flags`), with the shapes of widgets' options beside the page's. page-shape.spec.ts writes it into page-shape.ts
- * and refuses a page-shape.ts that is not this. It refuses, too, a definition the check could not hold the same: a
- * refinement not written as a rule of rules.ts, a string with two patterns.
+ * Which format each place of the schema came in, as tools/format-since.json keeps it (tools/format-since.mjs reads it
+ * from the format's own history): by JSON pointer into page.schema.json, the format each place came in, each value a
+ * setting takes, and each limit an older format held otherwise.
  */
-export function pageShapeData(): { data: ShapeData; problems: string[] } {
+export interface FormatSince {
+  formats: string[];
+  places: Record<string, string>;
+  values: Record<string, Record<string, string>>;
+  before: Record<string, Record<string, [string, unknown][]>>;
+}
+
+/**
+ * The format's schema as the viewer's check reads it (shape-check.ts), made from the zod definitions `validatePage`
+ * parses with: the page's JSON Schema as page.schema.json is — each place where it is there, so the format each came in
+ * (`since`) is written where it belongs (`x-since`, `x-since-values`, `x-before`, by the format's index) — its words
+ * left out, each rule named where it runs (`x-rule`) and each pattern's flags (`x-flags`); and beside it the shapes of
+ * widgets' options (named `o:…`). page-shape.spec.ts writes it into page-shape.ts and refuses a page-shape.ts that is
+ * not this. It refuses, too, a definition the check could not hold the same — a refinement not written as a rule of
+ * rules.ts, a string with two patterns — and a place `since` names that the schema has not.
+ */
+export function pageShapeData(since?: FormatSince): { data: ShapeData; problems: string[] } {
   const problems: string[] = [];
-  const wrapper = z.strictObject({ page: PageSchema, options: z.strictObject(OPTION_SCHEMAS) });
-  const schema = z.toJSONSchema(wrapper, {
-    target: 'draft-2020-12',
-    // As a page is given: an object of a widget's options takes keys its schema does not name, as zod takes them.
-    io: 'input',
-    override: (context) => {
-      const zod = context.zodSchema as unknown as Zod;
-      const json = context.jsonSchema as Record<string, unknown>;
-      const rule = ruleOf(zod);
-      if (rule) json['x-rule'] = rule;
-      else if (ownChecks(zod).some((check) => check._zod.def.check === 'custom')) {
-        problems.push(`a refinement no rule of rules.ts holds, at ${context.path.join('.') || '(the page)'}: write it as a rule there and refine with ruled(schema, name), so the viewer's check runs it too`);
-      }
-      const patterns = ownChecks(zod).filter((check) => check._zod.def.format === 'regex');
-      if (patterns.length > 1) problems.push(`a string with ${patterns.length} patterns, at ${context.path.join('.')}: the JSON Schema keeps one`);
-      const flags = (patterns[0]?._zod.def as { pattern?: RegExp } | undefined)?.pattern?.flags;
-      if (flags) json['x-flags'] = flags;
-    },
-  }) as Record<string, unknown>;
-  const root = withoutWords(schema) as { properties: { page: Shape; options: { properties: Record<OptionShape, Shape> } }; $defs?: Record<string, Shape> };
-  for (const name of Object.keys(RULES)) if (!JSON.stringify(root).includes(`"x-rule":"${name}"`)) problems.push(`the rule ${name} of rules.ts runs nowhere in the format`);
-  return { data: interned({ page: root.properties.page, defs: root.$defs ?? {}, options: root.properties.options.properties }), problems };
+  const override = (context: { zodSchema: unknown; jsonSchema: unknown; path: (string | number)[] }) => {
+    const zod = context.zodSchema as unknown as Zod;
+    const json = context.jsonSchema as Record<string, unknown>;
+    const rule = ruleOf(zod);
+    if (rule) json['x-rule'] = rule;
+    else if (ownChecks(zod).some((check) => check._zod.def.check === 'custom')) {
+      problems.push(`a refinement no rule of rules.ts holds, at ${context.path.join('.') || '(the page)'}: write it as a rule there and refine with ruled(schema, name), so the viewer's check runs it too`);
+    }
+    const patterns = ownChecks(zod).filter((check) => check._zod.def.format === 'regex');
+    if (patterns.length > 1) problems.push(`a string with ${patterns.length} patterns, at ${context.path.join('.')}: the JSON Schema keeps one`);
+    const flags = (patterns[0]?._zod.def as { pattern?: RegExp } | undefined)?.pattern?.flags;
+    if (flags) json['x-flags'] = flags;
+    // An object that takes keys it does not name, as zod takes them (a widget's options): open, as a page is given.
+    if (zod._zod.def.type === 'object' && zod._zod.def.catchall === undefined && json['additionalProperties'] === false) delete json['additionalProperties'];
+  };
+  // The page's as page.schema.json is made (json-schema.ts): its places where that file has them.
+  const page = z.toJSONSchema(PageSchema, { target: 'draft-2020-12', override }) as Record<string, unknown>;
+  if (since) annotate(page, since, problems);
+  const options = z.toJSONSchema(z.strictObject(OPTION_SCHEMAS), { target: 'draft-2020-12', io: 'input', override }) as Record<string, unknown>;
+  const own = withoutWords(page) as Record<string, unknown> & { $defs?: Record<string, Shape> };
+  // A widget's options' definitions named apart from the page's (`o:…`): two of a name may differ.
+  const theirs = JSON.parse(JSON.stringify(withoutWords(options)).replace(/"#\/\$defs\/([^"]+)"/g, '"#/$defs/o:$1"')) as { properties: Record<OptionShape, Shape>; $defs?: Record<string, Shape> };
+  const defs: Record<string, Shape> = { ...(own.$defs ?? {}), ...Object.fromEntries(Object.entries(theirs.$defs ?? {}).map(([name, shape]) => [`o:${name}`, shape])) };
+  delete own.$defs;
+  delete own['$schema'];
+  for (const name of Object.keys(RULES)) if (!JSON.stringify([own, defs, theirs.properties]).includes(`"x-rule":"${name}"`)) problems.push(`the rule ${name} of rules.ts runs nowhere in the format`);
+  return { data: interned({ page: own, defs, options: theirs.properties }), problems };
+}
+
+/** The format each place, each value and each older limit came in, written where it is (by the format's index). */
+function annotate(schema: Record<string, unknown>, since: FormatSince, problems: string[]) {
+  const index = (format: string) => {
+    const i = since.formats.indexOf(format);
+    if (i < 0) problems.push(`format-since.json names format ${format}, which FORMAT_VERSIONS does not have`);
+    return i;
+  };
+  const node = (pointer: string): Record<string, unknown> | null => {
+    const found = pointer
+      .split('/')
+      .slice(1)
+      .reduce<unknown>((at, key) => (at && typeof at === 'object' ? (at as Record<string, unknown>)[key.replace(/~1/g, '/').replace(/~0/g, '~')] : undefined), schema);
+    if (!found || typeof found !== 'object') {
+      problems.push(`format-since.json names ${pointer}, which page.schema.json's schema has not: \`node tools/format-since.mjs --write\``);
+      return null;
+    }
+    return found as Record<string, unknown>;
+  };
+  for (const [pointer, format] of Object.entries(since.places)) {
+    const at = node(pointer);
+    if (at) at['x-since'] = index(format);
+  }
+  for (const [pointer, values] of Object.entries(since.values)) {
+    const at = node(pointer);
+    if (at) at['x-since-values'] = Object.fromEntries(Object.entries(values).map(([value, format]) => [value, index(format)]));
+  }
+  for (const [pointer, limits] of Object.entries(since.before)) {
+    const at = node(pointer);
+    if (at) at['x-before'] = Object.fromEntries(Object.entries(limits).map(([limit, held]) => [limit, held.map(([format, was]) => [index(format), was])]));
+  }
 }
 
 /**
@@ -149,7 +200,7 @@ function withoutWords(shape: unknown): unknown {
 }
 
 type ZodCheck = { _zod: { def: { check?: string; format?: string } } };
-type Zod = { _zod: { def: { checks?: ZodCheck[] }; parent?: Zod } };
+type Zod = { _zod: { def: { checks?: ZodCheck[]; type?: string; catchall?: unknown }; parent?: Zod } };
 
 /** The rule a schema was ruled with, by itself or by the schema it was made from (`.meta()` makes one). */
 function ruleOf(zod: Zod): string | undefined {

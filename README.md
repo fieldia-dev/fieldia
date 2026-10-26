@@ -96,8 +96,9 @@ needs is handed to the renderer.
 A patch holds fixes alone; a minor comes every two to four weeks, and anything
 an app, a page or a test relies on that is to change is deprecated a minor
 first — said once in the console where it is used, and in the changelog. A page
-says the format it is written in, and every later Fieldia reads it. How it
-works, and the check that holds each rule:
+says the format it is written in — the lowest its settings need, so an older
+Fieldia that knows every setting it uses reads it — and every later Fieldia
+reads it. How it works, and the check that holds each rule:
 [the release train](docs/maintainers/release-train.md).
 
 ## Develop

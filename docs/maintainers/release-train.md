@@ -71,9 +71,20 @@ A page says the format it is written in (`"fieldia": "0.13"`), and every later F
   *Gate:* `tools/format-shape.mjs` (run by `release.mjs`) refuses a format whose shape changed under its version;
   `upgrade.spec.ts` runs every step on its example.
 - **A page is written in the lowest format its settings need**, so an older Fieldia that knows every setting a page
-  uses reads it (see the format's docs, "Versions").
+  uses reads it (see the format's docs, "Versions"): the designer publishes so, and `stampPage` stamps so. And a page
+  is read by its stamp: one that says an older format than a setting it uses came in is warned of in 0.36 and refused
+  from 0.37 — the train's first deprecation, `format.under-stamped`.
+  *Gate:* `tools/format-since.test.mjs` — every example page stamped with `lowestFormat` is read by that format's own
+  schema as it was released (and not by the format before), and so is every example page of every format released,
+  as it was written then; `tools/format-since.json`, the format each place came in, is what the history says.
+  `stamp.spec.ts`: a page using nothing new is read by 0.30's format check (copied from its release, and held to it),
+  a `secret` stamps 0.13, a page stamped lower than it needs is warned of by both checks.
 - **A default that changes is a new format.** A page written in an older format keeps its old behaviour — the new
-  format's step writes the old default into it — or the change is listed with the setting that keeps the old way.
+  format's step writes the old default into it, and says which pages rely on the new one (`PageUpgrade.uses`), which
+  `lowestFormat` then stamps with it. The defaults that changed before the train are listed with the setting that
+  keeps the old way (`DEFAULT_CHANGES`, on the format's docs page).
+  *Gate:* `default-changes.spec.ts` — each listed setting reads in both checks and needs no later format than the
+  default's; `stamp.spec.ts` — a step that says a page relies on it stamps the page with its format.
 
 ## Releasing
 

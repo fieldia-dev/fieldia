@@ -53,7 +53,8 @@ export function checkFormatShape(workspace) {
   const message = recorded
     ? `the page format changed since format ${version} was recorded: a page this Fieldia writes may say what a reader of format ${version} cannot read, under the version it believes it reads. ` +
       'Before publishing, make it a new format: add the next version to FORMAT_VERSIONS and FORMAT_VERSION (libs/core/src/lib/format/version.ts), ' +
-      'a step to PAGE_UPGRADES for anything renamed or reshaped (with its example), then `node tools/format-shape.mjs --record`'
+      'a step to PAGE_UPGRADES for anything renamed or reshaped (with its example), then `node tools/format-shape.mjs --record`; ' +
+      'and once that format is released, `node tools/format-since.mjs --write` and `UPDATE_SHAPE=1 npx nx test core`, so a page is stamped with the lowest format it needs'
     : `format ${version} has no shape recorded: run \`node tools/format-shape.mjs --record\` as the version is made`;
   return { ok: false, version, shape, recorded, message };
 }

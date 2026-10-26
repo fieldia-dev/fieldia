@@ -138,6 +138,8 @@ export type {
   PrintStep,
 } from './lib/format/actions';
 export { FORMAT_VERSION, FORMAT_VERSIONS, compareFormats, formatProblem, type FormatVersion } from './lib/format/version';
+// A page stamped with the lowest format its settings need, so every Fieldia that reads that format reads it (stamp.ts).
+export { lowestFormat, stampPage } from './lib/format/stamp';
 // What will change, said a minor before it does: the list, and a use of it said once in a page (docs/maintainers/release-train.md).
 export { DEPRECATIONS, deprecated, type Deprecation, type DeprecationWho } from './lib/deprecations';
 export { upgradePage, PAGE_UPGRADES, type FormatHistory, type PageJson, type PageUpgrade } from './lib/format/upgrade';

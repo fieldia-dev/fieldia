@@ -5,8 +5,9 @@ import { ReferenceCheck, type PageIssue, type PageValidation } from './reference
 import type { FunctionsKnown } from '../expression/app-functions';
 import { formatProblem } from './version';
 import { upgradePage } from './upgrade';
-import { shapeIssues } from './shape-check';
+import { shapeCheck } from './shape-check';
 import { PAGE_SHAPE } from './page-shape';
+import { needOf, warnUnderStamped } from './stamp';
 
 const isObject = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const LAYOUTS = ['sheet', 'sections', 'tabs', 'wizard'];
@@ -53,7 +54,14 @@ export function checkPage(given: unknown, options: { parent?: Record<string, Fie
   // Its whole shape, as `validatePage` checks it — the format's schema and its rules, read without the validation
   // library (shape-check.ts) — unless the caller checked it against the schemas already (the designer, an edit's part).
   // Every page needs it, so the one-tag script's main script carries it too: no part to wait for before a page is drawn.
-  const shaped = options.shape === false ? [] : shapeIssues(input, PAGE_SHAPE);
+  // And the page read by its stamp: one that says an older format than a setting it uses came in is said once in the
+  // console in 0.36, refused from 0.37 (stamp.ts, `format.under-stamped`).
+  let shaped: PageIssue[] = [];
+  if (options.shape !== false) {
+    const found = shapeCheck(input, PAGE_SHAPE);
+    if (!found.issues.length) warnUnderStamped(given, needOf(input, found));
+    shaped = found.issues;
+  }
   const page = input as unknown as Page;
   try {
     // A line's own form reads the record the line is on as parent.
