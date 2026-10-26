@@ -453,6 +453,30 @@ refused by the page check. `createMemoryDataSource`
 answers each response as a server would with ``submitted: (request, count) =>
 ({ id: `B-${1042 + count}` })``.
 
+A brace the words quote, never a value, has a backslash right before it:
+`\{list}` shows "{list}" (in JSON, `"\\{list}"`), `\{method:value}` shows
+"{method:value}", `\{\{customer}}` shows "{{customer}}", and the page check
+refuses none of them. A run of backslashes before a brace shows half of them, and
+an odd run leaves the brace as written: `\\{name}` is one backslash, then the
+value. A backslash anywhere else is as written — `C:\files\report.pdf` reads as it
+is — and words with no backslash before a brace read as they always did. This is
+so wherever a page's words are shown, value or none: a label, a help, a box's
+placeholder, a choice, a title, a section, a tab, a counter, a badge, an alert, a
+button and its question, a toast, an ending, a quiz's feedback, the page on paper,
+a list, the designer's preview — and in the page's translations, which find their
+words as written.
+
+An app that puts words it did not write into a page — a step's help, a choice
+from its own list — writes them at one place with `literalWords(text)`: each
+brace escaped, each run of backslashes before one doubled, so every reader shows
+`text` exactly, with no value and nothing for the page check to refuse.
+`literalPage(page)` does so for every word a person reads in a page — the words
+`translatePage` translates, and its translations — and leaves names, ids, choice
+values, conditions, addresses and data as they are. `plainWords(words)` reads
+words as Fieldia draws those that show no values (a title, a tab): each escaped
+brace a brace, a `{field}` as written; `plainPart(part)` reads every word of a
+field, a part or a page so, for an app that draws them itself.
+
 ## A quiz's results
 
 A page of responses with `quiz` shows the person their results once the answers
