@@ -53,19 +53,29 @@ export function checkSense(def: Field | LineField, path: string, report: (path: 
  * Fields marked required that no part of the page shows (every one naming it hidden by `invisible: true`, or none at
  * all): the form checks only what it shows, so nothing ever asks for them — said where pages are made, as warnings,
  * never refusals (a record's page may carry a field the app always fills). One worked out, given a first value, set by
- * a rule or by a link is left alone.
+ * a rule or by a link is left alone, and so is one a part's widget shows beside its own, named in its options (a date
+ * range's `endField`).
  */
 export function unseenRequired(page: { fields?: unknown; layout?: unknown; prefill?: unknown }): { path: string; message: string }[] {
   const fields = (page.fields ?? {}) as Record<string, { required?: unknown; compute?: unknown; default?: unknown; defaultFrom?: unknown; setWhen?: unknown }>;
   const layout = page.layout as { type?: string } | undefined;
   if (!layout || layout.type === 'list') return [];
   const shown = new Set<string>();
+  // Every word a widget's options hold: a field named there is one it shows (`endField`, a map's place fields).
+  const named = (value: unknown): void => {
+    if (typeof value === 'string') shown.add(value);
+    else if (Array.isArray(value)) value.forEach(named);
+    else if (value && typeof value === 'object') Object.values(value).forEach(named);
+  };
   const walk = (value: unknown) => {
     if (Array.isArray(value)) return value.forEach(walk);
     if (!value || typeof value !== 'object') return;
     const part = value as Record<string, unknown>;
     if (part['invisible'] === true) return;
-    if (typeof part['field'] === 'string') shown.add(part['field']);
+    if (typeof part['field'] === 'string') {
+      shown.add(part['field']);
+      named(part['options']);
+    }
     for (const inner of Object.values(part)) walk(inner);
   };
   walk(layout);

@@ -80,5 +80,12 @@ describe('what a field says it may hold, held to itself', () => {
     const linked = page({ name: { type: 'char', label: 'Name' }, code: { type: 'char', label: 'Code', required: true } }, { prefill: { fromUrl: ['code'] } });
     (linked.layout as unknown as { children: unknown[] }).children.pop();
     expect(validatePage(linked).warnings).toBeUndefined();
+    // Shown by another part's widget, named in its options: a date range's end (the leave request's template).
+    const range = page({ from: { type: 'date', label: 'From', required: true }, to: { type: 'date', label: 'To', required: true } });
+    const children = (range.layout as unknown as { children: Record<string, unknown>[] }).children;
+    children.pop();
+    Object.assign(children[0], { widget: 'daterange', options: { endField: 'to' } });
+    expect(validatePage(range)).toMatchObject({ ok: true });
+    expect(validatePage(range).warnings).toBeUndefined();
   });
 });

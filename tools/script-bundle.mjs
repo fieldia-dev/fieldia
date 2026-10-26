@@ -1555,8 +1555,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // And a page read by its stamp (p3-promises, the audit's R-M7): the format each place, value and older limit came in,
 // written into that schema from the format's history (tools/format-since.json), walked as the page is checked, and
 // a page stamped lower than it needs said once in the console (stamp.ts) — 645,008 measured before, 649,260 after,
-// to 634.1.
-const BUDGET_KB = 634.1;
+// to 634.1; a field a part's widget shows beside its own (a date range's end) not said to be shown by no part, 649,391,
+// to 634.2.
+const BUDGET_KB = 634.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1902,10 +1903,11 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.36's one check (listed with the raw budget above) — what every page needs, checked whole before it is drawn: the
 // format's schema 9.3 KB of it, its reader and the format's rules 5.4, a field's settings held to themselves 1.3, a
 // refused page's words 0.7, what will change 0.3 (each gzipped alone): 189.79 measured before, 205.14 after, to 205.2;
-// a page read by its stamp (listed with the raw budget above), 205.14 measured before, 206.69 after, to 206.7.
+// a page read by its stamp (listed with the raw budget above), 205.14 measured before, 206.69 after, to 206.7; a field
+// a part's widget shows beside its own seen as shown (listed above), 206.71, to 206.8.
 // Over the 200 the owner accepted at 0.34: the alternative, the check in a part of its own every page asks for (main
 // 191.0, the part 14.5), makes a page that uses no part wait for a fetch before it is drawn — not taken.
-const GZIP_BUDGET_KB = 206.7;
+const GZIP_BUDGET_KB = 206.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
