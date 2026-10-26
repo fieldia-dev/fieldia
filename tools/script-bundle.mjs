@@ -1557,9 +1557,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.35.2, a brace a page's words quote (`\{list}`): one reader of a page's words, read once wherever they are drawn —
 // a part's words read as a widget is made, a value's choices as it is written, a step's and a press's words as they are
 // said, a record's nouns as its sentence is filled in one pass (words.ts, translate.ts, record-words.ts, viewer.ts,
-// widgets.ts) — 576.64 measured before, 578.23 after (592,111 bytes), to 578.3. A save of a stored record with nothing
-// changed sends nothing (form.ts): 578.23 measured before, 578.55 after (592,439 bytes), to 578.6.
-const BUDGET_KB = 578.6;
+// widgets.ts) — 576.64 measured before, 578.23 after (592,111 bytes), to 578.3. A save asked again while one is on its
+// way joins it by what the values hold, not which object holds them (form.ts): 578.23 measured before, 578.30 after
+// (592,176 bytes), inside its 578.3.
+const BUDGET_KB = 578.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1906,8 +1907,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // +1.44, a guarding part's Retry and the typing kept +1.23, a save's words, a draft's and an open's +0.48 — 192.94, to
 // 193.0.
 // 0.35.2, a brace a page's words quote, read by one reader wherever they are drawn (listed with the raw budget above):
-// 192.94 measured before, 193.56 after, to 193.6. A save with nothing changed sending nothing (listed with the raw
-// budget above): 193.56 measured before, 193.64 after, to 193.7.
+// 192.94 measured before, 193.56 after, to 193.6. A save on its way joined by what the values hold (listed with the
+// raw budget above): 193.56 measured before, 193.62 after, to 193.7.
 const GZIP_BUDGET_KB = 193.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
