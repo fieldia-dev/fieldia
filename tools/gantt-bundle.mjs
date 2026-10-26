@@ -55,6 +55,8 @@
  * 15,834 bytes measured before, 16,960 after, to 16.6; with the page 865, 866, inside its 0.9.
  * 0.35's merge, set once from the merged build: perf-bytes' words out of the timeline and perf-form's bars written in
  * place, together — the timeline 15,320 bytes, to 15.0; with the page 765, to 0.8.
+ * 0.36, a group's toggle named by what it shows, what a press does its description (WCAG 2.5.3, gantt-view.ts): the
+ * timeline 15,342 bytes measured before, 15,387 after, to 15.1.
  */
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -63,7 +65,7 @@ import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'tmp/gantt-bundle');
-const BUDGET = { page: 0.8, gantt: 15.0 };
+const BUDGET = { page: 0.8, gantt: 15.1 };
 const LANGUAGE_BUDGET = { ar: 0.9, de: 0.7, fr: 0.7, tr: 0.8, fa: 1.0, ur: 0.9, es: 0.7 };
 
 rmSync(OUT, { recursive: true, force: true });
