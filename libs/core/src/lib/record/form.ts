@@ -3344,6 +3344,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   /** The save running now: the next one waits for it. */
   let saveRunning: Promise<unknown> | null = null;
+  /** Whether two of the form's values hold the same in every field. */
+  const sameValues = (one: Readonly<Values>, other: Readonly<Values>) => one === other || Object.keys(fields).every((name) => sameValue(fields[name], one[name], other[name]));
   /** The save asked for last, and the values it was asked for with: asked again with nothing changed, once it went, it is that one. */
   let running: { values: Readonly<Values>; mine: Promise<Stopped | null> } | null = null;
   /**
@@ -3371,7 +3373,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (before) await before;
       // Asked again while one was on its way, nothing changed between — a double press, an app's own Submit pressed
       // twice — and that one went: the same save, never a second send. Stopped or refused, this one is asked anew.
-      if (ahead && ahead.values === values && (await ahead.mine) === null) return null;
+      // Nothing changed is every field as it was, not the same object: an onchange's answer that changed nothing lands
+      // as a new one.
+      if (ahead && sameValues(ahead.values, values) && (await ahead.mine) === null) return null;
       return savingNow(chain, yes).catch(broken);
     })();
     const asked = (running = { values, mine });
