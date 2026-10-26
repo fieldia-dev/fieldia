@@ -273,6 +273,9 @@ span.fd-map-crowd-item { display: block; cursor: default; }
   position: absolute; left: 8px; bottom: 28px; z-index: 1000; max-width: calc(100% - 64px); margin: 0; padding: 4px 8px; border-radius: 6px; font-size: 12.5px; line-height: 1.4;
   background: color-mix(in srgb, var(--fd-surface) 92%, transparent); color: var(--fd-text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
+/* Lit with a row whose record has no place: why that row's home is not on the map, ringed as a lit pin is. */
+.fd-map-list-note[data-hot] { box-shadow: 0 0 0 2px var(--fd-accent), 0 1px 4px rgba(0, 0, 0, 0.18); }
+@media (forced-colors: active) { .fd-map-list-note[data-hot] { outline: 2px solid Highlight; } }
 /* As tall as the element it is put in; in the viewer's list, which gives it no height to fill, as tall as a list's map is. */
 .fd-map-list[data-height="fill"] { height: 100%; }
 .fd-list-map .fd-map-list[data-height="fill"] { height: auto; }

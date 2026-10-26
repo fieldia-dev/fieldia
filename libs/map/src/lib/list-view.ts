@@ -588,17 +588,27 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
     });
   }
 
-  /** A lit record that is in a bubble shows where it is: its own pin, over the bubble. */
+  /**
+   * A lit record that is in a bubble shows where it is: its own pin, over the bubble. One with no place shows why it is
+   * not on the map: the note that says so lit with it (0.35.1: the walk pointed at a home with no place yet, and nothing
+   * on the map changed).
+   */
   function light(map: Leaflet.Map, L: LeafletModule) {
     ghost?.remove();
     ghost = null;
     const lit = hot;
     const entry = lit === null ? undefined : drawnOf.get(lit);
+    const i = lit === null ? -1 : records.findIndex((record) => record.id === lit);
+    if (note.hasAttribute('data-hot') !== (i >= 0 && !places[i] && !note.hidden)) note.toggleAttribute('data-hot');
     if (entry?.ids.length === 1 || lit === null) return;
-    const i = records.findIndex((record) => record.id === lit);
     if (entry) return ghostOf(map, L, records[i], places[i]);
-    // In one of the source's bubbles: where it is, asked once.
-    if (served && made && !heatShown(map)) void made.place(lit).then((found) => found && hot === lit && !ghost && !destroyed && served && ghostOf(map, L, found.record, found.at));
+    // In one of the source's bubbles: where it is, asked once — or, it has none, the note saying so lit.
+    if (served && made && !heatShown(map))
+      void made.place(lit).then((found) => {
+        if (hot !== lit || destroyed || !served) return;
+        if (!found) return void (!note.hidden && note.toggleAttribute('data-hot', true));
+        if (!ghost) ghostOf(map, L, found.record, found.at);
+      });
   }
 
   function ghostOf(map: Leaflet.Map, L: LeafletModule, record: MapRecord, at: LatLng | null) {
