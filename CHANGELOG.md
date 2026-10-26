@@ -17,6 +17,118 @@ Each release's section is written in the commit that sets its version.
 A patch (0.34.**1**) holds fixes alone, with no Upgrading part: `release.mjs`
 refuses one that has.
 
+## 0.35.1 — 2026-10-26
+
+**The owner's walk of 0.35.0.** A business owner walked fieldia.dev's 0.35
+demos as a customer would, on a desktop, a phone and a slow network. What was
+slow, could not be undone or said nothing is fixed here, at its cause, for
+every page it could happen on. The page format stays 0.13: nothing a page says
+changes.
+
+**Fixes:**
+
+- **A key in a 200-line invoice costs what one in 3 lines does.** A key in
+  the header or in a line took 146–185 ms on a desktop and 0.66–0.92 s on a
+  slower phone; it now takes 27–29 ms and 67–115 ms. A line's rules, checks
+  and waits are worked out again only for the line that changed. An onchange's
+  answer keeps the lines it did not change. A line's phone card is drawn again
+  only when its line changed. The styles no longer re-match the whole form at
+  every key with `:has()`: Fieldia marks the elements itself.
+- **A payment step or code check that could not load: Retry works, and Reload
+  keeps the typing.** Retry asks for the part's file again where the browser
+  names it, with the integrity the page gave it. A code check's missing part
+  is said at once under the mobile, with its Retry. Where the browser names no
+  file, the words ask for a reload: what was typed is kept in the tab and
+  offered back after it — never a password box's value or a field marked
+  `secret`, as drafts keep none.
+- **The designer's "Open a web address" takes an address typed as it is**
+  (`https://…`). An address it may not open is refused in plain words — "Only
+  a web, mail or phone address, or a page of this site, can open here" — and
+  what was typed is kept.
+- **A list's row pointed at whose record has no place on the map lights the
+  note that says so**, beside the map.
+- **Back to a long list finds it where it was left.** Open an entry far down
+  a list, press Back, and the list has the rows it had loaded, the same row at
+  the same height, and the keyboard on the entry that was opened. This holds
+  for every list that opens its rows on a page of their own. A list opened anew
+  starts at its top.
+- A link in formatted text refused for its address (`javascript:`, say) says
+  why under its box.
+- A save that failed in the source's own words is said as not done: "Not
+  saved. The server did not answer this once."
+- A record that could not be opened from a list is named by its row: "Couldn't
+  open customer Horus Foods", not "customer 32". `form.openRecord(id, name)`
+  and `onOpenRecord(id, name)` carry the name.
+- A list's map whose code is still coming holds its place with one block the
+  size of the map. 0.35 drew a bar across its top, then the block.
+- A person search that fails, said in a toast, closes its empty list. 0.35
+  left an empty dropdown frame open over the form.
+- A table of lines' analytic column starts narrower, so a draft invoice's
+  last column ("Tax excl.") shows whole at 1440 px.
+- A record's draft offer speaks of changes: "You have unsaved changes from …".
+  A form's still speaks of answers. The new word is in all 8 languages.
+- A file named as a picture that is not one says so: "This file is not a
+  picture, though its name says so: it is not shown".
+- The Gantt's Days view shows a link a drag broke, as the Weeks view did.
+- A rating's five stars stay on one line in a column a third of a form wide.
+- "Saved, but not all your changes." is said only when a save left a change
+  out. 0.35 also said it after Reset to Draft's save once the person typed.
+- The demos: a contact's Email is checked as an email; an activity log's entry
+  reads as words; the embed page about unit B-12 fills its Unit; the long
+  intake offers its answers back after a reload; a demo's place holds a quiet
+  shape while its own script comes.
+
+Behaviour you may notice in an app's own tests:
+
+- A save the source refused with its own message starts "Not saved. " (or
+  "Not sent. "), in the status and in what is announced. Fieldia's own
+  sentences that already say so are left as they are.
+- After a save, typing again clears "Saved" from the status line. It no longer
+  turns into "Saved, but not all your changes."
+- On a record's page the draft offer reads "You have unsaved changes from …".
+  The new label is `draftFoundRecord`. An app's own `draftFound`, given without
+  it, is still used on a record's page.
+- A list that opens a row on a page of its own keeps its place in that page's
+  `history.state`, under `fieldia:lists`, merged beside what the app or its
+  router keeps there (written in place, never a new entry). Back, a reload or a
+  router's popstate opens the list there, asking the source for as many rows
+  as it had loaded.
+- `onOpenRecord` is called with the row's name as its second argument.
+- In an app bundled as modules, a part that could not come is offered again
+  where the browser's error names its module (Chromium, Firefox): Retry, or the
+  signature's Try again ("Not signed yet: the signing could not load. Try
+  again"), asks for its file at `?fd-again=1` (`2`, …). Before, the words asked
+  for a reload. WebKit names no module, so it still asks for a reload.
+- With `drafts` off, a page whose guarding part could not come keeps what was
+  typed in the tab's sessionStorage (`fieldia:draft:…`) until it is sent, so
+  the reload its words ask for brings it back. It is kept by drafts' own rule:
+  never a password box's value or a field marked `secret`, and let go once the
+  answers are sent.
+- A code check's missing part is said under each field that asks for a code
+  (`.fd-error.fd-join-missing`) as soon as the part could not come, not first
+  on Send.
+- A search that fails with its words in a toast closes its list
+  (`aria-expanded="false"`).
+- Fieldia sets three attributes of its own: `data-fd-open` on a field whose
+  list is open during a wait, `data-lock-shown` on a head's lock, and
+  `data-fd-printing` on a table of lines while it prints.
+- An onchange's answer that returns a line equal to the one held keeps the
+  held line object.
+
+**Size:** `fieldia.js` 576.6 KB, 192.9 gzipped (0.35.0: 568.4, 189.8): a key in
+a long table +1.44 KB gzipped, a guarding part's Retry and the typing kept
++1.23, a save's, a draft's and an open's words +0.48. Of the parts, gzipped:
+
+- list 50.50 (49.88): Back finds a list where it was left;
+- text 24.64 (24.58): a refused link's address said why; files 18.90 (18.82):
+  a file named as a picture that is none said so; relations 8.01 (7.99): a
+  failed search closes its empty list;
+- the language add-ons 0.04–0.07 more each: a record's draft and a file that
+  is no picture in their words;
+- `@fieldia/map` with a list's map and a form's 13,630 bytes (13,584), a list's
+  map 22,342 (22,174): one block the size of the map while its code comes, a
+  placeless row's note lit.
+
 ## 0.35.0 — 2026-10-25
 
 **Fast at scale: long lists, big forms, tables of lines, the Gantt, smaller
