@@ -686,6 +686,7 @@ export const DEMOS = [
     blurb: 'Six steps before a first visit, started on a phone and finished on a laptop: Continue later keeps the answers on the clinic’s server — the step reached, and anything typed that does not read yet — with a link to carry on from. The answers are kept as they are typed too, so the clinic sees where people stopped.',
     howTo: [
       'Fill in About you, press Next, and start on Your visit.',
+      'Reload the page: it offers your answers back. Press Restore, and they are there, at the step you reached.',
       'Press Continue later: your answers are saved, with a link to continue from. Press Copy link.',
       'Open the link in a new tab, as you would on your laptop: the form opens at Your visit, your answers in place.',
       '[Continue Mona Adel’s intake](?resume=mona-adel), started on her phone: it opens at Medical history, her answers before it filled in.',
@@ -1534,12 +1535,13 @@ export const DEMOS = [
     name: 'A form on another site: one tag',
     category: 'script',
     app: 'embed',
-    query: '',
+    // The page is about unit B-12: its form's Unit filled from the address, as a broker's link fills it (the walk of 0.35).
+    query: 'unit=B-12',
     blurb: 'A developer’s enquiry form on a broker’s page, with no code: fieldia.js and a <fieldia-form> element that fetches its page and tells what happens as events — or one script tag that frames the developer’s own form page, the frame growing and shrinking with the form and the link’s campaign reaching its hidden fields.',
     howTo: [
       'Fill in the form — its code is always 246810 — and send it: under it, what the page round it was told — fieldia-ready, then fieldia-send with the reference, never the answers.',
       '[See it in a frame](?as=frame&utm_source=newsletter&agent=mona&unit=B-12), as a partner’s one script tag places it: the frame grows as you go and shrinks once it is sent, and the unit comes from the link.',
-      '[See it in Arabic](?locale=ar): the element’s locale attribute, right to left.',
+      '[See it in Arabic](?locale=ar&unit=B-12): the element’s locale attribute, right to left.',
     ],
   },
   {

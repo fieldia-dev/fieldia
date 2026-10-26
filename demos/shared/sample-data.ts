@@ -468,8 +468,9 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('enterToNext') === '1' ? { keys: { enterMovesToNext: true } } : {}),
     ...(params.get('showValid') === '1' ? { showValid: true } : {}),
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
-    // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens.
-    ...(params.get('drafts') === '1' ? { drafts: { store: localStorage } } : {}),
+    // `drafts=1`: what is typed is kept in the browser as a draft, offered again when the page opens — and always on the
+    // long intake, where a person who reloads expects their answers back (the walk of 0.35: it opened empty).
+    ...(params.get('drafts') === '1' || (params.get('page') === 'clinic-intake' && params.get('drafts') !== '0') ? { drafts: { store: localStorage } } : {}),
     // A test drive's today is the demos' (`?now=`, as the browser tests pin it), as its free times are, and the booking
     // template's; so is a consent's signing, an enquiry's follow-ups, and a lease's first rent's month.
     ...(['test-drive', 'template-appointment-booking', 'clinic-consent', 'enquiry', 'lease'].includes(params.get('page') ?? '') ? { now: demoNow } : {}),

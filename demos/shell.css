@@ -91,6 +91,22 @@ html, body { background: var(--dh-page); color: var(--dh-ink); }
   background: var(--dh-code-bg); color: var(--dh-code-ink); border: 1px solid var(--dh-line); font-size: 12px;
 }
 #app:has(+ .demo-error-log) { padding-bottom: 16px; }
+/*
+ * The demo's place while its own script comes, the frame drawn before it (the walk of 0.35: on Slow 4G the place stood
+ * empty 1–1.7 s under the frame — no Fieldia on the page yet to draw its skeleton): a title's bar and three lines', as
+ * Fieldia's skeleton draws a place, shown only past half a second, so a quick page never shows it, and gone as the demo
+ * draws into its place. Still: nothing moves.
+ */
+#app:empty:not(:has(+ .demo-error-log))::before {
+  content: ''; display: block; block-size: 8.5rem; max-inline-size: 640px;
+  background:
+    linear-gradient(var(--dh-line), var(--dh-line)) 0 0 / 40% 1.4rem no-repeat,
+    linear-gradient(var(--dh-line), var(--dh-line)) 0 3rem / 100% 0.9rem no-repeat,
+    linear-gradient(var(--dh-line), var(--dh-line)) 0 5rem / 82% 0.9rem no-repeat,
+    linear-gradient(var(--dh-line), var(--dh-line)) 0 7rem / 64% 0.9rem no-repeat;
+  animation: dh-place-shows 0s 0.5s both;
+}
+@keyframes dh-place-shows { from { visibility: hidden; } to { visibility: visible; } }
 /* A dialog's page on its own, once its button has done its work: what was done, and a way to start over (shell.mjs). */
 .demo-done { max-width: 640px; margin: 48px auto; padding: 28px 28px 24px; background: var(--dh-surface); border: 1px solid var(--dh-line); border-radius: 12px; color: var(--dh-ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 .demo-done h2 { margin: 0 0 10px; font-size: 22px; }
