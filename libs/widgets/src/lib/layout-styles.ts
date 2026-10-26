@@ -39,7 +39,11 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 fieldset.fd-section { display: flow-root; }
 fieldset.fd-section > .fd-section-title { margin-block-end: var(--fd-section-gap, 14px); }
 fieldset.fd-section.fd-section-folded > .fd-section-title { margin-block-end: 0; }
-fieldset.fd-section > :where(:not(legend, [hidden]) ~ :not([hidden])) { margin-block-start: var(--fd-section-gap, 14px); }
+/* After a part shown before it: the group's words, its grid (a designer's canvas puts more after the grid). Named, not
+   "any part but the title": with no name on its left an engine cannot tell where such a rule holds, and each element
+   put in a page anywhere restyled every element beside it and inside them — each row a long list draws as it scrolls
+   restyled the whole list, 1,487 elements a step (0.36). */
+fieldset.fd-section > :is(.fd-section-description, .fd-grid):not([hidden]) ~ :not([hidden]) { margin-block-start: var(--fd-section-gap, 14px); }
 .fd-form .fd-section[data-style="line"] > .fd-section-title { border-block-end: 1px solid var(--fd-border); padding-block-end: 8px; }
 .fd-form .fd-section[data-style="plain"] > .fd-section-title { border-block-end: 0; padding-block-end: 0; }
 .fd-form .fd-section[data-style="framed"] {
