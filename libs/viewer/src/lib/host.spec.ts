@@ -185,7 +185,7 @@ describe('a question asked: the viewer’s own box', () => {
   });
 
   it('a question its save asks first says in its Yes the words of the form’s own Save or Submit, pressed or by Ctrl+Enter', async () => {
-    const asked = (kind: 'record' | 'responses') => ({ ...newCustomer(), data: { kind, model: 'partner' }, on: { beforeSave: [{ do: 'ask' as const, message: 'Send it now?' }] } }) as Page;
+    const asked = (kind: 'record' | 'responses') => ({ ...newCustomer(), data: kind === 'record' ? { kind, model: 'partner' } : { kind }, on: { beforeSave: [{ do: 'ask' as const, message: 'Send it now?' }] } }) as Page;
     for (const [kind, words] of [['record', 'Save'], ['responses', 'Submit']] as const) {
       const viewer = mount(asked(kind));
       await viewer.form.settled();
@@ -210,7 +210,7 @@ describe('a question asked: the viewer’s own box', () => {
 
   it('asks through the app’s own confirm when it gives one, telling it what Yes does', async () => {
     const asked: [string, string | undefined][] = [];
-    const viewer = mount(order([button('send', 'Send', [], { confirm: 'Send it now?' })]), { confirm: async (message, how) => (asked.push([message, how?.yes]), message !== 'No?') });
+    const viewer = mount(order([button('send', 'Send', [{ do: 'say', message: 'Sent' }], { confirm: 'Send it now?' })]), { confirm: async (message, how) => (asked.push([message, how?.yes]), message !== 'No?') });
     expect(await viewer.run([{ do: 'ask', message: 'Yes?' }])).toEqual({ done: true });
     expect((await viewer.run([{ do: 'ask', message: 'No?' }])).reason).toBe('no');
     press('Send');

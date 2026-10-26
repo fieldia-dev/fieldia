@@ -77,6 +77,30 @@ function Note({ form }: SlotComponentProps) {
 }
 
 describe('<FieldiaForm>', () => {
+  it('a page the viewer refuses says why where the form would be, tells onError, and leaves the app mounted', () => {
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const told: unknown[] = [];
+    const good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
+    const broken = { ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page;
+    const app = (shown: Page) => (
+      <main>
+        <h1>The app</h1>
+        <FieldiaForm page={shown} onError={(_, where) => told.push(where)} />
+      </main>
+    );
+    const { rerender } = render(app(broken));
+    // The app round it is still there: the viewer's refusal never unmounts it.
+    expect(screen.getByRole('heading', { name: 'The app' })).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toMatch(/^This form cannot be shown: its page has mistakes/);
+    expect([...document.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['fields.note.required']);
+    expect(told).toEqual([{ stage: 'draw', part: 'page' }]);
+    // A page that passes, given next, is drawn in the words' place.
+    rerender(app(good));
+    expect(document.querySelector('.fd-unshown')).toBeNull();
+    expect(screen.getByLabelText('Note')).toBeTruthy();
+    quiet.mockRestore();
+  });
+
   it('mounts the viewer into its own element', () => {
     const { container } = render(<FieldiaForm page={page('survey')} />);
     expect(container.querySelector('.fd-form')).not.toBeNull();

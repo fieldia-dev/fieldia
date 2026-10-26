@@ -1546,7 +1546,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // out and of each part drawn, so a problem kept and a part left alone are said again in them (form.ts, viewer.ts and
 // lines-table.ts: `wordsVersion`; the packages' redraw as they come is left out of this script, whose languages are
 // its add-ons), 283 more — 582,019, to 568.4 (gzipped 189.79, inside its 189.8).
-const BUDGET_KB = 568.4;
+// 0.36's one check (p3-promises, the audit's R-M5 and R-M6): the viewer refuses what validatePage refuses, so every
+// page is checked whole before it is drawn — the format's schema read without zod (page-shape.ts, made from the zod
+// definitions: 44,348 bytes, its keywords short, every part it holds twice written once), its reader (shape-check.ts,
+// 7,300), the format's rules a schema cannot say, the same functions zod runs (rules.ts, 6,610), a field's settings
+// held to themselves (sense-checks.ts, 2,971), a refused page's words where its form would be (refused.ts, 1,250) and
+// what will change said once in the console (deprecations.ts, 306): 582,019 measured before, 645,008 after, to 629.9.
+const BUDGET_KB = 629.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1889,7 +1895,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // types: 186.54 measured before, 189.48 after, to 189.5.
 // 0.35's merge, set once from the merged build (listed with the raw budget above): 186.54 at 0.34.1; perf-bytes +0.14,
 // perf-lists 0, perf-form +2.95 (189.64), the words that come late +0.16 — 189.79, to 189.8.
-const GZIP_BUDGET_KB = 189.8;
+// 0.36's one check (listed with the raw budget above) — what every page needs, checked whole before it is drawn: the
+// format's schema 9.3 KB of it, its reader and the format's rules 5.4, a field's settings held to themselves 1.3, a
+// refused page's words 0.7, what will change 0.3 (each gzipped alone): 189.79 measured before, 205.14 after, to 205.2.
+// Over the 200 the owner accepted at 0.34: the alternative, the check in a part of its own every page asks for (main
+// 191.0, the part 14.5), makes a page that uses no part wait for a fetch before it is drawn — not taken.
+const GZIP_BUDGET_KB = 205.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2257,7 +2268,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 166.85 and 23.11, 167.26 and 23.17, to 167.3, inside 23.2; Urdu's 169.60 and 23.19, 169.98 and 23.24, to 170.0 and
 // 23.3; Spanish's 58.29 and 18.21, 58.39 and 18.26, to 58.4, inside 18.3. Its English is the list part's alone
 // (tools/part-words.mjs): fieldia.js the same.
-const ADD_ON_BUDGET_KB = { ar: [134.4, 21.6], de: [60.3, 18.5], fr: [61.2, 18.5], tr: [68.3, 18.9], fa: [167.3, 23.2], ur: [170.0, 23.3], es: [58.4, 18.3] };
+// 0.36: a refused page's words, two in each (pageUnshown, pageUnshownWhy): ar 134.76 and 21.62, de 60.41 and 18.53,
+// fr 61.35 and 18.52, tr 68.42 and 18.87, fa 167.82 and 23.25, ur 170.49 and 23.31, es 58.55 and 18.32.
+const ADD_ON_BUDGET_KB = { ar: [134.8, 21.7], de: [60.5, 18.6], fr: [61.4, 18.6], tr: [68.5, 18.9], fa: [167.9, 23.3], ur: [170.5, 23.4], es: [58.6, 18.4] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3011,7 +3024,9 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 46.3, inside 16.1. A ring or words over a tall place kept in the middle of what of it is in view as the place takes its
 // size under them, a form's parts coming after its wait began (loading-part.ts) — loading 9.21 and 2.98, 9.43 and 3.06,
 // to 9.5 and 3.1.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [153.3, 49.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1] };
+// 0.36: a list's or a related list's column named twice refused, as validatePage refuses it (list-checks.ts) — list
+// 153.30 to 153.34 and 49.91, to 153.4 and 50.0.
+const PART_BUDGET_KB = { head: [42.4, 13.0], text: [72.9, 24.6], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [153.4, 50.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.5, 18.9], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.0, 8.0], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.5, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.5, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -3202,13 +3217,16 @@ for (const part of PARTS) {
   const host = dom.window.document.getElementById('app');
   const view = dom.window.Fieldia.mountViewer(host, { page: wrong, dataSource: { list: async () => ({ records: [], total: 0 }) } });
   const said = await view.drawn.then(() => null, (error) => error.message);
-  if (!said?.startsWith('This page cannot be shown') || !said.includes('layout.groupBy[0]: no field "nowhere"') || host.childElementCount) throw new Error(`in a page, a list page whose own checks came with its part is drawn, or not refused: ${said}`);
+  // Refused: nothing of the page drawn, why said where it would be (refused.ts, 0.36), and taken away for the next.
+  const refusedOnly = () => host.childElementCount === 1 && host.firstElementChild?.classList.contains('fd-unshown') && host.querySelector('[role="alert"]')?.textContent.startsWith('This form cannot be shown');
+  if (!said?.startsWith('This page cannot be shown') || !said.includes('layout.groupBy[0]: no field "nowhere"') || !refusedOnly()) throw new Error(`in a page, a list page whose own checks came with its part is drawn, or not refused in words: ${said}`);
+  host.replaceChildren();
   // A list of homes on a map whose pins' photo is words: the list part's checks, in already, owe the map's, asked for
   // then — the mistake said as the packages' check says it, nothing drawn.
   const worded = { ...homes, layout: { ...homes.layout, map: { ...homes.layout.map, pin: { ...homes.layout.map.pin, image: 'name' } } } };
   const mapped = dom.window.Fieldia.mountViewer(host, { page: worded, dataSource: { list: async () => ({ records: [], total: 0 }) } });
   const saidOfMap = await mapped.drawn.then(() => null, (error) => error.message);
-  if (!saidOfMap?.includes('layout.map.pin.image: "name" is a char; a pin\'s photo is an image or binary field') || host.childElementCount || !dom.window.Fieldia.mapChecksPart.loaded) throw new Error(`in a page, a list on a map whose map's checks came in their part is drawn, or not refused: ${saidOfMap}`);
+  if (!saidOfMap?.includes('layout.map.pin.image: "name" is a char; a pin\'s photo is an image or binary field') || !refusedOnly() || !dom.window.Fieldia.mapChecksPart.loaded) throw new Error(`in a page, a list on a map whose map's checks came in their part is drawn, or not refused in words: ${saidOfMap}`);
   dom.window.close();
 }
 console.log(`parts: ${partSizes.join('; ')}`);

@@ -67,7 +67,7 @@ function made(pick: () => number, kind: Kind) {
       id: 'people-list',
       columns: ['name', 'city', 'credit', 'visits', 'active'],
       sort: [{ field: 'name' }],
-      pageSize: kind === 'endless' ? 50 : 1000,
+      pageSize: kind === 'endless' ? 50 : 500,
       rowTones: [{ tone: 'muted', when: 'not active' }],
       ...(kind === 'endless' ? { endless: true } : {}),
       ...(kind === 'tree' ? { parentField: 'parent_id' } : {}),

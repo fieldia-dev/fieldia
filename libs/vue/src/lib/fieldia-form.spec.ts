@@ -81,6 +81,32 @@ const waitFor = async (check: () => unknown) => {
 const handleOf = (wrapper: { emitted: (e: string) => unknown[][] | undefined }) => (wrapper.emitted('ready')?.[0]?.[0] ?? null) as ViewerHandle | null;
 
 describe('<FieldiaForm> for Vue', () => {
+  it('a page the viewer refuses says why where the form would be, tells onError, and leaves the app mounted', async () => {
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const told: unknown[] = [];
+    const good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
+    const broken = { ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page;
+    const shown = ref<Page>(broken);
+    const onError = (_: unknown, where: unknown) => void told.push(where);
+    const form = FieldiaForm as unknown as Parameters<typeof h>[0];
+    const App = defineComponent({ setup: () => () => h('main', [h('h1', 'The app'), h(form, { page: shown.value, onError })]) });
+    const wrapper = mount(App, { attachTo: document.body });
+    await nextTick();
+    // The app round it is still there: the viewer's refusal never unmounts it.
+    expect(wrapper.find('h1').text()).toBe('The app');
+    expect(wrapper.find('[role="alert"]').text()).toMatch(/^This form cannot be shown: its page has mistakes/);
+    expect(wrapper.findAll('.fd-unshown li code').map((code) => code.text())).toEqual(['fields.note.required']);
+    expect(told).toEqual([{ stage: 'draw', part: 'page' }]);
+    // A page that passes, given next, is drawn in the words' place.
+    shown.value = good;
+    await nextTick();
+    await nextTick();
+    expect(wrapper.find('.fd-unshown').exists()).toBe(false);
+    expect(wrapper.find('input').exists()).toBe(true);
+    wrapper.unmount();
+    quiet.mockRestore();
+  });
+
   it('mounts the viewer into its own element', () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey') }, attachTo: document.body });
     expect(wrapper.find('.fd-form').exists()).toBe(true);

@@ -15,3 +15,5 @@ export type { ListViewContext, ListViewFactory, ListViewPart, OpenRowOptions } f
 export type { MapPart, MapPartContext, MapPartFactory } from './lib/map-part';
 export { accentShades, applyLook, contrast, skinFor, THEME_SKINS, TOKEN_NAMES, wearTokens, type AccentShades, type TokenName, type Tokens } from './lib/look';
 export { labelPlace, planSection, type Place, type SectionPlan } from './lib/place';
+// A page the viewer refuses: its words where the form would be, and the error thrown and told to `onError`.
+export { showRefused, type PageRefused } from './lib/refused';

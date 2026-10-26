@@ -87,8 +87,12 @@ describe('a picture’s width, place, link and caption', () => {
     expect(figure.querySelector('figcaption')?.textContent).toBe('The hall is on the first floor');
   });
 
-  it('opens no address that is not a web or mail one, whatever the page says', () => {
-    expect(shown({ href: 'javascript:alert(1)' }).querySelector('a')).toBeNull();
+  it('opens no address that is not a web or mail one, whatever the page says: such a page is refused, why said where it would be', () => {
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    expect(() => shown({ href: 'javascript:alert(1)' })).toThrow(/layout\.children\[0\]\.href/);
+    expect(document.querySelector('.fd-unshown a, [data-node="map"]')).toBeNull();
+    expect(document.querySelector('.fd-unshown [role="alert"]')?.textContent).toMatch(/^This form cannot be shown/);
+    quiet.mockRestore();
     expect(shown({}).querySelector('figcaption')).toBeNull();
   });
 });

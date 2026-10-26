@@ -106,6 +106,7 @@ export type { Skin };
 
 import { ownLocale, VIEWER_LABELS, viewerWords, type ViewerLabels } from './labels';
 import { inOwnWords } from './in-own-words';
+import { showRefused } from './refused';
 import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 export type { PageFinder, PageRequest } from './related';
@@ -475,7 +476,9 @@ function typeBack(box: HTMLInputElement | HTMLTextAreaElement, text: string) {
 /**
  * Render a page into `host` and keep it in step with its form. Plain DOM: the
  * React, Angular and Vue bindings are thin shells around this function.
- * Throws when the page does not validate, listing every problem.
+ * Refuses a page `validatePage` refuses (one check: `checkPage`): says so where
+ * the form would be, its problems under "What is wrong", tells `onError`
+ * (`part: "page"`), and throws the error, its `issues` on it (`PageRefused`).
  */
 export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHandle {
   // Its own copy: setTokens changes what the dialogs it opens later wear, never the app's object.
@@ -485,7 +488,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // A line's own form reads the record the line is on as parent.
   const checks = { ...(options.parent ? { parent: options.parent.fields } : {}), ...(options.functions ? { functions: options.functions } : {}) };
   const checked = checkPage(options.page, checks);
-  if (!checked.ok) throw unshown(checked);
+  // Refused: why, where the form would be — never a blank area — onError told, and thrown (refused.ts).
+  if (!checked.ok) throw showRefused(host, options, checked.issues);
   // The page's own words in its language first; the app's translator over what is left.
   const tag = options.locale ?? checked.page.language;
   const localized = tag ? localizePage(checked.page, tag) : checked.page;
@@ -2872,7 +2876,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     for (let now = checkPage(options.page, checks); ; now = checkPage(options.page, checks)) {
       if (!now.ok) {
         root.remove();
-        throw unshown(now);
+        throw showRefused(host, options, now.issues);
       }
       const owed = owedParts(now.later).filter((part) => !asked.has(part));
       if (!owed.length || gone) return;
@@ -3516,9 +3520,4 @@ export function onelineRuns(children: readonly LayoutNode[]): LayoutNode[][] {
     runs.push(run);
   }
   return runs;
-}
-
-/** Why a page cannot be shown, as the viewer throws it: each problem its check found, by its path. */
-function unshown(checked: { issues: readonly { path: string; message: string }[] }): Error {
-  return new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
 }

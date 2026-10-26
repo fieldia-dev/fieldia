@@ -606,6 +606,8 @@ export const ur: ViewerLabels = {
   payFailedWhy: 'ادائیگی مکمل نہیں ہوئی: {why} کچھ نہیں بھیجا گیا۔',
   payNotStarted: 'ادائیگی شروع نہیں ہو سکی: دوبارہ کوشش کریں۔',
   formNotLoaded: 'یہ فارم لوڈ نہیں ہو سکا۔',
+  pageUnshown: 'یہ فارم دکھایا نہیں جا سکتا: اس کے صفحے میں غلطیاں ہیں۔ اسے بنانے والا validatePage سے جانچ سکتا ہے۔',
+  pageUnshownWhy: 'کیا غلط ہے',
   outboxWaiting: 'بھیجے جانے والے {count} جوابات اس آلے پر منتظر ہیں۔',
   outboxWaitingOne: 'بھیجا جانے والا 1 جواب اس آلے پر منتظر ہے۔',
   outboxOffline: 'سگنل نہیں:',
