@@ -65,7 +65,8 @@ jobs:
       - run: npm ci
       # The release tools: CHANGELOG.md has a section for every version released, and the page format's shapes and the
       # format each setting came in (every example page, of every format released, read by the format it is stamped with:
-      # tools/format-since.test.mjs); and the
+      # tools/format-since.test.mjs), each setting of the JSON Schema described from the types' docs
+      # (tools/schema-words.test.mjs); and the
       # words the script bundle's parts carry for themselves, read by their parts alone (tools/part-words.mjs).
       # And a strict Content-Security-Policy in the packages' source: no code made from text, no style attribute
       # written, every <style> made with the page's nonce (tools/csp-source.test.mjs). Every Intl formatter made by
@@ -76,7 +77,7 @@ jobs:
       # advisory unreviewed, every script tag the docs print names a version and its hash, and the workflows keep their
       # rules. And the demos' size check, which tools/build-demos.mjs runs as it builds them: a page over its budget, a
       # bundle unminified, said (tools/demo-sizes.mjs).
-      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/intl-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-train.test.mjs tools/format-since.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs tools/demo-sizes.test.mjs
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/intl-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-train.test.mjs tools/format-since.test.mjs tools/schema-words.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs tools/demo-sizes.test.mjs
       # The tools themselves, linted as the packages are (`nx lint` reads the packages alone): four errors hid there in 0.31.
       - run: npx eslint tools eslint.config.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's

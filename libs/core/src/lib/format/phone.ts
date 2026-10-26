@@ -29,8 +29,11 @@ const countries = z.enum(['list', 'native'], { error: 'countries is "list" (Fiel
 /** A page's phone numbers: the country a number typed without its + is read in, and how a number is shown at rest. */
 export const PagePhoneSchema = z
   .strictObject({
+    /** The country a number typed without its + is read in, by its ISO code: "EG". Never assumed when left out. */
     country: country.optional(),
+    /** How a number is shown at rest: "international" (+20 10 1234 5678) or "national" (010 1234 5678). */
     shown: shown.optional(),
+    /** How a number's country is picked: "list", Fieldia's own found by typing, or "native", the browser's own list. */
     countries: countries.optional(),
   })
   .meta({ id: 'PagePhone' });

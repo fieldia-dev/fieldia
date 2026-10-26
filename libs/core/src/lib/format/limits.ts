@@ -28,10 +28,15 @@ const when = (what: string) => z.string().regex(WHEN, { error: `${what} is a day
  */
 export const PageLimitsSchema = z
   .strictObject({
+    /** When it starts taking answers: a day, or a day and a time on the page's clock. */
     opens: when('opens').optional(),
+    /** When it stops: a day alone closes at its end. */
     closes: when('closes').optional(),
+    /** The most answers it takes, counted on the app's server. */
     maxResponses: z.int().min(1).max(100_000_000).optional(),
+    /** One answer from each person, counted on the app's server. */
     onePerPerson: z.boolean().optional(),
+    /** The page's own words while it takes no answers. */
     message: z.string().regex(/\S/, 'message is the page’s own words while it takes no answers').max(1000).optional(),
   })
   .meta({ id: 'PageLimits' });

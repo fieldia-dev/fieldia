@@ -65,16 +65,23 @@ export type LabelPlace = 'above' | 'beside' | 'hidden';
  * every rule; `required` decides whether one is needed.
  */
 export interface AnswerRule {
+  /** The fewest characters an answer has. */
   minLength?: number;
+  /** The most characters it has. */
   maxLength?: number;
   /** A regular expression the whole answer matches. */
   pattern?: string;
+  /** What the answer ends with: "@clinic.com". */
   endsWith?: string;
+  /** The least a number may be. */
   min?: number;
+  /** The most a number may be. */
   max?: number;
   /** For several choices: at least, at most this many. */
   atLeast?: number;
+  /** For several choices: at most this many. */
   atMost?: number;
+  /** A day in the past, or in the future. */
   date?: 'past' | 'future';
   /**
    * For a table of lines: a column no two of its lines may share a value in,
@@ -88,8 +95,11 @@ export interface AnswerRule {
    * every field it reads is filled in.
    */
   holds?: string;
+  /** The rule holds only while this condition does. */
   when?: Modifier;
+  /** What the person reads when it is broken, in place of Fieldia's own words. */
   message?: string;
+  /** A "warning" is shown without stopping the form; an "error" (the default) stops it. */
   level?: 'error' | 'warning';
 }
 
@@ -106,11 +116,15 @@ export type WidgetOptions = {
 } & { [key: string]: JsonValue };
 
 export interface FieldNode {
+  /** A field, drawn with its widget. */
   type: 'field';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** The field it shows, by its name in `fields`. */
   field: string;
   /** Keeps its place, and is always asked, where the group or step round it draws its order or some of its questions. */
   fixed?: boolean;
+  /** Its label here, in place of the field's own. */
   label?: string;
   /** How the value is shown, when not the type's default: radio, tags, email… */
   widget?: string;
@@ -119,6 +133,7 @@ export interface FieldNode {
    * maximum, a label's prefix. An option whose name ends in "Field" names a field.
    */
   options?: WidgetOptions;
+  /** Words in its empty box, before anything is typed. */
   placeholder?: string;
   /**
    * Words in its empty box chosen by a condition on the record: the first
@@ -141,6 +156,7 @@ export interface FieldNode {
    * line of words (`tel`, `email`, `url`, `one-time-code`, `cc-number`…).
    */
   inputmode?: InputMode;
+  /** Its help here, in place of the field's own. */
   help?: string;
   /** Grid columns this field spans inside a section. */
   colspan?: number;
@@ -234,13 +250,17 @@ export interface FieldNode {
    * busy elsewhere on the screen: the first such field shown wins.
    */
   focus?: boolean;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
   /** `false`: left out on paper (Ctrl+P, Print), as an invoice leaves out its journal items: shown on screen as ever. */
   print?: boolean;
+  /** Shown and never changed while this holds: `true`, or a condition on the record's values. */
   readonly?: Modifier;
+  /** An answer is needed while this holds: `true`, or a condition on the record's values. */
   required?: Modifier;
   // ---- the quiet look ----
   /**
@@ -266,17 +286,21 @@ export interface FieldNode {
 
 /** A table's line as a form of its own: its parts, as a page's. */
 export interface LineForm {
+  /** The parts inside it, in order. */
   children: LayoutNode[];
 }
 
 /** Words in a field's empty box while a condition holds. */
 export interface PlaceholderWhen {
+  /** The condition on the record's values. */
   when: Modifier;
+  /** The words in its empty box while it holds. */
   text: string;
 }
 
 /** One field a table's lines are ordered by, as they load. */
 export interface LineOrder {
+  /** The line field they are ordered by. */
   field: string;
   /** From the highest, the latest, true, Z. */
   desc?: boolean;
@@ -284,7 +308,9 @@ export interface LineOrder {
 
 /** A tone while a condition holds. */
 export interface ToneWhen {
+  /** The tone: info, success, warning, danger or muted. */
   tone: Tone;
+  /** The condition on the record's values (on a list, each row's; on a table of lines, each line's). */
   when: Modifier;
   /**
    * A row's tone in words, for a list's and a related list's key over its rows ("Overdue"): its swatch and these words,
@@ -300,12 +326,17 @@ export interface ToneWhen {
  * Flectra's `column_invisible`.
  */
 export interface CellRules {
+  /** A cell hidden while this holds on its line's values (`parent.` the record's). */
   invisible?: Modifier;
+  /** A cell not changed while this holds on its line's values. */
   readonly?: Modifier;
+  /** A cell's answer needed while this holds on its line's values. */
   required?: Modifier;
+  /** The whole column hidden while this holds on the record, as Flectra's `column_invisible`. */
   hidden?: Modifier;
   /** The cell's tone while a condition holds, the first that holds. */
   tones?: ToneWhen[];
+  /** The cell's words in bold while this holds on its line's values. */
   bold?: Modifier;
   /** A choice drawn as a coloured pill, toned by `tones`: Flectra's widget="badge". */
   badge?: boolean;
@@ -331,8 +362,11 @@ export interface CellRules {
 }
 
 export interface ButtonNode {
+  /** A button: a press runs its steps, or hands its action to the app. */
   type: 'button';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Its words. */
   label: string;
   /**
    * What a press does: steps, in order (see `ActionStep`). A button with only
@@ -341,7 +375,9 @@ export interface ButtonNode {
   steps?: ActionStep[];
   /** The app's action's name, run after the steps. The app decides what it does. A button has steps, an action, or both. */
   action?: string;
+  /** What the app is handed with its action, as written. */
   params?: { [key: string]: JsonValue };
+  /** Its look: the page's main action (primary), another (secondary), one that cannot be taken back (danger), or a link. */
   style?: 'primary' | 'secondary' | 'danger' | 'link';
   /** Ask before running the action. */
   confirm?: string;
@@ -355,6 +391,7 @@ export interface ButtonNode {
    * saved, the app's own `call`). The app's answer with an `undo` offers it too, for what the app did.
    */
   undo?: PressUndo;
+  /** A picture before its words, by the name of one of Fieldia's icons, or the app's. */
   icon?: string;
   /**
    * A key that presses it with Alt, as Flectra's data-hotkey: a letter or a
@@ -364,7 +401,9 @@ export interface ButtonNode {
   hotkey?: string;
   /** Grid columns it spans inside a section. */
   colspan?: number;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -376,6 +415,7 @@ export interface ButtonNode {
    * ("Following").
    */
   pressed?: Modifier;
+  /** Its words while pressed ("Following"). */
   pressedLabel?: string;
   /**
    * More choices beside it, under a chevron: a split button when it has steps
@@ -385,6 +425,7 @@ export interface ButtonNode {
   menu?: MenuItem[];
   /** The chevron's own icon and name, as Follow's gear: "Notification settings". A chevron, named by the button's label, unless said. */
   menuIcon?: string;
+  /** The chevron's name, read out and in its tooltip. */
   menuLabel?: string;
   /**
    * The primary look while the record has changes to save, and the quiet one
@@ -395,7 +436,9 @@ export interface ButtonNode {
 }
 
 export interface TextNode {
+  /** Words between parts: a heading, a paragraph, a note, an alert, a help box. */
   type: 'text';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** The words; `{field}` in them shows that field's value, as the field shows it. */
   text: string;
@@ -407,7 +450,9 @@ export interface TextNode {
   icon?: string;
   /** Grid columns it spans inside a section. */
   colspan?: number;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -416,8 +461,11 @@ export interface TextNode {
 /** A line across the whole row, between parts. */
 export interface DividerNode {
   type: 'divider';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -426,9 +474,13 @@ export interface DividerNode {
 /** Empty room: in a section with columns, an empty cell. */
 export interface SpacerNode {
   type: 'spacer';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Grid columns it spans inside a section. */
   colspan?: number;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -437,6 +489,7 @@ export interface SpacerNode {
 /** A picture between parts, such as a logo. */
 export interface ImageNode {
   type: 'image';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** An address or a data: URI. */
   src: string;
@@ -450,8 +503,11 @@ export interface ImageNode {
   href?: string;
   /** Words under it. */
   caption?: string;
+  /** Grid columns it spans inside a section. */
   colspan?: number;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -468,6 +524,7 @@ export interface ImageNode {
  */
 export interface FormNode {
   type: 'form';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** The saved page's id. */
   page: string;
@@ -479,7 +536,9 @@ export interface FormNode {
   title?: string;
   /** Grid columns it spans inside a section. */
   colspan?: number;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -502,6 +561,7 @@ export interface FormNode {
  */
 export interface RelatedNode {
   type: 'related';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** Words over it, beside its count: "Invoices". None when left out. */
   title?: string;
@@ -546,7 +606,12 @@ export interface RelatedNode {
   /** More that the records listed keep to — only posted invoices — as a link's filter: `valueFrom` reads this record. */
   filter?: FilterItem[];
   /** Their order: by the first, then the next. */
-  sort?: { field: string; desc?: boolean }[];
+  sort?: {
+    /** The field they are ordered by. */
+    field: string;
+    /** From the highest, the latest, true, Z. */
+    desc?: boolean;
+  }[];
   /** How many rows a page holds: 5 unless said. */
   limit?: number;
   /** The fields what is typed in its search is looked for in: its columns unless said. */
@@ -557,7 +622,12 @@ export interface RelatedNode {
    * record's place, showing only this record's — or opened the app's own way,
    * its `onOpen`. Not offered when left out.
    */
-  viewAll?: { page: string; as?: 'dialog' | 'panel' | 'page' };
+  viewAll?: {
+    /** The app's list page of these records, by its id. */
+    page: string;
+    /** Where it opens: a dialog (the default), a panel, or this record's place. */
+    as?: 'dialog' | 'panel' | 'page';
+  };
   /** New, which makes one with its link to this record filled in; offered unless false, where the app gives a page for `model`. */
   create?: boolean;
   /**
@@ -572,7 +642,9 @@ export interface RelatedNode {
   open?: 'dialog' | 'app';
   /** Grid columns it spans inside a section: the whole row unless said. */
   colspan?: number;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -595,7 +667,14 @@ export interface MapRoute {
   /** The part already travelled fades as `from` moves along it, and the time and distance left are kept up to date. */
   progress?: boolean;
   /** Fields of the record its numbers go into: the seconds and metres left, and its line as GeoJSON. */
-  write?: { seconds?: string; metres?: string; line?: string };
+  write?: {
+    /** A number field: the seconds left. */
+    seconds?: string;
+    /** A number field: the metres left. */
+    metres?: string;
+    /** A json field: its line, as GeoJSON. */
+    line?: string;
+  };
 }
 
 /**
@@ -604,29 +683,45 @@ export interface MapRoute {
  * line's fields), a route between layers, or the reader's own place.
  */
 export interface MapLayer {
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** What it is, in words: its pins are named by it ("Courier, 4 min"). */
   label?: string;
+  /** A json field holding its place as a GeoJSON point. */
   point?: string;
+  /** Or a number field holding its latitude, beside `longitude`. */
   latitude?: string;
+  /** And a number field holding its longitude. */
   longitude?: string;
   /** A field of lines (one2many): a pin for each line. */
   lines?: string;
+  /** How its pins look: an icon, a colour, a photo, words on it. */
   pin?: Pin;
+  /** What a pin's card shows when it is pressed: a title, lines, a photo, a link. */
   card?: MapCard;
   /**
    * A place that moves as its fields change: its pin glides there. Without
    * news for `staleAfter` seconds it says when it was last seen; `follow`
    * keeps it in view until the person moves the map.
    */
-  live?: { staleAfter?: number; follow?: boolean };
+  live?: {
+    /** Seconds without news before it says when it was last seen. */
+    staleAfter?: number;
+    /** Kept in view until the person moves the map. */
+    follow?: boolean;
+  };
+  /** A line along the roads from one layer to another, or through a layer's lines. */
   route?: MapRoute;
   /** The reader's own place, from the browser once they allow it. */
   myLocation?: boolean;
   /** Areas shaded by colour; a click on one writes its key into `choose`. */
-  regions?: MapRegions & { choose?: string };
+  regions?: MapRegions & {
+    /** The field a click on an area writes its key into. */
+    choose?: string;
+  };
   /** The area within a few minutes' travel of a place, as the map's provider works it out. */
   reachable?: MapReach;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
 }
 
@@ -656,7 +751,9 @@ export interface MapRegions {
 export interface MapReach {
   /** The layer it is worked out from: a place, or the reader's own. */
   from: string;
+  /** The minutes of travel it reaches, up to 120. */
   minutes: number;
+  /** How it is travelled: by car unless said. */
   mode?: 'car' | 'bike' | 'foot';
 }
 
@@ -669,18 +766,24 @@ export interface MapReach {
 export interface MapFence {
   /** The layer whose place is watched: one that moves. */
   layer: string;
+  /** A field holding the area, as an area field keeps it. */
   area?: string;
+  /** Or a reachable area of the map, by its layer's id. */
   within?: string;
+  /** When its steps run: as the place goes into the area, or comes out of it. */
   when: 'enter' | 'leave';
+  /** The steps run, as a button's are. */
   steps: ActionStep[];
 }
 
 /** A map on a form: the record's places, its lines' places, the routes between them, and the reader's own place, as layers. */
 export interface MapNode {
   type: 'map';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** Its name, over it and for a screen reader. */
   label?: string;
+  /** What it shows, as layers: the record's place, its lines' places, routes, the reader's own place. */
   layers: MapLayer[];
   /** Height in pixels: 360 unless said. */
   height?: number;
@@ -690,7 +793,9 @@ export interface MapNode {
   fences?: MapFence[];
   /** Grid columns it spans inside a section. */
   colspan?: number;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -701,9 +806,13 @@ export interface MapNode {
 /** A named place the app fills with its own content, such as an activity feed. */
 export interface SlotNode {
   type: 'slot';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** The name the app's own content is given by, as its slots name it. */
   name: string;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -717,8 +826,11 @@ export type ColumnCount = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
  * `narrow` up to 520px. A width left out stacks the way the skin does by itself.
  */
 export interface ColumnsByWidth {
+  /** Columns above 760px. */
   wide: ColumnCount;
+  /** Columns up to 760px. */
   medium?: ColumnCount;
+  /** Columns up to 520px, a phone's. */
   narrow?: ColumnCount;
 }
 
@@ -732,11 +844,15 @@ export { wideColumns } from './columns';
  */
 export interface SectionNode {
   type: 'section';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Its title, over it. */
   title?: string;
   /** An icon before the title, by name: one of Fieldia's own, or one the app adds. */
   icon?: string;
+  /** Words under its title. */
   description?: string;
+  /** How many columns its parts are laid on: 1 to 4 (or 12), or by the form's width. */
   columns?: ColumnCount | ColumnsByWidth;
   /** The title folds and unfolds the section. Needs a title. */
   collapsible?: boolean;
@@ -764,7 +880,9 @@ export interface SectionNode {
    * where a part leaves or is narrowed. A form draws the widths given either way.
    */
   rows?: 'full' | 'gaps';
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
@@ -772,6 +890,7 @@ export interface SectionNode {
   print?: boolean;
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
+  /** The parts inside it, in order. */
   children: LayoutNode[];
   // ---- the quiet look ----
   /** Its fields' values as plain words until each is pointed at or entered, or with false in their boxes though the page is quiet; a field may say otherwise. */
@@ -801,14 +920,21 @@ export interface SectionNode {
 }
 
 export interface TabNode {
+  /** One tab of a set of tabs, its parts shown while it is picked. */
   type: 'tab';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Its name, on the tab. */
   label: string;
+  /** A picture before its words, by the name of one of Fieldia's icons, or the app's. */
   icon?: string;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** `false`: left out on paper (Ctrl+P, Print), its name with it, as an invoice's Journal Items: shown on screen as ever. */
   print?: boolean;
+  /** The parts inside it, in order. */
   children: LayoutNode[];
   /** Its icon alone: its label is its name, read out, and its tooltip. Needs an icon. */
   iconOnly?: boolean;
@@ -826,18 +952,24 @@ export interface TabNode {
 
 /** What a tab counts other than a field: the records a related list in it lists, by the list's id. */
 export interface TabCount {
+  /** The id of a related list in the tab: its records are counted. */
   related: string;
 }
 
 export interface TabsNode {
+  /** Tabs: one panel of parts shown at a time, picked by its tab. */
   type: 'tabs';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** Grid columns it spans inside a section. */
   colspan?: number;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
   hideOn?: ScreenWidth[];
+  /** The parts inside it, in order. */
   children: TabNode[];
   /**
    * `head`: its tabs at the end of the record head's band, as a work item's
@@ -850,9 +982,13 @@ export interface TabsNode {
 /** A step of a wizard. An invisible step is skipped, which is how surveys branch. */
 export interface StepNode {
   type: 'step';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Its name, in the wizard's list of steps and over it. */
   label: string;
+  /** Words under its name. */
   description?: string;
+  /** A picture before its words, by the name of one of Fieldia's icons, or the app's. */
   icon?: string;
   /** Can be skipped: its answers are then left out, and its required fields not asked for. */
   optional?: boolean;
@@ -872,28 +1008,39 @@ export interface StepNode {
   draw?: number;
   /** Keeps its place, and is always asked, where the part round it draws its order or some of its questions. */
   fixed?: boolean;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
+  /** The parts inside it, in order. */
   children: LayoutNode[];
 }
 
 export interface WizardNode {
+  /** A page in steps, one shown at a time, with Back and Next: a survey's pages. */
   type: 'wizard';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** Its steps in an order drawn for each respondent, on a page of responses: a step `fixed` keeps its place (a welcome, a last step about you). */
   order?: 'random';
   /** The list of steps can be clicked: back to any step, or forward past steps that are complete. */
   clickable?: boolean;
+  /** The words of its Next. */
   nextLabel?: string;
+  /** The words of its Back. */
   backLabel?: string;
   /** The last step's button. */
   finishLabel?: string;
+  /** The parts inside it, in order. */
   children: StepNode[];
 }
 
 export interface SectionsNode {
+  /** A page of parts one under another: groups, tabs, fields and words. */
   type: 'sections';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** The parts inside it, in order. */
   children: LayoutNode[];
   /**
    * The page's own buttons at its foot: in a dialog or panel, in place of
@@ -905,12 +1052,15 @@ export interface SectionsNode {
 }
 
 export interface StatButton {
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Its words, under the value it shows: "Invoices". */
   label: string;
   /** The label's words from a field, when it holds any — Flectra's "Next Meeting" — `label` while it is empty. */
   labelField?: string;
   /** What a press does, as a button's. */
   steps?: ActionStep[];
+  /** The app's action's name, run after the steps, as a button's. */
   action?: string;
   /** The field shown on the button, written as the field shows it: a count of invoices, an amount with its currency, hours, a date. */
   field?: string;
@@ -925,26 +1075,35 @@ export interface StatButton {
   secondField?: string;
   /** The second value's words; with them, `label` is the first value's. */
   secondLabel?: string;
+  /** A picture before its words, by the name of one of Fieldia's icons, or the app's. */
   icon?: string;
   /** Words on what it shows, as Flectra's help= on a smart button: its tooltip, and read out as its description. */
   help?: string;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
 }
 
 export interface Ribbon {
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Its words, across the sheet's corner: "Archived", "Paid". */
   label: string;
   /** The ribbon's words from a field, when it holds any: Flectra's ribbon by outcome. `label` while it is empty. */
   labelField?: string;
   /** Words shown on pointing at it, as Flectra's ribbon's title. */
   tooltip?: string;
+  /** Its colour, by tone. */
   tone?: Tone;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
 }
 
 export interface Alert {
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** The words; `{field}` in them shows that field's value, as the field shows it. */
   message: string;
@@ -952,29 +1111,42 @@ export interface Alert {
   messageField?: string;
   /** Buttons inside it, after its words: a link to the duplicate, Retry, Activate. */
   buttons?: ButtonNode[];
+  /** Its colour, by tone: blue unless said. */
   tone?: Tone;
   /** Has a × that hides it until the page opens again. */
   dismissible?: boolean;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
 }
 
 /** A small label by the title, such as "Locked" or "VIP". */
 export interface Badge {
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Its words. */
   label: string;
+  /** Its colour, by tone. */
   tone?: Tone;
+  /** A picture before its words, by the name of one of Fieldia's icons, or the app's. */
   icon?: string;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
 }
 
 export interface SheetTitle {
+  /** The field shown as the record's title, in big letters: its name. */
   field: string;
   /** Words over the title, as Flectra's label over its h1: "Product Name", "MO Reference". */
   label?: string;
+  /** A field shown under the title, smaller. */
   subtitleField?: string;
+  /** A picture field shown beside the title: a person's photo, a product's. */
   avatarField?: string;
+  /** Words in the empty title, before anything is typed. */
   placeholder?: string;
   /** Words in the empty title chosen by a condition, the first that holds, else `placeholder`: a company's name or a person's. */
   placeholderWhen?: PlaceholderWhen[];
@@ -991,6 +1163,7 @@ export interface SheetTitle {
 }
 
 export interface Statusbar {
+  /** The choice, or the link to a stage record, whose states it shows as steps. */
   field: string;
   /** Show only these states, as Flectra-style status bars often do. */
   visibleStates?: (string | number)[];
@@ -1008,7 +1181,9 @@ export interface Statusbar {
   fold?: boolean;
   /** A click on a step also saves the record at once, as Flectra's does. Needs `clickable`. */
   saves?: boolean;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
 }
 
@@ -1029,6 +1204,7 @@ export interface Statusbar {
  * of it.
  */
 export interface MenuItem {
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** A line between the items round it, with nothing else of its own: `{ "type": "divider", "id": "m-rule" }`. */
   type?: 'divider';
@@ -1043,9 +1219,11 @@ export interface MenuItem {
   builtin?: 'archive' | 'unarchive' | 'duplicate' | 'delete' | 'print';
   /** Under Print, as Flectra's reports, or among the actions (the default; Print for the built-in `print`). */
   group?: 'actions' | 'print';
+  /** What a press does: steps, in order, as a button's. */
   steps?: ActionStep[];
   /** The app's action's name, run after the steps, such as a server action (Debit Note). */
   action?: string;
+  /** What the app is handed with its action, as written. */
   params?: { [key: string]: JsonValue };
   /** Ask before running it. A built-in Archive or Delete with `undo` asks nothing unless it says so. */
   confirm?: string;
@@ -1059,8 +1237,11 @@ export interface MenuItem {
    * saved, the app's own `call`). The app's answer with an `undo` offers it too, for what the app did.
    */
   undo?: PressUndo;
+  /** A picture before its words, by the name of one of Fieldia's icons, or the app's. */
   icon?: string;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
   /**
    * A menu of its own, opened beside it — by pointing at it, a press, Enter or
@@ -1088,6 +1269,7 @@ export type PressUndo = true | ActionStep[];
  * menu shows; on a phone the menu folds into its gear.
  */
 export interface RecordToolbar {
+  /** The record's gear menu: its items, built-in or the page's own. */
   menu?: MenuItem[];
   /** False keeps the pager away even when the app gives the records round this one. */
   pager?: boolean;
@@ -1105,7 +1287,9 @@ export interface RecordToolbar {
 export interface AttachmentPreview {
   /** A file field (binary or image) whose file shows; its first, when it holds several. */
   field?: string;
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
 }
 
@@ -1128,7 +1312,14 @@ export interface SheetHead {
   /** Fields on a band under the head, their labels beside them. */
   band?: HeadBand;
   /** "Updated by Mona Adel: Aug 25" at the band's top end, from a field naming who and a date; a press shows the tab `opens`. */
-  updated?: { byField: string; atField: string; opens?: string };
+  updated?: {
+    /** The field naming who changed it last. */
+    byField: string;
+    /** The field holding when. */
+    atField: string;
+    /** The id of the tab a press shows: its history. */
+    opens?: string;
+  };
   /** A Copy title button at the title's end while it is pointed at or focused; on unless false. */
   copyTitle?: boolean;
 }
@@ -1137,20 +1328,31 @@ export interface SheetHead {
 export interface SheetKind {
   /** The field that holds the kind: a selection, or a many2one. Without it, `label` names the one kind. */
   field?: string;
+  /** The one kind's name, where no field holds it. */
   label?: string;
   /** The record's number in the badge; the record's id when left out. */
   numberField?: string;
   /** The colour and icon of a kind with no look of its own: `#rrggbb`, and an icon by name. */
   colour?: string;
+  /** A picture before its words, by the name of one of Fieldia's icons, or the app's. */
   icon?: string;
   /** Each kind's colour and icon, by the field's value: `{ "bug": { "colour": "#cc293d", "icon": "bug" } }`. */
-  looks?: { [value: string]: { colour: string; icon?: string } };
+  looks?: {
+    [value: string]: {
+      /** Its colour, `#rrggbb`. */
+      colour: string;
+      /** Its icon, by name. */
+      icon?: string;
+    };
+  };
 }
 
 /** A link in a record head's row, "1 Comment": a number field's value, then its words, taking the reader to a part of the record or running steps — its words alone when it does neither. */
 export interface HeadLink {
   type: 'link';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** A picture before its words, by the name of one of Fieldia's icons, or the app's. */
   icon?: string;
   /** A number field: its value leads the words. */
   field: string;
@@ -1160,7 +1362,9 @@ export interface HeadLink {
   target?: string;
   /** What a press does besides, as a button's steps. */
   steps?: ActionStep[];
+  /** Hidden while this holds: `true`, or a condition on the record's values. */
   invisible?: Modifier;
+  /** Shown only to people holding one of these roles; `!` before one hides it from them. */
   roles?: Roles;
 }
 
@@ -1177,7 +1381,9 @@ export interface HeadBand {
 /** The record layout: a header with a statusbar and buttons, then the sheet itself. */
 export interface SheetNode {
   type: 'sheet';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** The record's title in big letters at the top: a field, with fields round it. */
   title?: SheetTitle;
   /**
    * The record's head drawn as a work item's (see `SheetHead`). When given,
@@ -1185,15 +1391,23 @@ export interface SheetNode {
    * not drawn: the head's actions and band take their place.
    */
   head?: SheetHead;
+  /** The record's stage, as steps in the header bar: Draft › Sent › Paid. */
   statusbar?: Statusbar;
+  /** The record's buttons, in the header bar beside its statusbar. */
   buttons?: ButtonNode[];
+  /** Smart buttons at the sheet's top: a count or an amount each, opening what it counts. */
   statButtons?: StatButton[];
+  /** A ribbon across the sheet's corner while its condition holds: "Archived", "Paid". */
   ribbon?: Ribbon;
   /** Several ribbons, each with its condition, as Flectra's web_ribbons: the first one shown wins the corner, after `ribbon`. */
   ribbons?: Ribbon[];
+  /** Boxes of words over the sheet while their conditions hold: a warning, a duplicate found. */
   alerts?: Alert[];
+  /** Small labels by the title: "Locked", "VIP". */
   badges?: Badge[];
+  /** The parts inside it, in order. */
   children: LayoutNode[];
+  /** A panel beside the sheet the app fills with its own content — its chatter, an activity feed — as a slot. */
   sidePanel?: SlotNode;
   /**
    * Where the side panel stays beside the sheet: on a wide form (the
@@ -1224,7 +1438,9 @@ export interface SheetNode {
  * time zone's.
  */
 export interface FilterPeriod {
+  /** The date, or date and time, field it is of. */
   field: string;
+  /** Which period: today, yesterday, thisWeek, lastWeek, thisMonth, lastMonth, thisYear, last7Days, last30Days or overdue. */
   is: DatePeriod;
 }
 
@@ -1234,9 +1450,13 @@ export interface FilterPeriod {
  * together.
  */
 export interface ListFilter {
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
+  /** Its words, in the search bar's menu: "Active". */
   label: string;
+  /** Its conditions on the list's records. */
   filter?: FilterItem[];
+  /** A period a date falls in: "This month", "Overdue". */
   period?: FilterPeriod;
 }
 
@@ -1247,15 +1467,22 @@ export interface ListFilter {
  */
 export interface ListNode {
   type: 'list';
+  /** Its id, unique in the page: what steps, conditions and the app name it by. */
   id: string;
   /** The fields shown, in order. */
   columns: string[];
   /** The order when the list opens: by the first, then the next. */
-  sort?: { field: string; desc?: boolean }[];
+  sort?: {
+    /** The field they are ordered by. */
+    field: string;
+    /** From the highest, the latest, true, Z. */
+    desc?: boolean;
+  }[];
   /** How many records a page holds; 40 unless said. */
   pageSize?: number;
   /** The fields what is typed in the search bar is looked for in; the columns unless said. */
   searchFields?: string[];
+  /** Named filters in its search bar: "Active", "This month". */
   filters?: ListFilter[];
   /** The filters on when the list opens, by id. */
   defaultFilters?: string[];
@@ -1511,7 +1738,12 @@ export interface ListDetail {
   /** Each column's cells, as a list's: a widget, a width, a side, a total. */
   cells?: { [column: string]: ListCell };
   /** Their order: by the first, then the next. */
-  sort?: { field: string; desc?: boolean }[];
+  sort?: {
+    /** The field they are ordered by. */
+    field: string;
+    /** From the highest, the latest, true, Z. */
+    desc?: boolean;
+  }[];
   /** How many a page holds: 5 unless said. */
   limit?: number;
 }
@@ -1537,9 +1769,22 @@ export interface ListCell {
    * where `options.links` is true.
    */
   widget?: string;
+  /** Its widget's settings: `colours` or `tones` by value for a dot or a badge, `max` for a bar, `links` for a phone. */
   options?: WidgetOptions;
   /** An icon before the words, by another field's value: a bug's or a task's icon in its colour before a work item's title. */
-  lead?: { field: string; looks: { [value: string]: { icon: string; colour?: string } } };
+  lead?: {
+    /** The field whose value picks the icon. */
+    field: string;
+    /** Each value's icon and colour: `{ "bug": { "icon": "bug", "colour": "#cc293d" } }`. */
+    looks: {
+      [value: string]: {
+        /** Its icon, by name. */
+        icon: string;
+        /** Its colour, `#rrggbb`. */
+        colour?: string;
+      };
+    };
+  };
   /**
    * How wide the column is: in characters of its words (1 to 200), or in
    * pixels for the whole column ("868px", 8 to 4000), as a work tracker sizes
@@ -1573,6 +1818,7 @@ export interface ListCell {
  * fixed one, or the one a field names), a round photo, words alone, or a dot.
  */
 export interface Pin {
+  /** How it is drawn: a pin (the default), an icon, a round photo, words alone, or a dot. */
   look?: 'pin' | 'icon' | 'photo' | 'label' | 'dot';
   /** An icon by name: Fieldia's own and the map's (car, scooter, bike, shop, food…), or the app's. */
   icon?: string;
@@ -1599,23 +1845,38 @@ export interface Pin {
 
 /** Words after a number, in the plural it needs ("1 bed", "4 beds"): by the language's plural forms, `other` for any it lacks. */
 export interface PluralWords {
+  /** For none, where the language says it apart. */
   zero?: string;
+  /** For one: "bed". */
   one?: string;
+  /** For two, where the language says it apart (Arabic). */
   two?: string;
+  /** For a few, where the language says it apart. */
   few?: string;
+  /** For many, where the language says it apart. */
   many?: string;
+  /** For any other number: "beds". */
   other: string;
 }
 
 /** A part of a card's line: a field, or a field with words after its value ("280 m²", "4 beds"). */
-export type CardPart = string | { field: string; unit?: string | PluralWords };
+export type CardPart =
+  | string
+  | {
+      /** The field shown. */
+      field: string;
+      /** The words after its value: "m²", or a plural's forms. */
+      unit?: string | PluralWords;
+    };
 
 /** A line of a card: one part, or several on one line parted by a dot ("Sheikh Zayed · 4 beds · 280 m²"). */
 export type CardLine = CardPart | CardPart[];
 
 /** The card a pin opens: its record's title, a picture, a few of its fields, and a way to open it. */
 export interface MapCard {
+  /** A field shown as its title: its record's name unless said. */
   title?: string;
+  /** An image field shown as its picture. */
   image?: string;
   /** Its lines, in order: a field, a field with words after it, or several on one line. */
   fields?: CardLine[];
@@ -1635,9 +1896,13 @@ export interface MapCard {
 export interface ListMap {
   /** A json field holding a GeoJSON Point; or `latitude` and `longitude`, two number fields. */
   point?: string;
+  /** Or a number field holding each record's latitude, beside `longitude`. */
   latitude?: string;
+  /** And a number field holding its longitude. */
   longitude?: string;
+  /** How each record's pin looks: an icon, a colour, a photo, words on it. */
   pin?: Pin;
+  /** What a pin's card shows when it is pressed: a title, lines, a photo, a link. */
   card?: MapCard;
   /** Pins that crowd as one bubble with their count; on unless false. */
   cluster?: boolean;
@@ -1648,9 +1913,17 @@ export interface ListMap {
   /** The tools under its zoom: satellite, traffic, fullscreen, measure, nearest (the records nearest the reader first). */
   tools?: MapTool[];
   /** Areas shaded by their records (or a number of their own); `field` is the records' field holding an area's key. A click on one searches for its records. */
-  regions?: MapRegions & { field: string };
+  regions?: MapRegions & {
+    /** The records' field holding an area's key. */
+    field: string;
+  };
   /** The records as a heat map while the map is far out, each weighing one unless `weight` names a number field; their pins come back close in, at the streets. */
-  heat?: boolean | { weight?: string };
+  heat?:
+    | boolean
+    | {
+        /** A number field each record weighs by. */
+        weight?: string;
+      };
   // ---- how the map sits in its page ----
   /** How tall it is: pixels, or `fill`, as tall as the element it is put in (which gives it a height); as tall as the window allows, 320 to 640 pixels, unless said. */
   height?: number | 'fill';
@@ -1694,7 +1967,12 @@ export interface ListCalendar {
   /** The week's first day, 0 Sunday to 6 Saturday: the language's own unless said. */
   firstDay?: number;
   /** The hours the day and the week show, from 0 to 24: 8 to 20 unless said; a record outside them stretches them. */
-  hours?: { start: number; end: number };
+  hours?: {
+    /** The first hour shown, 0 to 24. */
+    start: number;
+    /** The last. */
+    end: number;
+  };
   /** The minutes a drag moves by and an empty slot holds: 15, 30 (unless said) or 60. */
   slot?: 15 | 30 | 60;
 }

@@ -34,7 +34,17 @@ export { FORMAT_VERSION } from './version';
  * the app's data source; a `responses` page collects one new response per
  * submission, the way a survey does.
  */
-export type PageData = { kind: 'record'; model: string } | { kind: 'responses' };
+export type PageData =
+  | {
+      /** A record's page: it loads and saves records of a model through the app's data source. */
+      kind: 'record';
+      /** The model of its records, by the name the app's data source knows it by: `"res.partner"`. */
+      model: string;
+    }
+  | {
+      /** A page of responses: each send is one new response, as a survey's is. */
+      kind: 'responses';
+    };
 
 
 /**
@@ -46,9 +56,11 @@ export interface PageLook {
   theme?: Theme;
   /** The accent: buttons, focus, the picked tab, a band under the title. `#rrggbb`. */
   accent?: string;
+  /** The page's typeface: the system's, a serif, or a rounded one. */
   font?: 'system' | 'serif' | 'rounded';
   /** Room between and inside parts: compact for long office forms, roomy for a short public form. */
   density?: 'compact' | 'comfortable' | 'roomy';
+  /** How round its boxes', cards' and buttons' corners are. */
   corners?: 'square' | 'soft' | 'round';
   /** Where labels sit across the page, unless a section or a field says otherwise. */
   labels?: 'above' | 'beside' | 'hidden';
@@ -138,16 +150,23 @@ export interface Page {
    * bring up to date (an older one's: `upgradePage`). A page made now says FORMAT_VERSION.
    */
   fieldia: FormatVersion;
+  /** The page's own name, for an app to keep it by: letters, digits, `.`, `_` and `-`. */
   id: string;
+  /** Its title, shown over it. */
   title?: string;
+  /** Words under its title that say what it is for. */
   description?: string;
+  /** Where its values go: a model's records through the app's data source, or responses sent (`kind`). */
   data: PageData;
+  /** What it holds: each field by its name — its kind, its label, its rules. */
   fields: Fields;
+  /** How it is laid out: a sheet, sections, tabs or a wizard, with the parts that show each field — or a list of records. */
   layout: RootLayout;
   /** How wide the page goes: narrow 640px, medium 900px, wide 1180px, full the whole width. */
   maxWidth?: 'narrow' | 'medium' | 'wide' | 'full';
   /** Where Save and Discard sit: at the top of the page, or at its foot. A wizard keeps its own. */
   actionsPosition?: 'top' | 'bottom';
+  /** How it looks: a theme, an accent, a typeface, its density and corners, where labels sit. */
   look?: PageLook;
   /** The language the page's own words are written in, by language tag. English unless said. */
   language?: string;
@@ -294,7 +313,12 @@ export interface Page {
    * `saveTemplate` and `deleteTemplate` where it has them, shared as the app shares them; else in the viewer's
    * `preferences`, this person's. A page of a record's.
    */
-  templates?: true | { fields: string[] };
+  templates?:
+    | true
+    | {
+        /** The fields a template keeps, alone. */
+        fields: string[];
+      };
   /**
    * How the page looks while it waits for an answer, moment by moment: a record or a list drawn for the first time
    * (`first`), asked again (`refresh`), its next rows (`more`), a link's suggestions (`search`), a save or a button's

@@ -16,7 +16,9 @@ import * as z from 'zod';
  */
 export const PageApprovalSchema = z
   .strictObject({
+    /** The fields that stay open while the record waits for its approvals — a note, an attachment — every other locked. */
     open: z.array(z.string().min(1)).optional(),
+    /** False: none is locked while it waits, and the app's save refuses what it must. */
     lock: z.boolean().optional(),
   })
   .meta({ id: 'PageApproval' });
