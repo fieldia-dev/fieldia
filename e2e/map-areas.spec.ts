@@ -268,7 +268,8 @@ test.describe('orders by district', () => {
 
 /**
  * On a phone (390 pixels): the legend folded to its title at first, a button that opens it — open, 0.35's covered most
- * of the map and two of the tools under the zoom, and could not fold, a tap on Zamalek landing on its title.
+ * of the map and two of the tools under the zoom, and could not fold, a tap on Zamalek landing on its title — and the
+ * bar that says how to measure in a finger's words.
  */
 test.describe('orders by district, on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -307,6 +308,12 @@ test.describe('orders by district, on a phone', () => {
     await title.tap();
     await expect(title).toHaveAttribute('aria-expanded', 'false');
     await expect(legend(page).locator('ol')).toBeHidden();
+  });
+
+  test('measuring a way says what a finger does: taps, a double-tap to finish', async ({ page }) => {
+    await openMap(page, ZONES);
+    await tool(page, 'Measure a distance').tap();
+    await expect(theMap(page).locator('.fd-map-measure-hint')).toHaveText('Tap points along the way; double-tap to finish.');
   });
 });
 

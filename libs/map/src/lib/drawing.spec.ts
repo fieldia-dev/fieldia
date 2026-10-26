@@ -6,10 +6,11 @@ import { writeArea } from './geo';
 import { mapLabels } from './labels';
 import { loadLeaflet } from './leaflet';
 import { createMapBox } from './map-core';
+import { measure } from './measure';
 import { tiles } from './providers';
 
 /**
- * Drawing on a map (drawing.ts), as the zone demo's how-to found it in 0.35:
+ * Drawing on a map (drawing.ts, and measuring a way, measure.ts), as the zone demo's how-to found it in 0.35:
  *
  * A drag the map's own code carries — a box or a circle drawn, a shape carried — holds off the browser's own while it
  * lasts, as Leaflet's own drags do. 0.35 did not: a box drawn across the zoom selected its "+ −", and the browser took
@@ -17,8 +18,8 @@ import { tiles } from './providers';
  * shape moved 5 pixels for a drag of 60 (with the demo's frame round it). Asked here as the browser asks: whether a
  * selection or a drag and drop may start (`selectstart`, `dragstart`), each cancelled while held.
  *
- * The bar over the map says one point as one ("1 point", never "1 points"). The browser's side of each is driven in
- * e2e/map-area.spec.ts and e2e/map-list.spec.ts.
+ * The bar over the map says one point as one ("1 point", never "1 points"), and on a touch screen says what a finger
+ * does — taps, and no Enter. The browser's side of each is driven in e2e/map-area.spec.ts.
  */
 
 const provider = tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } });
@@ -47,6 +48,14 @@ function boxOnPage(locale: Locale = 'en') {
 }
 
 afterEach(() => document.body.replaceChildren());
+
+/** A page read on a touch screen, whose pointer cannot hover (jsdom has no `matchMedia`: a phone's answer to it). */
+function onTouchScreen() {
+  const view = window as { matchMedia?: (query: string) => MediaQueryList };
+  const was = view.matchMedia;
+  view.matchMedia = (query: string) => ({ matches: query === '(hover: none)', media: query }) as MediaQueryList;
+  return () => (view.matchMedia = was);
+}
 
 describe('a drag of the map’s own, holding off the browser’s', () => {
   beforeAll(() => loadLeaflet());
@@ -146,4 +155,24 @@ describe('the bar over the map while a tool is in hand', () => {
     expect((await polygonOf(1, 'fr')).steps[1]).toMatch(/ 1 point\.$/);
   });
 
+  it('on a touch screen says what a finger does: taps, and no Enter', async () => {
+    const back = onTouchScreen();
+    try {
+      const { steps } = await polygonOf(1);
+      expect(steps[0]).toBe('Tap to add points. Tap the first point or double-tap to finish.');
+      expect(steps[1]).toBe('Tap to add points. Tap the first point or double-tap to finish. 1 point.');
+      // Measuring a way, the same.
+      const { L } = await loadLeaflet();
+      const box = boxOnPage();
+      const map = await new Promise<import('leaflet').Map>((ready) => box.ready((m) => ready(m)));
+      const stop = measure({ box, map, L, labels, locale: 'en', stopped: () => undefined });
+      expect(box.element.querySelector('.fd-map-measure-hint')?.textContent).toBe('Tap points along the way; double-tap to finish.');
+      stop();
+      box.destroy();
+    } finally {
+      back();
+    }
+    // With a mouse, the mouse's words.
+    expect((await polygonOf(0)).steps[0]).toBe('Click to add points. Click the first point, double-click or press Enter to finish.');
+  });
 });

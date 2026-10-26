@@ -2,7 +2,7 @@ import type * as Leaflet from 'leaflet';
 import type { Locale } from '@fieldia/core';
 import { inPlural } from '@fieldia/widgets';
 import { boxFrom, metresBetween, type Area, type LatLng, type Shape } from './geo';
-import { type MapLabels } from './labels';
+import { forHand, type MapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import type { MapBox } from './map-core';
 
@@ -108,7 +108,8 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
 
   function sayStep() {
     if (!mode) return;
-    const words = mode === 'polygon' ? labels.drawPolygon : mode === 'box' ? labels.drawBox : labels.drawCircle;
+    // A box and a circle are dragged by a finger as by a mouse; a polygon's points are tapped.
+    const words = mode === 'polygon' ? forHand(doc, labels.drawPolygon, labels.drawPolygonTouch) : mode === 'box' ? labels.drawBox : labels.drawCircle;
     hintWords.textContent = mode === 'polygon' && points.length ? `${words} ${counted()}.` : words;
     finishButton.hidden = mode !== 'polygon' || points.length < 3;
   }

@@ -66,14 +66,15 @@ export const MAP_CSS = `
 .fd-map-crosshair::before { left: 10px; top: 0; width: 2px; height: 22px; }
 .fd-map-crosshair::after { top: 10px; left: 0; height: 2px; width: 22px; }
 .fd-map-box[data-keys]:focus .fd-map-crosshair { display: block; }
+/* The bar lets a press through to the map under it, but on its buttons: a quarter of a phone's map. */
 .fd-map-hint {
   position: absolute; top: 8px; left: 8px; right: 52px; z-index: 1000; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
   padding: 6px 10px; font-size: 13px; line-height: 1.4; background: var(--fd-surface); color: var(--fd-text);
-  border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14); pointer-events: none;
 }
 .fd-map-box[data-side="left"] .fd-map-hint { left: 52px; right: 8px; }
 .fd-map-hint p { margin: 0; flex: 1 1 180px; min-width: 0; }
-.fd-map-hint .fd-button { min-height: 28px; padding: 2px 10px; }
+.fd-map-hint .fd-button { min-height: 28px; padding: 2px 10px; pointer-events: auto; }
 .fd-map-coords { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
 .fd-map-coords label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fd-muted); }
 .fd-map-coords .fd-input { width: 12ch; font-variant-numeric: tabular-nums; }

@@ -273,6 +273,31 @@ async function dragsWhole(page: Page, map: Locator) {
   expect(dropped).toEqual([]);
 }
 
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test('the bar says what a finger does, and a tap under its words is a point: only its buttons are its own', async ({ page }) => {
+    const { map, field } = await openArea(page);
+    await field.getByRole('button', { name: 'Polygon' }).tap();
+    const hint = map.locator('.fd-map-hint');
+    await expect(hint.locator('p')).toHaveText('Tap to add points. Tap the first point or double-tap to finish.');
+    await screen(page, 'map-area-phone-drawing', { viewport: true });
+    // A tap where the bar's words are: a point of the polygon, there (0.35's bar took it, a quarter of the map).
+    const words = (await hint.locator('p').boundingBox())!;
+    await page.touchscreen.tap(words.x + words.width / 2, words.y + words.height / 2);
+    await expect(hint.locator('p')).toHaveText('Tap to add points. Tap the first point or double-tap to finish. 1 point.');
+    for (const [x, y] of [[0.3, 0.7], [0.7, 0.7]] as const) {
+      const p = await at(map, x, y);
+      await page.touchscreen.tap(p.x, p.y);
+    }
+    await expect(hint.locator('p')).toContainText('3 points.');
+    // Its buttons stay its own: Finish draws the polygon from the three.
+    await hint.getByRole('button', { name: 'Finish' }).tap();
+    await expect.poll(async () => ring(await zone(page)).length).toBe(4);
+    await expect(hint).toBeHidden();
+  });
+});
+
 test('by keyboard alone: Space puts points at the cross, the arrow keys move the map between them, Enter finishes', async ({ page }) => {
   const { map, field } = await openArea(page);
   await field.getByRole('button', { name: 'Polygon' }).focus();

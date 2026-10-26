@@ -55,6 +55,8 @@ export interface MapLabels {
   box: string;
   circle: string;
   drawPolygon: string;
+  /** The same, on a touch screen (a phone, a tablet): a finger taps, and has no Enter. */
+  drawPolygonTouch: string;
   drawBox: string;
   drawCircle: string;
   /** A polygon's points so far: `{n}` how many, and the words for one. */
@@ -94,6 +96,8 @@ export interface MapLabels {
   leaveFullScreen: string;
   measure: string;
   measureHint: string;
+  /** The same, on a touch screen. */
+  measureHintTouch: string;
   /** A way measured: `{distance}` its length. */
   measured: string;
   /** An area of a map's shaded areas, with its number. */
@@ -129,6 +133,7 @@ export const MAP_LABELS = /* @__PURE__ */ inChunks<MapLabels>({
     box: 'Box',
     circle: 'Circle',
     drawPolygon: 'Click to add points. Click the first point, double-click or press Enter to finish.',
+    drawPolygonTouch: 'Tap to add points. Tap the first point or double-tap to finish.',
     drawBox: 'Drag across the map to draw a box.',
     drawCircle: 'Drag from the centre to draw a circle.',
     points: '{n} points',
@@ -165,6 +170,7 @@ export const MAP_LABELS = /* @__PURE__ */ inChunks<MapLabels>({
     leaveFullScreen: 'Leave full screen',
     measure: 'Measure a distance',
     measureHint: 'Click points along the way; double-click or press Enter to finish. Escape clears.',
+    measureHintTouch: 'Tap points along the way; double-tap to finish.',
     measured: 'The way measures {distance}.',
     areaValue: '{name}: {value}',
     areasNone: 'None',
@@ -265,6 +271,12 @@ export function listMapLabels(locale: Locale | undefined, own?: Partial<MapLabel
   if (own && 'mapFailed' in own && !('mapFailedNoun' in own)) delete words.mapFailedNoun;
   return words;
 }
+
+/**
+ * The words for the hand the page is read with: a touch screen's where its pointer cannot hover (a phone's, a tablet's
+ * finger, which taps and has no Enter), the mouse's otherwise.
+ */
+export const forHand = (doc: Document, mouse: string, touch: string) => (doc.defaultView?.matchMedia?.('(hover: none)').matches ? touch : mouse);
 
 /** A word with its `{name}`s filled in. */
 export const fill = (words: string, values: Record<string, string | number>) =>
