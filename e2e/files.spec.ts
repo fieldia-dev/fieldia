@@ -37,8 +37,8 @@ test.describe('several files in a form', () => {
     await expect(rows(page, 'f-documents')).toHaveCount(7);
     expect(await namesIn(page, 'documents')).toEqual(['Site survey notes.txt', 'Floor plan, 12th floor.svg', 'Lift booking, confirmed.pdf', 'Budget, 12th floor.csv', 'Quote for the 12th floor, revised again before signing.pdf', 'Lobby, north side.png', 'Site photos, raw.zip']);
     await expect(documents.locator('.fd-file-count')).toHaveText('7 of 8 files');
-    // An icon by kind, a thumbnail for an image; a long name cut in the middle, its end kept.
-    await expect(documents.locator('.fd-file-icon')).toHaveText(['TXT', 'PDF', 'CSV', 'PDF', 'ZIP']);
+    // An icon by kind, its extension drawn on it, a thumbnail for an image; a long name cut in the middle, its end kept.
+    await expect.poll(() => documents.locator('.fd-file-icon').evaluateAll((icons) => icons.map((icon) => icon.getAttribute('data-ext')))).toEqual(['TXT', 'PDF', 'CSV', 'PDF', 'ZIP']);
     await expect(documents.locator('img.fd-file-thumb')).toHaveCount(2);
     await expect(documents.locator('.fd-file-name').nth(4).locator('> span')).toHaveText('Quote for the 12th floor, revised again before si');
     await documents.screenshot({ path: 'test-results/screens/files-list.png' });

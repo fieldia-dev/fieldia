@@ -85,12 +85,12 @@ test.describe('files picked are never lost', () => {
     await expect(refused).toHaveAttribute('data-status', 'refused', { timeout: 30_000 });
     await expect(refused.locator('.fd-file-state')).toHaveText('broken.jpg is larger than 5 MB');
     await expect(refused.locator('img')).toHaveCount(0);
-    await expect(refused.locator('.fd-file-icon')).toHaveText('JPG');
+    await expect(refused.locator('.fd-file-icon')).toHaveAttribute('data-ext', 'JPG');
     await photos(page).locator('input[type=file]').setInputFiles({ name: 'damp wall.jpg', mimeType: 'image/jpeg', buffer: randomBytes(20 * 1024) });
     const kept = photos(page).locator('.fd-file-item:not(.fd-file-going)').filter({ hasText: 'damp wall' });
     await expect(kept).toHaveCount(1, { timeout: 30_000 });
     await expect(kept.locator('img')).toHaveCount(0);
-    await expect(kept.locator('.fd-file-icon')).toHaveText('JPG');
+    await expect(kept.locator('.fd-file-icon')).toHaveAttribute('data-ext', 'JPG');
     await screen(page, 'uploads-undecodable-icons');
     expect(problems.filter((problem) => !/Failed to load resource|ERR_/.test(problem))).toEqual([]);
   });

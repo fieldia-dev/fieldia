@@ -28,7 +28,7 @@ test.describe('a phone’s country, found by typing', () => {
 
   test('pressed, it lists every country with its flag and code, the page’s and the reader’s first; typed, it finds one', async ({ page }) => {
     const button = country(page, 'f-phone');
-    await expect(button).toHaveAccessibleName('Country of Phone');
+    await expect(button).toHaveAccessibleName('Country of Phone, +20'); // holding the code it shows (WCAG 2.5.3)
     await expect(button).toHaveAccessibleDescription('Egypt');
     await button.click();
     await expect(finder(page)).toBeFocused();

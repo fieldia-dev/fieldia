@@ -81,7 +81,7 @@ test.describe('a contact’s phone numbers', () => {
   });
 
   test('reads a number in the country picked from the list', async ({ page }) => {
-    await expect(country(page, 'f-phone')).toHaveAccessibleName('Country of Phone');
+    await expect(country(page, 'f-phone')).toHaveAccessibleName('Country of Phone, +20'); // holding the code it shows (WCAG 2.5.3)
     await pickCountry(page, 'f-phone', 'Saudi Arabia');
     const phone = box(page, 'f-phone');
     // The number it held, its Egyptian code swapped for Saudi Arabia's, read there: no Saudi number starts so.

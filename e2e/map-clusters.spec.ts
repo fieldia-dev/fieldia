@@ -25,12 +25,15 @@ const note = (page: Page) => page.locator('.fd-map-list-note');
 const here = (page: Page) => page.getByRole('button', { name: /^Search this area/ });
 const box = (page: Page) => page.locator('.fd-search').getByRole('combobox');
 
-/** How many homes the map shows: a pin one, a bubble as many as its words say in full ("13,620 here."). */
+/**
+ * How many homes the map shows: a pin one, a bubble as many as its words say in full ("13,620 here."), after the count
+ * it shows where that is written short ("13.6K, 13,620 here.": its name holds what it shows, WCAG 2.5.3).
+ */
 const onTheMap = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll('.fd-map-list .fd-map-mark:not(.fd-map-ghost)')].reduce((sum, mark) => {
       const words = mark.querySelector('.fd-map-bubble') ? (mark.getAttribute('aria-label') ?? '') : null;
-      return sum + (words === null ? 1 : Number(/^[\d,]+/.exec(words)?.[0].replace(/,/g, '')));
+      return sum + (words === null ? 1 : Number(/([\d,]+) here\./.exec(words)?.[1].replace(/,/g, '')));
     }, 0)
   );
 
@@ -62,7 +65,7 @@ async function pressBiggest(page: Page) {
   const asks = (await clusterAsks(page)).length;
   const map = (await theMap(page).boundingBox())!;
   const all = await bubbles(page).evaluateAll((list) =>
-    list.map((mark) => ({ n: Number(/^[\d,]+/.exec(mark.getAttribute('aria-label') ?? '')?.[0].replace(/,/g, '')), at: mark.getBoundingClientRect().toJSON() as DOMRect }))
+    list.map((mark) => ({ n: Number(/([\d,]+) here\./.exec(mark.getAttribute('aria-label') ?? '')?.[1].replace(/,/g, '')), at: mark.getBoundingClientRect().toJSON() as DOMRect }))
   );
   const inside = all.map((b, i) => ({ ...b, i })).filter(({ at }) => at.x > map.x + 50 && at.x + at.width < map.x + map.width - 60 && at.y > map.y + 20 && at.y + at.height < map.y + map.height - 40);
   const biggest = inside.sort((a, b) => b.n - a.n)[0];
@@ -84,7 +87,7 @@ test('every one of 20,000 homes on the map, never loaded: the source’s bubbles
   expect(calls.filter((call) => call.method === 'list').map((call) => call.limit)).toEqual([12]);
   const gathered = calls.filter((call) => call.method === 'clusters');
   expect(gathered.map((call) => call.zoom)).toEqual([0, await zoomOf(theMap(page))]);
-  await expect(bubbles(page).first()).toHaveAttribute('aria-label', /^[\d,]+ here\. Zoom in to see them\.$/);
+  await expect(bubbles(page).first()).toHaveAttribute('aria-label', /^(?:[\d.,]+K, )?[\d,]+ here\. Zoom in to see them\.$/);
   await screen(page, 'map-clusters-opened');
   expect(problems).toEqual([]);
 });
@@ -105,7 +108,7 @@ test('a bubble pressed zooms to where its homes are, and the source is asked for
   const zoom = await zoomOf(theMap(page));
   await theMap(page).focus();
   await page.keyboard.press('Tab');
-  await expect(page.locator(':focus')).toHaveAttribute('aria-label', /^[\d,]+ here\. Zoom in to see them\.$/);
+  await expect(page.locator(':focus')).toHaveAttribute('aria-label', /^(?:[\d.,]+K, )?[\d,]+ here\. Zoom in to see them\.$/);
   await page.keyboard.press('Enter');
   await expect.poll(() => zoomOf(theMap(page))).toBeGreaterThan(zoom);
 });

@@ -354,8 +354,8 @@ test('by the keyboard: Tab reaches each pin by its name, Enter opens its card at
     await expect(focused).toHaveAttribute('aria-label', /^\d+ here\. Zoom in to see them\.$/);
   }
   await expect(focused).toHaveAttribute('role', 'button');
-  // Its name and its price, said in full as its card says it.
-  await expect(focused).toHaveAttribute('aria-label', /in Zamalek, [\d,]+\s(EGP|USD)(\/month)?$/);
+  // Its name and its price, said in full as its card says it, then as its face shows it, short (WCAG 2.5.3).
+  await expect(focused).toHaveAttribute('aria-label', /in Zamalek, [\d,]+\s(EGP|USD)(\/month)?(, .+)?$/);
   const id = (await focused.getAttribute('data-id'))!;
   // The focused pin lights its row too.
   await expect(rowOf(page, id)).toHaveClass(/fd-list-hot/);
