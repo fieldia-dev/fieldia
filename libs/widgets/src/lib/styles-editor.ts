@@ -113,6 +113,7 @@ export const EDITOR_CSS = /* css */ `
 .fd-text-icon-emoji .fd-text-smile { stroke: #a0640c; stroke-width: 1; }
 .fd-text-eraser { fill: #e68497; stroke: none; }
 .fd-text-cross { stroke: #e81123; stroke-width: 1.2; }
+.fd-text-glyph::before { content: attr(data-glyph); }
 .fd-text-glyph-bold { font: 700 16px/1 var(--fd-font); }
 .fd-text-glyph-strike { font: 400 15px/1 var(--fd-font); text-decoration: line-through; text-decoration-thickness: 1px; }
 .fd-text-icon-emoji { width: 20px; height: 20px; }

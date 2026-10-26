@@ -172,7 +172,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
       tile.shown = picture;
       const image = make('img', { alt: '', src: safeUrl(picture, PICTURE_URL), draggable: 'false', decoding: 'async' });
       // A photo the browser cannot draw, or at no address a picture may have: its kind's page in its place, never the broken-picture mark.
-      const instead = () => make('span', { class: 'fd-file-icon', 'data-kind': 'image', 'aria-hidden': 'true' }, (/\.(\w{1,5})$/.exec(photo.name)?.[1] ?? '?').toUpperCase());
+      const instead = () => make('span', { class: 'fd-file-icon', 'data-kind': 'image', 'data-ext': (/\.(\w{1,5})$/.exec(photo.name)?.[1] ?? '?').toUpperCase(), 'aria-hidden': 'true' });
       image.addEventListener('error', () => image.replaceWith(instead()), { once: true });
       tile.open.replaceChildren(image.hasAttribute('src') ? image : instead());
     }
@@ -596,7 +596,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
       let item = goingItems.get(upload.id)?.item;
       if (!item) {
         const preview = previews.get(upload.id);
-        const icon = () => make('span', { class: 'fd-file-icon', 'data-kind': 'image', 'aria-hidden': 'true' }, (/\.(\w{1,5})$/.exec(upload.name)?.[1] ?? '').toUpperCase());
+        const icon = () => make('span', { class: 'fd-file-icon', 'data-kind': 'image', 'data-ext': (/\.(\w{1,5})$/.exec(upload.name)?.[1] ?? '').toUpperCase(), 'aria-hidden': 'true' });
         const picture = preview ? make('img', { class: 'fd-file-thumb', alt: '', src: safeUrl(preview, PICTURE_URL) }) : icon();
         item = files.goingItem(make, words, make('span', { class: 'fd-file-picture' }, picture), (text) => make('span', { class: 'fd-file-name', dir: 'auto', title: text }, text), {
           cancel: () => form.cancelUpload(upload.id),

@@ -1,4 +1,4 @@
-import { firstWeekday, type Field, type FieldNode, type Form, type FormState, type Value } from '@fieldia/core';
+import { firstWeekday, nameShowing, type Field, type FieldNode, type Form, type FormState, type Value } from '@fieldia/core';
 import { maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { readRule, RuleBeyond, ruleWords, weekdayName, weekdayOf, WEEKDAYS, writeRule, type RepeatFrequency, type RepeatRule, type Weekday } from './repeat-rule';
 import { installScheduleStyles } from './styles-schedule';
@@ -134,7 +134,9 @@ export const repeatWidget = (widgetFor: (context: WidgetContext) => Widget): Wid
   const from = (firstWeekday(locale, form.page) + 6) % 7;
   const week = [...WEEKDAYS.slice(from), ...WEEKDAYS.slice(0, from)];
   const dayButtons = week.map((day) => {
-    const button = make('button', { type: 'button', class: 'fd-repeat-day', 'aria-pressed': 'false', 'aria-label': weekdayName(day, locale), 'data-day': day }, weekdayName(day, locale, 'short'));
+    // Named by the whole day, holding the short one it shows: "Sunday, Sun" (WCAG 2.5.3).
+    const short = weekdayName(day, locale, 'short');
+    const button = make('button', { type: 'button', class: 'fd-repeat-day', 'aria-pressed': 'false', 'aria-label': nameShowing(weekdayName(day, locale), short, locale), 'data-day': day }, short);
     button.addEventListener('click', () =>
       !locked && change((rule) => {
         const on = new Set(rule.days ?? []);

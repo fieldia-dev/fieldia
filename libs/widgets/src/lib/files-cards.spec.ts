@@ -56,7 +56,7 @@ describe('files as cards', () => {
     // The picture first, the name under it, the size under that.
     const open = quote.querySelector('.fd-file-open') as HTMLButtonElement;
     expect([...open.children].map((c) => c.className)).toEqual(['fd-file-picture', 'fd-file-name', 'fd-file-size']);
-    expect(open.querySelector('.fd-file-picture > .fd-file-icon')?.textContent).toBe('PDF');
+    expect(open.querySelector('.fd-file-picture > .fd-file-icon')?.getAttribute('data-ext')).toBe('PDF');
     expect(open.querySelector('.fd-file-size')?.textContent).toBe('2 KB');
     // Whole on hover and to a screen reader.
     expect(open.querySelector('.fd-file-name')?.getAttribute('title')).toBe('Quote for the 12th floor, revised.pdf');

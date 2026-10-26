@@ -1,4 +1,4 @@
-import { LINK_URL, safeUrl, labelAt, type Value, intlFormat } from '@fieldia/core';
+import { LINK_URL, safeUrl, labelAt, nameShowing, type Value, intlFormat } from '@fieldia/core';
 import { guard, refusalHint } from './input-rules';
 import { boxPurpose, describeState, fillIn, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { phoneSettings } from './phone-settings';
@@ -86,7 +86,10 @@ export const phoneWidget: WidgetFactory = (context) => {
     picked = code;
     if (select && select.value !== (code ?? '')) select.value = code ?? '';
     setText(flag, code ? flagOf(code) : '');
-    setText(dial, code ? `+${(phoneCountry(code) as { dial: string }).dial}` : words.phoneNoCountry);
+    const shown = code ? `+${(phoneCountry(code) as { dial: string }).dial}` : words.phoneNoCountry;
+    setText(dial, shown);
+    // Its name holds the code it shows: "Country of phone, +20" (WCAG 2.5.3).
+    if (!select) setAttr(picker, 'aria-label', nameShowing(named, shown, locale));
     setAttr(picker, 'data-empty', code ? null : '');
     setAttr(picker, 'title', code ? (names.byCode.get(code) ?? code) : null);
     drawDial();
@@ -118,8 +121,9 @@ export const phoneWidget: WidgetFactory = (context) => {
     const said = writePhone(number, 'international');
     setAttr(call, 'href', safeUrl(to.call, LINK_URL) ?? null);
     setAttr(chat, 'href', safeUrl(to.whatsapp, LINK_URL) ?? null);
-    setAttr(call, 'aria-label', fillIn(words.phoneCallNamed, { number: said }));
-    setAttr(chat, 'aria-label', fillIn(words.phoneWhatsAppNamed, { number: said }));
+    // Each named with the number, holding the word it shows.
+    setAttr(call, 'aria-label', nameShowing(fillIn(words.phoneCallNamed, { number: said }), words.phoneCall, locale));
+    setAttr(chat, 'aria-label', nameShowing(fillIn(words.phoneWhatsAppNamed, { number: said }), words.phoneWhatsApp, locale));
   }
 
   /** Why a number does not read, in the page's words. */

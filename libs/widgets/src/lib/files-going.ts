@@ -105,7 +105,7 @@ export function goingList(make: Make, words: WidgetLabels, form: Form, field: st
       for (const upload of mine) {
         let item = items.get(upload.id);
         if (!item) {
-          const picture = make('span', { class: 'fd-file-icon', 'data-kind': 'image', 'aria-hidden': 'true' }, (/\.(\w{1,5})$/.exec(upload.name)?.[1] ?? '').toUpperCase());
+          const picture = make('span', { class: 'fd-file-icon', 'data-kind': 'image', 'data-ext': (/\.(\w{1,5})$/.exec(upload.name)?.[1] ?? '').toUpperCase(), 'aria-hidden': 'true' });
           item = goingItem(make, words, picture, (name) => make('span', { class: 'fd-file-name', dir: 'auto', title: name }, name), { cancel: () => form.cancelUpload(upload.id), retry: () => form.retryUpload(upload.id) });
           items.set(upload.id, item);
           element.append(item.element);

@@ -354,7 +354,8 @@ describe('a phone read the world over', () => {
 
   it('speaks the page’s language: the countries’ names, its words and why', () => {
     const { input, unread, el } = mount({ label: 'الجوال' }, { phone: { country: 'EG' }, locale: 'ar' });
-    expect(countryButton(el).getAttribute('aria-label')).toBe('بلد الجوال');
+    // Named for its field, holding the code it shows (WCAG 2.5.3), with the Arabic comma.
+    expect(countryButton(el).getAttribute('aria-label')).toBe('بلد الجوال، +20');
     // Found by its name in the page's language or in English.
     for (const typed of ['مصر', 'egypt']) {
       search(el, typed);
