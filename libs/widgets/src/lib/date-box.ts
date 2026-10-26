@@ -160,7 +160,8 @@ export interface DateBox {
    * the box's own text then leaves it out. Undefined where the box is on the browser's clock.
    */
   zone?: HTMLElement;
-  update(state: Pick<WidgetState, 'value' | 'readonly' | 'invalid' | 'describedBy'>): void;
+  /** Drawn as the field stands; `required` said on the box (aria-required) where it is given: a designer's setting has none. */
+  update(state: Pick<WidgetState, 'value' | 'readonly' | 'invalid' | 'describedBy'> & Partial<Pick<WidgetState, 'required'>>): void;
   /** Text typed and not yet read is read now, as if the box were left: Enter, a cell closed. */
   settle(): void;
   /** Text typed in a plain box before this one came, taken as typed: focused, read as this box is left. */
@@ -399,6 +400,8 @@ export function dateBox(options: DateBoxOptions): DateBox {
       // A value from outside that is no date, shown as its own text, is marked as text left unread is.
       const strange = typeof state.value === 'string' && state.value !== '' && kind !== 'time' && !localOf(state.value, kind) && !(grain && /^\d{4}-\d{2}/.test(state.value));
       setAttr(input, 'aria-invalid', String(state.invalid || ((!!unread || strange) && !typing())));
+      // A required date says so, as a required text box does: a screen reader reads it with the box's name.
+      if (state.required !== undefined) setAttr(input, 'aria-required', String(state.required));
       showMark(state.value);
       // The zone's name is part of what the box says: "14:30", on Berlin's clock.
       setAttr(input, 'aria-describedby', [hint.describedBy(state.describedBy), mark?.id].filter(Boolean).join(' ') || null);

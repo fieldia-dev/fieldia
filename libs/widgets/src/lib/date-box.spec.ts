@@ -392,6 +392,23 @@ describe('a date pasted', () => {
   });
 });
 
+describe('a required date', () => {
+  // A required text box says so on the box (aria-required); a date box said nothing, its label's mark alone saying it:
+  // a screen reader read "Start date, edit text" for a day the form would not send without (layout's Start date).
+  it.each([
+    ['a date', { type: 'date' }, {}],
+    ['a date and time', { type: 'datetime' }, {}],
+    ['a time of day', { type: 'char' }, { widget: 'time' }],
+    ['a month alone', { type: 'date', precision: 'month' }, {}],
+  ] as const)('%s says it is required on its box, and stops saying so once it is not', (_, field, node) => {
+    const { el, refresh } = mount(field, node);
+    refresh({ required: true });
+    expect(boxOf(el).getAttribute('aria-required')).toBe('true');
+    refresh({ required: false });
+    expect(boxOf(el).getAttribute('aria-required')).toBe('false');
+  });
+});
+
 describe('a date and time', () => {
   it('takes a time with its date only once both read whole, and never a year under 1000', () => {
     const { el, form, value } = mount({ type: 'datetime', label: 'Kick-off meeting' });

@@ -38,7 +38,7 @@ export interface HijriBox {
   input: HTMLInputElement;
   /** Its hint, under the field's boxes: why a key or a paste was refused. */
   hint: HTMLElement;
-  update(state: Pick<WidgetState, 'value' | 'readonly' | 'invalid' | 'describedBy'>): void;
+  update(state: Pick<WidgetState, 'value' | 'readonly' | 'invalid' | 'describedBy'> & Partial<Pick<WidgetState, 'required'>>): void;
   /** Text typed and not yet read, read now: Enter, a save made from inside it. */
   settle(): void;
   destroy(): void;
@@ -146,6 +146,8 @@ export function hijriBox(options: HijriBoxOptions): HijriBox {
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
       input.classList.toggle('fd-blank', !input.value);
       setAttr(input, 'aria-invalid', String(state.invalid || (!!kept && !typing())));
+      // Required, as the date box beside it says.
+      if (state.required !== undefined) setAttr(input, 'aria-required', String(state.required));
       setAttr(input, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);
     },
     destroy() {

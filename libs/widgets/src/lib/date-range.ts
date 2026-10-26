@@ -326,7 +326,8 @@ export const dateRangeWidget: WidgetFactory = ({ form, name, field, node, id, do
         endSaid = problem;
         setText(endError, problem);
         setHidden(endError, !problem);
-        toBox.update({ value: state.values[endName], readonly: state.readonly, invalid: !!problem, describedBy: problem ? endError.id : undefined });
+        // Its end is required when its field is, or the range is: as a save checks it.
+        toBox.update({ value: state.values[endName], readonly: state.readonly, required: state.required || endField?.required === true, invalid: !!problem, describedBy: problem ? endError.id : undefined });
       }
       button.hidden = state.readonly;
       if (state.readonly) calendar.hidden = true;
