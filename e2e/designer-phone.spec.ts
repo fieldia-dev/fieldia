@@ -245,7 +245,10 @@ test.describe('a tile dragged out of the toolbox’s sheet at a laptop’s width
     await expect(email).toBeVisible();
     const notes = (await (await cardOf(page, 'Notes')).boundingBox())!;
     const { words, refused } = await dropAt(page, centre((await email.boundingBox())!), { x: notes.x + notes.width / 2, y: notes.y + notes.height * 0.75 }, { release: false });
-    expect([words, refused]).toEqual(['above “Photos”', false]);
+    // The one place between Notes and Photos, said by whichever edge the pointer is nearer once the sheet has stepped
+    // aside and the canvas settled under it (WebKit, about one run in three, lays it out a few pixels apart).
+    expect(refused).toBe(false);
+    expect(words).toMatch(/^(above “Photos”|under “Notes”)$/);
     await expect(sheetOf(page)).toBeHidden();
     await page.mouse.up();
     await expect(editing(page).label).toBeFocused();

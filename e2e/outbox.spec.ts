@@ -12,7 +12,9 @@ import { node, open, screen } from './support';
 
 const sent = (page: Page) => page.evaluate(() => (window as any).fieldiaDemo.dataSource.responses as { values: Record<string, unknown>; queued?: { key: string } }[]);
 /** What the browser itself says of a request the network did not answer while it was off: its words, not the page's fault. */
-const NO_NETWORK = /ERR_INTERNET_DISCONNECTED|Failed to fetch|NetworkError|WebKit encountered an internal error/;
+// Chromium 156 says a request its service worker could not make with no signal as "Failed to load resource:
+// net::ERR_FAILED" (141 said ERR_INTERNET_DISCONNECTED): the network's words, as the others.
+const NO_NETWORK = /ERR_INTERNET_DISCONNECTED|net::ERR_FAILED|Failed to fetch|NetworkError|WebKit encountered an internal error/;
 const PHOTO = { name: 'kitchen.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64') };
 
 let problems: string[] = [];
