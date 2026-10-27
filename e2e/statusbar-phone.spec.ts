@@ -11,6 +11,11 @@ import { open, screen } from './support';
  */
 
 test.use({ viewport: { width: 390, height: 844 } });
+/**
+ * The expense's four steps on a small phone's 320 px: they fit 390 in some fonts (the Playwright image's system-ui),
+ * and a strip that fits has nothing to scroll and no sign to show.
+ */
+const small = (page: Page) => page.setViewportSize({ width: 320, height: 640 });
 
 const strip = (page: Page) => page.locator('.fd-header .fd-statusbar');
 /** Where each step stands against the strip's room: its start and end, the strip's start and end. */
@@ -26,14 +31,15 @@ const layout = (page: Page) =>
       const mark = list.parentElement?.querySelector<HTMLElement>(`.fd-statusbar-sign[data-side="${side}"]`);
       return !!mark && getComputedStyle(mark).display !== 'none' && mark.getBoundingClientRect().width > 0;
     };
-    return { width: room.width, steps, before: sign('before'), after: sign('after') };
+    return { width: room.width, wider: list.scrollWidth > list.clientWidth, steps, before: sign('before'), after: sign('after') };
   });
 /**
  * At rest, it starts on a step: the first at the strip's start, else one after the sign's room (24px) — the step
  * before it, cut, only under the sign's fade. (The arrows overlap 6px.)
  */
 async function startsOnAStep(page: Page) {
-  const { steps } = await layout(page);
+  const { steps, wider } = await layout(page);
+  expect(wider, 'the steps fit the screen: no strip to scroll, no sign to show').toBe(true);
   // The first step whole in sight: the first, at the strip's start; another, right after the sign's room — those
   // before it, past the start but for what the fade over the sign shows of them.
   const whole = steps.findIndex((step) => step.start >= -7);
@@ -44,6 +50,7 @@ async function startsOnAStep(page: Page) {
 }
 
 test('the expense’s strip shows Rejected, the step it is in, whole; it starts on a step, and a sign says more is before', async ({ page }) => {
+  await small(page);
   const { problems } = await open(page, 'plain', 'page=expense-approval&record=1&skin=outlined');
   await expect(strip(page).locator('[aria-current="step"]')).toHaveText('Rejected');
   await expect.poll(async () => {
@@ -54,12 +61,14 @@ test('the expense’s strip shows Rejected, the step it is in, whole; it starts 
   await startsOnAStep(page);
   await expect.poll(async () => (await layout(page)).before).toBe(true);
   await screen(page, 'statusbar-phone-expense', { viewport: true });
-  // Scrolled back by a finger: the first step whole, and a sign that more is after.
-  await strip(page).evaluate((list) => list.scrollTo({ left: getComputedStyle(list).direction === 'rtl' ? list.scrollWidth : 0, behavior: 'instant' }));
+  // Scrolled back as a person scrolls it (a wheel; a script's scrollTo is snapped back to the step WebKit last
+  // snapped to): the first step whole, and a sign that more is after.
+  await strip(page).hover();
+  await page.mouse.wheel(-400, 0);
   await expect.poll(async () => (await layout(page)).after).toBe(true);
   await expect.poll(async () => (await layout(page)).before).toBe(false);
   // Let go part of the way: at rest, it starts on a step, never mid-word.
-  await strip(page).evaluate((list) => list.scrollBy({ left: 37, behavior: 'instant' }));
+  await page.mouse.wheel(37, 0);
   await page.waitForTimeout(400);
   await startsOnAStep(page);
   expect(await axeFindings(page, 'a status strip on a phone', '.fd-header')).toEqual([]);
@@ -77,6 +86,7 @@ test('the opportunity’s strip shows Proposition, a sign that more steps come a
 });
 
 test('right to left, the strip’s start is its right: the step it is in in view, the sign on the side more steps are', async ({ page }) => {
+  await small(page);
   const { problems } = await open(page, 'plain', 'page=expense-approval&record=1&skin=outlined&locale=ar&dir=rtl');
   await expect.poll(async () => {
     const { steps, width } = await layout(page);
