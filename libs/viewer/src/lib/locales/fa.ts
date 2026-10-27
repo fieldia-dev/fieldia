@@ -624,6 +624,8 @@ export const fa: ViewerLabels = {
   payFailedWhy: 'پرداخت انجام نشد: {why} چیزی ارسال نشد.',
   payNotStarted: 'پرداخت آغاز نشد: دوباره تلاش کنید.',
   formNotLoaded: 'این فرم بارگیری نشد.',
+  pageUnshown: 'این فرم نمایش داده نمی‌شود: صفحهٔ آن اشتباه دارد. سازندهٔ آن می‌تواند با validatePage بررسی‌اش کند.',
+  pageUnshownWhy: 'چه چیزی اشتباه است',
   outboxWaiting: '{count} مورد در این دستگاه در انتظار ارسال است.',
   outboxWaitingOne: '1 مورد در این دستگاه در انتظار ارسال است.',
   outboxOffline: 'بدون اتصال:',

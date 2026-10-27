@@ -618,6 +618,8 @@ export const tr: ViewerLabels = {
   payFailedWhy: 'Ödeme gerçekleşmedi: {why} Hiçbir şey gönderilmedi.',
   payNotStarted: 'Ödeme başlatılamadı: yeniden deneyin.',
   formNotLoaded: 'Bu form yüklenemedi.',
+  pageUnshown: 'Bu form gösterilemiyor: sayfasında hatalar var. Sayfayı hazırlayan kişi validatePage ile denetleyebilir.',
+  pageUnshownWhy: 'Sorun ne',
   outboxWaiting: 'Bu cihazda {count} gönderim bekliyor.',
   outboxWaitingOne: 'Bu cihazda 1 gönderim bekliyor.',
   outboxOffline: 'Bağlantı yok:',

@@ -50,11 +50,16 @@ export interface QuizQuestion {
 
 export const QuizQuestionSchema = z
   .strictObject({
+    /** What a right answer earns: the page's `quiz.points` (1 unless said) where left out. */
     points: z.number().positive().max(1000).optional(),
+    /** A question typed rather than chosen, and the answers it takes: a word as written, whatever its case; a number. */
     answers: z.array(z.union([z.string().regex(/\S/, 'an answer is words or a number'), z.number()])).min(1).max(50).optional(),
+    /** Words shown under the question in the results. */
     feedback: z
       .strictObject({
+        /** When its answer was right. */
         right: z.string().regex(/\S/, 'feedback is words').max(2000).optional(),
+        /** When it was wrong or missing. */
         wrong: z.string().regex(/\S/, 'feedback is words').max(2000).optional(),
       })
       .optional(),

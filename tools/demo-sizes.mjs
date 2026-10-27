@@ -31,7 +31,7 @@ export const DEMO_BUDGET_KB = {
   'designer-react': 980, // (906.8)
   'designer-vue': 935, // (864.2)
   'designer-angular': 1225, // (1134.4)
-  script: 260, // (240.7): fieldia.js and the frame; its page draws from no part
+  script: 260, // (240.7): fieldia.js and the frame; its page draws from no part (0.36: 245.9, the whole check after the draw)
   embed: 300, // (277.6): fieldia.js, the frame and the seven parts its enquiry draws from, their tags before fieldia.js
   'map-embed': 265, // (245.1)
   backlog: 440, // (407.6)

@@ -604,6 +604,8 @@ export const de: ViewerLabels = {
   payFailedWhy: 'Die Zahlung ist nicht durchgegangen: {why} Nichts wurde gesendet.',
   payNotStarted: 'Die Zahlung konnte nicht gestartet werden: Versuchen Sie es erneut.',
   formNotLoaded: 'Dieses Formular konnte nicht geladen werden.',
+  pageUnshown: 'Dieses Formular kann nicht angezeigt werden: Seine Seite enthält Fehler. Wer sie erstellt hat, kann sie mit validatePage prüfen.',
+  pageUnshownWhy: 'Was ist falsch',
   outboxWaiting: '{count} Sendungen warten auf diesem Gerät.',
   outboxWaitingOne: '1 Sendung wartet auf diesem Gerät.',
   outboxOffline: 'Kein Empfang:',

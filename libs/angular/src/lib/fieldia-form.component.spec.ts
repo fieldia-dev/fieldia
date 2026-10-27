@@ -219,6 +219,17 @@ class FunctionsHostComponent {
   readonly ready: ViewerHandle[] = [];
 }
 
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<main><h1>The app</h1><fieldia-form [page]="page()" (partError)="told.push($event.where)" /></main>`,
+})
+class RefusedHostComponent {
+  static readonly good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
+  // Refused before the draw, as 0.35 refused it: a part naming a field the page lacks.
+  readonly page = signal<Page>({ ...RefusedHostComponent.good, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'notes' }] } } as Page);
+  readonly told: unknown[] = [];
+}
+
 async function setup(start: Page = custom) {
   const fixture = TestBed.createComponent(HostComponent);
   fixture.componentInstance.page.set(start);
@@ -229,6 +240,25 @@ async function setup(start: Page = custom) {
 }
 
 describe('<fieldia-form> for Angular', () => {
+  it('a page the viewer refuses says why where the form would be, tells partError, and leaves the app mounted', async () => {
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(RefusedHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    // The app round it is still there: the viewer's refusal never tears it down.
+    expect(el.querySelector('h1')?.textContent).toBe('The app');
+    expect(el.querySelector('[role="alert"]')?.textContent).toMatch(/^This form cannot be shown: its page has mistakes/);
+    expect([...el.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['layout.children[0].field']);
+    expect(fixture.componentInstance.told).toEqual([{ stage: 'draw', part: 'page' }]);
+    // A page that passes, given next, is drawn in the words' place.
+    fixture.componentInstance.page.set(RefusedHostComponent.good);
+    await fixture.whenStable();
+    expect(el.querySelector('.fd-unshown')).toBeNull();
+    expect(el.querySelector('input')).not.toBeNull();
+    quiet.mockRestore();
+  });
+
   it('mounts the viewer into its own element', async () => {
     const { el } = await setup(page('survey'));
     expect(el.querySelector('fieldia-form .fd-form')).not.toBeNull();

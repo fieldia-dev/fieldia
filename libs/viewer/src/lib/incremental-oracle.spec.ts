@@ -184,11 +184,12 @@ describe('the quick way a change is worked out, held to working everything out a
  * The lines' part reads the record (`parent.`): it is brought up to date at every change, never left alone for its
  * inputs (the lines widget says no `reads`), and draws again the lines a change of the record touches.
  */
-const OTHERS = 150;
+// A related list's most (`limit`), windowed past 40 rows here.
+const OTHERS = 100;
 const others = (): Record<number, Values> =>
   Object.fromEntries(Array.from({ length: OTHERS }, (_, i) => [i + 1, { name: `Other ${String(i + 1).padStart(3, '0')}`, amount: (i * 37) % 1000, thing_id: { id: 1, label: 'Thing' } }]));
 
-/** A random page with lines (made so), its lines reading the record, and a related list of 150 others. */
+/** A random page with lines (made so), its lines reading the record, and a related list of 100 others. */
 function withListsAndParent(seed: number): Made {
   let made = makePage(seed);
   for (let next = seed; !made.lines; next += 1000) made = makePage(next);
@@ -229,9 +230,11 @@ describe('the form’s quick way, a table of lines reading the record and a wind
   // jsdom lays nothing out: the view and the rows' heights are the test's, as list-window.spec has them.
   beforeAll(() => {
     windowDefaults.geometry = { view: (body) => (body.isConnected ? { top: 0, bottom: 600 } : null), height: (nodes) => nodes.length * 30, top: () => null };
+    windowDefaults.from = 40;
   });
   afterAll(() => {
     delete windowDefaults.geometry;
+    windowDefaults.from = 100;
   });
   for (let seed = 101; seed < 101 + PAGES; seed++) {
     it(`gives the same state and the same page on random page ${seed}, its lines and its related list too`, async () => {
@@ -241,7 +244,7 @@ describe('the form’s quick way, a table of lines reading the record and a wind
       await Promise.all([plain.handle.form.settled(), quick.handle.form.settled()]);
       await flush();
       await flush();
-      // The related list windowed, as it is on both: its 150 rows counted, fewer in the page.
+      // The related list windowed, as it is on both: its 100 rows counted, fewer in the page.
       for (const side of [plain, quick]) {
         const table = side.host.querySelector('[data-node="others"] table');
         expect(table?.getAttribute('aria-rowcount')).toBeTruthy();

@@ -10,10 +10,12 @@ A page — a form, a survey, a record screen with tabs and a status bar — is a
 JSON document. It contains data only, never code, so it can be stored,
 generated, versioned and edited.
 
-Pages come from two places:
+Pages come from three places:
 
 - **Generated** by your app — for example from an ERP's own view definitions.
 - **Built** in a designer — a question-by-question editor for surveys, a canvas for app screens.
+- **Written** by an AI agent — [the guide for agents](docs/agents.md) says what a page is, how to check one
+  before it is stored, and the mistakes the checks catch.
 
 Either way, the same viewer renders it. Fieldia knows no backend: records load
 and save through a small data-source interface that your app implements.
@@ -67,10 +69,11 @@ against budgets that fail the build.
   5,000 rows as at 100. A table of 200 lines draws again only the lines a change
   touches.
 - **Small from npm.** An app's first load from the packages, bundled by esbuild:
-  a record form 240.7 KB gzipped with the page and 314 KB to usable, a list
-  239.9 and 309, the screen designer 587 and 801 (`tools/npm-first-load.mjs`,
-  a CI budget). The one-tag `fieldia.js` is 192.9 KB gzipped; its larger parts
-  come as a page first uses them.
+  a record form 240.0 KB gzipped with the page and 330 KB to usable, a list
+  239.2 and 325, the screen designer 586 and 813 (`tools/npm-first-load.mjs`,
+  a CI budget). The one-tag `fieldia.js` is 191.2 KB gzipped; its larger parts
+  come as a page first uses them, and the whole check of a page (17.3 KB) once
+  the page is drawn.
 
 ## Four rules
 
@@ -90,6 +93,20 @@ field written in its own framework.
 **4. A page is data.** No functions, no framework components, no live clients
 inside a page. Icons are names, buttons reference actions, and the code a page
 needs is handed to the renderer.
+
+## Stability
+
+A patch holds fixes alone; a minor comes every two to four weeks, and anything
+an app, a page or a test relies on that is to change is deprecated a minor
+first — said once in the console where it is used, and in the changelog. A page
+says the format it is written in — the lowest its settings need, so an older
+Fieldia that knows every setting it uses reads it — and every later Fieldia
+reads it. How it works, and the check that holds each rule:
+[the release train](docs/maintainers/release-train.md).
+
+What Fieldia guarantees in the browser and what your server must still check,
+the budgets that hold its speed, and the browsers it supports — each promise
+with the test that holds it: [What Fieldia promises](docs/promises.md).
 
 ## Develop
 

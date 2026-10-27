@@ -295,56 +295,64 @@ export class FieldiaFormComponent implements OnDestroy {
       };
     }
 
-    this.handle = mountViewer(this.host.nativeElement, {
-      page: options.page,
-      form: options.form,
-      dataSource: options.dataSource,
-      recordId: options.recordId,
-      resume: options.resume,
-      seed: options.seed,
-      url: options.url,
-      user: options.user,
-      context: options.context,
-      functions: newestFunctions(() => this.functions()),
-      values: this.values(),
-      skin: this.skin(),
-      theme: this.theme(),
-      tokens: this.tokens(),
-      nonce: this.nonce(),
-      dir: options.dir,
-      locale: options.locale,
-      labels: options.labels,
-      widgets,
-      listViews: this.listViews(),
-      maps: this.maps(),
-      slots,
-      drafts: this.drafts(),
-      autosave: this.autosave(),
-      scheduler: this.scheduler(),
-      confirm: this.confirm(),
-      preferences: this.preferences(),
-      pages: this.pages(),
-      relatedPages: this.relatedPages(),
-      icons: this.icons(),
-      keys: this.keys(),
-      showValid: this.showValid(),
-      saveStatus: this.saveStatus(),
-      loading: this.loading(),
-      readonly: this.readonly(),
-      editSwitch: this.editSwitch(),
-      warnOnLeave: this.warnOnLeave(),
-      translate: this.translator(),
-      onAction: (request) => {
-        this.action.emit(request);
-        return this.answer()?.(request);
-      },
-      onError: (error, where) => this.partError.emit({ error, where }),
-      onOpen: (request) => this.openPage()?.(request),
-      host: this.actionHost(),
-      onOpenRecord: (id) => this.openRecord.emit(id),
-      records: this.records(),
-      breadcrumbs: this.breadcrumbs(),
-    });
+    let mounted: ViewerHandle;
+    try {
+      mounted = mountViewer(this.host.nativeElement, {
+        page: options.page,
+        form: options.form,
+        dataSource: options.dataSource,
+        recordId: options.recordId,
+        resume: options.resume,
+        seed: options.seed,
+        url: options.url,
+        user: options.user,
+        context: options.context,
+        functions: newestFunctions(() => this.functions()),
+        values: this.values(),
+        skin: this.skin(),
+        theme: this.theme(),
+        tokens: this.tokens(),
+        nonce: this.nonce(),
+        dir: options.dir,
+        locale: options.locale,
+        labels: options.labels,
+        widgets,
+        listViews: this.listViews(),
+        maps: this.maps(),
+        slots,
+        drafts: this.drafts(),
+        autosave: this.autosave(),
+        scheduler: this.scheduler(),
+        confirm: this.confirm(),
+        preferences: this.preferences(),
+        pages: this.pages(),
+        relatedPages: this.relatedPages(),
+        icons: this.icons(),
+        keys: this.keys(),
+        showValid: this.showValid(),
+        saveStatus: this.saveStatus(),
+        loading: this.loading(),
+        readonly: this.readonly(),
+        editSwitch: this.editSwitch(),
+        warnOnLeave: this.warnOnLeave(),
+        translate: this.translator(),
+        onAction: (request) => {
+          this.action.emit(request);
+          return this.answer()?.(request);
+        },
+        onError: (error, where) => this.partError.emit({ error, where }),
+        onOpen: (request) => this.openPage()?.(request),
+        host: this.actionHost(),
+        onOpenRecord: (id) => this.openRecord.emit(id),
+        records: this.records(),
+        breadcrumbs: this.breadcrumbs(),
+      });
+    } catch {
+      // A page the viewer refused: it said why where the form would be and told `partError` (refused.ts in
+      // @fieldia/viewer); the app goes on, never torn down by it.
+      return;
+    }
+    this.handle = mounted;
     const handle = this.handle;
     handle.on('change', (event) => this.fieldChange.emit(event));
     handle.on('save', (event) => this.save.emit(event));
@@ -364,6 +372,8 @@ export class FieldiaFormComponent implements OnDestroy {
   private unmount() {
     this.handle?.destroy();
     this.handle = null;
+    // A refused page's words go with it: the next page is drawn in their place.
+    for (const words of this.host.nativeElement.querySelectorAll(':scope > .fd-unshown')) words.remove();
     for (const view of this.embedded) view.destroy();
     for (const ref of this.components) {
       this.app.detachView(ref.hostView);

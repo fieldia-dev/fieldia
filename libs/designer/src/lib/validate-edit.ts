@@ -1,4 +1,4 @@
-import { checkPage, type FunctionsKnown, type Page, type PageValidation } from '@fieldia/core';
+import { checkPage, referenceIssues, type FunctionsKnown, type Page, type PageValidation } from '@fieldia/core';
 import { pageSchemaPart, type PageSchemaPart } from './schema-part';
 import { keepUnchanged } from './keep-unchanged';
 
@@ -40,7 +40,9 @@ export function editChecker(functions?: FunctionsKnown): EditChecker {
       changed &&
       changed.fields.every((name) => schema.FieldSchema.safeParse(next.fields[name]).success) &&
       changed.parts.every((key) => partsOf(schema)[key]?.safeParse(next[key as keyof Page]).success === true) &&
-      checkPage(next, { functions }).ok
+      // The parts it changed checked against the format's schemas just now: the page's references alone are left, and
+      // its settings held to themselves, as validatePage checks them.
+      !referenceIssues(next, { functions }).length
     ) {
       passed.add(next);
       return { ok: true, page: next };

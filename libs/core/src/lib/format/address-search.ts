@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { ruled } from './ruled';
 import { FIELD_NAME } from './names';
 import { makeSchemasJitless } from './jitless';
 
@@ -29,7 +30,7 @@ export const AddressSearchOptionsSchema = z
     placeField: fieldName.optional(),
     longitudeField: fieldName.optional(),
     partsField: fieldName.optional(),
-    countries: z.union([z.array(country).min(1), z.string().refine((codes) => codes.split(',').every((code) => COUNTRY.test(code.trim())), 'countries are ISO codes in capitals, such as ["EG", "SA"] or "EG,SA"')]).optional(),
+    countries: z.union([z.array(country).min(1), ruled(z.string(), 'countryCodes')]).optional(),
     near: z.strictObject({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).optional(),
   })
   .meta({ id: 'AddressSearchOptions' });

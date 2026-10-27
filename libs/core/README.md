@@ -26,11 +26,18 @@ list of records — that your app implements;
 `createMemoryDataSource` implements all of it in memory, for tests and demos.
 
 The page format is also a JSON Schema, for editors and other languages:
-`@fieldia/core/page.schema.json`.
+`@fieldia/core/page.schema.json`, each setting described (from the docs of the
+format's TypeScript types).
 
 `validatePage` and the format's schemas carry zod (about 105 KB gzipped with
 them); `checkPage`, which every viewer draws a page with, carries none, and an
-app that only shows forms never bundles zod. Where pages are made, they come on
+app that only shows forms never bundles zod. `checkPage` is the check a viewer
+runs before it draws a page, refusing what 0.35's viewer refused. `checkPageWhole`
+gives `validatePage`'s verdict without zod — the format's schema made from the same
+definitions, the same rules — in a part of its own, which a viewer asks for after
+the first draw: in 0.36 what only it finds is said, once in the console and to
+`onError`, and refused from 0.37 (`page.invalid`). A guide for AI agents writing pages:
+[docs/agents.md](../../docs/agents.md). Where pages are made, they come on
 their own too — `@fieldia/core/schema` (`validatePage`, `PageSchema`,
 `FieldSchema`), one file with zod inside, which a bundler gives a chunk of its
 own — for an app to fetch when it needs them, as the designer does as it opens:
@@ -42,7 +49,9 @@ const { validatePage } = await import('@fieldia/core/schema');
 Importing `validatePage` from `@fieldia/core` as well carries the schemas twice:
 once at once, once in that chunk.
 
-A page says which format it is written in (`"fieldia": "0.13"`, `FORMAT_VERSION`; a page in 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.10 or 0.11 is read as it is).
+A page says which format it is written in (`"fieldia": "0.13"`, `FORMAT_VERSION`; a page in 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.10, 0.11 or 0.12 is read as it is) — and a page saved says the lowest one
+its settings need (`stampPage(page)`, `lowestFormat(page)` from `@fieldia/core/schema`; the designer publishes so), so an older Fieldia that
+knows every setting a page uses reads it.
 One in an older format is brought up to date as it is read — by `checkPage`,
 `validatePage` and `createForm`, so by the viewer and the designer too — and
 `upgradePage` does it for the pages your app keeps. One newer than this Fieldia

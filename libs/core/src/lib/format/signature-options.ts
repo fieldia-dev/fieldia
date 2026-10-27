@@ -24,9 +24,3 @@ export const SignatureOptionsSchema = z
   .meta({ id: 'SignatureOptions' });
 
 export type SignatureOptions = z.infer<typeof SignatureOptionsSchema>;
-
-/** The issues of a signature's settings, each at its path under `options`. */
-export function signatureOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  if (node.widget !== 'signature') return [];
-  return (SignatureOptionsSchema.safeParse(node.options ?? {}).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
-}

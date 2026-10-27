@@ -22,8 +22,11 @@ makeSchemasJitless();
  */
 export const PageRecordsSchema = z
   .strictObject({
+    /** The word for one record, as a sentence says it: "customer". */
     one: z.string().regex(/\S/, 'one is the word for one record: "customer"').max(60),
+    /** The word for more than one: "customers". */
     other: z.string().regex(/\S/, 'other is the word for more than one record: "customers"').max(60),
+    /** The word for one with its article, where the language puts one before it: "a customer", "an invoice". */
     a: z.string().regex(/\S/, 'a is the word for one record with its article: "a customer", "an invoice"').max(80).optional(),
   })
   .meta({ id: 'PageRecords' });

@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { everyRowLoaded, longList } from './support';
 
 /**
  * A long list keeps the browser's work to what changed (the performance audit's H1, its first step), held by what the
@@ -22,16 +23,16 @@ async function mountList(page: Page, layout: Record<string, unknown>) {
   await page.goto('/script/');
   await page.waitForFunction(() => (window as unknown as { fieldiaDemo?: unknown }).fieldiaDemo);
   await page.evaluate(
-    async ([fields, people, layout]) => {
+    async ([fields, people, layout, long]) => {
       const w = window as unknown as { fieldiaDemo: { handle: { destroy(): void } }; Fieldia: { mountViewer(h: Element, o: unknown): unknown; createMemoryDataSource(o: unknown): unknown } };
       w.fieldiaDemo.handle.destroy();
-      const page = { fieldia: '0.13', id: 'people', title: 'Customers', data: { kind: 'record', model: 'person' }, fields, layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], pageSize: 1000, ...layout } };
+      const page = { fieldia: '0.13', id: 'people', title: 'Customers', data: { kind: 'record', model: 'person' }, fields, layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], ...long, ...layout } };
       w.Fieldia.mountViewer(document.getElementById('app') as Element, { page, dataSource: w.Fieldia.createMemoryDataSource({ records: { person: people } }) });
     },
-    [FIELDS, PEOPLE, layout] as const
+    [FIELDS, PEOPLE, layout, longList(1000)] as const
   );
-  // Its 1,000 rows counted; those near the view in the page.
-  await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', '1001', { timeout: 30000 });
+  // Its 1,000 rows counted — an endless list's, past a page's 500, every row loaded first; those near the view in the page.
+  await everyRowLoaded(page, 1000);
 }
 
 test('a key typed in a cell of 1,000 rows lays out the box alone, never the table', async ({ page, browser }) => {

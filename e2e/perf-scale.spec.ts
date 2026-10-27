@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { expect, test } from './fixtures';
 import { mapReady, stubMaps } from './map-support';
 import { asAPhone, countsOf, domCounters, mountGenerated, type Counts } from './perf-counts';
+import { everyRowLoaded, longList } from './support';
 
 /**
  * Fieldia at scale, held by what the browser counts rather than by a clock (0.35, the audit's M6): the layouts an action
@@ -107,7 +108,7 @@ test('200 lines: a key in the header writes no line', async ({ page, browser }) 
   hold('a key in the header of a 200-line table', await countsOf(page, browser, () => page.keyboard.type('b'), '#app .fd-form'));
 });
 
-/** A list of `n` rows, five columns, all on one page. */
+/** A list of `n` rows, five columns: past a page's 500, an endless list, every row loaded before it is counted. */
 function listPage(n: number) {
   const people = Object.fromEntries(Array.from({ length: n }, (_, i) => [i + 1, { name: `Customer ${String(i + 1).padStart(4, '0')}`, email: `c${i + 1}@example.com`, city: ['Cairo', 'Giza', 'Luxor'][i % 3], credit: (i * 37) % 100000, visits: i % 50 }]));
   return {
@@ -117,7 +118,7 @@ function listPage(n: number) {
       title: 'Customers',
       data: { kind: 'record', model: 'person' },
       fields: { name: { type: 'char', label: 'Name' }, email: { type: 'char', label: 'Email' }, city: { type: 'char', label: 'City' }, credit: { type: 'monetary', label: 'Credit', currency: 'EGP' }, visits: { type: 'integer', label: 'Visits' } },
-      layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], pageSize: n },
+      layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], ...longList(n) },
     },
     records: { person: people },
   };
@@ -126,8 +127,10 @@ function listPage(n: number) {
 test('5,000 rows: the DOM a list keeps, and a row ticked', async ({ page, browser }) => {
   test.setTimeout(300_000);
   await mountGenerated(page, listPage(5000));
-  // Its rows counted, only those near the view in the page (0.35, list-window.ts): waited for by its count.
-  await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', '5001', { timeout: 120_000 });
+  // Its rows counted, only those near the view in the page (0.35, list-window.ts): waited for by its count, every row
+  // loaded as a person scrolling to its end loads them.
+  await everyRowLoaded(page, 5000);
+  await frames(page);
   await frames(page);
   hold('a list of 5,000 rows drawn', { ...(await domCounters(page)), rowsInPage: await page.locator('#app .fd-list-row').count() });
   const tick = page.locator('#app .fd-list-row').nth(2).locator('input[type="checkbox"]');
@@ -140,7 +143,7 @@ const frames = (page: Page) => page.evaluate(() => new Promise<void>((resolve) =
 test('3,000 rows: the rows and elements in the page, at its top, its middle and its end', async ({ page }) => {
   test.setTimeout(180_000);
   await mountGenerated(page, listPage(3000));
-  await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', '3001', { timeout: 120_000 });
+  await everyRowLoaded(page, 3000);
   const inPage = () => page.evaluate(() => ({ rows: document.querySelectorAll('#app tbody tr.fd-list-row').length, elements: document.querySelectorAll('#app *').length }));
   const most = { rows: 0, elements: 0 };
   for (const at of [0, 0.5, 1]) {

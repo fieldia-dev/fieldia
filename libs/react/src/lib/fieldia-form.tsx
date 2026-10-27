@@ -263,20 +263,29 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     }
 
     const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, firstPaint: _paint, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, onDraft: _draft, onLoadingStart: _started, onLoadingEnd: _ended, ...options } = latest.current;
-    const mounted = mountViewer(element, {
-      ...options,
-      functions: newestFunctions(() => latest.current.functions),
-      widgets,
-      slots,
-      // The newest handler; what it answers — values, words, a page, a stop — the form takes.
-      onAction: (request) => latest.current.onAction?.(request),
-      // The newest handler, as for actions: told of a part that failed.
-      onError: (error, where) => latest.current.onError?.(error, where),
-      // The newest handler, as for actions; rows look openable only when there is one.
-      onOpenRecord: options.onOpenRecord && ((id, name) => latest.current.onOpenRecord?.(id, name)),
-      // A page a step opens: the newest way of the app's, else the viewer's.
-      onOpen: (request) => latest.current.onOpen?.(request),
-    });
+    let mounted: ViewerHandle;
+    try {
+      mounted = mountViewer(element, {
+        ...options,
+        functions: newestFunctions(() => latest.current.functions),
+        widgets,
+        slots,
+        // The newest handler; what it answers — values, words, a page, a stop — the form takes.
+        onAction: (request) => latest.current.onAction?.(request),
+        // The newest handler, as for actions: told of a part that failed.
+        onError: (error, where) => latest.current.onError?.(error, where),
+        // The newest handler, as for actions; rows look openable only when there is one.
+        onOpenRecord: options.onOpenRecord && ((id, name) => latest.current.onOpenRecord?.(id, name)),
+        // A page a step opens: the newest way of the app's, else the viewer's.
+        onOpen: (request) => latest.current.onOpen?.(request),
+      });
+    } catch {
+      // A page the viewer refused: it said why where the form would be and told `onError` (refused.ts in
+      // @fieldia/viewer). The app goes on — never unmounted by it — and the next page is drawn in the words' place.
+      return () => {
+        for (const words of element.querySelectorAll(':scope > .fd-unshown')) words.remove();
+      };
+    }
     // Each event through the newest handler, as for actions.
     for (const [prop, event] of Object.entries(EVENTS) as [keyof typeof EVENTS, keyof ViewerEvents][]) {
       mounted.on(event, (payload) => (latest.current[prop] as ((event: unknown) => void) | undefined)?.(payload));

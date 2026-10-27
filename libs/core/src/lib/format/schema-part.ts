@@ -6,6 +6,8 @@
  * at once by an app that imports them.
  */
 export { validatePage } from './validate';
+// A page stamped with the lowest format its settings need, so every Fieldia that reads that format reads it (stamp.ts).
+export { lowestFormat, stampPage } from './stamp';
 export { PageSchema } from './page';
 export { FieldSchema } from './field';
 export type { PageIssue, PageValidation } from './references';

@@ -245,7 +245,9 @@ function checkNoBareSpecifiers(distRoot) {
  * `validatePage` from @fieldia/core itself carries the schemas twice: once at once, once in that chunk. zod's notice is
  * in THIRD_PARTY_NOTICES.md beside the package.
  */
-const OWN_FILE = [['core', 'src/lib/format/schema-part.mjs', /node_modules\/zod\/|\/src\/lib\/format\/(validate|jitless|schema-part)\.mjs$/]];
+// The modules of the zod definitions' own that import zod's types alone (the rules' adapter, ruled.ts; the widget
+// options' schemas by name, option-schemas.ts): carried too, or the schemas they import would be reached outside the file.
+const OWN_FILE = [['core', 'src/lib/format/schema-part.mjs', /node_modules\/zod\/|\/src\/lib\/format\/(validate|jitless|schema-part|ruled|option-schemas)\.mjs$/]];
 
 /** Each entry of OWN_FILE bundled into a file of its own: a problem where it cannot be. */
 async function entriesInFilesOfTheirOwn(distRoot, pkgDir) {

@@ -10,7 +10,8 @@
  *
  * It refuses, in words: packs that are not the ones packs.json names (release-publish.mjs), packs made from another
  * commit or version than this checkout's, a release that is not tagged at HEAD with its own version, not on
- * origin/main, from a tree with changes, or a patch with an Upgrading part (release-guards.mjs), an npm too old for
+ * origin/main, from a tree with changes, a patch with an Upgrading part or a minor that changes what was not deprecated
+ * a minor before (release-guards.mjs, release-train.mjs), an npm too old for
  * trusted publishing, and a run with no OIDC token to ask for (anywhere but the publish job). On a maintainer's machine
  * a release is published by `node tools/release.mjs publish` instead, until npm is switched to trusted publishing
  * (docs/maintainers/publishing.md).
@@ -20,6 +21,7 @@ import { appendFileSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { gitFacts, releaseProblems } from './release-guards.mjs';
+import { readDeprecations } from './release-train.mjs';
 import { npmProblem, publishPacks, readPacks } from './release-publish.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
@@ -48,7 +50,7 @@ const facts = gitFacts(WORKSPACE);
 const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: WORKSPACE, encoding: 'utf8' }).trim();
 if (manifest.version !== version) problems.push(`the packs are ${manifest.version}, but this checkout's packages are ${version}`);
 if (manifest.commit !== head) problems.push(`the packs were made from ${manifest.commit.slice(0, 12)}, but this checkout is ${head.slice(0, 12)}`);
-problems.push(...releaseProblems({ version, changelog, facts, tag }));
+problems.push(...releaseProblems({ version, changelog, facts, tag, deprecations: await readDeprecations(WORKSPACE) }));
 const npmVersion = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim();
 const tooOld = npmProblem(npmVersion);
 if (tooOld) problems.push(tooOld);

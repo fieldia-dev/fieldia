@@ -52,11 +52,13 @@ export interface OpenStep extends StepBase {
   page: string;
   /** One published version; left out, the latest. */
   version?: number;
+  /** Where it opens: in a dialog over this one (the default), a panel beside it, or in its place. */
   as?: 'dialog' | 'panel' | 'page';
   /** Where a panel comes from (`as: 'panel'` alone): the end of the line unless told. */
   side?: PanelSide;
   /** The words over it; left out, the page's own title. */
   title?: string;
+  /** The record it opens: an expression giving its id (`partner_id`); a new record when left out. */
   record?: string;
   /** What the opened form starts with: its fields, each an expression over this form's values. */
   values?: ValueMap;
@@ -64,32 +66,39 @@ export interface OpenStep extends StepBase {
   filter?: FilterItem[];
   /** This form's fields, each an expression over the opened form's values once it is saved or sent. */
   into?: ValueMap;
+  /** Steps run here once the opened form is saved or sent. */
   then?: ActionStep[];
 }
 
 /** Give a field of this form a value: an expression over its values. */
 export interface SetStep extends StepBase {
   do: 'set';
+  /** The field given the value. */
   field: string;
+  /** Its value: an expression over the form's values (`'done'` for words, quoted). */
   value: string;
 }
 
 /** Empty a field of this form. */
 export interface ClearStep extends StepBase {
   do: 'clear';
+  /** The field emptied. */
   field: string;
 }
 
 /** Add a line to a table of lines (a one2many), its fields from expressions over this form's values. */
 export interface AddLineStep extends StepBase {
   do: 'addLine';
+  /** The table of lines (a one2many) the line is added to. */
   field: string;
+  /** The new line's fields, each an expression over this form's values. */
   values?: ValueMap;
 }
 
 /** Check the form — or only these fields — as sending does: problems are shown, and stop the steps after it. */
 export interface CheckStep extends StepBase {
   do: 'check';
+  /** The fields checked: the whole form when left out. */
   fields?: string[];
 }
 
@@ -106,19 +115,23 @@ export interface ResetStep extends StepBase {
 /** Show a wizard's step or a tab, by its id. */
 export interface GoToStep extends StepBase {
   do: 'goTo';
+  /** The id of the wizard's step or the tab shown. */
   target: string;
 }
 
 /** Say something to the person, in a tone. */
 export interface SayStep extends StepBase {
   do: 'say';
+  /** What is said, in a toast the person can read and dismiss: `{field}` shows that field's value. */
   message: string;
+  /** Its tone: info, success, warning or danger. */
   tone?: Tone;
 }
 
 /** Ask a question answered Yes or No: No stops the steps after it. */
 export interface AskStep extends StepBase {
   do: 'ask';
+  /** The question, answered Yes or No. */
   message: string;
 }
 
@@ -129,7 +142,9 @@ export interface AskStep extends StepBase {
  */
 export interface CallStep extends StepBase {
   do: 'call';
+  /** The app's action, by the name its `onAction` receives. */
   action: string;
+  /** What the app is handed with it, as written. */
   params?: { [key: string]: JsonValue };
 }
 
@@ -146,7 +161,9 @@ export interface ReloadStep extends StepBase {
 /** Open a web address, an expression: in a new tab unless `newTab` is false. Flectra's `act_url`. */
 export interface OpenUrlStep extends StepBase {
   do: 'openUrl';
+  /** The address, an expression over the form's values: a web or mail address alone is opened. */
   url: string;
+  /** False: in this tab. */
   newTab?: boolean;
 }
 
@@ -192,7 +209,9 @@ export interface DeleteStep extends StepBase {
  */
 export interface PostStep extends StepBase {
   do: 'post';
+  /** The words posted, each `{field}` showing that field's value. */
   message: string;
+  /** A note for the team (the default), or a message its followers get. */
   kind?: 'note' | 'message';
 }
 

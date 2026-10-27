@@ -285,55 +285,62 @@ export const FieldiaForm = defineComponent({
         };
       }
 
-      handle = mountViewer(element, {
-        page: props.page,
-        form: props.form,
-        dataSource: props.dataSource,
-        recordId: props.recordId,
-        user: props.user,
-        context: props.context ? toRaw(props.context) : undefined,
-        functions: newestFunctions(() => (props.functions ? toRaw(props.functions) : undefined)),
-        values: props.values,
-        skin: props.skin,
-        theme: props.theme,
-        tokens: props.tokens,
-        nonce: props.nonce,
-        dir: props.dir,
-        locale: props.locale,
-        labels: props.labels,
-        widgets,
-        listViews: props.listViews ? toRaw(props.listViews) : undefined,
-        maps: props.maps,
-        slots: slotRenderers,
-        drafts: props.drafts,
-        resume: props.resume,
-        seed: props.seed,
-        url: props.url && typeof props.url === 'object' ? toRaw(props.url) : props.url,
-        autosave: props.autosave,
-        scheduler: props.scheduler,
-        confirm: props.confirm,
-        // The app's own store, not Vue's reactive copy of it.
-        preferences: props.preferences ? toRaw(props.preferences) : undefined,
-        pages: props.pages ? toRaw(props.pages) : undefined,
-        relatedPages: props.relatedPages ? toRaw(props.relatedPages) : undefined,
-        icons: props.icons ? toRaw(props.icons) : undefined,
-        keys: props.keys ? toRaw(props.keys) : undefined,
-        showValid: props.showValid,
-        saveStatus: props.saveStatus,
-        // The app's own settings and drawing, not Vue's reactive copy of them.
-        loading: props.loading ? toRaw(props.loading) : undefined,
-        readonly: props.readonly,
-        editSwitch: props.editSwitch,
-        warnOnLeave: props.warnOnLeave,
-        translate: props.translate,
-        onAction: (request) => props.onAction?.(request),
-        onError: (error, where) => props.onError?.(error, where),
-        onOpen: props.onOpen,
-        host: props.host ? toRaw(props.host) : undefined,
-        onOpenRecord: (id) => emit('openRecord', id),
-        records: props.records ? toRaw(props.records) : undefined,
-        breadcrumbs: props.breadcrumbs ? toRaw(props.breadcrumbs) : undefined,
-      });
+      try {
+        handle = mountViewer(element, {
+          page: props.page,
+          form: props.form,
+          dataSource: props.dataSource,
+          recordId: props.recordId,
+          user: props.user,
+          context: props.context ? toRaw(props.context) : undefined,
+          functions: newestFunctions(() => (props.functions ? toRaw(props.functions) : undefined)),
+          values: props.values,
+          skin: props.skin,
+          theme: props.theme,
+          tokens: props.tokens,
+          nonce: props.nonce,
+          dir: props.dir,
+          locale: props.locale,
+          labels: props.labels,
+          widgets,
+          listViews: props.listViews ? toRaw(props.listViews) : undefined,
+          maps: props.maps,
+          slots: slotRenderers,
+          drafts: props.drafts,
+          resume: props.resume,
+          seed: props.seed,
+          url: props.url && typeof props.url === 'object' ? toRaw(props.url) : props.url,
+          autosave: props.autosave,
+          scheduler: props.scheduler,
+          confirm: props.confirm,
+          // The app's own store, not Vue's reactive copy of it.
+          preferences: props.preferences ? toRaw(props.preferences) : undefined,
+          pages: props.pages ? toRaw(props.pages) : undefined,
+          relatedPages: props.relatedPages ? toRaw(props.relatedPages) : undefined,
+          icons: props.icons ? toRaw(props.icons) : undefined,
+          keys: props.keys ? toRaw(props.keys) : undefined,
+          showValid: props.showValid,
+          saveStatus: props.saveStatus,
+          // The app's own settings and drawing, not Vue's reactive copy of them.
+          loading: props.loading ? toRaw(props.loading) : undefined,
+          readonly: props.readonly,
+          editSwitch: props.editSwitch,
+          warnOnLeave: props.warnOnLeave,
+          translate: props.translate,
+          onAction: (request) => props.onAction?.(request),
+          onError: (error, where) => props.onError?.(error, where),
+          onOpen: props.onOpen,
+          host: props.host ? toRaw(props.host) : undefined,
+          onOpenRecord: (id) => emit('openRecord', id),
+          records: props.records ? toRaw(props.records) : undefined,
+          breadcrumbs: props.breadcrumbs ? toRaw(props.breadcrumbs) : undefined,
+        });
+      } catch {
+        // A page the viewer refused: it said why where the form would be and told `onError` (refused.ts in
+        // @fieldia/viewer); the app goes on, never unmounted by it.
+        handle = null;
+        return;
+      }
       for (const event of EVENTS) handle.on(event, (payload) => (emit as (event: string, payload: unknown) => void)(event, payload));
       handle.on('open', (payload) => emit('record', payload));
       portals.value = [...found];
@@ -345,6 +352,8 @@ export const FieldiaForm = defineComponent({
       handle?.destroy();
       handle = null;
       portals.value = [];
+      // A refused page's words go with it: the next page is drawn in their place.
+      for (const words of host.value?.querySelectorAll(':scope > .fd-unshown') ?? []) words.remove();
     }
 
     onMounted(mount);

@@ -324,7 +324,7 @@ describe('a dialog in the look of the page that opened it', () => {
 
   it('has a linked record’s page say its words through the page whose field opens it', async () => {
     const said: string[] = [];
-    const inside: Page = { ...page('customer'), layout: { type: 'sections', children: [{ type: 'section', id: 's', children: [{ type: 'button', id: 'hi', label: 'Hi', steps: [{ do: 'say', message: 'Hello from the record' }] }] }] } as never };
+    const inside: Page = { ...page('customer'), layout: { type: 'sections', id: 'inside', children: [{ type: 'section', id: 's', children: [{ type: 'button', id: 'hi', label: 'Hi', steps: [{ do: 'say', message: 'Hello from the record' }] }] }] } as never };
     const dialogs = pageDialogs({ page: page('customer'), dataSource: customerSource(), relatedPages: { partner: inside } }, (message) => said.push(message));
     void dialogs.openRecord('partner', { title: 'Nile Traders', recordId: 1 });
     await flush();

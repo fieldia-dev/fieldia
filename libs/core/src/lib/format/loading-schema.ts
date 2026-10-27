@@ -1,6 +1,7 @@
 import * as z from 'zod';
+import { ruled } from './ruled';
 import { makeSchemasJitless } from './jitless';
-import { LOADING_DEFAULTS, LOADING_ERRORS, LOADING_TECHNIQUES, LOADING_VARIANTS } from './loading';
+import { LOADING_ERRORS, LOADING_TECHNIQUES, LOADING_VARIANTS } from './loading';
 
 // zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
 makeSchemasJitless();
@@ -13,8 +14,8 @@ makeSchemasJitless();
 /** A length of time in whole milliseconds, up to ten minutes. */
 const ms = z.int().min(0).max(600000);
 
-export const PageLoadingSchema = z
-  .strictObject({
+export const PageLoadingSchema = ruled(
+  z.strictObject({
     first: z.enum(LOADING_TECHNIQUES.first).optional(),
     refresh: z.enum(LOADING_TECHNIQUES.refresh).optional(),
     more: z.enum(LOADING_TECHNIQUES.more).optional(),
@@ -28,21 +29,7 @@ export const PageLoadingSchema = z
     slowAfter: ms.optional(),
     timeout: ms.min(1).optional(),
     error: z.enum(LOADING_ERRORS).optional(),
-  })
-  .superRefine((loading, context) => {
-    // A wait that ends before anything could be said of it fails every slow answer unseen.
-    if (loading.timeout !== undefined && loading.timeout <= (loading.delay ?? LOADING_DEFAULTS.delay)) {
-      context.addIssue({ code: 'custom', path: ['timeout'], message: `a timeout ends the wait as failed: make it longer than the delay before a loader shows (${loading.delay ?? LOADING_DEFAULTS.delay} ms)` });
-    }
-    if (loading.timeout !== undefined && loading.slowAfter !== undefined && loading.slowAfter >= loading.timeout) {
-      context.addIssue({ code: 'custom', path: ['slowAfter'], message: `"Still loading…" is said before the wait ends: make slowAfter shorter than the timeout (${loading.timeout} ms)` });
-    }
-  })
-  .meta({ id: 'PageLoading' });
-
-/** The issues of a field's `options.loading`, each at its path under `options`. */
-export function loadingOptionIssues(node: { options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  const loading = node.options?.['loading'];
-  if (loading === undefined) return [];
-  return (PageLoadingSchema.safeParse(loading).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', 'loading', ...issue.path] as (string | number)[] }));
-}
+  }),
+  // A timeout after the loader could show, "Still loading…" before it (rules.ts).
+  'loading'
+).meta({ id: 'PageLoading' });

@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { ruled } from './ruled';
 
 /**
  * Boxes that read a value typed to a shape, as a field's node says (its `options`): a text box typed to a mask — a
@@ -18,12 +19,8 @@ import * as z from 'zod';
 /** A mask on a char field: its pattern, letters in capitals, and whether the value keeps the mask's own characters. */
 export const MaskOptionsSchema = z
   .object({
-    mask: z
-      .string()
-      .min(1)
-      .refine((pattern) => /[9a*]/.test(pattern.replace(/\\./g, '')), { message: 'a mask names what goes in it: 9 a digit, a a letter, * either' })
-      .refine((pattern) => /^[^[\]]*(\[[^[\]]*\][^[\]9a*]*)?$/.test(pattern.replace(/\\./g, '')), { message: 'what may be left out is the end of a mask, in [ ]: "aa99 **** [****]"' })
-      .optional(),
+    // What goes in it named, what may be left out at its end (rules.ts).
+    mask: ruled(z.string().min(1), 'mask').optional(),
     /** Letters typed in it written in capitals: an IBAN's, a plate's. */
     upper: z.boolean().optional(),
     /** What the field keeps: the characters typed ("typed", the default: "29010112345678") or as shown, with the mask's own ("shown"). */
@@ -44,10 +41,3 @@ export const ShorthandOptionsSchema = z.object({ shorthand: z.boolean({ error: '
 
 export type MaskOptions = z.infer<typeof MaskOptionsSchema>;
 export type OneTimeCodeOptions = z.infer<typeof OneTimeCodeOptionsSchema>;
-
-/** The issues of a field node's mask or code settings, each at its path under `options`. */
-export function typedOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  const options = node.options ?? {};
-  const schemas = [...(node.widget === 'one-time-code' ? [OneTimeCodeOptionsSchema] : []), ...('mask' in options || 'maskKeeps' in options ? [MaskOptionsSchema] : []), ...('shorthand' in options ? [ShorthandOptionsSchema] : [])];
-  return schemas.flatMap((schema) => (schema.safeParse(options).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] })));
-}

@@ -145,7 +145,8 @@ describe('a page the quick check lets by and the format refuses', () => {
     });
     return made;
   }
-  // A size the format takes as a whole number, written as words: every viewer draws the page, the format refuses it.
+  // A size the format takes as a whole number, written as words: every viewer draws the page, as 0.35 drew it — its
+  // whole check says it after the first draw (0.36), refused from 0.37 — and the format refuses it.
   const page = (): Page => ({ ...blankPage('screen', 'Visit'), fields: { name: { type: 'char', label: 'Name', size: 'big' as unknown as number } } });
 
   it('is said once the schemas have come, its checks told again, and never published', async () => {

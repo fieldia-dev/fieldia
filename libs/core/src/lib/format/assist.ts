@@ -17,10 +17,15 @@ import * as z from 'zod';
  */
 export const PageSuggestSchema = z
   .strictObject({
+    /** The fields it may fill: every field it can set when left out. */
     fields: z.array(z.string().min(1)).min(1).optional(),
+    /** What it reads: words pasted ("text"), files ("files"), or both. */
     from: z.array(z.enum(['text', 'files'], { error: 'from is "text" (words pasted), "files", or both' })).min(1).optional(),
+    /** Its button's words: "Fill from an e-mail". */
     label: z.string().min(1).max(60).optional(),
+    /** The words in its box before anything is pasted. */
     placeholder: z.string().min(1).max(200).optional(),
+    /** A field of the record whose words it reads at a press — a buyer's message — with no box to paste in. */
     fromField: z.string().min(1).optional(),
   })
   .meta({ id: 'PageSuggest' });

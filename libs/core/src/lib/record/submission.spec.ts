@@ -20,7 +20,7 @@ const enquiry = (more: Partial<Page> = {}): Page =>
       email: { type: 'char', label: 'Email', pattern: '^[^@\\s]+@[^@\\s]+$' },
       phone: { type: 'char', label: 'Mobile' },
       visit: { type: 'selection', label: 'Visit', options: [{ value: 'view', label: 'Book a viewing' }, { value: 'reserve', label: 'Reserve the unit now' }] },
-      company: { type: 'char', label: 'Company', required: true, invisible: "visit != 'reserve'" },
+      company: { type: 'char', label: 'Company', required: true },
       fee: { type: 'monetary', label: 'Fee', currency: 'EGP' },
     },
     layout: {

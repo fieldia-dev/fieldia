@@ -18,7 +18,7 @@ const lead = (lower?: boolean): Page =>
     id: 'lead',
     title: 'Lead',
     data: { kind: 'record', model: 'lead' },
-    look: { helpShown: 'tip' },
+    look: { helpShown: 'tooltip' },
     phone: { country: 'EG' },
     fields: {
       name: { type: 'char', label: 'Full name', required: true },

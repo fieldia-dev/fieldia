@@ -561,6 +561,8 @@ export const ar: ViewerLabels = {
   payFailedWhy: 'لم يتم الدفع: {why} لم يُرسل شيء.',
   payNotStarted: 'تعذّر بدء الدفع: حاول مرة أخرى.',
   formNotLoaded: 'تعذّر تحميل هذا النموذج.',
+  pageUnshown: 'لا يمكن عرض هذا النموذج: في صفحته أخطاء. يمكن لمن أعدّها أن يفحصها بـ validatePage.',
+  pageUnshownWhy: 'ما الخطأ',
   outboxWaiting: '{count} إرسالات تنتظر على هذا الجهاز.',
   outboxWaitingOne: 'إرسال واحد ينتظر على هذا الجهاز.',
   outboxOffline: 'لا توجد إشارة:',

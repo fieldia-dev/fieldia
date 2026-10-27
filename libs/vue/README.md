@@ -85,4 +85,5 @@ not saved.
 
 A field's component or a slot's content that throws as it renders is kept to its
 place: it shows a small box that names it, `@error="(error, where) => …"` is
-told, and the error goes no further up Vue's tree. MIT licensed.
+told, and the error goes no further up Vue's tree. A page the viewer refuses says
+why in the form's place, `@error` is told, and the app stays mounted. MIT licensed.

@@ -897,6 +897,9 @@ export interface ViewerLabels {
   payNotStarted: string;
   /** A `<fieldia-form>` whose page could not be read: its address answered nothing, or no page. */
   formNotLoaded: string;
+  /** A page the viewer's check refused, said where the form would be; under it, "What is wrong" and each problem. */
+  pageUnshown: string;
+  pageUnshownWhy: string;
   /**
    * An offline outbox (`outbox`, the outbox part): how many sends wait on this device (`{count}`), no signal, while they
    * are sent, all sent, Send now, a send refused once it went (`{why}`) with Try again and Discard (asked first), and a
@@ -1548,6 +1551,8 @@ const en: ViewerLabels = {
   payFailedWhy: 'The payment did not go through: {why} Nothing was sent.',
   payNotStarted: 'The payment could not be started: try again.',
   formNotLoaded: 'This form could not be loaded.',
+  pageUnshown: 'This form cannot be shown: its page has mistakes. Whoever made it can check it with validatePage.',
+  pageUnshownWhy: 'What is wrong',
   outboxWaiting: '{count} sends wait on this device.',
   outboxWaitingOne: '1 send waits on this device.',
   outboxOffline: 'No signal:',

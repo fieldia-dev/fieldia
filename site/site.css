@@ -74,6 +74,8 @@ body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.6 var
 a { color: var(--link); text-underline-offset: 2px; }
 a:hover { color: var(--link-hover); }
 code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; }
+/* A long name in the words — a file's path — breaks where it must on a phone, never pushing the page sideways. */
+:is(p, li) > code { overflow-wrap: break-word; }
 .skip { position: absolute; left: -999px; top: 8px; background: var(--surface); padding: 8px 12px; z-index: 10; }
 .skip:focus { left: 8px; }
 pre.code:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }

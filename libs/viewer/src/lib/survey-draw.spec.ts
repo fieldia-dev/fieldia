@@ -24,10 +24,17 @@ const bank = (more: Partial<Page> = {}): Page => ({
   fields: Object.fromEntries(['q1', 'q2', 'q3', 'q4', 'q5'].map((name) => [name, { type: 'char', label: `Question ${name.slice(1)}`, required: true }])) as Page['fields'],
   layout: {
     type: 'sections',
-    id: 'root',
-    order: 'random',
-    draw: 3,
-    children: [{ type: 'text', id: 'words', text: 'Answer each.' }, ...['q1', 'q2', 'q3', 'q4', 'q5'].map((field) => ({ type: 'field' as const, id: `f-${field}`, field }))],
+    id: 'page',
+    // A group draws its questions (the page's own layout draws none: a step's or a group's `order` and `draw`).
+    children: [
+      {
+        type: 'section',
+        id: 'root',
+        order: 'random',
+        draw: 3,
+        children: [{ type: 'text', id: 'words', text: 'Answer each.' }, ...['q1', 'q2', 'q3', 'q4', 'q5'].map((field) => ({ type: 'field' as const, id: `f-${field}`, field }))],
+      },
+    ],
   } as Page['layout'],
   ...more,
 });
@@ -48,7 +55,7 @@ describe('questions in an order drawn', () => {
     await handle.drawn;
     await flush();
     const order = drawOrder(bank(), 'mona')['root'];
-    const shown = [...host.querySelectorAll('.fd-sections > [data-node]')].filter((part) => visible(part)).map((part) => part.getAttribute('data-node'));
+    const shown = [...host.querySelectorAll('[data-node="root"] [data-node]')].filter((part) => visible(part)).map((part) => part.getAttribute('data-node'));
     expect(shown).toEqual(order);
     expect(order[0]).toBe('words');
     // Only those drawn are asked: the form sends without the two left out.

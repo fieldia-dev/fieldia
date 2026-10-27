@@ -44,6 +44,27 @@ who may see and change what, and works out amounts to pay. A form that lets some
 accepts is a report for your server; a page or a value that makes Fieldia run script, leak data to another origin, or
 lose what was typed is a report for us.
 
+## The security model
+
+What Fieldia guarantees, each guarantee with the test that holds it, is on
+[What Fieldia promises](docs/promises.md) (also at fieldia.dev/promises). In short:
+
+- **In the browser, Fieldia guarantees:** no code made from text, under a strict Content-Security-Policy; no request
+  of its own; every address through `safeUrl`; rich text and Markdown sanitized; a file shown in place only as what
+  its bytes are; CSV cells a spreadsheet would run kept as words; bounds on patterns, dates, values worked out,
+  imports and archives; a framed form that talks only to the sites it names; each part of the one-tag script checked
+  against its hash, and a send a part must check never made without it; drafts kept per person, secrets never in
+  them; a page the check before the draw refuses never drawn, and what only the whole check finds said once the
+  page is drawn (refused from 0.37).
+- **Your server must still:** check what it is sent with `checkSubmission(page, values, context)` — required fields,
+  patterns, options, codes proved, the payment due; decide who may see and change what (a field hidden or read-only
+  in the browser is not protected); check a code's proof and a payment's reference itself; and store only pages that
+  pass `validatePage`.
+- **Not bounded:** the time a page's own conditions and computed values take. Check a page from an author you do not
+  trust before you store it.
+
+A guarantee that does not hold is a vulnerability: report it as above.
+
 ## How releases can be checked
 
 - A version published from this repository's GitHub Actions, on its version tag, carries npm provenance:

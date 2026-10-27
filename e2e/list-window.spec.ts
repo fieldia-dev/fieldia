@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { everyRowLoaded, longList } from './support';
 
 /**
  * A long list keeps only the rows near the view in the page (list-window.ts; the performance audit's H1): past a hundred
@@ -24,17 +25,19 @@ async function mountList(page: Page, n: number, layout: Record<string, unknown> 
   await page.goto('/script/');
   await page.waitForFunction(() => (window as unknown as { fieldiaDemo?: unknown }).fieldiaDemo);
   await page.evaluate(
-    async ([fields, people, layout, dir, n, visits]) => {
+    async ([fields, people, layout, dir, long, visits]) => {
       const w = window as unknown as { fieldiaDemo: { handle: { destroy(): void } }; Fieldia: { mountViewer(h: Element, o: unknown): unknown; createMemoryDataSource(o: unknown): unknown } };
       w.fieldiaDemo.handle.destroy();
       document.documentElement.dir = dir as string;
-      const page = { fieldia: '0.13', id: 'people', title: 'Customers', data: { kind: 'record', model: 'person' }, fields, layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], sort: [{ field: 'name' }], pageSize: n, searchFields: ['name', 'email'], ...layout } };
+      const page = { fieldia: '0.13', id: 'people', title: 'Customers', data: { kind: 'record', model: 'person' }, fields, layout: { type: 'list', id: 'people-list', columns: ['name', 'email', 'city', 'credit', 'visits'], sort: [{ field: 'name' }], ...long, searchFields: ['name', 'email'], ...layout } };
       (window as unknown as { list: unknown }).list = w.Fieldia.mountViewer(document.getElementById('app') as Element, { page, dataSource: w.Fieldia.createMemoryDataSource({ records: { person: people, visit: visits } }) });
     },
-    [FIELDS, PEOPLE(n), layout, dir, n, layout['detail'] ? VISITS(n) : {}] as const
+    [FIELDS, PEOPLE(n), layout, dir, longList(n), layout['detail'] ? VISITS(n) : {}] as const
   );
-  // A long list counts its rows, those in the page fewer; a page of a list holds every row, as it always did.
-  if (n > 100) await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', String(n + 1), { timeout: 30000 });
+  // A long list counts its rows, those in the page fewer; a page of a list holds every row, as it always did. Past a
+  // page's 500, an endless list, every row loaded first, as the person scrolling to its end would.
+  if (n > 500) await everyRowLoaded(page, n);
+  else if (n > 100) await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', String(n + 1), { timeout: 30000 });
   else await expect(page.locator('#app tbody tr.fd-list-row')).toHaveCount(n, { timeout: 30000 });
   await frames(page);
 }

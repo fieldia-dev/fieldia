@@ -29,9 +29,3 @@ export const SlotsOptionsSchema = z
   .meta({ id: 'SlotsOptions' });
 
 export type SlotsOptions = z.infer<typeof SlotsOptionsSchema>;
-
-/** The issues of a field node's booking slots settings, each at its path under `options`. */
-export function slotsOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  if (node.widget !== 'slots') return [];
-  return (SlotsOptionsSchema.safeParse(node.options ?? {}).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
-}

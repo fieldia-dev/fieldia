@@ -19,7 +19,7 @@ const homes: Page = {
     name: { type: 'char', label: 'Home' },
     kind: { type: 'selection', label: 'Type', options: [{ value: 'flat', label: 'Flat' }, { value: 'villa', label: 'Villa' }] },
   },
-  layout: { type: 'list', id: 'homes', columns: ['name', 'kind'], search: 'fields', searchFields: ['name'], filterFields: ['kind'], gallery: { title: 'name' } },
+  layout: { type: 'list', id: 'homes', columns: ['name', 'kind'], search: 'fields', searchFields: ['name'], filterFields: ['kind'], gallery: { opens: 'list' } },
 } as Page;
 
 const records = (): Record<string, Values> => ({

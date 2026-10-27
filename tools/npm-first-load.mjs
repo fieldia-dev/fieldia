@@ -45,12 +45,19 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * 0.35's merge, set once from the merged build: perf-lists' window in the list's part and its lines' in theirs, and
  * perf-form's quick way in every form and viewer (and the designer's drafts): a record form 237.5 / 310.3 (57 / 64); in
  * Arabic 237.5 / 332.5 (57 / 67); a list 236.7 / 305.2 (57 / 61); the designer 583.2 / 796.0 (74 / 83).
+ * 0.36's checks (p3-promises; the coordinator's 26 Oct): the check before the draw as 0.35's, a refused page's words
+ * where its form would be, what will change; the whole check — the format's schema read without zod, its rules, the
+ * format each place came in, `stampPage` — a chunk of its own, asked for after the first draw (so "to usable" carries
+ * it, never the first paint): a record form 240.0 / 330.2 (63 / 71); in Arabic 240.0 / 352.5 (63 / 74); a list
+ * 239.2 / 324.9 (63 / 68); the designer 586.1 / 812.8 (76 / 86; its stamp at publish, from that chunk). Re-exported by
+ * @fieldia/core's index, `stampPage` kept the whole check in every page's chunks (the designer's first paint 601.1):
+ * it is `@fieldia/core/schema`'s.
  */
 const BUDGET = {
-  record: { page: 242.3, usable: 316.6, files: 70 },
-  'record-ar': { page: 242.3, usable: 339.2, files: 73 },
-  list: { page: 241.5, usable: 311.3, files: 67 },
-  designer: { page: 594.9, usable: 811.9, files: 90 },
+  record: { page: 244.8, usable: 336.8, files: 72 },
+  'record-ar': { page: 244.8, usable: 359.6, files: 75 },
+  list: { page: 244.0, usable: 331.4, files: 69 },
+  designer: { page: 597.8, usable: 829.1, files: 90 },
 };
 
 /** A record of the customer page's, with the fields it shows. */

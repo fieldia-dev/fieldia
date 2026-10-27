@@ -39,7 +39,7 @@ import {
   type TabsNode,
   type PageLoading,
 } from '@fieldia/core';
-import { comparable, FIELD_NAME, FORMAT_VERSION, upgradePage } from '@fieldia/core';
+import { comparable, FIELD_NAME, FORMAT_VERSION, pageCheckPart, upgradePage } from '@fieldia/core';
 import { produce, sameJson } from './draft';
 import { keepUnchanged } from './keep-unchanged';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
@@ -206,6 +206,10 @@ export interface PublishedVersion {
 export interface PageStore {
   load(id: string): Promise<{ draft: Page | null; versions: PublishedVersion[] }>;
   saveDraft(page: Page): Promise<void>;
+  /**
+   * A version published: the page stamped with the lowest format its settings need (`lowestFormat`, 0.36), so a viewer
+   * of an older Fieldia that knows every setting it uses reads it.
+   */
   publish(page: Page): Promise<number>;
   /**
    * The saved forms that can be placed in another page, by id and title:
@@ -875,7 +879,9 @@ export function createDesigner(options: {
     const last = published();
     // Compared as their JSON would be, by the parts they share: a page an edit made shares all it left alone. Its keys in
     // any order: the page's whole check writes a field's in its own, and a label typed back is the version published.
-    if (compared?.page !== page || compared.published !== last) compared = { page, published: last, differs: !sameJson(page, last, true) };
+    // The format each says is no part of it: a version is stored stamped with the lowest format it needs, the draft read
+    // in the current one (0.36).
+    if (compared?.page !== page || compared.published !== last) compared = { page, published: last, differs: !sameJson({ ...page, fieldia: undefined }, last && { ...last, fieldia: undefined }, true) };
     return compared.differs;
   }
   /** The checks of the page, worked out once for each page, and again as saved forms placed in it load. */
@@ -2188,7 +2194,11 @@ export function createDesigner(options: {
       for (const read of [...readers]) read();
       const checked = schema.validatePage(page, { functions });
       if (!checked.ok) throw new Error(words.refusals.cannotPublish);
-      const version = store ? await store.publish(clone(page)) : versions.length + 1;
+      // Stored stamped with the lowest format its settings need: every Fieldia that reads that format reads it. Its
+      // schema is the whole check's, a part of its own (`pageCheckPart`): fetched as a page is published, never before
+      // the designer's first paint.
+      const stamping = store ? (pageCheckPart.loaded ?? (await pageCheckPart.load())) : null;
+      const version = store && stamping ? await store.publish(stamping.stampPage(clone(page))) : versions.length + 1;
       // The page itself, as it is never written: the draft shares it until it is edited.
       versions = [...versions, { version, publishedAt: new Date().toISOString(), page }];
       notify();

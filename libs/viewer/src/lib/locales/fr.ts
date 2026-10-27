@@ -593,6 +593,8 @@ export const fr: ViewerLabels = {
   payFailedWhy: 'Le paiement n’est pas passé : {why} Rien n’a été envoyé.',
   payNotStarted: 'Le paiement n’a pas pu commencer : réessayez.',
   formNotLoaded: 'Ce formulaire n’a pas pu être chargé.',
+  pageUnshown: 'Ce formulaire ne peut pas être affiché : sa page contient des erreurs. Qui l’a créée peut la vérifier avec validatePage.',
+  pageUnshownWhy: 'Ce qui ne va pas',
   outboxWaiting: '{count} envois attendent sur cet appareil.',
   outboxWaitingOne: '1 envoi attend sur cet appareil.',
   outboxOffline: 'Pas de réseau :',

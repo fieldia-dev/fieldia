@@ -87,7 +87,8 @@ describe('a picture’s width, place, link and caption', () => {
     expect(figure.querySelector('figcaption')?.textContent).toBe('The hall is on the first floor');
   });
 
-  it('opens no address that is not a web or mail one, whatever the page says', () => {
+  it('opens no address that is not a web or mail one, whatever the page says: drawn without it, as 0.35 drew it', () => {
+    // The whole check, after the first draw, says such a page (`page.invalid`): refused from 0.37.
     expect(shown({ href: 'javascript:alert(1)' }).querySelector('a')).toBeNull();
     expect(shown({}).querySelector('figcaption')).toBeNull();
   });

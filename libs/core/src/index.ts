@@ -1,6 +1,11 @@
 export * from './runtime';
 // Every word of a page written to show as it is (`literalWords` each): for an app's own pages, outside the one-tag script.
 export { literalPage } from './lib/format/translate';
+// The defaults that changed between formats, with the setting that keeps the old way (default-changes.ts).
+export { DEFAULT_CHANGES, type DefaultChange } from './lib/format/default-changes';
+// `stampPage` and `lowestFormat` (stamp.ts) are `@fieldia/core/schema`'s, where pages are made: their data is the whole
+// check's, which an app's first paint never carries — re-exported here, a bundler splitting an app keeps it in the
+// chunks every page loads (26 Oct: the designer's first paint 17.9 KB gzipped more).
 // Why a page takes no answers now, in words: the limits part's (`formLimitsPart`), whole here.
 export { takingWords, whenWords } from './lib/record/form-limits';
 // A quiz's results for answers sent: the survey part's (`formSurveyPart`), whole here — for an app's own marking.
@@ -40,7 +45,7 @@ export { PageSchema } from './lib/format/page';
 export { ActionStepSchema, PageEventsSchema } from './lib/format/actions';
 export { validatePage } from './lib/format/validate';
 // A page's warnings alone, needing no schema (the schemas and `validatePage` on their own: `@fieldia/core/schema`).
-export { pageWarnings } from './lib/format/page-warnings';
+export { pageWarnings, referenceIssues } from './lib/format/page-warnings';
 export { kindProblems, kindProblemWords, kindWords, fieldKind, writtenAs, type KindProblem, type KindScope } from './lib/expression/kinds';
 export { parseExpression } from './lib/expression/expression';
 export { AddressSearchOptionsSchema } from './lib/format/address-search';

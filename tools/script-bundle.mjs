@@ -1564,8 +1564,13 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // holds the words it shows, one after another — `nameShowing` (core), which the parts' controls name themselves with,
 // and a tab's count apart from its words in its text (viewer.ts); the rest in their parts, listed with the part budgets
 // below — 590,475 bytes measured before, 590,772 after (+297), to 577.0.
+// 0.36's checks (p3-promises, the audit's R-M5, R-M6 and R-M7): the check before the draw as 0.35's, a page it refuses
+// said where its form would be (refused.ts, 1,250 bytes); the whole check — the format's schema read without zod, its
+// rules, a field's settings held to themselves, the format each place came in — in a part of its own (fieldia.check.js),
+// asked for after a page's first draw, what it finds said once in the console (page-check.ts, deprecations.ts): 582,019
+// measured before, 586,035 after, to 572.4.
 // Provisional for the 0.36 merge; set once from the merged build.
-const BUDGET_KB = 578.7;
+const BUDGET_KB = 582.7;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1916,8 +1921,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // raw budget above): 193.56 measured before, 193.63 after, to 193.7.
 // 0.36, a control's name holding the words it shows (listed with the raw budget above): 192.94 measured before, 193.06
 // after, to 193.1.
+// 0.36's checks (listed with the raw budget above): the whole check in a part of its own, asked for after the first draw
+// (the coordinator's 26 Oct: at or under ~200, the owner's guardrail) — a refused page's words 0.7 of what came, what
+// will change 0.3, the whole check's handle and its words 0.4: 189.79 measured before, 191.19 after, to 191.2. (Carried
+// in this script, the whole check made it 206.71.)
 // Provisional for the 0.36 merge; set once from the merged build.
-const GZIP_BUDGET_KB = 193.8;
+const GZIP_BUDGET_KB = 195.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2291,7 +2300,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // French's 61.17 and 18.46, 61.35 and 18.50, to 61.4 and 18.6; Turkish's 68.25 and 18.80, 68.43 and 18.84, to 68.5,
 // inside 18.9; Persian's 167.26 and 23.17, 167.78 and 23.23, to 167.8 and 23.3; Urdu's 169.98 and 23.24, 170.52 and
 // 23.31, to 170.6 and 23.4; Spanish's 58.39 and 18.26, 58.53 and 18.30, to 58.6 and 18.4.
-const ADD_ON_BUDGET_KB = { ar: [134.8, 21.6], de: [60.4, 18.6], fr: [61.4, 18.6], tr: [68.5, 18.9], fa: [167.8, 23.3], ur: [170.6, 23.4], es: [58.6, 18.4] };
+// 0.36: a refused page's words, two in each (pageUnshown, pageUnshownWhy): ar 134.76 and 21.62, de 60.41 and 18.53,
+// fr 61.35 and 18.52, tr 68.42 and 18.87, fa 167.82 and 23.25, ur 170.49 and 23.31, es 58.55 and 18.32.
+const ADD_ON_BUDGET_KB = { ar: [135.2, 21.7], de: [60.6, 18.7], fr: [61.6, 18.7], tr: [68.7, 18.9], fa: [168.4, 23.4], ur: [171.1, 23.5], es: [58.8, 18.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3060,7 +3071,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 18.90 measured before, 50.75 and 18.93 after, to 50.8; a phone's country named with the code it shows, its call with
 // its word (phone-box.ts) — phone 45.12 and 19.25, 45.22 and 19.28, to 45.3; a scan's button with its word (scan.ts) —
 // scan 20.47 and 8.50, 20.53 and 8.53, to 20.6.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.0, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [154.9, 50.6], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.8, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.6, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1] };
+// 0.36: a list's or a related list's column named twice refused by the whole check, as validatePage refuses it
+// (list-checks.ts) — list 153.30 to 153.34 and 49.91, to 153.4 and 50.0. The whole check (check-whole.ts, a part of its
+// own, asked for after a page's first draw): the format's schema read without zod (page-shape.ts) and the format each
+// place came in, its reader (shape-check.ts), the format's rules (rules.ts), a field's settings held to themselves
+// (sense-checks.ts), a page read by its stamp (stamp.ts), and a page stamped where it is saved (`stampPage`, the
+// designer's publish) — check 65.21 and 17.24, to 65.3 and 17.3.
+const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.0, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [155.0, 50.7], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.8, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.6, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
@@ -3108,6 +3125,7 @@ const PART_GIVES = {
   functions: ['functionBody', 'appCall'],
   options: ['optionRules'],
   mapchecks: ['checkMap', 'checkPlace'],
+  check: ['wholeCheck', 'stampPage', 'lowestFormat'],
   languages: ['languagesWidget', 'languageWords', 'languageText', 'installLanguagesStyles', 'checkTranslated', 'languagesAtFault', 'languageName', 'textIn'],
   scan: ['scanning', 'openScanSheet', 'useCodeReader', 'codeReaderFor', 'readGs1', 'installScanStyles'],
   decode: ['codeReader'],
@@ -3118,7 +3136,7 @@ const PART_GIVES = {
   outbox: ['join', 'draw', 'watchOutbox', 'installOutboxStyles', 'memoryOutbox', 'indexedOutbox'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
+const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', check: 'pageCheckPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
 /**
  * A part's handle in a page's `Fieldia`: its own export (PART_OF) — or, for the parts that join a form (the fields a
  * link fills, proof by a code, a payment, an outbox: 0.30), named on no export of their own, the one of that name among
@@ -3251,13 +3269,16 @@ for (const part of PARTS) {
   const host = dom.window.document.getElementById('app');
   const view = dom.window.Fieldia.mountViewer(host, { page: wrong, dataSource: { list: async () => ({ records: [], total: 0 }) } });
   const said = await view.drawn.then(() => null, (error) => error.message);
-  if (!said?.startsWith('This page cannot be shown') || !said.includes('layout.groupBy[0]: no field "nowhere"') || host.childElementCount) throw new Error(`in a page, a list page whose own checks came with its part is drawn, or not refused: ${said}`);
+  // Refused: nothing of the page drawn, why said where it would be (refused.ts, 0.36), and taken away for the next.
+  const refusedOnly = () => host.childElementCount === 1 && host.firstElementChild?.classList.contains('fd-unshown') && host.querySelector('[role="alert"]')?.textContent.startsWith('This form cannot be shown');
+  if (!said?.startsWith('This page cannot be shown') || !said.includes('layout.groupBy[0]: no field "nowhere"') || !refusedOnly()) throw new Error(`in a page, a list page whose own checks came with its part is drawn, or not refused in words: ${said}`);
+  host.replaceChildren();
   // A list of homes on a map whose pins' photo is words: the list part's checks, in already, owe the map's, asked for
   // then — the mistake said as the packages' check says it, nothing drawn.
   const worded = { ...homes, layout: { ...homes.layout, map: { ...homes.layout.map, pin: { ...homes.layout.map.pin, image: 'name' } } } };
   const mapped = dom.window.Fieldia.mountViewer(host, { page: worded, dataSource: { list: async () => ({ records: [], total: 0 }) } });
   const saidOfMap = await mapped.drawn.then(() => null, (error) => error.message);
-  if (!saidOfMap?.includes('layout.map.pin.image: "name" is a char; a pin\'s photo is an image or binary field') || host.childElementCount || !dom.window.Fieldia.mapChecksPart.loaded) throw new Error(`in a page, a list on a map whose map's checks came in their part is drawn, or not refused: ${saidOfMap}`);
+  if (!saidOfMap?.includes('layout.map.pin.image: "name" is a char; a pin\'s photo is an image or binary field') || !refusedOnly() || !dom.window.Fieldia.mapChecksPart.loaded) throw new Error(`in a page, a list on a map whose map's checks came in their part is drawn, or not refused in words: ${saidOfMap}`);
   dom.window.close();
 }
 console.log(`parts: ${partSizes.join('; ')}`);
@@ -3290,8 +3311,9 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   });
   await new Promise((done) => dom.window.addEventListener('load', done));
   const { Fieldia: inPage, document: doc } = dom.window;
-  // The memory part is a data source's, never a page's: said apart below.
-  const loaded = () => PARTS.filter((part) => part !== 'memory' && handleIn(inPage, part).loaded).join(', ');
+  // The memory part is a data source's, never a page's, and the whole check every page drawn asks for once the browser
+  // idles: each said apart below.
+  const loaded = () => PARTS.filter((part) => part !== 'memory' && part !== 'check' && handleIn(inPage, part).loaded).join(', ');
   /** The parts in after a step, every one so far — as one run of this check found them, each part's first use clear. */
   const hasIn = (step, want) => {
     const now = loaded();
@@ -3331,11 +3353,27 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const plain = inPage.mountViewer(host, { page: read('delivery.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
+  // The whole check (0.36): never asked for before a page is drawn — it waits for the browser to idle after the draw.
+  if (inPage.pageCheckPart.loaded || inPage.pageCheckPart.coming) throw new Error('in a page, the whole check was asked for before its page was drawn');
   hasIn('a page of plain parts', '');
   // On paper, its printout's head: in every form, hidden, its rules for paper in this script's sheet.
   if (!host.querySelector('.fd-form .fd-print-head[aria-hidden="true"]')) throw new Error("in a page, a form carries no printout's head");
   plain.destroy();
   gone('plain');
+  // A page 0.35 drew whose whole check finds a mistake validatePage refuses: drawn, then — its part come, after the draw —
+  // said to onError as a warning, the page left drawn (`page.invalid`, refused from 0.37).
+  {
+    const page = read('delivery.page.json');
+    const [name] = Object.keys(page.fields);
+    const told = [];
+    const invalid = inPage.mountViewer(host, { page: { ...page, fields: { ...page.fields, [name]: { ...page.fields[name], required: 'yes' } } }, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ error, where }) });
+    if (!host.querySelector('.fd-field')) throw new Error('in a page, a page 0.35 drew that validatePage refuses is not drawn');
+    await invalid.drawn;
+    if (!(await until(() => told.length > 0)) || told[0].where.stage !== 'check' || told[0].where.warning !== true || told[0].error.issues?.[0]?.path !== `fields.${name}.required`) throw new Error(`in a page, the whole check did not say a page's mistake after its draw: ${JSON.stringify(told.map((one) => one.where))}`);
+    if (!inPage.pageCheckPart.loaded || !host.querySelector('.fd-field') || host.querySelector('.fd-unshown')) throw new Error('in a page, a page the whole check found a mistake in was not left drawn');
+    invalid.destroy();
+    gone('invalid');
+  }
   // A form whose phones are read the world over (its page's phone): the phone part, the page drawn once it came,
   // its phone's country before the number (a button opening the countries found by typing), its sheet in — and its
   // customer's country, a link to another record: the relations part.

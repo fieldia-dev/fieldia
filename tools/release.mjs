@@ -9,7 +9,8 @@
  *
  * Every mode refuses a version with no section in CHANGELOG.md. `publish` refuses, before anything is checked, a
  * release that is not a commit tagged with its version, already on origin/main, from a tree with no changes, or a
- * patch whose section has an Upgrading part (release-guards.mjs; `check` says the last); and a page format whose shape
+ * patch whose section has an Upgrading part, or a minor that changes what was not deprecated a minor before
+ * (release-guards.mjs, release-train.mjs; `check` says these two); and a page format whose shape
  * changed under its old version (format-shape.mjs; `check` only says so). It publishes the packs `check` proved
  * (release-publish.mjs: each against the hash it was packed with, in order, stopping where one fails), and once every
  * one is on npm it prints the version's section and the commands that push its tag and make its GitHub release, for a
@@ -38,6 +39,7 @@ import { notesFor, printRelease } from './release-notes.mjs';
 import { checkFormatShape } from './format-shape.mjs';
 import { withoutAuth } from './release-env.mjs';
 import { gitFacts, machinePathIn, patchProblem, releaseProblems } from './release-guards.mjs';
+import { readDeprecations, trainProblems } from './release-train.mjs';
 import { publishPacks, readPacks, writePacks } from './release-publish.mjs';
 import { auditProblems } from './release-audit.mjs';
 import { hashesOf, recordReleased, tagProblems, writeReadmes } from './script-tags.mjs';
@@ -79,14 +81,17 @@ for (const { dir, manifest } of packages) {
 const changelog = readFileSync(join(WORKSPACE, 'CHANGELOG.md'), 'utf8');
 if (!notesFor(changelog, version)) fail(`CHANGELOG.md has no section for ${version}: write what changed, in plain words, before releasing it`);
 // What a release must be before it is published (release-guards.mjs), refused before minutes of checks; a patch's
-// Upgrading part said on every check, while the release's commit is written.
+// Upgrading part, and a minor's changes not deprecated a minor before (release-train.mjs), said on every check, while
+// the release's commit is written.
+const deprecations = await readDeprecations(WORKSPACE);
 if (mode === 'publish') {
   if (!process.env.NPM_TOKEN) fail('publishing needs NPM_TOKEN in the environment');
-  const problems = releaseProblems({ version, changelog, facts: gitFacts(WORKSPACE) });
+  const problems = releaseProblems({ version, changelog, facts: gitFacts(WORKSPACE), deprecations });
   if (problems.length) fail(`nothing was published:\n  ${problems.join('\n  ')}`);
 } else if (mode === 'check') {
   const patch = patchProblem(version, changelog);
   if (patch) console.warn(`release: before publishing, ${patch}`);
+  for (const problem of trainProblems({ version, changelog, deprecations })) console.warn(`release: before publishing, ${problem}`);
 }
 // A page this release writes says a format version: one whose shape older readers know (format-shape.mjs). Said on
 // every check, while lanes add to the format; refused at publish, where the version has to be right.

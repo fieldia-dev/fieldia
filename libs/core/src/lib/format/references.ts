@@ -43,6 +43,7 @@ import { checkPrefill } from './prefill-checks';
 import { checkVerify } from './verify-checks';
 import { checkPayment } from './payment-checks';
 import { checkOutbox } from './outbox-checks';
+import type { SenseChecks } from './sense-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -96,6 +97,13 @@ export interface CheckOptions {
    * the kinds were read. Left out, kinds are not read.
    */
   kinds?(source: string, scope: { fields: Record<string, Field | LineField>; parent?: Record<string, Field | LineField> }): string[];
+  /**
+   * The whole check's own checks of a page's settings (sense-checks.ts: a field's least no more than its most, its first
+   * value one it could hold, each choice and each list column once; a required field nothing shows, a warning where
+   * kinds are read): handed by `validatePage` and the whole check (check-whole.ts). Left out — the check before the
+   * draw, as 0.35's viewer checked a page — they are not run.
+   */
+  sense?: SenseChecks;
 }
 
 /** Names quoted and joined as a person lists them: "a", "b" and "c". */
@@ -194,6 +202,8 @@ export class ReferenceCheck {
     // AI help's fill from text: in the one-tag script, its checks come with the assist part, which a page with it asks for.
     if (this.page.suggest !== undefined && !this.line) checkSuggest(this.page, this.fieldTools());
     this.checkGoingTo();
+    // Where pages are made (their kinds read, `validatePage`): a required field nothing shows (sense-checks.ts).
+    if (this.options.kinds && this.options.sense && !this.line) this.warnings.push(...this.options.sense.unseenRequired(this.page));
     return this.issues;
   }
 
@@ -557,6 +567,8 @@ export class ReferenceCheck {
       const path = `${base}.${name}`;
       // A name every object already has would read as a record's own value: never a field's.
       if (/^(constructor|__proto__|prototype)$/.test(name)) this.report(path, `"${name}" is a name every object already has: name the field otherwise`);
+      // What it may hold, held to itself: its least and its most, its first value, each choice once (sense-checks.ts).
+      this.options.sense?.checkSense(def, path, (at, message) => this.report(at, message));
       // A field's label, its help and its choices' words may show the answers given — the page's own fields', not a line's.
       if (lines === undefined) {
         this.checkWords(def, path, ['label', 'help']);
@@ -694,6 +706,7 @@ export class ReferenceCheck {
       checkZone: (zone, path) => this.checkZone(zone, path),
       checkFilterItem: (item, at, scope) => this.checkFilterItem(item, at, scope),
       owe: (part) => this.later.add(part),
+      whole: !!this.options.sense,
     };
   }
 
@@ -926,7 +939,8 @@ export class ReferenceCheck {
     if (node.widget === 'photos' && def && (def.type !== 'image' || !def.multiple)) this.report(`${path}.widget`, `photos is for an image field of several photos (multiple); "${node.field}" is not one`);
     // A value shown as a code: a QR code holds words, a barcode words or a whole number; pins on a picture are a json's.
     const codes: Record<string, readonly string[]> = { qrcode: ['char', 'text'], barcode: ['char', 'integer'], pins: ['json'] };
-    if (def && node.widget && codes[node.widget] && !codes[node.widget].includes(def.type)) this.report(`${path}.widget`, `${node.widget} is for a ${codes[node.widget].join(' or ')} field; "${node.field}" is a ${def.type}`);
+    const coded = node.widget && has(codes, node.widget) ? codes[node.widget] : undefined;
+    if (def && coded && !coded.includes(def.type)) this.report(`${path}.widget`, `${node.widget} is for a ${coded.join(' or ')} field; "${node.field}" is a ${def.type}`);
     // A file field that records a voice note or a film: its checks come with the files part, which draws it.
     const records = node.options?.['record'] !== undefined || node.options?.['maxSeconds'] !== undefined;
     if (records && def && def.type !== 'binary') this.report(`${path}.options.record`, `record is for a binary field; "${node.field}" is a ${def.type}`);

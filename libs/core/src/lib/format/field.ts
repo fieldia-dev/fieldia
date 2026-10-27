@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import { JsonValueSchema } from './json';
-import { isTimeZone } from '../record/zones';
 import { QuizQuestionSchema } from './quiz';
+import { ruled } from './ruled';
 
 /**
  * Field definitions: what a page knows about each value it shows or collects.
@@ -26,7 +26,9 @@ export const ModifierSchema = z.union([z.boolean(), z.string().min(1)]).meta({ i
 /** One choice in a selection or reference. */
 export const OptionSchema = z
   .object({
+    /** What choosing it keeps as the answer: words or a number, unique among the choices. */
     value: z.union([z.string(), z.number()]),
+    /** Its words, as the person sees them. */
     label: z.string(),
     /** A picture to choose by: an address or a data: URI. Shown by an image-choice widget. */
     image: z.string().min(1).optional(),
@@ -68,7 +70,12 @@ export type Option = z.infer<typeof OptionSchema>;
  * unless the unit is a villa. A choice that a change hides while it is chosen is taken out of the answer, and the form
  * says so; one the record held as it was opened stays, and is said.
  */
-export const SelectionOptionSchema = OptionSchema.extend({ invisible: ModifierSchema.optional() }).strict().meta({ id: 'SelectionOption' });
+export const SelectionOptionSchema = OptionSchema.extend({
+  /** Hidden while this holds (`true`, or a condition on the record's values; on a line, the line's and `parent.`). */
+  invisible: ModifierSchema.optional(),
+})
+  .strict()
+  .meta({ id: 'SelectionOption' });
 
 export type SelectionOption = z.infer<typeof SelectionOptionSchema>;
 
@@ -89,37 +96,23 @@ export type SelectionOption = z.infer<typeof SelectionOptionSchema>;
 /** What a filter's `valueFrom` may name: a field, `parent.` and a field of the record a line is on, `user.` and a part of the person, or `context.` and a value the app passes in. */
 const VALUE_FROM = /^((parent|user|context)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
 
-export const FilterConditionSchema = z
-  .object({
-    field: z.string().min(1),
-    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between', 'contains', 'not contains', '=?', 'within']),
-    value: JsonValueSchema.optional(),
-    valueFrom: z.string().regex(VALUE_FROM).optional(),
-  })
-  .strict()
-  .refine((c) => (c.op === 'set' || c.op === 'notset' ? c.value === undefined && c.valueFrom === undefined : (c.value === undefined) !== (c.valueFrom === undefined)), {
-    message: 'set exactly one of value or valueFrom; set and notset take neither',
-  })
-  .refine((c) => c.op !== 'between' || c.valueFrom !== undefined || (Array.isArray(c.value) && c.value.length === 2), {
-    message: 'between takes value: [low, high]',
-  })
-  // A place (a GeoJSON point in a json field) inside a box on the map, as a map's "In this area" asks.
-  .refine(
-    (c) => {
-      if (c.op !== 'within' || c.valueFrom !== undefined) return true;
-      const area = c.value as Record<string, unknown> | undefined;
-      if (!area || typeof area !== 'object' || Array.isArray(area)) return false;
-      if (area['longitude'] !== undefined && typeof area['longitude'] !== 'string') return false;
-      const pair = (p: unknown) => Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number');
-      if (area['polygon'] !== undefined) return Array.isArray(area['polygon']) && area['polygon'].length >= 3 && area['polygon'].every(pair);
-      if (area['center'] !== undefined) return pair(area['center']) && typeof area['radius'] === 'number' && area['radius'] > 0;
-      return ['south', 'west', 'north', 'east'].every((side) => typeof area[side] === 'number');
-    },
-    {
-      message:
-        'within takes value: a box { south, west, north, east }, a { polygon: [[longitude, latitude], …] } or a { center: [longitude, latitude], radius } in metres, all in degrees; with longitude: "a field" when the field is a latitude',
-    }
-  )
+export const FilterConditionSchema = ruled(
+  z
+    .object({
+      /** The field compared: on a line, a field of the line's; on a list, a field of its records. */
+      field: z.string().min(1),
+      /** How it is compared: `=`, `!=`, `<`, `>`, `in`, `like`, `set` (has a value), `between`, `within` (a place in an area)… */
+      op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between', 'contains', 'not contains', '=?', 'within']),
+      /** What it is compared with, as written: a value, a list for `in`, `[low, high]` for `between`, an area for `within`. */
+      value: JsonValueSchema.optional(),
+      /** Or the value to compare with read from a field, `parent.` and a field of a line's record, `user.` or `context.`. */
+      valueFrom: z.string().regex(VALUE_FROM).optional(),
+    })
+    .strict(),
+  // One value or a field to read it from, none for set and notset; between's two; a place (a GeoJSON point in a json
+  // field) inside a box on the map, as a map's "In this area" asks (rules.ts).
+  'filterCondition'
+)
   .meta({ id: 'FilterCondition' });
 
 export type FilterCondition = z.infer<typeof FilterConditionSchema>;
@@ -129,15 +122,26 @@ export type FilterCondition = z.infer<typeof FilterConditionSchema>;
  * all apply together; an `any` group holds when one of its items does, an
  * `all` group when each does, and groups nest.
  */
-export type FilterItem = FilterCondition | { any: FilterItem[] } | { all: FilterItem[] };
+export type FilterItem =
+  | FilterCondition
+  | {
+      /** A group that holds when one of its items does. */
+      any: FilterItem[];
+    }
+  | {
+      /** A group that holds when each of its items does. */
+      all: FilterItem[];
+    };
 
 export const FilterAnySchema = z.strictObject({
+  /** A group that holds when one of its items does. */
   get any(): z.ZodArray<typeof FilterItemSchema> {
     return z.array(FilterItemSchema).min(1);
   },
 }).meta({ id: 'FilterAny' });
 
 export const FilterAllSchema = z.strictObject({
+  /** A group that holds when each of its items does. */
   get all(): z.ZodArray<typeof FilterItemSchema> {
     return z.array(FilterItemSchema).min(1);
   },
@@ -145,35 +149,42 @@ export const FilterAllSchema = z.strictObject({
 
 export const FilterItemSchema = z.union([FilterConditionSchema, FilterAnySchema, FilterAllSchema]).meta({ id: 'FilterItem' });
 
-/**
- * A value set when a condition starts to hold: `when` is a condition, `value`
- * an expression. People may still change it. With `on`, it is set when one of
- * those fields changes instead — while `when` holds, if it has one — as
- * Flectra's onchange: "ticking Certification sets the scoring".
- */
-export const SetWhenSchema = z
+const SetWhenShape = z
   .object({
+    /** The condition whose start sets the value: set once each time it starts to hold. */
     when: z.string().min(1).optional(),
+    /** The value set, an expression over the record's values (`'draft'` for words, quoted). */
     value: z.string().min(1),
     /** The fields whose change sets it: set as one of them changes, never as `when` alone starts to hold. */
     on: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
   })
-  .strict()
-  .refine((rule) => rule.when !== undefined || rule.on !== undefined, { message: 'a value is set when a condition starts to hold, or when a field it is on changes: give when, on or both' })
-  .meta({ id: 'SetWhen', anyOf: [{ required: ['when'] }, { required: ['on'] }] });
+  .strict();
+/**
+ * A value set when a condition starts to hold: `when` is a condition, `value`
+ * an expression. People may still change it. With `on`, it is set when one of
+ * those fields changes instead — while `when` holds, if it has one — as
+ * Flectra's onchange: "ticking Certification sets the scoring". When, on or
+ * both (rules.ts) — and the same for tools that read only the JSON Schema.
+ */
+export const SetWhenSchema = ruled(SetWhenShape, 'setWhen').meta({ id: 'SetWhen', anyOf: [{ required: ['when'] }, { required: ['on'] }] });
 
 export type SetWhen = z.infer<typeof SetWhenSchema>;
 
 const common = {
+  /** Its name, as the person reads it beside its box: "Email", "How was your visit?". */
   label: z.string(),
+  /** Words under it that say more: what it is for, what to type. */
   help: z.string().optional(),
+  /** An answer is needed before the form is saved or sent. A part showing it may say so by a condition (`required` there). */
   required: z.boolean().optional(),
+  /** Shown and never changed by a person: an app or a rule may still set it. */
   readonly: z.boolean().optional(),
   /**
    * A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into
    * a draft (in the browser's store or on the app's server), as a password box's never does.
    */
   secret: z.boolean().optional(),
+  /** A new record's — or a new line's, or a response's — first value, as the field keeps it: `"today"` on a date. */
   default: JsonValueSchema.optional(),
   /**
    * A new record's — or a new line's — first value, worked out: an expression
@@ -221,29 +232,20 @@ const languages = {
 };
 /** A table's line keeps one language: a text in several is for the page's own fields, and a linked record's shown. */
 const oneLanguage = {
+  /** None on a table's line: a line keeps its text in one language. */
   translate: z.never({ error: 'a table’s line keeps its text in one language: a text in several is for the page’s own fields' }).optional(),
+  /** None on a table's line, which keeps one language. */
   requiredIn: z.never({ error: 'requiredIn is for a text kept in several languages (translate)' }).optional(),
 };
 type LanguageRules = { translate?: string[]; requiredIn?: string[] };
 /** Each language once; `requiredIn` only with `translate`, each of its own — and for tools that read only the JSON Schema, the first. */
-const withLanguages = <T extends z.ZodType<LanguageRules>>(schema: T) =>
-  schema
-    .superRefine((field, context) => {
-      const same = (tags: string[]) => tags.find((tag, i) => tags.findIndex((other) => other.toLowerCase() === tag.toLowerCase()) !== i);
-      const twice = same(field.translate ?? []);
-      if (twice) context.addIssue({ code: 'custom', message: `"${twice}" is named twice: each language once`, path: ['translate'] });
-      if (field.requiredIn === undefined) return;
-      if (field.translate === undefined) context.addIssue({ code: 'custom', message: 'requiredIn says which of a text’s languages are required: name them in translate', path: ['requiredIn'] });
-      else
-        field.requiredIn.forEach((tag, i) => {
-          if (!field.translate?.some((own) => own.toLowerCase() === tag.toLowerCase())) context.addIssue({ code: 'custom', message: `"${tag}" is not one of the languages it is kept in (translate)`, path: ['requiredIn', i] });
-        });
-    })
-    .meta({ dependentSchemas: { requiredIn: { required: ['translate'] } } });
+const withLanguages = <T extends z.ZodType<LanguageRules>>(schema: T) => ruled(schema, 'languages').meta({ dependentSchemas: { requiredIn: { required: ['translate'] } } });
 
 const charShape = {
+  /** A line of words: a name, an email, a code. */
   type: z.literal('char'),
   ...common,
+  /** The most characters it takes. */
   size,
   /** What the whole answer must look like, as a regular expression: tested trimmed, its digits as 0-9 — in each of its languages. */
   pattern: z.string().optional(),
@@ -252,8 +254,18 @@ const charShape = {
     /** A quiz's question (`quiz` on the page): the answers it takes, its points and its feedback. */
     quiz: QuizQuestionSchema.optional(),
 };
-const textShape = { type: z.literal('text'), ...common, size };
-const htmlShape = { type: z.literal('html'), ...common };
+const textShape = {
+  /** Words over several lines: a note, a description. */
+  type: z.literal('text'),
+  ...common,
+  /** The most characters it takes. */
+  size,
+};
+const htmlShape = {
+  /** Formatted text: bold, lists, links — kept as HTML, cleaned of anything that could run. */
+  type: z.literal('html'),
+  ...common,
+};
 /** A page's own text, and a linked record's: kept in one language, or in several (`translate`). */
 const Char = withLanguages(z.object({ ...charShape, ...languages }).strict());
 const Text = withLanguages(z.object({ ...textShape, ...languages }).strict());
@@ -263,10 +275,32 @@ const LineChar = z.object({ ...charShape, ...oneLanguage }).strict();
 const LineText = z.object({ ...textShape, ...oneLanguage }).strict();
 const LineHtml = z.object({ ...htmlShape, ...oneLanguage }).strict();
 const Integer = z
-  .object({ type: z.literal('integer'), ...common, min: z.number().optional(), max: z.number().optional(), quiz: QuizQuestionSchema.optional() })
+  .object({
+    /** A whole number. */
+    type: z.literal('integer'),
+    ...common,
+    /** The least it takes. */
+    min: z.number().optional(),
+    /** The most it takes. */
+    max: z.number().optional(),
+    /** A quiz's question (`quiz` on the page): the answers it takes, its points and its feedback. */
+    quiz: QuizQuestionSchema.optional(),
+  })
   .strict();
 const Float = z
-  .object({ type: z.literal('float'), ...common, min: z.number().optional(), max: z.number().optional(), digits, quiz: QuizQuestionSchema.optional() })
+  .object({
+    /** A number that may have decimals. */
+    type: z.literal('float'),
+    ...common,
+    /** The least it takes. */
+    min: z.number().optional(),
+    /** The most it takes. */
+    max: z.number().optional(),
+    /** Its digits in all and after the point, `[12, 2]`: shown and kept to them. */
+    digits,
+    /** A quiz's question (`quiz` on the page): the answers it takes, its points and its feedback. */
+    quiz: QuizQuestionSchema.optional(),
+  })
   .strict();
 /** The spans of time an amount can be for: a rent's month, a holiday flat's night. */
 export const PERIODS = ['day', 'night', 'week', 'month', 'year'] as const;
@@ -284,12 +318,26 @@ export type Period = (typeof PERIODS)[number];
  */
 export const MoneyLookSchema = z
   .object({
+    /** Its currency by its symbol ("E£", "$": the default) or by its code ("EGP"). */
     currency: z.enum(['symbol', 'code']).optional(),
+    /** The currency before the amount or after it: where the page's language puts it, unless said. */
     at: z.enum(['before', 'after']).optional(),
+    /** Written short: "13.9M", "13.9 مليون". */
     short: z.boolean().optional(),
+    /** The home currency, by its code, left unsaid: only another is named. */
     home: z.string().regex(/^[A-Z]{3}$/, 'a home currency is a code of three capitals, such as EGP').optional(),
+    /** What the amount is for while a condition holds, the first that holds: "/month" on a rent. */
     per: z
-      .array(z.object({ period: z.enum(PERIODS), when: z.string().min(1).optional() }).strict())
+      .array(
+        z
+          .object({
+            /** The span of time the amount is for: a day, a night, a week, a month or a year. */
+            period: z.enum(PERIODS),
+            /** While this condition on the record holds; always when left out. */
+            when: z.string().min(1).optional(),
+          })
+          .strict()
+      )
       .min(1)
       .optional(),
   })
@@ -299,20 +347,30 @@ export type MoneyLook = z.infer<typeof MoneyLookSchema>;
 
 const Monetary = z
   .object({
+    /** An amount of money, in a currency. */
     type: z.literal('monetary'),
     ...common,
     /** The field holding this amount's currency; on a line, `parent.` and a field of the record it is on, as Flectra's related currency. */
     currencyField: z.string().regex(/^(parent\.)?[A-Za-z_][A-Za-z0-9_]*$/).optional(),
     /** A fixed ISO 4217 currency, when the page has no currency field. */
     currency: z.string().regex(/^[A-Z]{3}$/).optional(),
+    /** The least it takes. */
     min: z.number().optional(),
+    /** The most it takes. */
     max: z.number().optional(),
+    /** Its digits in all and after the point, `[12, 2]`: shown and kept to them. */
     digits,
     /** How the amount is written where it is read: see `MoneyLookSchema`. */
     money: MoneyLookSchema.optional(),
   })
   .strict();
-const BooleanField = z.object({ type: z.literal('boolean'), ...common }).strict();
+const BooleanField = z
+  .object({
+    /** Yes or no: a tick box, or a switch. */
+    type: z.literal('boolean'),
+    ...common,
+  })
+  .strict();
 /**
  * A date's limits: its earliest and latest day, each a day or one counted
  * from the day the form is opened ("today", "today+30", "today-7"), and the
@@ -320,35 +378,56 @@ const BooleanField = z.object({ type: z.literal('boolean'), ...common }).strict(
  * time keeps them by the day it falls on. A date's `default` may be "today".
  */
 const dayLimit = z.string().regex(/^(\d{4}-\d{2}-\d{2}|today([+-]\d{1,4})?)$/).optional();
-const days = { min: dayLimit, max: dayLimit, days: z.array(z.int().min(1).max(7)).min(1).optional() };
+const days = {
+  /** Its earliest day: a day ("2026-10-01"), or one counted from the day the form is opened ("today", "today-7"). */
+  min: dayLimit,
+  /** Its latest day, written the same way ("today+30"). */
+  max: dayLimit,
+  /** The days of the week it may fall on, 1 Monday … 7 Sunday: `[1, 2, 3, 4, 5]` for weekdays. */
+  days: z.array(z.int().min(1).max(7)).min(1).optional(),
+};
 /**
  * A date of a month alone — a billing period, a card's expiry — or of a year alone — a building's year (`precision`):
  * typed and shown as its month ("Oct 2026", 10/2026) or its year (2026), kept as its first day ("2026-10-01",
  * "2026-01-01"), its limits kept by the month or the year. A date with `hijri` is shown and typed in the Hijri calendar
  * (Umm al-Qura) beside the Gregorian day it keeps: "13 Oct 2026 · 1 Rabiʻ II 1448 AH".
  */
-const DateField = z
-  .object({ type: z.literal('date'), ...common, ...days, precision: z.enum(['month', 'year']).optional(), hijri: z.boolean().optional() })
-  .strict()
-  .superRefine((field, context) => {
-    if (field.precision && field.days) context.addIssue({ code: 'custom', message: 'the days of the week a date may fall on are a day’s: a month or a year has them all', path: ['days'] });
-    if (field.precision && field.hijri) context.addIssue({ code: 'custom', message: 'a Hijri date is a day: a month or a year alone is the Gregorian calendar’s', path: ['hijri'] });
-  });
+const DateField = ruled(
+  z
+    .object({
+      /** A day, kept as "YYYY-MM-DD". */
+      type: z.literal('date'),
+      ...common,
+      ...days,
+      /** A month alone or a year alone: typed and shown as one, kept as its first day. */
+      precision: z.enum(['month', 'year']).optional(),
+      /** Shown and typed in the Hijri calendar (Umm al-Qura) beside the Gregorian day it keeps. */
+      hijri: z.boolean().optional(),
+    })
+    .strict(),
+  'dateField'
+);
 
 /**
  * A time zone by its IANA name: "Africa/Cairo", "Europe/Berlin", "UTC". A page's (`timeZone`) is the zone its dates
  * and times are in; a date and time field may name its own — a flight's departure, in its airport's zone.
  */
-export const TimeZoneSchema = z
-  .string()
-  .regex(/^[A-Za-z][\w+-]*(\/[\w+-]+)*$/, { error: 'a time zone is named as the IANA names it: "Africa/Cairo", "Europe/Berlin", "UTC"', abort: true })
-  .refine(isTimeZone, { message: 'not a time zone the IANA names: "Africa/Cairo", "Europe/Berlin", "UTC"' })
+export const TimeZoneSchema = ruled(z.string().regex(/^[A-Za-z][\w+-]*(\/[\w+-]+)*$/, { error: 'a time zone is named as the IANA names it: "Africa/Cairo", "Europe/Berlin", "UTC"', abort: true }), 'timeZone')
   .meta({ id: 'TimeZone', description: 'A time zone by its IANA name: its dates and times are shown and typed on that zone\'s clock.', examples: ['Africa/Cairo', 'Europe/Berlin', 'America/New_York', 'UTC'] });
 /**
  * A date and time, kept as an instant. With `timeZone`, it is shown and typed on that zone's clock, and its limits
  * kept by the day it falls on there; else on the page's zone's (`timeZone`), else on the browser's.
  */
-const DateTime = z.object({ type: z.literal('datetime'), ...common, ...days, timeZone: TimeZoneSchema.optional() }).strict();
+const DateTime = z
+  .object({
+    /** A day and a time, kept as an instant. */
+    type: z.literal('datetime'),
+    ...common,
+    ...days,
+    /** The time zone it is shown and typed in, by its IANA name: its own, where it is not the page's. */
+    timeZone: TimeZoneSchema.optional(),
+  })
+  .strict();
 /**
  * Choices the app gives rather than the page: its list by name, loaded through
  * the data source's `options` when the form shows the field, and again when a
@@ -360,6 +439,7 @@ const DateTime = z.object({ type: z.literal('datetime'), ...common, ...days, tim
  */
 export const OptionsFromListSchema = z
   .object({
+    /** The app's list, by the name its data source knows it by: `"countries"`. */
     list: z.string().min(1),
     /**
      * The fields the choices change with: the list is asked again when one does. On a table's line, the line's own
@@ -396,6 +476,7 @@ export type OptionsFromList = z.infer<typeof OptionsFromListSchema>;
 export type OptionsFromField = z.infer<typeof OptionsFromFieldSchema>;
 
 const selection = {
+  /** One of a list of choices — or several (`multiple`): radios, a list, checkboxes, tags. */
   type: z.literal('selection'),
   ...common,
   /** The choices; may be empty when they come from the app's list (`optionsFrom`). */
@@ -411,35 +492,45 @@ const selection = {
   /** People may add answers of their own, as many as they like: tags typed beside the options. */
   ownAnswers: z.boolean().optional(),
 };
-const Selection = z
+const SelectionShape = z
   .object({
     ...selection,
+    /** The choices, each of which may show or hide by a condition; may be empty when they come from elsewhere (`optionsFrom`). */
     options: z.array(SelectionOptionSchema),
+    /** Choices from one of the app's lists (`list`), or carried from an earlier question (`field`). */
     optionsFrom: OptionsFromSchema.optional(),
     /** A quiz's question (`quiz` on the page): its points and its feedback; its right answers are its options marked `correct`. */
     quiz: QuizQuestionSchema.optional(),
   })
-  .strict()
-  .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
-    message: 'a choice needs its options, a list of the app’s to take them from, or an earlier question to carry them from',
-    path: ['options'],
-  })
-  // The same rule for tools that read only the JSON Schema.
-  .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
+  .strict();
+// Options, a list of the app's or an earlier question's (rules.ts) — and the same rule for tools that read only the JSON Schema.
+const Selection = ruled(SelectionShape, 'choiceOptions').meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
 /**
  * A choice in a table's lines: its options written in the page — each may show or hide by a condition on the line's
  * values (`options[].invisible`, `parent.` the record's) — or from one of the app's lists for each line.
  */
-const LineSelection = z
-  .object({ ...selection, options: z.array(SelectionOptionSchema), optionsFrom: OptionsFromSchema.optional() })
-  .strict()
-  .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
-    message: 'a choice needs its options, or a list of the app’s to take them from',
-    path: ['options'],
-  })
-  .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
+const LineSelection = ruled(
+  z
+    .object({
+      ...selection,
+      /** The choices, each of which may show or hide by a condition on the line (`parent.` the record's). */
+      options: z.array(SelectionOptionSchema),
+      /** Choices from one of the app's lists, asked for each line by its values. */
+      optionsFrom: OptionsFromSchema.optional(),
+    })
+    .strict(),
+  'lineChoiceOptions'
+).meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
 /** A choice of a linked record's, shown in a table of them: its options written in the page. */
-const LinkedSelection = z.object({ ...selection, options: z.array(OptionSchema).min(1), optionsFrom: z.never({ error: 'choices from the app’s lists are for the page’s own fields and a table’s lines, not a linked record’s' }).optional() }).strict();
+const LinkedSelection = z
+  .object({
+    ...selection,
+    /** The choices, written in the page: one at least. */
+    options: z.array(OptionSchema).min(1),
+    /** None: choices from the app's lists are for the page's own fields and a table's lines. */
+    optionsFrom: z.never({ error: 'choices from the app’s lists are for the page’s own fields and a table’s lines, not a linked record’s' }).optional(),
+  })
+  .strict();
 /**
  * What a file or an image field takes: the largest file, and whether it holds
  * several — its value then a list of files, as few as `minFiles` and as many
@@ -457,7 +548,17 @@ const LinkedSelection = z.object({ ...selection, options: z.array(OptionSchema).
  * told — 2048 pixels at 0.85 — and a file field when this says so.
  */
 export const ShrinkSchema = z
-  .union([z.literal(false), z.object({ maxSide: z.int().min(160).max(16384).optional(), quality: z.number().min(0.3).max(1).optional() }).strict()])
+  .union([
+    z.literal(false),
+    z
+      .object({
+        /** The longest side a photo is kept at, in pixels: 160 to 16384. */
+        maxSide: z.int().min(160).max(16384).optional(),
+        /** The quality a JPEG or WebP is written at, 0.3 to 1. */
+        quality: z.number().min(0.3).max(1).optional(),
+      })
+      .strict(),
+  ])
   .meta({ id: 'Shrink' });
 export type Shrink = z.infer<typeof ShrinkSchema>;
 const files = {
@@ -473,18 +574,13 @@ const files = {
   maxFiles: z.int().positive().optional(),
 };
 type FileRules = { multiple?: boolean; minFiles?: number; maxFiles?: number };
-const SEVERAL = 'the fewest and the most files are for a field of several files: set multiple';
 /** The fewest and the most only with several files, the fewest no more than the most — and the same for tools that read only the JSON Schema. */
 const withFileRules = <T extends z.ZodType<FileRules>>(schema: T) =>
-  schema
-    .superRefine((field, context) => {
-      for (const key of ['minFiles', 'maxFiles'] as const) if (field[key] !== undefined && field.multiple !== true) context.addIssue({ code: 'custom', message: SEVERAL, path: [key] });
-      if (field.minFiles !== undefined && field.maxFiles !== undefined && field.minFiles > field.maxFiles) context.addIssue({ code: 'custom', message: 'the fewest files cannot be more than the most', path: ['minFiles'] });
-    })
-    .meta({ dependentSchemas: Object.fromEntries(['minFiles', 'maxFiles'].map((key) => [key, { properties: { multiple: { const: true } }, required: ['multiple'] }])) });
+  ruled(schema, 'fileRules').meta({ dependentSchemas: Object.fromEntries(['minFiles', 'maxFiles'].map((key) => [key, { properties: { multiple: { const: true } }, required: ['multiple'] }])) });
 const Binary = withFileRules(
   z
     .object({
+      /** A file, or several (`multiple`): a PDF, a document, a photo. */
       type: z.literal('binary'),
       ...common,
       /** Accepted media types, such as "application/pdf" or "image/*". */
@@ -494,8 +590,29 @@ const Binary = withFileRules(
     .strict()
 );
 /** Images only: an image field takes no list of kinds. */
-const Image = withFileRules(z.object({ type: z.literal('image'), ...common, ...files }).strict());
-const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, filter, createValues }).strict();
+const Image = withFileRules(
+  z
+    .object({
+      /** A picture, or several (`multiple`), shown as it is. */
+      type: z.literal('image'),
+      ...common,
+      ...files,
+    })
+    .strict()
+);
+const Many2one = z
+  .object({
+    /** A link to one record of another model: a customer, a country. */
+    type: z.literal('many2one'),
+    ...common,
+    /** The model of the records it links to, by the name the app's data source knows it by: `"res.partner"`. */
+    relation,
+    /** The records it may link to: conditions on their fields, which may read this record's (`valueFrom`). */
+    filter,
+    /** What a record made from the link starts with besides its name: each field from an expression over this record. */
+    createValues,
+  })
+  .strict();
 /**
  * The fields of the records a many2many links to, for a table of them: its
  * node's `columns` name them, and the data source reads their values. Plain
@@ -508,16 +625,37 @@ export const LinkedFieldSchema = z
 
 export type LinkedField = z.infer<typeof LinkedFieldSchema>;
 const Many2many = z
-  .object({ type: z.literal('many2many'), ...common, relation, filter, createValues, fields: z.record(z.string().regex(FIELD_NAME), LinkedFieldSchema).optional() })
+  .object({
+    /** Links to several records of another model: tags, a team. */
+    type: z.literal('many2many'),
+    ...common,
+    /** The model of the records it links to, by the name the app's data source knows it by. */
+    relation,
+    /** The records it may link to: conditions on their fields, which may read this record's (`valueFrom`). */
+    filter,
+    /** What a record made from the link starts with besides its name: each field from an expression over this record. */
+    createValues,
+    /** The fields of the records it links to, for a table of them: its node's `columns` name them. */
+    fields: z.record(z.string().regex(FIELD_NAME), LinkedFieldSchema).optional(),
+  })
   .strict();
 const Reference = z
-  .object({ type: z.literal('reference'), ...common, models: z.array(OptionSchema).min(1) })
+  .object({
+    /** A link to one record of one of several models: a document's subject, an invoice or an order. */
+    type: z.literal('reference'),
+    ...common,
+    /** The models it may link to, each with its words: `{ "value": "sale.order", "label": "Order" }`. */
+    models: z.array(OptionSchema).min(1),
+  })
   .strict();
 /** One property of a properties field: its own small field, edited with the widget for its type. */
 export const PropertyDefinitionSchema = z
   .object({
+    /** Its name in the value, as a field's: letters, digits and _. */
     name: z.string().regex(FIELD_NAME),
+    /** Its words, as the person reads them beside its box. */
     label: z.string(),
+    /** What it holds, as a field's kind: words, a number, yes or no, a choice, a day. */
     type: z.enum(['char', 'text', 'integer', 'float', 'boolean', 'selection', 'date']),
     /** For a choice property. */
     options: z.array(OptionSchema).min(1).optional(),
@@ -536,6 +674,7 @@ export type PropertyDefinition = z.infer<typeof PropertyDefinitionSchema>;
  */
 export const DefinitionsFromSchema = z
   .object({
+    /** The app's list of definitions, by the name its data source knows it by. */
     list: z.string().min(1),
     /** The fields the definitions change with, such as the link to the record that keeps them. */
     dependsOn: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
@@ -547,6 +686,7 @@ export type DefinitionsFrom = z.infer<typeof DefinitionsFromSchema>;
 
 const Properties = z
   .object({
+    /** Properties of its own each record may have: small fields defined in the page, or by a linked record. */
     type: z.literal('properties'),
     ...common,
     /** The properties a record may have. Left out, each property is worked out from its value. */
@@ -555,7 +695,13 @@ const Properties = z
     definitionsFrom: DefinitionsFromSchema.optional(),
   })
   .strict();
-const Json = z.object({ type: z.literal('json'), ...common }).strict();
+const Json = z
+  .object({
+    /** Any JSON value, drawn by the widget its node names: a place on a map, pins on a picture, a week's hours. */
+    type: z.literal('json'),
+    ...common,
+  })
+  .strict();
 /**
  * A matrix question: one answer per row, chosen from the columns — a Likert
  * grid. The value is an object of row value to column value, or to a list of
@@ -563,9 +709,12 @@ const Json = z.object({ type: z.literal('json'), ...common }).strict();
  */
 const Matrix = z
   .object({
+    /** A grid question: one answer per row, chosen from the columns. */
     type: z.literal('matrix'),
     ...common,
+    /** The rows, each asked: its value the key of its answer. */
     rows: z.array(OptionSchema).min(1),
+    /** The columns each row is answered from: its value the answer. */
     columns: z.array(OptionSchema).min(1),
     /** Several columns may be chosen in a row. */
     multiple: z.boolean().optional(),
@@ -589,10 +738,14 @@ const InnerLineFieldSchema = z
  */
 const LineOne2many = z
   .object({
+    /** Lines a line holds, one level down, edited in the line's own form. */
     type: z.literal('one2many'),
     ...common,
+    /** The model of the inner lines, by the name the app's data source knows it by. */
     relation,
+    /** The fields of each inner line. */
     fields: z.record(z.string().regex(FIELD_NAME), InnerLineFieldSchema),
+    /** The integer inner-line field that keeps their order: with it, they can be moved. */
     sequenceField: z.string().regex(FIELD_NAME).optional(),
     /** What a new inner line starts with: each of its fields from an expression over the line that holds it. */
     lineDefaults: valueMap.optional(),
@@ -632,11 +785,14 @@ export type LineKinds = z.infer<typeof LineKindsSchema>;
 
 const One2many = z
   .object({
+    /** The record's lines: an order's items, a person's phones — a table edited in place. */
     type: z.literal('one2many'),
     ...common,
+    /** The model of its lines, by the name the app's data source knows it by: `"sale.order.line"`. */
     relation,
     /** The fields of each line, so lines can be edited in place. */
     fields: z.record(z.string().regex(FIELD_NAME), LineFieldSchema),
+    /** Lines that are not items: section headings and notes between them, told apart by a line field's value. */
     lineKinds: LineKindsSchema.optional(),
     /**
      * The integer line field that keeps the lines' order (a backend's

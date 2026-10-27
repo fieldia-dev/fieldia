@@ -29,8 +29,11 @@ const countries = z.enum(['list', 'native'], { error: 'countries is "list" (Fiel
 /** A page's phone numbers: the country a number typed without its + is read in, and how a number is shown at rest. */
 export const PagePhoneSchema = z
   .strictObject({
+    /** The country a number typed without its + is read in, by its ISO code: "EG". Never assumed when left out. */
     country: country.optional(),
+    /** How a number is shown at rest: "international" (+20 10 1234 5678) or "national" (010 1234 5678). */
     shown: shown.optional(),
+    /** How a number's country is picked: "list", Fieldia's own found by typing, or "native", the browser's own list. */
     countries: countries.optional(),
   })
   .meta({ id: 'PagePhone' });
@@ -47,9 +50,3 @@ export const PhoneOptionsSchema = z
   .meta({ id: 'PhoneOptions' });
 
 export type PhoneOptions = z.infer<typeof PhoneOptionsSchema>;
-
-/** The issues of a phone field's settings, each at its path under `options`. */
-export function phoneOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  if (node.widget !== 'phone') return [];
-  return (PhoneOptionsSchema.safeParse(node.options ?? {}).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] }));
-}

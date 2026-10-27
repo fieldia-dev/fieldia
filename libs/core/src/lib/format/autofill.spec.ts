@@ -2,6 +2,7 @@ import type { Page } from './page';
 import type { FieldNode } from './layout';
 import { validatePage } from './validate';
 import { checkPage } from './check-page';
+import { wholeCheck } from './check-whole';
 import { AUTOFILL, autofillProblem, autofillPurpose } from './autofill';
 
 /** A page of one field, placed as the test says. */
@@ -54,8 +55,10 @@ describe('a box’s autocomplete purpose', () => {
     expect(checkPage(pageWith({ autocomplete: 'shipping', widget: 'address' }, 'json')).ok).toBe(true);
     expect(validatePage(pageWith({ autocomplete: 'billing', widget: 'address' }, 'json')).ok).toBe(true);
     expect(checkPage(pageWith({ autocomplete: 'country', widget: 'address' }, 'json'))).toEqual({ ok: false, issues: [{ path: 'layout.children[0].autocomplete', message: expect.stringContaining('an address in parts') }] });
-    // One the standard does not list is the format's to refuse, where pages are made; a browser passes over it.
+    // One the standard does not list is the format's to refuse, where pages are made and by the whole check a viewer runs
+    // after the first draw (0.36: said, refused from 0.37); the check before the draw passes over it, as 0.35's did.
     expect(validatePage(pageWith({ autocomplete: 'telephone' }))).toEqual({ ok: false, issues: [{ path: 'layout.children[0].autocomplete', message: expect.stringContaining('from the HTML standard') }] });
+    expect(wholeCheck(pageWith({ autocomplete: 'telephone' }))).toEqual({ ok: false, issues: [{ path: 'layout.children[0].autocomplete', message: 'Invalid string: "telephone" is not in the form this setting takes' }] });
     expect(checkPage(pageWith({ autocomplete: 'telephone' })).ok).toBe(true);
   });
 

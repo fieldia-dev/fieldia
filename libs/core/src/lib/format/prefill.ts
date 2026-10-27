@@ -5,7 +5,14 @@ import { FIELD_NAME } from './names';
  * A link's parameter that fills a field as the page opens: the field of its own name, or another (`field`) — a
  * campaign's `utm_source` into `source`, a broker's `agent` into `agent_code`.
  */
-export type PrefillParam = string | { param: string; field: string };
+export type PrefillParam =
+  | string
+  | {
+      /** The link's parameter, by its name: `agent`. */
+      param: string;
+      /** The field it fills: `agent_code`. */
+      field: string;
+    };
 
 /**
  * Fields filled from the link a page is opened with (`prefill` on a page): a campaign's, a broker's, a listing's —

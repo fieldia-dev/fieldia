@@ -15,7 +15,12 @@ Each release's section is written in the commit that sets its version.
 `node tools/release.mjs check` refuses a version that has no section here, and
 `publish` prints the section with the git tag and the GitHub release commands.
 A patch (0.34.**1**) holds fixes alone, with no Upgrading part: `release.mjs`
-refuses one that has.
+refuses one that has. From 0.37 a minor comes no sooner than two weeks after
+the one before, and changes nothing that was not deprecated in the minor
+before it: a deprecation is said once in the console where it is used, listed
+under **Deprecated** in the minor that first warns of it, and cited where it
+changes; each Upgrading item says whether it adds, fixes or changes what was
+deprecated ([the release train](docs/maintainers/release-train.md)).
 
 ## 0.35.2 — 2026-10-26
 

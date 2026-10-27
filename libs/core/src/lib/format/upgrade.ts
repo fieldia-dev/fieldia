@@ -13,6 +13,12 @@ export interface PageUpgrade {
   upgrade(page: PageJson): PageJson;
   /** A page before the step and after it. upgrade.spec.ts runs every step on its example: none goes untested. */
   example: { before: PageJson; after: PageJson };
+  /**
+   * Whether a page in the current format relies on what this format brought that its settings do not show — a default
+   * this format changed, left unset — so it needs this format at the least (`lowestFormat`). A step that writes the old
+   * default into older pages says it; one that only renames needs none.
+   */
+  uses?(page: PageJson): boolean;
 }
 
 /**
@@ -46,7 +52,10 @@ export interface PageUpgrade {
  * never kept in a draft — so a 0.12 page is a 0.13 page as it is (0.34's other checks — a field named `constructor`,
  * `__proto__` or `prototype`, a pattern that could take seconds — are refusals of what a page says, not its shape).
  * A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
- * none: the page is the same, and upgradePage writes the new version in it.
+ * none: the page is the same, and upgradePage writes the new version in it. From 0.36 a default that changes is a new
+ * format too: its step writes the old default into an older page, so it keeps doing what it did, and says which pages
+ * rely on the new one (`uses`), so `lowestFormat` stamps them with it. A page is saved in the lowest format it needs
+ * (stamp.ts), read from the format's history (tools/format-since.mjs): once a format is released, run it.
  */
 export const PAGE_UPGRADES: readonly PageUpgrade[] = [];
 

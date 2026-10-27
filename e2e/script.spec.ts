@@ -12,8 +12,11 @@ test('a page with no build step fills in and sends a form', async ({ page }) => 
   await page.goto('/script/');
   await expect(page.locator('.fd-form')).toBeVisible();
   expect(await page.evaluate(() => typeof (window as any).Fieldia)).toBe('object');
-  // English alone: no language's script asked for, and no other language's words in the one that came.
-  expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path))).toEqual(['/script/fieldia.js']);
+  // English alone: no language's script asked for, and no other language's words in the one that came. The whole check
+  // aside, asked for once the form was drawn (page-check.spec).
+  const scripts = () => requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path) && !path.endsWith('/fieldia.check.js'));
+  expect(scripts()).toEqual(['/script/fieldia.js']);
+  await expect.poll(() => requested.filter((path) => path.endsWith('/fieldia.check.js'))).toEqual(['/script/fieldia.check.js']);
   expect(await page.evaluate(() => Object.keys((window as any).Fieldia.VIEWER_LABELS))).toEqual(['en']);
   expect(await page.evaluate(() => (window as any).fieldiaDemo.version)).toMatch(/^\d+\.\d+\.\d+/);
 
@@ -35,7 +38,7 @@ test('a page with no build step fills in and sends a form', async ({ page }) => 
     phone: '+20 100 555 0101',
     when: 'afternoon',
   });
-  expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path))).toEqual(['/script/fieldia.js', '/script/fieldia.undo.js', '/script/fieldia.memory.js']);
+  expect(scripts()).toEqual(['/script/fieldia.js', '/script/fieldia.undo.js', '/script/fieldia.memory.js']);
   expect(problems).toEqual([]);
 });
 

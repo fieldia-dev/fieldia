@@ -1,4 +1,5 @@
-import { validatePage, type FieldNode, type Page, type SectionNode, type StepNode, type WizardNode } from '@fieldia/core';
+import { lowestFormat } from '@fieldia/core/schema';
+import { FORMAT_VERSION, validatePage, type FieldNode, type Page, type SectionNode, type StepNode, type WizardNode } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, QUESTION_KINDS } from './designer';
 
 const wizard = (page: Page) => page.layout as WizardNode;
@@ -166,6 +167,28 @@ describe('createDesigner — drafts and published versions', () => {
     expect(designer.getState().unpublished).toBe(true);
     expect(await designer.publish()).toBe(2);
     expect(designer.getState().unpublished).toBe(false);
+  });
+
+  it('publishes each version stamped with the lowest format its settings need, and reopens it as published', async () => {
+    const store = createMemoryPageStore();
+    const designer = createDesigner({ page: blankPage('survey', 'S'), store });
+    const id = designer.addQuestion('short-answer') as string;
+    await designer.publish();
+    // A short answer, a step: nothing past the format's first — a 0.20 viewer reads it (the format's history decides).
+    expect((await store.load('s')).versions[0].page.fieldia).toBe(lowestFormat(designer.getPage()));
+    expect(lowestFormat(designer.getPage())).toBe('0.1');
+    expect(designer.getPage().fieldia).toBe(FORMAT_VERSION);
+    // A setting that came later raises it: never kept in a draft (`secret`, 0.13).
+    const field = fieldNodes(designer.getPage()).find((node) => node.id === id)?.field as string;
+    const json = JSON.parse(designer.pageJson());
+    json.fields[field].secret = true;
+    expect(designer.setPageJson(JSON.stringify(json))).toEqual({ ok: true });
+    await designer.publish();
+    expect((await store.load('s')).versions[1].page.fieldia).toBe('0.13');
+    // Reopened, the draft read in the current format is the version published: nothing unpublished.
+    const reopened = await createDesigner.open('s', store);
+    expect(reopened.getPage().fieldia).toBe(FORMAT_VERSION);
+    expect(reopened.getState().unpublished).toBe(false);
   });
 
   it('reopens the latest draft from the store', async () => {

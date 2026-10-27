@@ -56,7 +56,7 @@ export const CheckTreeOptionsSchema = z
   .meta({ id: 'CheckTreeOptions' });
 
 /** The settings any picker of these may have on a node of the widget it names. */
-const SHARED = z.object({
+export const PickerOptionsSchema = z.object({
   /** "own": Fieldia's own list in place of the browser's, a tick by the option picked (a choice with no widget). */
   list: z.literal('own', { error: 'list is "own": Fieldia’s own list in place of the browser’s' }).optional(),
   /** "button": tags are added from a button that turns into the tag box ("Add Tag"). */
@@ -66,10 +66,3 @@ const SHARED = z.object({
 export type PathPickerOptions = z.infer<typeof PathPickerOptionsSchema>;
 export type StateDotOptions = z.infer<typeof StateDotOptionsSchema>;
 export type CheckTreeOptions = z.infer<typeof CheckTreeOptionsSchema>;
-
-/** The issues of a field node's picker settings, each at its path under `options`. */
-export function pickerOptionIssues(node: { widget?: string; options?: Record<string, unknown> }): { message: string; path: (string | number)[] }[] {
-  const options = node.options ?? {};
-  const schemas = [SHARED, ...(node.widget === 'path' ? [PathPickerOptionsSchema] : []), ...(node.widget === 'dot' ? [StateDotOptionsSchema] : []), ...(node.widget === 'tree' ? [CheckTreeOptionsSchema] : [])];
-  return schemas.flatMap((schema) => (schema.safeParse(options).error?.issues ?? []).map((issue) => ({ message: issue.message, path: ['options', ...issue.path] as (string | number)[] })));
-}

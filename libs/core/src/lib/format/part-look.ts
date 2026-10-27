@@ -11,6 +11,7 @@ export interface PartLook {
   background?: string;
   /** Its edge: a box's, a card's, a table's lines. `#rrggbb`. */
   border?: string;
+  /** How round its corners are. */
   corners?: 'square' | 'soft' | 'round';
   /** Its words, smaller or larger than the page's. */
   textSize?: 'small' | 'large';
@@ -35,4 +36,4 @@ export const PART_LOOKS = {
 export type PartLookKind = keyof typeof PART_LOOKS;
 
 /** The look of each kind of part the page gives one. */
-export type PartsLook = { [K in PartLookKind]?: Pick<PartLook, (typeof PART_LOOKS)[K][number]> };
+export type PartsLook = { [K in keyof typeof PART_LOOKS]?: Pick<PartLook, (typeof PART_LOOKS)[K][number]> };

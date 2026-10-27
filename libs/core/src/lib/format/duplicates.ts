@@ -19,7 +19,9 @@ makeSchemasJitless();
  */
 export const PageDuplicatesSchema = z
   .strictObject({
+    /** The fields records are compared by: words, a number, a date, a choice or a link — `["phone", "email"]`. */
     fields: z.array(z.string().min(1)).min(1),
+    /** When it asks: "type", as those fields are typed in and as the record is saved (the default), or "save" alone. */
     on: z.enum(['type', 'save'], { error: 'on is "type" (asked as the fields are typed in, and as the record is saved) or "save" (as it is saved)' }).optional(),
   })
   .meta({ id: 'PageDuplicates' });
