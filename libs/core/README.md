@@ -686,7 +686,10 @@ lines whose columns hold the same values, and kept by the cell's path in
 `state.choices` (`form.loadChoices("tool_ids.k1.tool")`), taken out and said the
 same way, by the cell's path, as a column they change with changes on that line. `form.lineChoices(field, key, column,
 values)` asks a line's for a row about to be pasted on it. The memory source's
-`lists` functions take the request after the values.
+`lists` functions take the request after the values. Such a choice may leave its
+`options` out: it has none to start with, and the list fills them — `upgradePage`,
+which `checkPage`, `validatePage`, `createForm` and the designer read a page
+through, reads them as `[]`.
 
 A date and time drawn as booking slots (`"widget": "slots"`) asks the data
 source's `slots(request)` for its free times: the days asked (`from`, `to`, in
