@@ -3077,7 +3077,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // wait is drawn as it says: asked for alongside them, it delays none. And where the app's own way names a look of its.
   // Any other wait asks for it as it begins, past an answer in the same turn: a quick source never fetches it.
   // One rule with `partFiles`, so a page's part tags written into it name the loading part where this asks for it.
-  const drawsFromPart = loadingWithParts(page, owed, form.getState().status === 'idle', options.loading);
+  // The whole check's part aside (the one-tag script's, asked for as it started): no part a page draws from, it brings
+  // none of a page's waits — a page that draws from none draws its first wait as ever (`partFiles` names no loading part
+  // for it either).
+  const drawsFromPart = loadingWithParts(page, owed.filter((part) => part !== pageCheckPart), form.getState().status === 'idle', options.loading);
   const awaited = drawsFromPart && !loadingPart.loaded ? [...owed, loadingPart] : owed;
   // Its parts in already (the app loaded them first), its data still to come drawn from the loading part: asked for now,
   // not waited for, so its first wait is drawn as it says as it shows — never "Loading…" in words, then its shapes.
@@ -3479,7 +3482,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     void (form.getState().loaded === false ? form.load() : form.run([{ do: 'reload' }]));
   };
   const recordWaitAt = (moment: 'first' | 'refresh') => startLoading(content, moment, loading, { part: page.id, shape: shapes, place: atTop, retry: askAgain });
-  if (awaited.length || words || form.getState().status === 'idle') recordWait = recordWaitAt('first');
+  // Waiting for the whole check's part alone (the one-tag script's, asked for as it started) is no wait of the page's: its
+  // element busy meanwhile, as for a moment — no skeleton, no loading part asked for it.
+  if (awaited.some((part) => part !== pageCheckPart) || words || form.getState().status === 'idle') recordWait = recordWaitAt('first');
   let saveWait: Wait | null = null;
   const waits = (state: FormState) => {
     // The page drawn, its own boxes in the skeleton's place.

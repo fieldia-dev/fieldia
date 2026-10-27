@@ -6,7 +6,7 @@ import { expect, test } from './fixtures';
 
 /**
  * A page's parts written into it before fieldia.js (`partFiles`, the performance audit's M2: a list usable 16–27%
- * sooner on a phone): each fetched once. A part's `<script async>` tag still on its way as the page mounts is waited
+ * sooner on a phone) — its whole check among them (0.37) — each fetched once. A part's `<script async>` tag still on its way as the page mounts is waited
  * for, never asked for a second time; a `<link rel="preload" as="script">` written with what the main script's own tag
  * carries (`Fieldia.partTags(page)`: its address, and the attributes the browser matches a preload by) is used as it
  * is. The parts are held back here, so the page mounts while they are still coming.
@@ -35,16 +35,16 @@ async function served(page: Page, head: string) {
     Fieldia.mountViewer(document.getElementById('app'), { page: ${JSON.stringify(CUSTOMERS)}, dataSource: Fieldia.createMemoryDataSource({ records: ${JSON.stringify(RECORDS)} }) });
   </script></body></html>`;
   await page.route('**/script/preloaded.html', (route) => route.fulfill({ contentType: 'text/html; charset=utf-8', body }));
-  // The parts held back: the page mounts, and asks for them, while they are still on their way.
-  await page.route(/\/script\/fieldia\.(list|cards|loading|memory)\.js$/, async (route) => {
+  // The parts held back: the page mounts, and asks for them, while they are still on their way — the whole check too,
+  // which the script asks for as it starts.
+  await page.route(/\/script\/fieldia\.(list|cards|loading|memory|check)\.js$/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 700));
     await route.continue();
   });
   const asked: string[] = [];
   page.on('request', (request: Request) => {
     const file = /\/(fieldia\.[a-z]+\.js)$/.exec(request.url())?.[1];
-    // The whole check aside: every page asks for it once drawn (page-check.spec), none writes its tag.
-    if (file && file !== 'fieldia.check.js') asked.push(file);
+    if (file) asked.push(file);
   });
   await page.goto('/script/preloaded.html');
   await expect(page.locator('#app .fd-list-row')).toHaveCount(2);
@@ -68,12 +68,13 @@ test('each tag partTags gives carries its file’s hash, asked for without crede
 test('a part’s script tag written before fieldia.js, as partTags gives it, is fetched once, still on its way as the page mounts', async ({ page }) => {
   const tags = await partTags(page);
   const files = tags.map((tag) => tag['src'].replace(/^.*\//, ''));
-  // The loading part too: the list's first wait, a skeleton of its rows, is drawn from it.
-  expect(files).toEqual(['fieldia.list.js', 'fieldia.cards.js', 'fieldia.loading.js']);
+  // The loading part too: the list's first wait, a skeleton of its rows, is drawn from it. And the whole check every page
+  // is checked with before its first draw (0.37), which the script asks for as it starts: its tag taken, never asked twice.
+  expect(files).toEqual(['fieldia.list.js', 'fieldia.cards.js', 'fieldia.loading.js', 'fieldia.check.js']);
   const written = (file: string) => `<script async src="${file}" integrity="${sha256(file)}" crossorigin="anonymous"></script>`;
   const head = [...files, 'fieldia.memory.js'].map(written).join('');
   const asked = await served(page, head);
-  expect(count(asked)).toEqual({ 'fieldia.list.js': 1, 'fieldia.cards.js': 1, 'fieldia.loading.js': 1, 'fieldia.memory.js': 1 });
+  expect(count(asked)).toEqual({ 'fieldia.list.js': 1, 'fieldia.cards.js': 1, 'fieldia.loading.js': 1, 'fieldia.check.js': 1, 'fieldia.memory.js': 1 });
 });
 
 test('a preload link written as partTags gives it is used by the part’s own tag: fetched once', async ({ page }) => {
@@ -83,5 +84,5 @@ test('a preload link written as partTags gives it is used by the part’s own ta
   const attribute = (name: string, value: string) => ` ${name === 'crossOrigin' ? 'crossorigin' : name}="${value}"`;
   const head = tags.map((tag) => `<link rel="preload" as="script" href="${tag['src']}"${Object.entries(tag).filter(([name]) => name !== 'src' && name !== 'nonce').map(([name, value]) => attribute(name, value)).join('')}>`).join('');
   const asked = await served(page, head);
-  expect(count(asked)).toEqual({ 'fieldia.list.js': 1, 'fieldia.cards.js': 1, 'fieldia.loading.js': 1, 'fieldia.memory.js': 1 });
+  expect(count(asked)).toEqual({ 'fieldia.list.js': 1, 'fieldia.cards.js': 1, 'fieldia.loading.js': 1, 'fieldia.check.js': 1, 'fieldia.memory.js': 1 });
 });
