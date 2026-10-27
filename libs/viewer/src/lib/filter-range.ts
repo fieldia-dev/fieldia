@@ -91,6 +91,8 @@ export interface RangeBoxes {
    * under the box, the text kept as typed, the focus on it when `focus`.
    */
   read(focus?: boolean): RangeEnds | false;
+  /** Why the last read refused them, in words: none where it read them. */
+  why(): string;
   /** The ends written into the boxes, as the page writes them. */
   show(ends: RangeEnds): void;
   /** Words under a box, the focus on it: what goes there. */
@@ -157,9 +159,11 @@ export function rangeBoxes(context: RangeBoxesContext): RangeBoxes {
     return { ok: true, value: read.value };
   };
 
+  let refused = '';
   const read = (focus = true): RangeEnds | false => {
+    refused = '';
     const said = (input: HTMLInputElement, why: string) => {
-      hints.get(input)?.show(why);
+      hints.get(input)?.show((refused = why));
       if (focus) input.focus();
       return false as const;
     };
@@ -192,6 +196,7 @@ export function rangeBoxes(context: RangeBoxesContext): RangeBoxes {
     from,
     to,
     read,
+    why: () => refused,
     show(ends) {
       from.value = endTyped(page, def, ends.from, locale);
       to.value = endTyped(page, def, ends.to, locale);

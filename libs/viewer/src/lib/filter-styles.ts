@@ -67,7 +67,8 @@ export const FILTER_CSS = /* css */ `
 .fd-filter-sheet-box { --fd-tick-size: 20px; }
 .fd-filter-sheet .fd-filter-range-press { min-height: 40px; min-width: 48px; font-size: 15px; }
 .fd-filter-sheet .fd-filter-range-box { min-height: 44px; font-size: 16px; }
-.fd-filter-sheet-foot { display: flex; align-items: center; gap: 12px; }
+.fd-filter-sheet-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.fd-filter-sheet-why { flex: 1 0 100%; margin: 0; }
 .fd-filter-sheet-foot .fd-button { min-height: 44px; }
 .fd-filter-sheet-show { flex: 1 1 auto; justify-content: center; }
 @media (max-width: 600px) {

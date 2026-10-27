@@ -17,6 +17,8 @@ export interface RangeControl {
    * is past To — said under it, kept as typed, the focus on it when `focus`.
    */
   commit(focus?: boolean): boolean;
+  /** Why the last commit refused what the boxes hold, in words: none where it took it. */
+  why(): string;
   destroy(): void;
 }
 
@@ -69,6 +71,7 @@ export function rangeControl(context: RangeBoxesContext & { kit: FilterKit; labe
       if (next) take(next);
       return next !== false;
     },
+    why: boxes.why,
     destroy: boxes.destroy,
   };
 }
