@@ -31,6 +31,8 @@ and save through a small data-source interface that your app implements.
 | `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | on npm |
 | `@fieldia/testing` | Your app's forms tested as people use them — fill, pick, check, press, `errorsOf`, `valueOf` — for Testing Library and Playwright, and `fieldia-check`, which keeps stored pages valid in CI | on npm from 0.31 |
 
+Building an app with npm's `engine-strict` on needs Node 24 or later: `@zxing/library`, the code reader behind `@fieldia/widgets`' scanner, asks for `node >= 24` (its 0.22 and 0.23 both do). That is the install's only need of Node; the packages themselves run in the browser, in every browser Fieldia supports.
+
 ### The screen editor
 
 The screen is drawn the way the viewer draws it, and edited where it stands:
@@ -69,9 +71,9 @@ against budgets that fail the build.
   5,000 rows as at 100. A table of 200 lines draws again only the lines a change
   touches.
 - **Small from npm.** An app's first load from the packages, bundled by esbuild:
-  a record form 245.3 KB gzipped with the page and 336 KB to usable, a list
-  244.5 and 332, the screen designer 592 and 821 (`tools/npm-first-load.mjs`,
-  a CI budget). The one-tag `fieldia.js` is 196.6 KB gzipped; its larger parts
+  a record form 245.7 KB gzipped with the page and 337 KB to usable, a list
+  244.9 and 333, the screen designer 593 and 822 (`tools/npm-first-load.mjs`,
+  a CI budget). The one-tag `fieldia.js` is 196.9 KB gzipped; its larger parts
   come as a page first uses them, and the whole check of a page (17.3 KB) once
   the page is drawn.
 

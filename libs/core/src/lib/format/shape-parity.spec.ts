@@ -5,6 +5,7 @@ import { wholeCheck } from './check-whole';
 import { validatePage } from './validate';
 import { shapeIssues, type ShapeData } from './shape-check';
 import { PAGE_SHAPE } from './page-shape';
+import { upgradePage } from './upgrade';
 
 /**
  * One check, not a weaker copy (the audit's R-M5): the whole check every viewer runs after a page's first draw
@@ -154,7 +155,9 @@ describe('the whole check refuses what validatePage refuses', () => {
   it('the mistakes tell a weaker check apart: without its rules, or letting keys it does not know through', () => {
     // The whole check without the shape: the outline, the names and the settings held to themselves.
     const named = MADE.map((page) => wholeCheck(page, { shape: false }).ok);
-    const quick = (data: ShapeData) => (page: Json, i: number) => named[i] && !shapeIssues(page, data).length;
+    // The shape read on the page as it comes through the door (upgradePage, as the whole check reads it: from 0.35.3 a
+    // choice that writes no options has none).
+    const quick = (data: ShapeData) => (page: Json, i: number) => named[i] && !shapeIssues(upgradePage(page), data).length;
     // Each weaker check tried on every third mistake: enough to tell it, in a third of the time.
     const counts = {
       outline: disagreements((_, i) => named[i]).count,

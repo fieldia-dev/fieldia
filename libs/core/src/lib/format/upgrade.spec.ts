@@ -348,3 +348,39 @@ describe("the format's history", () => {
     expect(validatePage(upgradePage(before))).toMatchObject({ ok: true });
   });
 });
+
+describe('a choice that writes no options, read at the door as having none', () => {
+  const choice = (more: Record<string, unknown> = {}) => ({ type: 'selection', label: 'Pick', optionsFrom: { list: 'picks' }, ...more });
+  const listed = (fields: Record<string, unknown>, layout: Record<string, unknown> = { type: 'sections', id: 'r', children: [] }): PageJson => ({ ...page(), fields, layout });
+
+  it('fills `options: []` on the page’s fields, its lines’ and links’, and the fields a list or a related list shows', () => {
+    const given = listed(
+      { pick: choice(), lines: { type: 'one2many', label: 'Lines', relation: 'm.line', fields: { pick: choice(), parts: { type: 'one2many', label: 'Parts', relation: 'm.part', fields: { pick: choice() } } } }, tags: { type: 'many2many', label: 'Tags', relation: 'm.tag', fields: { kind: { type: 'selection', label: 'Kind' } } } },
+      { type: 'sections', id: 'r', children: [{ type: 'related', id: 'rel', model: 'm.x', field: 'pick', fields: { kind: { type: 'selection', label: 'Kind' } }, columns: ['kind'] }] }
+    );
+    const before = JSON.stringify(given);
+    const read = upgradePage(given) as unknown as { fields: any; layout: any };
+    expect(read.fields.pick.options).toEqual([]);
+    expect(read.fields.lines.fields.pick.options).toEqual([]);
+    expect(read.fields.lines.fields.parts.fields.pick.options).toEqual([]);
+    expect(read.fields.tags.fields.kind.options).toEqual([]);
+    expect(read.layout.children[0].fields.kind.options).toEqual([]);
+    // The page given is never changed.
+    expect(JSON.stringify(given)).toBe(before);
+  });
+
+  it('hands back the very page, and its very parts, where every choice writes its options', () => {
+    const given = listed({ pick: choice({ options: [] }), name: { type: 'char', label: 'Name' } });
+    expect(upgradePage(given)).toBe(given);
+    const one = listed({ pick: choice(), name: { type: 'char', label: 'Name' } });
+    const read = upgradePage(one) as unknown as { fields: Record<string, unknown>; layout: unknown };
+    expect(read.fields['name']).toBe((one['fields'] as Record<string, unknown>)['name']);
+    expect(read.layout).toBe(one['layout']);
+  });
+
+  it('a choice with neither options nor a list is still refused, saying what it needs', () => {
+    const result = validatePage(listed({ pick: { type: 'selection', label: 'Pick' } }));
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).toContain('a choice needs its options');
+  });
+});

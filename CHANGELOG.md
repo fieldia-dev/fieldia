@@ -284,9 +284,10 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   recorder's start and an empty recording — are machine-made and not yet
   reviewed by a native speaker.
 
-**Size:** `fieldia.js` 586.5 KB, 196.6 gzipped (0.35.2: 578.3, 193.6): +2.99 KB
+**Size:** `fieldia.js` 587.2 KB, 196.9 gzipped (0.35.3: 579.1, 193.9): +2.98 KB
 gzipped, under the owner's 200, all of it what every page runs. By lane, each
-measured on its own base: deps-maint 0.12 (a control's name holding what it
+measured on its own 0.35.2 base, which 0.35.3's fixes (+0.28) joined as they
+measured alone: deps-maint 0.12 (a control's name holding what it
 shows, `nameShowing`); p3-promises 1.40 (the check before the draw as 0.35's, a
 refused page's words, the deprecations and the whole check's handle — the whole
 check itself is a part, below); perf-leftovers 0.01; p3-real-tests 1.15 (words
@@ -309,12 +310,85 @@ The parts, gzipped:
 
 From the npm packages, an app's first load (KB gzipped, with the page / to
 usable, bundled by esbuild; usable now holds the whole check's chunk, fetched
-after the draw): a record form 241.5 → 245.3 / 314.5 → 336.1; in Arabic 241.5 →
-245.3 / 336.8 → 358.7; a list 240.8 → 244.5 / 309.9 → 332.3; the screen
-designer 587.6 → 592.3 / 801.1 → 821.4. `@fieldia/map`'s parts: a list's map
-22,350 → 22,973 bytes, a form's 19,977 → 20,559, its fields 18,555 → 19,022;
+after the draw): a record form 241.8 → 245.7 / 314.8 → 336.5; in Arabic 241.8 →
+245.7 / 337.1 → 359.1; a list 241.0 → 244.9 / 310.2 → 332.6; the screen
+designer 587.9 → 592.7 / 801.5 → 821.8. `@fieldia/map`'s parts: a list's map
+22,351 → 22,973 bytes, a form's 19,978 → 20,559, its fields 18,556 → 19,022;
 with the page 11,932 → 12,018. `@fieldia/calendar`'s calendar 17,825 → 17,883
 bytes, `@fieldia/gantt`'s timeline 15,338 → 15,383.
+
+## 0.35.3 — 2026-10-27
+
+**A field named like a setting keeps its words' handling.** A field called
+`values`, `default`, `data` or `filter` had its label and help taken for data:
+`literalPage` left them as written, so a help that quotes a brace was refused,
+and a translator never saw them. Flowyard 0.24.0's Files › Fill a template,
+whose setting is `values`, could not open its settings; renaming it would break
+the flows already stored. Reported by NexiBI and Flowyard, with two smaller
+defects, fixed here too.
+
+**Fixes:**
+
+- **A name is a name, whatever it is called.** A key of a map whose keys are
+  names is never read as a setting: the fields of a page, of a table's lines,
+  of a link's table and of a list; a list's cells and filter ranges; the steps
+  run as a field changes or shows (`on.change`, `on.show`); what a link's new
+  record and a new line start with (`createValues`, `lineDefaults`); a kind's
+  looks, a dot's colours and what a scan fills. A field named `values`,
+  `default`, `data`, `filter`, `options`, `map`, `label` or anything else keeps
+  its words: `literalPage` writes them to show as written (the page check then
+  accepts the help that quotes `{{ customer }}`: 0.35.2 said
+  `fields.values.help: no field "customer"`), and `translatePage`,
+  `localizePage`, `pageWords` — the designer's translations table and its CSV —
+  and what the viewer draws all read them, as they read any field's. Only a
+  setting's key in a setting's place is read as a setting. Every map of the
+  format is known to the one walk of a page's words, checked against the
+  format's JSON Schema, so one added later cannot be missed.
+- **A choice from the app's list that writes no `options` is drawn.** A
+  selection with `optionsFrom` and no `options` passed the viewer's check, then
+  the viewer threw as it drew it; 0.13 drew it. A choice that writes no options
+  now has none to start with, and the app's list fills them. It is read so at
+  the page's door, `upgradePage`, which the viewer, `createForm`, `checkPage`,
+  `validatePage`, the designer and a server's first paint all read a page
+  through: whatever the choice's widget, on the page, on a table's line, in a
+  list's column. A choice with neither options nor a list is still refused.
+- **An upload that fails at once leaves no promise rejection unhandled.** In an
+  Angular app an upload the app's source refused at once reached
+  `NgZone.onError`, its ErrorHandler logged an error and its specs could fail;
+  a refusal that came later did not. Every answer of the app's data source —
+  each of its members, not only `upload` — is now handled where it is made: a
+  promise that is not the browser's own (a zone's) is taken into one of the
+  browser's own at once, before anything awaits it. The field says "Not
+  uploaded" with its Retry, as it did. A list's map on a page of its own
+  (`mountListMap`) reads its source's answers the same way.
+- The README says that building an app with npm's `engine-strict` needs Node 24:
+  `@zxing/library`, the code reader behind the scanner, asks for `node >= 24`
+  (0.22 and 0.23 both). The packages run in the browser, in every browser
+  Fieldia supports.
+
+Behaviour you may notice in an app's own tests:
+
+- No stray rejection after a failed upload, or after any request of the data
+  source refused at once, in an Angular zone: a spec that recorded one
+  (`uncaughtWhile`) records none.
+- `validatePage` and `upgradePage` hand back a choice from the app's list that
+  writes no `options` with `options: []` written in (a copy: the page given is
+  never changed), and `validatePage` accepts it where it said "expected array".
+  A page whose every choice writes its options is handed back as the very
+  object, as before. The page's JSON Schema is the same (format 0.13).
+- `pageWords` and `translatePage` give a translator a field's, a line's or a
+  list's words where its name is a setting's, and no longer give it a link's
+  `createValues` or a line's `lineDefaults` keyed by a name like `title`: those
+  are expressions, and `literalPage` leaves them as written.
+- An answer of the data source that is not the browser's own promise (a zone's,
+  another window's) reaches Fieldia a microtask later than in 0.35.2; one that
+  is the browser's own, as before. Every member of `withDeadlines(source)` hands
+  Fieldia the browser's own promise.
+
+**Size:** `fieldia.js` 579.1 KB, 193.9 gzipped (0.35.2: 578.3, 193.6): a key of
+a map by name read as a name +0.21 KB, +0.04 gzipped; a choice's options left
+out read as none at the page's door +0.37, +0.15; every answer of the source
+handled where it is made +0.17, +0.09. Every part is as it was.
 
 ## 0.35.2 — 2026-10-26
 

@@ -36,6 +36,26 @@ function signalled<R extends object>(request: R, signal: UploadSignal): R {
   return Object.defineProperty({ ...request }, 'signal', { value: signal, enumerable: false, configurable: true });
 }
 
+/** The engine's own promise, whatever `Promise` is now (an Angular app's zone puts its own in its place): an async function's. */
+const OwnPromise = (async () => undefined)().constructor as PromiseConstructor;
+
+/**
+ * An answer of the app's data source as a promise of the engine's own, the app's promise handled at once — its handlers
+ * given as it is made: one it refuses at once is never said unhandled by a zone that watches its own promises (Angular's,
+ * as `NgZone.onError`) while an `await` of Fieldia's, code Angular did not compile, comes to it a microtask late. One
+ * that is the engine's own already, and what is not a promise, as it is: its answer comes not a moment later.
+ */
+export function answerOf<T>(answer: T): T {
+  const then = (answer as { then?: unknown } | null | undefined)?.then;
+  return typeof then === 'function' && (answer as object).constructor !== OwnPromise ? (new OwnPromise((resolve, reject) => then.call(answer, resolve, reject)) as T) : answer;
+}
+
+/** A member of the app's source as Fieldia calls it: on the source, each answer the engine's own (`answerOf`). */
+const answering = (target: object, member: PropertyKey): unknown => {
+  const value = Reflect.get(target, member, target);
+  return typeof value === 'function' ? (...args: unknown[]) => answerOf((value as (...args: unknown[]) => unknown).apply(target, args)) : value;
+};
+
 /** Why a request on its way ended at a Discard: no problem of the person's, said nowhere. */
 export const DISCARDED = 'fieldia:discarded';
 
@@ -49,7 +69,7 @@ const STOPPED = 'fieldia:stopped';
  */
 export function withDeadline<T>(ask: (signal: UploadSignal) => Promise<T>, ms: number, words: string, scheduler: Scheduler = hostScheduler, stops?: Set<(reason?: string) => void>, given?: UploadSignal): Promise<T> {
   const controller = stopper();
-  return new Promise<T>((resolve, reject) => {
+  return new OwnPromise<T>((resolve, reject) => {
     let done = false;
     let timer: unknown = null;
     const end = () => {
@@ -71,7 +91,7 @@ export function withDeadline<T>(ask: (signal: UploadSignal) => Promise<T>, ms: n
     stops?.add(stop);
     let asked: Promise<T>;
     try {
-      asked = Promise.resolve(ask(controller.signal));
+      asked = OwnPromise.resolve(answerOf(ask(controller.signal)));
     } catch (error) {
       end();
       reject(error);
@@ -98,7 +118,8 @@ const going = new WeakMap<object, Set<(reason?: string) => void>>();
 /**
  * A data source whose members a person waits on (`TIMED`, `LOADS`) each answer within `ms` — every other member as it
  * is, none added: a source without one has none. The one place Fieldia's requests meet their deadline; made once per
- * viewer (its form's, its lists', its maps' the same) or per form made alone, and given again, it is itself.
+ * viewer (its form's, its lists', its maps' the same) or per form made alone, and given again, it is itself. Every
+ * answer of every member reaches Fieldia as the engine's own promise, the app's handled where it is made (`answerOf`).
  */
 export function withDeadlines(source: DataSource | undefined, ms: number | undefined, words: string, scheduler: Scheduler = hostScheduler): DataSource | undefined {
   if (!source || going.has(source)) return source;
@@ -115,9 +136,7 @@ export function withDeadlines(source: DataSource | undefined, ms: number | undef
   const wrapped = new Proxy(source, {
     get(target, member) {
       // A member the source has not is none here either (hide, never disable).
-      if (timed.has(member) && typeof Reflect.get(target, member) === 'function') return timed.get(member);
-      const value = Reflect.get(target, member, target);
-      return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      return timed.has(member) && typeof Reflect.get(target, member) === 'function' ? timed.get(member) : answering(target, member);
     },
   });
   going.set(wrapped, stops);

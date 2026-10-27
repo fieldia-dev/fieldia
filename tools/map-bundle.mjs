@@ -181,7 +181,10 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // 0.36 merged with 0.35.1, from the merged build: both lines' map changes in each part — a list's map 22,914 bytes, to
 // 22.4; a form's 20,446, to 20.0; the fields' 19,004, to 18.6; with the page 12,018, 13,718 and 10,945, inside 11.8, 13.4
 // and 10.7.
-const BUDGET = { fields: 11.8, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
+// 0.36 merged with 0.35.3, set once from the merged build: 0.35.3's answers of the app's source the engine's own at the
+// embed's door (embed.ts) beside 0.36's map — with the page 12,018, 13,739 and 10,963 bytes (0.35.3: 11,932, 13,649
+// and 10,879), to 11.8, 13.5 and 10.8; the parts as they were.
+const BUDGET = { fields: 11.8, all: 13.5, embed: 10.8, leaflet: 47, routes: 2 };
 // 0.36 merged with 0.35.2, and a zoom under way from its press (map-core.ts): a list's map 22,943 bytes, to 22.5; a
 // form's 20,479, to 20.1; the fields' 19,021, inside 18.6.
 // 0.36's merge, set once from the merged build (deps-maint's names beside p3-real-tests' map fixes): a list's map 22,973

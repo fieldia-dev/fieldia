@@ -195,7 +195,7 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 | The screen designer | 604.2 KB | 837.9 KB | `tools/npm-first-load.mjs` |
 
 Usable counts the whole check, which a page asks for once it is drawn. The one-tag script, `fieldia.js`, is held to
-196.7 KB gzipped, the whole check it asks for after the first draw (`fieldia.check.js`) to 17.3 KB, and each other part
+196.9 KB gzipped, the whole check it asks for after the first draw (`fieldia.check.js`) to 17.3 KB, and each other part
 it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
 
 These are budgets, not measurements. A count's budget is what the release counted, with a little room; a timing's is
@@ -209,8 +209,8 @@ an iPhone runs Safari's engine); and Chrome on Android. The npm packages are ES2
 | Browser | Checked in CI | Not checked in CI |
 | --- | --- | --- |
 | Chrome, Edge | Chromium 156, Playwright's build: every browser spec, in every framework's demo, every demo's how-to replayed by hand, and the perf gates; the key screens compared with their stored images in Playwright's own container | Chrome's and Edge's own builds; the major before |
-| Firefox | Firefox 157, Playwright's build: the smoke set (113 specs) in the plain demo | The rest of the specs; the major before |
-| Safari | WebKit 27.2, Safari's engine as Playwright builds it: the smoke set (113 specs) in the plain demo | Safari itself; the major before |
+| Firefox | Firefox 157, Playwright's build: the smoke set (115 specs) in the plain demo | The rest of the specs; the major before |
+| Safari | WebKit 27.2, Safari's engine as Playwright builds it: the smoke set (115 specs) in the plain demo | Safari itself; the major before |
 | Safari on iOS | WebKit at an iPhone 14's size with touch: every demo's how-to replayed by a finger (`how-to-phone`), and the smoke set's phone specs | A real iPhone |
 | Chrome on Android | Chromium at a phone's size with touch; the perf gates on a phone's CPU | A real Android phone |
 

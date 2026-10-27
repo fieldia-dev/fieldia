@@ -1560,6 +1560,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // widgets.ts) — 576.64 measured before, 578.23 after (592,111 bytes), to 578.3. A plain save asked again while one is on
 // its way joins it by what the values hold, not which object holds them (form.ts): 578.23 measured before, 578.32 after
 // (592,200 bytes), to 578.4.
+// 0.35.3, NexiBI's and Flowyard's report, on every page: a key of a map by name read as a name, never a setting
+// (translate.ts), 592,411 bytes; a choice that writes no options read as having none at the page's door (upgrade.ts),
+// 592,791; every answer of the app's source the engine's own promise, the app's handled where it is made (deadline.ts),
+// 592,960 — 578.32 measured before, 579.06 after, to 579.1.
 // 0.36, axe 4.14's label in name (WCAG 2.5.3, its label-content-name-mismatch now a rule of its own): a control's name
 // holds the words it shows, one after another — `nameShowing` (core), which the parts' controls name themselves with,
 // and a tab's count apart from its words in its text (viewer.ts); the rest in their parts, listed with the part budgets
@@ -1602,7 +1606,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // (the check before the draw as 0.35's, a refused page's words, the whole check's handle) +4,016, perf-leftovers'
 // sections +31, p3-real-tests' words for a part that never came, its typing kept and its waits said +3,607 — the lanes
 // meeting +12 — 600,162; a plain save of an unchanged stored record sending nothing (form.ts) +358: 600,520, to 586.5.
-const BUDGET_KB = 586.5;
+// 0.36 merged with 0.35.3, set once from the merged build: 0.36's 600,568 bytes and 0.35.3's map by name, choices read
+// at the page's door and the source's answers handled where they are made (+760) — 601,328, to 587.3.
+const BUDGET_KB = 587.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1951,6 +1957,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.35.2, a brace a page's words quote, read by one reader wherever they are drawn (listed with the raw budget above):
 // 192.94 measured before, 193.56 after, to 193.6. A save on its way joined by what the values hold (listed with the
 // raw budget above): 193.56 measured before, 193.63 after, to 193.7.
+// 0.35.3, NexiBI's and Flowyard's report (listed with the raw budget above): 193.63 measured before; a map by name
+// +0.04, a choice's options left out +0.15, the source's answers handled where they are made +0.09 — 193.91, to 194.0.
 // 0.36, a control's name holding the words it shows (listed with the raw budget above): 192.94 measured before, 193.06
 // after, to 193.1.
 // 0.36's checks (listed with the raw budget above): the whole check in a part of its own, asked for after the first draw
@@ -1976,7 +1984,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // to 196.6: under the owner's 200 (+2.96 on 0.35.2).
 // 0.36, CI's input-tables flake a product bug (another box's late leaving lays nothing of the box typed in): 196.599,
 // a byte under, to 196.616 — to 196.7.
-const GZIP_BUDGET_KB = 196.7;
+// 0.36 merged with 0.35.3, set once from the merged build (listed with the raw budget above): 196.62 and 0.35.3's
+// +0.28 — 196.89, to 196.9: under the owner's 200 (+2.98 on 0.35.3's 193.91).
+const GZIP_BUDGET_KB = 196.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
