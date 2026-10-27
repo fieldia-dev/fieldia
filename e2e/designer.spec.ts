@@ -425,6 +425,84 @@ test.describe('survey designer · putting a question down', () => {
   });
 });
 
+/**
+ * A question carried at a hand's speed — its card held by its words, a page or two of moves across several questions,
+ * up and down, with a mouse and with a finger — lands where its gap shows as it is let go: on a page that opens with
+ * words of its own (the example survey's first) as on one of questions alone. 0.35 counted the cards among all of a
+ * page's parts, and a question let go before the first one landed above the page's opening words, a place early.
+ */
+test.describe('survey designer · a question carried at a hand’s speed', () => {
+  /** A hand, and what of a card it takes hold of: a mouse its words, a finger its grip (the words scroll the page under a finger). */
+  type Hand = { holds: string; down(x: number, y: number): Promise<unknown>; move(x: number, y: number): Promise<unknown>; up(): Promise<unknown> };
+  const mouse = (page: Page): Hand => ({ holds: '.fd-q-text', down: async (x, y) => (await page.mouse.move(x, y), page.mouse.down()), move: (x, y) => page.mouse.move(x, y), up: () => page.mouse.up() });
+  /** Each page's parts, by their ids, as the page being made holds them. */
+  const parts = (page: Page) => page.evaluate(() => (window as any).fieldiaDesigner.designer.getPage().layout.children.map((step: any) => step.children.map((n: any) => n.id)) as string[][]);
+  /** Where the gap shows on a page's cards: its parts as they would be, the carried card in the gap's place. */
+  const shown = (page: Page, step: number, carried: string) =>
+    page.locator('.fd-design-step').nth(step).locator('.fd-step-cards').evaluate((cards, id) => [...cards.children].filter((c) => !c.classList.contains('fd-drag-source')).map((c) => (c.classList.contains('fd-drop-slot') ? id : (c as HTMLElement).dataset['node'])), carried);
+  const card = (page: Page, id: string) => page.locator(`.fd-q[data-node="${id}"]`);
+
+  /** A card carried by its words to `to` (a point on screen), in a handful of moves — as a hand moves, not a crawl. */
+  async function carry(page: Page, hand: Hand, id: string, to: { x: number; y: number }, moves = 5) {
+    const from = (await card(page, id).locator(hand.holds).boundingBox())!;
+    const start = { x: from.x + Math.min(12, from.width / 2), y: from.y + from.height / 2 };
+    await hand.down(start.x, start.y);
+    for (let i = 1; i <= moves; i++) await hand.move(start.x + ((to.x - start.x) * i) / moves, start.y + ((to.y - start.y) * i) / moves);
+  }
+  /** Over the top quarter of a card, where a question goes before it; or its bottom quarter, after it. */
+  const edge = async (page: Page, id: string, end: 'top' | 'bottom') => {
+    const box = (await card(page, id).boundingBox())!;
+    return { x: box.x + box.width / 2, y: box.y + box.height * (end === 'top' ? 0.25 : 0.75) };
+  };
+
+  async function walk(page: Page, hand: Hand) {
+    // The first page: its words, then Your name, then Email. Email carried up over Your name.
+    let before = await parts(page);
+    expect(before[0]).toEqual(['intro', 'q-name', 'q-email']);
+    await carry(page, hand, 'q-email', await edge(page, 'q-name', 'top'));
+    expect(await shown(page, 0, 'q-email')).toEqual(['q-email', 'q-name']);
+    await hand.up();
+    await expect.poll(() => parts(page)).toEqual([['intro', 'q-email', 'q-name'], ...before.slice(1)]);
+    // The third page, four questions: the first carried down across the three under it, then the last up across them.
+    before = await parts(page);
+    expect(before[2]).toEqual(['q-rating', 'q-parts', 'q-liked', 'q-improve']);
+    await carry(page, hand, 'q-rating', await edge(page, 'q-improve', 'bottom'), 4);
+    expect(await shown(page, 2, 'q-rating')).toEqual(['q-parts', 'q-liked', 'q-improve', 'q-rating']);
+    await hand.up();
+    await expect.poll(async () => (await parts(page))[2]).toEqual(['q-parts', 'q-liked', 'q-improve', 'q-rating']);
+    await carry(page, hand, 'q-improve', await edge(page, 'q-parts', 'top'), 4);
+    const gap = await shown(page, 2, 'q-improve');
+    await hand.up();
+    await expect.poll(async () => (await parts(page))[2]).toEqual(gap);
+    expect(gap).toEqual(['q-improve', 'q-parts', 'q-liked', 'q-rating']);
+  }
+
+  test('with a mouse: it lands where its gap shows, up and down, words opening its page or none', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 2200 });
+    await page.goto('/designer/?start=survey');
+    await expect(page.locator('.fd-q').first()).toBeVisible();
+    await walk(page, mouse(page));
+  });
+
+  test('with a finger: the same, its card carried by its grip', async ({ browser, browserName }) => {
+    test.skip(browserName !== 'chromium', 'a finger’s touches are sent through Chromium’s own protocol');
+    const context = await browser.newContext({ viewport: { width: 1024, height: 2200 }, hasTouch: true });
+    const page = await context.newPage();
+    await page.goto('/designer/?start=survey');
+    await expect(page.locator('.fd-q').first()).toBeVisible();
+    const cdp = await context.newCDPSession(page);
+    const at = (x: number, y: number) => [{ x: Math.round(x), y: Math.round(y) }];
+    const finger: Hand = {
+      holds: '.fd-q-grip',
+      down: (x, y) => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at(x, y) }),
+      move: (x, y) => cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: at(x, y) }),
+      up: () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }),
+    };
+    await walk(page, finger);
+    await context.close();
+  });
+});
+
 test.describe('survey designer · “Other”', () => {
   test('added from beside “Add option”, shown as people will see it, and answered in words of one’s own', async ({ page }) => {
     const problems: string[] = [];

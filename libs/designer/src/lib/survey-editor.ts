@@ -289,13 +289,24 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     label?.select();
     placeRail();
   }
+  /**
+   * The place among a page's parts — its words, a picture, its questions — of the place before its `index`-th question
+   * card (or after the last), the one carried left out: a question let go in the gap before Your name goes before Your
+   * name, after the words the page opens with. 0.35 put it at the `index`-th of all its parts, a place early wherever
+   * a page holds parts no card shows — above the page's opening words.
+   */
+  const partIndex = (step: string, index: number, carried: string | null) => {
+    const parts = stepsOf(designer.getPage()).find((one) => one.id === step)?.children.filter((part) => part.id !== carried) ?? [];
+    const questions = parts.filter((part) => part.type === 'field');
+    return index < questions.length ? parts.indexOf(questions[index]) : parts.length;
+  };
   const drag = canvasDrag({
     words: designer.words,
     canvas: editor,
     cards: '.fd-q[data-node]',
     drop: (source, step, index) => {
-      if ('tool' in source) add(source.tool.slice(source.tool.indexOf(':') + 1), { parent: step, index });
-      else designer.placeNode(source.node, step, index, { pick: true });
+      if ('tool' in source) add(source.tool.slice(source.tool.indexOf(':') + 1), { parent: step, index: partIndex(step, index, null) });
+      else designer.placeNode(source.node, step, partIndex(step, index, source.node), { pick: true });
     },
   });
 
