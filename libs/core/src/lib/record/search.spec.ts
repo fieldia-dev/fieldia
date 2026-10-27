@@ -78,10 +78,10 @@ describe('facetsToFilter', () => {
     // Egypt or Jordan, one group; and Active.
     expect(on(['egypt', 'jordan'])).toEqual(['Nile Traders', 'Amira Clinics', 'Petra Tours']);
     expect(on(['egypt', 'jordan', 'active'])).toEqual(['Nile Traders', 'Petra Tours']);
-    // The groups in the order they first come in the list's filters.
+    // Each group where its first filter was turned on.
     expect(facetsToFilter([{ kind: 'filters', ids: ['egypt', 'active', 'jordan'], labels: [] }], grouped)).toEqual([
-      { field: 'state', op: '=', value: 'active' },
       { any: [{ field: 'country_id', op: '=', value: 1 }, { field: 'country_id', op: '=', value: 2 }] },
+      { field: 'state', op: '=', value: 'active' },
     ]);
     // The same filters naming no group: one group, any of them, as every list before 0.37 reads.
     const plain: ListNode = { ...list, filters: [...list.filters!, egypt, jordan] };
@@ -92,9 +92,10 @@ describe('facetsToFilter', () => {
     expect(on(['active', 'big', 'egypt'], some)).toEqual(['Nile Traders']);
   });
 
-  it('puts the filters on in their groups, in the order the groups first come, each group’s in the order they were turned on', () => {
+  it('puts the filters on in their groups, each group where its first filter was turned on — the list’s own order for its menu', () => {
     const grouped: ListNode = { ...list, filters: [{ ...list.filters![0], group: 'b' }, { id: 'x', label: 'X', filter: [{ field: 'name', op: 'set' }] }, { ...list.filters![1], group: 'a' }, { id: 'y', label: 'Y', filter: [{ field: 'name', op: 'set' }], group: 'b' }] };
-    expect(filterGroups(['big', 'y', 'x', 'active'], grouped)).toEqual([['y', 'active'], ['x'], ['big']]);
+    expect(filterGroups(['big', 'y', 'x', 'active'], grouped)).toEqual([['big'], ['y', 'active'], ['x']]);
+    expect(filterGroups(grouped.filters!.map((filter) => filter.id), grouped)).toEqual([['active', 'y'], ['x'], ['big']]);
     expect(filterGroups(['big', 'active'], list)).toEqual([['big', 'active']]);
     expect(filterGroups([], grouped)).toEqual([]);
     // An id the list no longer has (a favourite kept before it went) stays with the filters that name no group.

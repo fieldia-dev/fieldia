@@ -119,20 +119,19 @@ function valueConditions(field: string, value: FieldFacet['values'][number], day
 }
 
 /**
- * The named filters on, by id, in their groups (`ListFilter.group`): the groups in the order they first come in the
- * list's filters, those that name none one group of their own, each group's filters in the order they were turned on.
- * One group where the list's filters name none, as before 0.37. An id the list does not have is with those that name
- * none.
+ * Named filters by id in their groups (`ListFilter.group`), those that name none one group of their own: each group in
+ * the order its first filter comes in `ids` — the order they were turned on, as Odoo adds a facet for a group; the
+ * list's own order for its menu — and its filters in that order. One group where the list's filters name none, as
+ * before 0.37. An id the list does not have is with those that name none.
  */
 export function filterGroups(ids: readonly string[], list: ListNode): string[][] {
   const named = new Map((list.filters ?? []).map((filter) => [filter.id, filter.group ?? '']));
-  const order = [...new Set((list.filters ?? []).map((filter) => filter.group ?? ''))];
   const groups = new Map<string, string[]>();
   for (const id of ids) {
     const group = named.get(id) ?? '';
     groups.set(group, [...(groups.get(group) ?? []), id]);
   }
-  return [...groups.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b)).map((group) => groups.get(group) as string[]);
+  return [...groups.values()];
 }
 
 /**

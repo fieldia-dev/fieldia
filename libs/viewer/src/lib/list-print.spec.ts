@@ -118,7 +118,7 @@ describe('a list’s Print', () => {
     expect(document.documentElement.classList.contains('fd-print-one')).toBe(false);
   });
 
-  it('says the named filters on in their groups, as their chips do: “Posted · Cairo or Giza”', async () => {
+  it('says the named filters on in their groups, as their chips do: “Cairo or Giza · Posted”', async () => {
     const filters = [
       { id: 'posted', label: 'Posted', filter: [{ field: 'state', op: '=', value: 'posted' }], group: 'state' },
       { id: 'cairo', label: 'Cairo', filter: [{ field: 'city', op: '=', value: 'cairo' }], group: 'city' },
@@ -134,7 +134,7 @@ describe('a list’s Print', () => {
     printButton(host).click();
     await until(() => print.mock.calls.length === 1);
     const out = sheet(host) as HTMLElement;
-    expect([...out.querySelectorAll('.fd-print-about > div')].map((line) => line.textContent)).toEqual(['Filters: Posted · Cairo or Giza', '4 records']);
+    expect([...out.querySelectorAll('.fd-print-about > div')].map((line) => line.textContent)).toEqual(['Filters: Cairo or Giza · Posted', '4 records']);
   });
 
   it('heads the records with the list’s Group By: each group’s count and sums in their columns, its filters in words', async () => {
