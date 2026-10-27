@@ -1,4 +1,4 @@
-import { checkPage, localizePage, wordsComing, wordsReady, type DataSource, type ListResult, type Locale, type Page, type RecordId, type ResolvedFilter, type SortOrder } from '@fieldia/core';
+import { checkPage, localizePage, withDeadlines, wordsComing, wordsReady, type DataSource, type ListResult, type Locale, type Page, type RecordId, type ResolvedFilter, type SortOrder } from '@fieldia/core';
 import type { ListViewPart } from '@fieldia/viewer';
 import type { IconSet } from '@fieldia/widgets';
 import type { LatLng } from './geo';
@@ -135,7 +135,8 @@ function drawListMap(host: HTMLElement, options: ListMapOptions, { listMap, inst
           return { records, total: records.length };
         },
       }
-    : options.dataSource;
+    : // Its answers the engine's own promises, the app's handled where they are made (deadline.ts); no deadline (0), as ever.
+      withDeadlines(options.dataSource, 0, '');
   const chosen = new Set<RecordId>();
   let order: SortOrder[] | null = null;
   let part: ListViewPart | null = null;
