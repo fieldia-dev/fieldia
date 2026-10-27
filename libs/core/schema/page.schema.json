@@ -575,7 +575,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -679,7 +680,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -770,7 +772,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -855,7 +858,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -927,7 +931,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1018,7 +1023,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1119,7 +1125,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1179,7 +1186,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1271,7 +1279,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1355,7 +1364,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1458,7 +1468,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1573,7 +1584,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1681,7 +1693,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1766,7 +1779,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1862,7 +1876,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1961,7 +1976,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2030,7 +2046,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2101,7 +2118,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2161,7 +2179,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2711,7 +2730,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2815,7 +2835,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2906,7 +2927,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2978,7 +3000,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3069,7 +3092,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3170,7 +3194,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3230,7 +3255,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3322,7 +3348,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3406,7 +3433,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3491,7 +3519,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3647,7 +3676,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3734,7 +3764,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3808,7 +3839,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3876,7 +3908,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3948,7 +3981,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4039,7 +4073,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4140,7 +4175,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4200,7 +4236,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4292,7 +4329,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4376,7 +4414,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4475,7 +4514,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4590,7 +4630,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4698,7 +4739,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4783,7 +4825,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4879,7 +4922,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4948,7 +4992,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5019,7 +5064,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5079,7 +5125,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5242,7 +5289,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5329,7 +5377,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5403,7 +5452,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5471,7 +5521,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5543,7 +5594,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5634,7 +5686,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5735,7 +5788,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5795,7 +5849,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5887,7 +5942,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5971,7 +6027,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6070,7 +6127,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6185,7 +6243,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6293,7 +6352,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6378,7 +6438,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6474,7 +6535,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6543,7 +6605,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6614,7 +6677,8 @@
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
             "copy": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false."
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -12250,7 +12314,8 @@
               },
               "group": {
                 "type": "string",
-                "pattern": "^\\S+$"
+                "pattern": "^\\S+$",
+                "description": "The group it is in, by a word: `\"when\"`. Filters of one group on find what any of them finds (\"Late or Today\"); groups on find what each finds, as Odoo's filters between separators do (\"Overdue\", and \"This year\"). Filters that name none are one group of their own, so a list whose filters name none finds what any filter on finds."
               }
             },
             "required": [
