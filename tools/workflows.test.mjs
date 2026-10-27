@@ -240,3 +240,22 @@ test('ci.yml: the key screens are compared in the Playwright container tools/scr
   assert.match(screens, /^ {6}FIELDIA_SCREENS: container$/m, 'the screens job does not say it is the container (the spec refuses to compare elsewhere)');
   assert.match(screens, /run: npx playwright test --project=screens\n/);
 });
+
+// WebKit's system packages from the runners' Ubuntu mirror stalled all three tries of an install for 30 minutes, twice
+// on 27 Oct: every job that runs WebKit — the engines' smoke and the how-to on a phone — runs in the key screens'
+// container instead, its engines and their packages in the image, and installs no browser.
+test('ci.yml: every job that runs WebKit runs in the Playwright container tools/screens.mjs names, and installs no browser', async () => {
+  const { IMAGE } = await import('./screens.mjs');
+  const text = readFileSync(join(WORKFLOWS, 'ci.yml'), 'utf8');
+  const jobs = jobsOf(text);
+  const webkit = Object.entries(jobs).filter(([, block]) => /--project=how-to-phone|--project=webkit|engine: \[[^\]]*\bwebkit\b/.test(block.replace(/^\s*#.*$/gm, '')));
+  assert.deepEqual(webkit.map(([id]) => id).sort(), ['engines', 'how-to-phone'], 'the jobs that run WebKit are not the ones this test knows: name each here');
+  for (const [id, block] of webkit) {
+    assert.ok(block.includes(`    container:\n      image: ${IMAGE}\n      options: --ipc=host\n`), `${id} runs outside ${IMAGE}`);
+    assert.doesNotMatch(block, /playwright install|apt-get|ms-playwright/, `${id} installs a browser, or keeps one, though the image has them`);
+  }
+  // Firefox refuses to run as root with a home of another user's, as GitHub gives a container (/github/home).
+  const firefoxRuns = [...jobs.engines.matchAll(/run: (?:npx playwright test|node tools\/flake-log\.mjs rerun)[^\n]*\n\s+env:\n((?:\s{10,}[^\n]*\n)+)/g)];
+  assert.equal(firefoxRuns.length, 2, 'the engines job runs Playwright twice: its tests, and what failed again');
+  for (const [, env] of firefoxRuns) assert.match(env, /^\s+HOME: \/root$/m, 'Firefox would refuse to start as root under /github/home');
+});

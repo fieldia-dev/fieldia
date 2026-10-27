@@ -107,7 +107,9 @@ jobs:
     runs-on: ubuntu-latest
     # The first quarter took 19 minutes on 0.22's first green run: room above it, so a slow runner is not a failure;
     # 23 Oct the runners' Ubuntu mirror crawled (a 13 MB package in minutes) and ate 10 of the 30: room for that too.
-    timeout-minutes: 45
+    # 0.36 (27 Oct): a quarter's tests ran up to 26 minutes and its install up to 15 (three tries at a crawling mirror),
+    # 37 of the 45 in all: 60.
+    timeout-minutes: 60
     # Four runners, each the whole build and a quarter of the scenarios: one alone
     # had grown to 19 of its 20 minutes, and so had half of them by Phase 26; a
     # third of them passed 20 minutes once 0.22 brought some 400 more.
@@ -262,8 +264,8 @@ jobs:
     if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
     runs-on: ubuntu-latest
     # Each engine's smoke set in two halves: one runner took 12–19 minutes of its 25 for the whole set in 0.30.1 (WebKit
-    # hit the limit once), and 0.31 adds some thirty specs to it; a half and the build it needs fit well inside 25 —
-    # but not with a crawling Ubuntu mirror (23 Oct: three 5-minute install tries ran out mid-download): 40.
+    # hit the limit once), and 0.31 adds some thirty specs to it; a half and the build it needs took 10–13 minutes in
+    # 0.36. 40 is from the days each half installed its engine from the Ubuntu mirror (below).
     timeout-minutes: 40
     # Firefox, and WebKit — Safari's engine, which every browser on an iPhone runs: the smoke set playwright.config.ts
     # names (forms, behaviour, layout, lists, dialogs, the quiet look, a place on a map, right to left, a part that
@@ -273,6 +275,14 @@ jobs:
       matrix:
         engine: [firefox, webkit]
         shard: [1, 2]
+    # In the Playwright container the key screens are compared in (tools/screens.mjs names it, by its digest;
+    # tools/workflows.test.mjs holds every job here to it): each engine and its system packages are in the image, so
+    # nothing is installed from the runners' Ubuntu mirror — which stalled all three tries of WebKit's install for 30
+    # minutes twice on 27 Oct, and Firefox's for 10. Its first pull took 26–36 s in the screens job; a healthy install
+    # had taken 16–41.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
+      options: --ipc=host
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -282,38 +292,23 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ matrix.engine }}-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      # The engine and the system packages it needs, with the same guard against a stalled apt mirror as Chromium's.
-      - name: Install ${{ matrix.engine }} for Playwright
-        run: |
-          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fieldia-timeouts > /dev/null
-          for try in 1 2 3; do
-            if [ "$try" -gt 1 ]; then
-              sudo pkill -9 -x apt-get || true
-              sudo pkill -9 -x dpkg || true
-              sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
-              sudo dpkg --configure -a || true
-            fi
-            timeout 600 npx playwright install --with-deps ${{ matrix.engine }} && exit 0
-            echo "Install try $try stalled or failed."
-          done
-          exit 1
       - run: npx nx run-many -t build -p angular viewer designer
         env:
           NX_DAEMON: 'false'
       - run: node tools/build-demos.mjs
       - run: node tools/build-site.mjs
+      # HOME: the container runs as root, and Firefox refuses root with a home of another user's (GitHub's /github/home).
       - id: tests
         run: npx playwright test --project=${{ matrix.engine }} --shard=${{ matrix.shard }}/2
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log/first.json
+          HOME: /root
       # The flake log (tools/flake-log.mjs, the audit's R-M14): retries stay 0, so a failure fails the job; what failed is
       # run once more on the same commit, and what passes then is a flake — said in the summary, kept as an artifact.
       - if: failure() && steps.tests.outcome == 'failure'
         run: node tools/flake-log.mjs rerun flake-log --workers=1
+        env:
+          HOME: /root
       - if: always()
         run: node tools/flake-log.mjs log flake-log --job "${{ matrix.engine }} ${{ matrix.shard }} of 2" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -338,12 +333,16 @@ jobs:
     # The audit's R-M13: each demo's "Try this" steps replayed by a person's hand (e2e/how-to.spec.ts) — the mouse and
     # the keys in Chromium, with the shards above; here a finger on an iPhone's 390 px in WebKit, Safari's engine (the
     # `how-to-phone` project). A demo's steps a phone cannot take say why (a key it has none of, a drag Playwright's
-    # WebKit cannot make with a finger). Some 270 replays, about 8 minutes a half.
+    # WebKit cannot make with a finger). Some 270 replays, about 4 minutes a half and 6 with the build.
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2]
+    # WebKit and its system packages from the Playwright container, as the engines job above: never the Ubuntu mirror.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
+      options: --ipc=host
     # The demos alone: no replay opens fieldia.dev.
     env:
       FIELDIA_SITE: 'off'
@@ -356,25 +355,6 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-webkit-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      # WebKit and the system packages it needs, with the same guard against a stalled apt mirror as Chromium's.
-      - name: Install webkit for Playwright
-        run: |
-          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fieldia-timeouts > /dev/null
-          for try in 1 2 3; do
-            if [ "$try" -gt 1 ]; then
-              sudo pkill -9 -x apt-get || true
-              sudo pkill -9 -x dpkg || true
-              sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
-              sudo dpkg --configure -a || true
-            fi
-            timeout 600 npx playwright install --with-deps webkit && exit 0
-            echo "Install try $try stalled or failed."
-          done
-          exit 1
       - run: npx nx run-many -t build -p angular viewer designer
         env:
           NX_DAEMON: 'false'
