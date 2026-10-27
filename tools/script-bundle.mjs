@@ -1615,7 +1615,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // at the page's door and the source's answers handled where they are made (+760) — 601,328, to 587.3.
 // 0.36 merged with p3-found, set once from the merged build: 601,328 bytes and p3-found's +253 measured alone above (a
 // choice's options in place, a line's dialog of its columns, a required field's star, a drop judged where it lands, a
-// box's ends kept) — 601,581, to 587.5.
+// box's ends kept) — 601,581; a tab asked for again after another in one frame brought into sight (tab-strip.ts) +16:
+// 601,597, to 587.5.
 const BUDGET_KB = 587.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1998,7 +1999,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.36 merged with 0.35.3, set once from the merged build (listed with the raw budget above): 196.62 and 0.35.3's
 // +0.28 — 196.89, to 196.9: under the owner's 200 (+2.98 on 0.35.3's 193.91).
 // 0.36 merged with p3-found, set once from the merged build (listed with the raw budget above): 196.89 and p3-found's
-// +0.12 — 197.01, to 197.1: under the owner's 200 (+3.10 on 0.35.3's 193.91).
+// +0.12 — 197.01; the tab strip's +0.01 — 197.02, to 197.1: under the owner's 200 (+3.11 on 0.35.3's 193.91).
 const GZIP_BUDGET_KB = 197.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);

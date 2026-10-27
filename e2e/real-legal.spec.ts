@@ -517,6 +517,35 @@ for (const variant of VARIANTS) {
       }
     });
 
+    test('a tab chosen, then another before the next frame — Home, then a step back to the last: the last in sight', async ({ page }) => {
+      // The strip brings a tab into sight once a frame, the last asked for: the one asked for between moved the strip
+      // from the last (Home's focus), and the last, revealed before, was taken as still in sight.
+      await page.setViewportSize({ width: 390, height: 900 });
+      const { problems } = await open(page, variant, CASE);
+      await expect(node(page, '#title').locator('textarea')).toHaveValue('LEG/2026/LIT/0042');
+      const list = page.locator('[data-node="notebook"] > .fd-tabbar > .fd-tablist');
+      const tabs = list.locator('> .fd-tab:visible');
+      await tabs.first().click();
+      await page.keyboard.press('End');
+      await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+      const last = await tabs.last().getAttribute('data-node');
+      await list.evaluate((l, target) => {
+        l.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+        void (window as any).fieldiaDemo.handle.run([{ do: 'goTo', target }]);
+      }, last);
+      await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+      await expect
+        .poll(() =>
+          list.evaluate((l) => {
+            const room = l.getBoundingClientRect();
+            const at = (l.querySelector('[aria-selected="true"]') as HTMLElement).getBoundingClientRect();
+            return at.left >= room.left - 1 && at.right <= room.right + 1;
+          })
+        )
+        .toBe(true);
+      expect(problems).toEqual([]);
+    });
+
     test('at a phone’s width: the case and the survey fit, nothing scrolls sideways', async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       const { problems } = await open(page, variant, CASE);

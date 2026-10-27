@@ -82,7 +82,12 @@ export function tabStrip(list: HTMLElement, el: El): TabStrip {
     measure,
     reveal,
     later(tab) {
-      if (tab) wanted = tab;
+      // Another tab asked for: brought into sight even if it was the last revealed — a tab asked for between (Home, then
+      // a step back to the last, in one frame) moved the strip from it, and was never revealed itself.
+      if (tab && tab !== wanted) {
+        wanted = tab;
+        revealed = undefined;
+      }
       if (!frame) frame = view?.requestAnimationFrame(settle) ?? 0;
     },
     destroy: () => {

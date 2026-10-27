@@ -223,6 +223,9 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   real-tender's requirement lines open in a form of their own.
 - Tests: survey-timed holds its fake clock between steps (in WebKit under load
   25 of 180 failed; 0 of 180 after).
+- A tab chosen by a step right after another was chosen — Home, then a step back
+  to the last tab, before the page draws again — comes into the strip's sight;
+  the strip took it as still in sight from before, and left it out.
 
 **Deprecated** — each said once in a page's console, refused from 0.37:
 
