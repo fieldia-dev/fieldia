@@ -8,10 +8,10 @@ import { literalWords, plainWords } from './words';
  * Any key ending in `Label` is read too — a wizard's `nextLabel`, and in a
  * widget's settings the words at a scale's ends.
  */
-const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'header', 'footer', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason', 'patternHint', 'again']);
+export const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'header', 'footer', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip', 'unit', 'readonlyReason', 'patternHint', 'again']);
 
 /** In a widget's settings, words besides those ending in `Label`: a links box's help and its empty box's link, a picture's words for who cannot see it. */
-const WIDGET_TEXT_KEYS = new Set(['help', 'emptyLink', 'alt']);
+export const WIDGET_TEXT_KEYS = new Set(['help', 'emptyLink', 'alt']);
 
 /**
  * Parts that hold names or data, never words to translate: which line fields
@@ -24,10 +24,20 @@ const WIDGET_TEXT_KEYS = new Set(['help', 'emptyLink', 'alt']);
  * whose `title` names a field too, and its Gantt timeline's; and a list's card, whose `title` and
  * `subtitle` name fields, as its map card's do.
  */
-const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params', 'map', 'calendar', 'gantt']);
+export const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params', 'map', 'calendar', 'gantt']);
 
 /** Parts whose every value is words, by a name of their own: plural forms, a list's filters' names, what records are called. */
-const WORDS_BY_NAME = new Set(['words', 'filterLabels', 'records']);
+export const WORDS_BY_NAME = new Set(['words', 'filterLabels', 'records']);
+
+/**
+ * Maps whose every key is a name — a field's, a choice's value — never a setting: the fields of a page, of a table's
+ * lines, of a link's table and of a list; a list's cells and filter ranges; the steps run as a field changes or shows
+ * (`on.change`, `on.show`); what a link's new record and a new line start with; a kind's looks, a dot's colours and
+ * what a scan fills, by value or field. Each entry is a part of its own whatever it is called, so a field named
+ * `values`, `default`, `options` or `label` keeps its words. Every map of the format is one of these, of `NOT_TEXT`
+ * (data by name) or of `WORDS_BY_NAME`: setting-names.spec.ts finds them all in the format's JSON Schema.
+ */
+export const NAME_MAPS = new Set(['fields', 'cells', 'filterRanges', 'change', 'show', 'createValues', 'lineDefaults', 'looks', 'colours', 'fills']);
 
 /** A formatted text's kinds of record to link (`references`): each one's name is words; its key, model and icon stay. */
 const wordsOfReference = (text: (words: string) => string) => (reference: unknown) =>
@@ -73,6 +83,8 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
   for (const [name, inner] of Object.entries(value)) {
     const object = inner !== null && typeof inner === 'object' && !Array.isArray(inner);
     if (inner !== null && typeof inner === 'object' && kept?.(inner)) out[name] = inner;
+    // A map by name: each key a name, whatever it is (a field called `values`), each entry a part of its own.
+    else if (NAME_MAPS.has(name) && object) out[name] = Object.fromEntries(Object.entries(inner).map(([named, part]) => [named, walk(part, null, text, enter, widget, kept)]));
     // A field node's `options` are its widget's settings, not a list of choices.
     else if (name === 'layers' && Array.isArray(inner)) out[name] = inner.map(wordsOfLayer(text));
     else if (widget && name === 'references' && Array.isArray(inner)) out[name] = inner.map(wordsOfReference(text));
