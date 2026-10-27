@@ -3,7 +3,9 @@
  * drives phones as WebKit and Chromium at a phone's size with touch, never a real device — its Safari, its keyboard
  * over the page, its camera, its one-time codes, its own way of going offline. So a minor (0.x.0) is published only once
  * the real-device record names it: the day, both phones as they were, who checked, and that it passed. A patch holds
- * fixes alone and is not asked for one.
+ * fixes alone and is not asked for one. The gate bites from 0.37.0 (`CHECKED_FROM`): 0.36.0, the minor the checklist came
+ * in, was checked only by CI's phones (WebKit as an iPhone 14 with touch, Chromium at a phone's size), as no person could
+ * check real phones for it.
  *
  * `node tools/release.mjs publish` and `tools/publish-packs.mjs` refuse a minor without it, in words that say what to do.
  */
@@ -27,16 +29,29 @@ export function deviceRecord(text) {
     });
 }
 
+/**
+ * The first minor that waits for a real iPhone and a real Android phone: 0.36.0, the minor the checklist came in, was
+ * checked only by CI's phones — no person could check real ones for it.
+ */
+export const CHECKED_FROM = '0.37.0';
+
+/** Whether version a comes before version b (x.y.z). */
+const before = (a, b) => {
+  const [x, y] = [a, b].map((one) => one.split('.').map(Number));
+  for (let at = 0; at < 3; at++) if (x[at] !== y[at]) return x[at] < y[at];
+  return false;
+};
+
 /** What a filled cell is: words, not a placeholder. */
 const filled = (cell) => !!cell && !/^(—|-|–|tbd|todo|\.\.\.|…)$/i.test(cell);
 
 /**
- * Why `version` may not be published as the record stands, or null: a minor needs a row of its own, dated, naming both
- * phones and who checked them, that passed.
+ * Why `version` may not be published as the record stands, or null: a minor from 0.37.0 on needs a row of its own,
+ * dated, naming both phones and who checked them, that passed. A patch, and a minor before 0.37.0, is not asked.
  */
 export function deviceCheckProblem(version, text) {
   const [, , patch] = version.split('.').map(Number);
-  if (patch > 0) return null;
+  if (patch > 0 || before(version, CHECKED_FROM)) return null;
   const row = deviceRecord(text).find((one) => one.version === version);
   const todo = `run the checklist in ${DEVICES} on a real iPhone and a real Android phone, then add its row to the record`;
   if (!row) return `${version} is a minor, and no real iPhone and Android phone were checked for it: ${todo}`;
