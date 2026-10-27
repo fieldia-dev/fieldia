@@ -55,6 +55,14 @@ describe('every member of a data source, as Fieldia awaits it', () => {
   });
 });
 
+describe('an answer the engine’s own already', () => {
+  it.each(['upload', 'merge', 'pay'])('%s: handed to Fieldia as it is, its answer not a moment later', async (member) => {
+    const own = (OwnPromise as PromiseConstructor).resolve({ member });
+    const source = withDeadlines({ [member]: () => own } as unknown as DataSource, undefined, 'No answer') as unknown as Record<string, (request: object) => Promise<unknown>>;
+    expect(source[member]({})).toBe(own);
+  });
+});
+
 describe('a form’s requests refused at once: said by the form, never left unhandled', () => {
   const page = {
     fieldia: '0.13',

@@ -42,12 +42,12 @@ const OwnPromise = (async () => undefined)().constructor as PromiseConstructor;
 /**
  * An answer of the app's data source as a promise of the engine's own, the app's promise handled at once — its handlers
  * given as it is made: one it refuses at once is never said unhandled by a zone that watches its own promises (Angular's,
- * as `NgZone.onError`) while an `await` of Fieldia's, code Angular did not compile, comes to it a microtask late. What
- * is not a promise, as it is.
+ * as `NgZone.onError`) while an `await` of Fieldia's, code Angular did not compile, comes to it a microtask late. One
+ * that is the engine's own already, and what is not a promise, as it is: its answer comes not a moment later.
  */
 export function answerOf<T>(answer: T): T {
   const then = (answer as { then?: unknown } | null | undefined)?.then;
-  return typeof then === 'function' ? (new OwnPromise((resolve, reject) => then.call(answer, resolve, reject)) as T) : answer;
+  return typeof then === 'function' && (answer as object).constructor !== OwnPromise ? (new OwnPromise((resolve, reject) => then.call(answer, resolve, reject)) as T) : answer;
 }
 
 /** A member of the app's source as Fieldia calls it: on the source, each answer the engine's own (`answerOf`). */
