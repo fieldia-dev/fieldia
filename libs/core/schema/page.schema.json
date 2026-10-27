@@ -17,7 +17,8 @@
         "0.10",
         "0.11",
         "0.12",
-        "0.13"
+        "0.13",
+        "0.14"
       ],
       "description": "The format the page is written in, so a reader can tell one it cannot read yet (a newer Fieldia's) from one it can bring up to date (an older one's: `upgradePage`). A page made now says FORMAT_VERSION."
     },
@@ -573,6 +574,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -674,6 +678,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -762,6 +769,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -844,6 +854,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -912,6 +925,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1000,6 +1016,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1099,6 +1118,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -1155,6 +1177,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1245,6 +1270,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -1325,6 +1353,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1425,6 +1456,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1538,6 +1572,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -1643,6 +1680,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -1724,6 +1764,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1817,6 +1860,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -1914,6 +1960,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -1979,6 +2028,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2048,6 +2100,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -2104,6 +2159,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2652,6 +2710,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -2753,6 +2814,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -2841,6 +2905,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -2909,6 +2976,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -2997,6 +3067,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3096,6 +3169,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -3152,6 +3228,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3242,6 +3321,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -3322,6 +3404,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3404,6 +3489,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3558,6 +3646,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -3642,6 +3733,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -3713,6 +3807,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -3777,6 +3874,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3846,6 +3946,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -3934,6 +4037,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4033,6 +4139,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -4089,6 +4198,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4179,6 +4291,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -4259,6 +4374,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4355,6 +4473,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4468,6 +4589,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -4573,6 +4697,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -4654,6 +4781,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4748,6 +4878,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -4813,6 +4946,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -4882,6 +5018,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -4938,6 +5077,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5099,6 +5241,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -5183,6 +5328,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -5254,6 +5402,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -5318,6 +5469,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5387,6 +5541,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5475,6 +5632,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5574,6 +5734,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -5630,6 +5793,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5720,6 +5886,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -5800,6 +5969,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -5896,6 +6068,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6009,6 +6184,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -6114,6 +6292,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -6195,6 +6376,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6289,6 +6473,9 @@
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
             },
+            "copy": {
+              "type": "boolean"
+            },
             "default": {
               "$ref": "#/$defs/JsonValue",
               "description": "A new record's — or a new line's, or a response's — first value, as the field keeps it: `\"today\"` on a date."
@@ -6354,6 +6541,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -6422,6 +6612,9 @@
             "secret": {
               "type": "boolean",
               "description": "A value never kept in the browser: a PIN, an ID number, a code. Its value goes with a save or a send, but never into a draft (in the browser's store or on the app's server), as a password box's never does."
+            },
+            "copy": {
+              "type": "boolean"
             },
             "default": {
               "$ref": "#/$defs/JsonValue",
@@ -12054,6 +12247,10 @@
               "period": {
                 "$ref": "#/$defs/FilterPeriod",
                 "description": "A period a date falls in: \"This month\", \"Overdue\"."
+              },
+              "group": {
+                "type": "string",
+                "pattern": "^\\S+$"
               }
             },
             "required": [
