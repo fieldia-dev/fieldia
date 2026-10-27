@@ -55,6 +55,8 @@ for (const area of AREAS as { id: string; label: string }[]) {
         const allowed = (text: string) => (replay.allow ?? []).some((words) => words.test(text));
         page.on('console', (message) => {
           if (message.type() === 'error' && !allowed(message.text())) problems.push(`console: ${message.text()}`);
+          // Every demo's page is one validatePage passes (0.36): its whole check, run after the draw, finds nothing.
+          if (message.text().includes('(page.invalid;')) problems.push(`page.invalid: ${message.text()}`);
         });
         page.on('pageerror', (error) => {
           if (!allowed(error.message)) problems.push(`page error: ${error.message}`);
