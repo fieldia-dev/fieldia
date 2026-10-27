@@ -60,10 +60,26 @@ describe('the keys that zoom, while the map still zooms', () => {
     box.destroy();
   });
 
-  it('a key while the map is still is Leaflet’s, as before: one step at once', async () => {
+  it('a key while the map is still zooms a step at once, as before', async () => {
     const { box, map } = await mapOnPage();
     key(box.element, '+');
     expect(map.getZoom()).toBe(14);
+    box.destroy();
+  });
+
+  it('a second press before the first zoom has started (a frame later, on a busy phone) is a step of its own', async () => {
+    const { box, map } = await mapOnPage();
+    // Leaflet starts a gliding zoom a frame after it is asked for: asked, and nothing started yet.
+    const asked: number[] = [];
+    const setZoom = map.setZoom.bind(map);
+    map.setZoom = ((zoom: number) => (asked.push(zoom), map)) as typeof map.setZoom;
+    key(box.element, '+');
+    key(box.element, '+');
+    expect(asked).toEqual([14]);
+    // The frame comes: the first zoom is made (jsdom's Leaflet starts and ends it at once); the second press, kept, then.
+    map.setZoom = setZoom;
+    setZoom(14);
+    expect(map.getZoom()).toBe(15);
     box.destroy();
   });
 });
