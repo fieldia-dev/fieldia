@@ -16,7 +16,7 @@ const CITIES: Record<string, Option[]> = {
   jo: [{ value: 'amm', label: 'Amman' }],
 };
 
-function mount(widget?: string, extra: Record<string, unknown> = {}, values: Values = {}) {
+function mount(widget?: string, extra: Record<string, unknown> = {}, values: Values = {}, nodeOptions?: Record<string, unknown>) {
   const asked: { values: Values; answer(options: Option[]): void; fail(message: string): void }[] = [];
   const dataSource: DataSource = {
     options: (request) => new Promise<Option[]>((resolve, reject) => asked.push({ values: request.values, answer: resolve, fail: (m) => reject(new Error(m)) })),
@@ -29,7 +29,7 @@ function mount(widget?: string, extra: Record<string, unknown> = {}, values: Val
       country: { type: 'char', label: 'Country' },
       city: { type: 'selection', label: 'City', options: [], optionsFrom: { list: 'cities', dependsOn: ['country'] }, ...extra } as Field,
     },
-    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'city', ...(widget ? { widget } : {}) }] },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'city', ...(widget ? { widget } : {}), ...(nodeOptions ? { options: nodeOptions } : {}) }] },
   } as Page;
   const form = createForm({ page, dataSource, values });
   const shown = createWidget({ form, name: 'city', field: page.fields['city'], node: (page.layout as { children: FieldNode[] }).children[0], id: 'fd-x', document, labels: WIDGET_LABELS.en, locale: 'en' });
@@ -130,19 +130,55 @@ describe('choices from the app’s list', () => {
     expect(el.textContent).toContain('Amman');
   });
 
-  it('draw the widget again only when new choices come', async () => {
+  it('keep the browser’s list as its choices come and change: the same select, its focus — an open list — and its choice', async () => {
     const { form, el, asked, settle } = mount(undefined, {}, { country: 'eg' });
+    // Pressed before its choices came, as a person presses it: the focus on it, its list open over the page.
+    const select = el.querySelector('select') as HTMLSelectElement;
+    select.focus();
     asked[0].answer(CITIES['eg']);
     await settle();
-    const select = el.querySelector('select');
+    expect(el.querySelector('select')).toBe(select);
+    expect(document.activeElement).toBe(select);
+    expect([...select.options].map((o) => o.textContent)).toEqual(['', 'Cairo', 'Alexandria']);
     form.setValue('city', 'cai');
-    expect(el.querySelector('select')).toBe(select);
+    expect(select.selectedOptions[0].textContent).toBe('Cairo');
     form.setValue('country', 'jo');
-    expect(el.querySelector('select')).toBe(select);
     asked[1].answer(CITIES['jo']);
     await settle();
-    expect(el.querySelector('select')).not.toBe(select);
+    expect(el.querySelector('select')).toBe(select);
     expect(el.querySelectorAll('select')).toHaveLength(1);
+    expect(document.activeElement).toBe(select);
+    expect([...select.options].map((o) => o.textContent)).toEqual(['', 'Amman']);
+    select.value = '0';
+    select.dispatchEvent(new Event('change'));
+    expect(form.getState().values['city']).toBe('amm');
+  });
+
+  it('keep a searched list’s box as its choices come: what is typed, its list open and the focus kept', async () => {
+    const { el, asked, settle } = mount(undefined, {}, { country: 'eg' }, { search: true });
+    const box = el.querySelector('input[role=combobox]') as HTMLInputElement;
+    box.focus();
+    box.value = 'al';
+    box.dispatchEvent(new Event('input'));
+    asked[0].answer(CITIES['eg']);
+    await settle();
+    expect(el.querySelector('input[role=combobox]')).toBe(box);
+    expect(document.activeElement).toBe(box);
+    expect(box.value).toBe('al');
+    expect(box.getAttribute('aria-expanded')).toBe('true');
+    expect([...el.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual(['Alexandria']);
+  });
+
+  it('keep the focus in a widget drawn anew for its new choices: radios', async () => {
+    const { form, el, asked, settle } = mount('radio', {}, { country: 'eg' });
+    asked[0].answer(CITIES['eg']);
+    await settle();
+    (el.querySelector('input[type=radio]') as HTMLInputElement).focus();
+    form.setValue('country', 'jo');
+    asked[1].answer(CITIES['jo']);
+    await settle();
+    expect(el.contains(document.activeElement)).toBe(true);
+    expect((document.activeElement as HTMLElement).closest('label')?.textContent).toBe('Amman');
   });
 
   it('say loading in the help’s quiet words, and a value no longer offered as a warning', async () => {

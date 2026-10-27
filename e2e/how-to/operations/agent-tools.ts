@@ -10,12 +10,11 @@ export const replay: DemoReplay = {
         const tool = (n: number) => lines.nth(n).getByRole('combobox', { name: 'Tool' });
         const offered = (n: number) => tool(n).locator('option').filter({ hasText: /./ });
         await see(lines).toHaveCount(4);
-        // The tools come from the app a moment after the page (as from a server): a Tool pressed before they have
-        // come loses the focus and its open list when they do (its select is drawn anew), so the replay presses it
-        // once they have — reported as a defect of its own.
+        // The tools come from the app a moment after the page (as from a server): Tool pressed at once, before they
+        // have come, keeps the focus and its open list as they do — the same select, its tools filled in.
+        await press(tool(0));
         await see(offered(0)).toHaveCount(4);
         // Each Tool opened: the browser's own list, of the line's connection's tools.
-        await press(tool(0));
         await see(tool(0)).toBeFocused();
         await see(offered(0)).toHaveText(['Search mail', 'Send an email', 'Draft a reply', 'Add a label']);
         // Closed again (a phone's picker closes as the next tap lands).

@@ -43,7 +43,7 @@ export const searchWidget: WidgetFactory = (context) => combo(context, true);
 function combo({ form, name, field, node, id, document, labels, locale }: WidgetContext, single: boolean) {
   const words = wordsFor(labels, locale);
   const make = maker(document);
-  const options: Option[] = field.type === 'selection' ? field.options : [];
+  let options: Option[] = field.type === 'selection' ? field.options : [];
   const own = field.type === 'selection' && field.ownAnswers === true && !single;
   const listId = `${id}-list`;
   const input = make('input', {
@@ -297,6 +297,13 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
       const typed = input.value.trim();
       if (typed !== (single ? labelOf(current()) : '') && unreadNow()?.text !== input.value) left();
       stopReading?.();
+    },
+    // Its options come or changed: the same box, what is typed in it and its list open, found again among them.
+    offer(given) {
+      options = [...given];
+      drawn = '';
+      if (!list.hidden) open();
+      return true;
     },
     update(state) {
       readonly = state.readonly;
