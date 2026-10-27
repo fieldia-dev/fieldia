@@ -1,4 +1,4 @@
-import { formLimitsPart, type Form, type FormState, type Messages, type Page, type SavedDraft } from '@fieldia/core';
+import { formLimitsPart, plainWords, type Form, type FormState, type Messages, type Page, type SavedDraft } from '@fieldia/core';
 import { startLoading, type Loading, type Wait } from '@fieldia/widgets';
 import { setHidden, setText, type El } from './dom';
 import type { ViewerLabels } from './labels';
@@ -100,7 +100,7 @@ export function drawLimits(ctx: LimitsContext): LimitsKit {
         wait = null;
       }
       setText(title, asking ? '' : why ?? '');
-      setText(own, limits?.message ?? '');
+      setText(own, plainWords(limits?.message) ?? '');
       setHidden(own, asking || !limits?.message);
       setHidden(screen, !closed);
       setText(bannerText, why ? `${why} ${labels.closedTyped}` : '');

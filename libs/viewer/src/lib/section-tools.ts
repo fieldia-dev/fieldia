@@ -1,4 +1,4 @@
-import type { SectionNode } from '@fieldia/core';
+import { plainWords, type SectionNode } from '@fieldia/core';
 import { drawIcon } from '@fieldia/widgets';
 import { installGroupStyles } from './group-styles';
 import type { HeadKit } from './section-head';
@@ -19,7 +19,7 @@ const fill = (template: string, values: Record<string, string>) => template.repl
 export function sectionHeading(kit: HeadKit, node: SectionNode, section: HTMLElement, content: HTMLElement, description: HTMLElement | null, own: HTMLElement[]) {
   const { el, doc, labels } = kit;
   installGroupStyles(doc);
-  const title = node.title ?? '';
+  const title = plainWords(node.title) ?? '';
   const tools = el('span', { class: 'fd-section-tools' });
   const legend = el('legend', { class: 'fd-section-title fd-section-head' }, el('span', { class: 'fd-section-name' }, ...kit.withIcon(node.icon, title)), tools);
   section.setAttribute('data-head', '');

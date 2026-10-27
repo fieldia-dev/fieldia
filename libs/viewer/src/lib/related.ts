@@ -1,4 +1,4 @@
-import type { CreateRequest, DataSource, Field, LayoutNode, OptionsRequest, Page, SearchRequest, Tone } from '@fieldia/core';
+import { literalWords, writtenPart, type CreateRequest, type DataSource, type Field, type LayoutNode, type OptionsRequest, type Page, type SearchRequest, type Tone } from '@fieldia/core';
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
 import type { ViewerOptions } from './viewer';
@@ -129,7 +129,8 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     async editValues(request) {
       const result = await openFormDialog({
         ...shared,
-        page: valuesPage(request.fields, request.title, request.readonly === true, request.layout, options.page.phone, request.lowerLabels),
+        // Its title as a person reads it, written for the page round its fields; those fields as their page writes them.
+        page: valuesPage(Object.fromEntries(Object.entries(request.fields).map(([name, def]) => [name, writtenPart(def)])), literalWords(request.title), request.readonly === true, request.layout?.map(writtenPart), options.page.phone, request.lowerLabels),
         ...(request.parent ? { parent: request.parent } : {}),
         dataSource: lookupsOf(options.dataSource),
         values: request.values,

@@ -5,7 +5,7 @@ import type { MenuItem, Modifier, Tone } from '../format/layout';
 import { compileExpression, type CompiledExpression, type ExpressionEnv } from '../expression/expression';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { FIELD_NAME } from '../format/names';
-import { splitValues } from '../format/words';
+import { plainWords, splitValues } from '../format/words';
 import { fitTo } from './compute';
 import type { PaidPayment, PaymentDue, PayRequest, ResolvedFilter } from './data-source';
 import { resolveFilter } from './filter';
@@ -564,7 +564,7 @@ export function createRunner(form: RunForm) {
       ...(step.version !== undefined ? { version: step.version } : {}),
       as: step.as ?? 'dialog',
       ...(step.side && step.as === 'panel' ? { side: step.side } : {}),
-      ...(step.title !== undefined ? { title: step.title } : {}),
+      ...(step.title !== undefined ? { title: plainWords(step.title) } : {}),
       recordId: typeof record === 'number' || (typeof record === 'string' && record !== '') ? record : null,
       ...(step.values ? { values: readMap(step.values) } : {}),
       ...(step.filter ? { filter: resolveFilter(step.filter, form.reading().context) } : {}),
@@ -840,12 +840,13 @@ export function createRunner(form: RunForm) {
         form.showing(scope.chain, () => show.call(form.host, step.target));
         return null;
       }
+      // The page's own words, as a person reads them: an escaped brace a brace.
       case 'say':
-        tell(scope, step.message, step.tone ?? 'info');
+        tell(scope, plainWords(step.message), step.tone ?? 'info');
         return null;
       case 'ask':
         // Yes goes on with what was pressed: its words.
-        return (await ask(step.message, scope.yes)) ? null : { reason: 'no', message: step.message };
+        return (await ask(plainWords(step.message), scope.yes)) ? null : { reason: 'no', message: plainWords(step.message) };
       case 'call':
         return call(step, scope);
       case 'open':

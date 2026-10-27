@@ -1,4 +1,4 @@
-import { LINK_URL, PICTURE_URL, safeUrl, cardLines, type CardLine, type CardLinePart, type Locale, type MapCard, type Page, type PluralWords, type Value, type Values, intlFormat } from '@fieldia/core';
+import { LINK_URL, PICTURE_URL, plainPart, safeUrl, cardLines, type CardLine, type CardLinePart, type Locale, type MapCard, type Page, type PluralWords, type Value, type Values, intlFormat } from '@fieldia/core';
 import { fill, type ListMapLabels, type MapLabels } from './labels';
 import { imageSource, shown, type MapRecord } from './pins';
 
@@ -132,7 +132,7 @@ export function drawCard(options: CardOptions): Card {
       'dl',
       'fd-map-card-fields',
       ...lines.map((parts) => {
-        const label = parts.map(({ part }) => page.fields[part.field]?.label ?? part.field).join(' · ');
+        const label = parts.map(({ part }) => plainPart(page.fields[part.field])?.label ?? part.field).join(' · ');
         const value = make(doc, 'dd', '', ...parts.flatMap(({ said }, i) => [...(i ? [' · '] : []), make(doc, 'bdi', '', said)]));
         return make(doc, 'div', '', make(doc, 'dt', '', label), value);
       })

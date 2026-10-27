@@ -1,5 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+import { holdSaves } from './hold-support';
 
 /**
  * Save safety where a person loses work without being told, in the two tabs
@@ -37,18 +38,24 @@ async function conflictInYourTab(page: Page) {
   return form;
 }
 
+const saveCalls = (page: Page) => page.evaluate(() => (window as any).fieldiaDemo.dataSource.calls.filter((c: any) => c.method === 'save').length as number);
+
 test('Ctrl+Enter pressed twice while the first save is on its way saves once — the same save: no conflict with herself', async ({ page }) => {
   const problems = await openDemo(page);
   const form = yours(page);
   const phone = field(form, 'phone').locator('input');
   await phone.fill('+20 100 999 8887');
+  // The source's answer held: the second press is certainly made while the first is on its way.
+  const saves = await holdSaves(page);
   await phone.press('Control+Enter');
-  // The source takes a fifth of a second: the second press comes while the first is on its way.
-  await expect.poll(async () => (await state(page)).status).toBe('saving');
+  await saves.asked();
   await phone.press('Control+Enter');
+  // The second waits for the first: nothing more is asked of the source.
+  await expect.poll(saves.held).toBe(1);
+  await saves.release();
   // Both answered, by the one save: nothing changed between the presses.
   await page.evaluate(() => (window as any).fieldiaDemo.handle.form.settled());
-  expect(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.calls.filter((c: any) => c.method === 'save').length)).toBe(1);
+  expect(await saveCalls(page)).toBe(1);
   await expect(form.locator('.fd-status')).toHaveText('Saved');
   await expect(banner(form)).toBeHidden();
   expect(await state(page)).toMatchObject({ status: 'saved', conflict: null, saveProblem: null, dirty: [] });

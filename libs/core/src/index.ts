@@ -1,4 +1,6 @@
 export * from './runtime';
+// Every word of a page written to show as it is (`literalWords` each): for an app's own pages, outside the one-tag script.
+export { literalPage } from './lib/format/translate';
 // Why a page takes no answers now, in words: the limits part's (`formLimitsPart`), whole here.
 export { takingWords, whenWords } from './lib/record/form-limits';
 // A quiz's results for answers sent: the survey part's (`formSurveyPart`), whole here — for an app's own marking.

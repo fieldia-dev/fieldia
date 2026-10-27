@@ -1,4 +1,4 @@
-import { recordSentence } from '@fieldia/core';
+import { plainWords, recordSentence } from '@fieldia/core';
 import { restingText } from '@fieldia/widgets';
 import type { PrintContext, PrintLook, PrintParts } from './print';
 import { installPrintStyles } from './print-styles';
@@ -238,7 +238,7 @@ export function printLook(context: PrintContext, parts: PrintParts): PrintLook {
     // title) and the stage it is in ("Invoice · Draft"). A page of responses has its title over it already.
     stage?.update(values);
     const name = context.name();
-    const what = () => [recordSentence(page.records, '{record}', page.title ?? '', context.locale), stage ? wordsOf(stage.nodes) : ''].filter(named);
+    const what = () => [recordSentence(page.records, '{record}', plainWords(page.title) ?? '', context.locale), stage ? wordsOf(stage.nodes) : ''].filter(named);
     title.textContent = page.data.kind !== 'record' ? '' : named(name) ? name : what().join(' · ');
     when.textContent = context.fill(labels.printedOn, { date: restingText(context.now().toISOString(), 'datetime', context.locale, page.timeZone) });
   }

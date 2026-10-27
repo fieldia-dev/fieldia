@@ -1,4 +1,4 @@
-import { foldForSearch, languagesOf, placesOf, placesOfCurrency, type NumberLimits } from '@fieldia/core';
+import { foldForSearch, languagesOf, placesOf, placesOfCurrency, plainPart, type NumberLimits } from '@fieldia/core';
 import type {
   Field,
   FieldNode,
@@ -135,6 +135,7 @@ export interface WidgetDialogs {
   /**
    * Values edited in a form made of these fields. Resolves with the new values,
    * or null. `recompute` recalculates them as they change, as a line's onchange.
+   * Its `title` as a person reads it; its fields and layout as a page writes them.
    */
   editValues(request: {
     title: string;
@@ -226,8 +227,12 @@ export type WidgetFactory = (context: WidgetContext) => Widget;
  * with no editor yet shows its value read-only.
  */
 export function createWidget(given: WidgetContext, registry: Record<string, WidgetFactory> = given.widgets ?? {}): Widget {
+  // The field's and the part's words as a person reads them — each escaped brace a brace — whoever draws them (`plainPart`:
+  // once only, where they were read already).
+  const [own, part] = [plainPart(given.field), plainPart(given.node)];
+  const shown = own === given.field && part === given.node ? given : { ...given, field: own, node: part };
   // The fields it draws of its own are found where it was.
-  const context = given.widgets === registry ? given : { ...given, widgets: registry };
+  const context = shown.widgets === registry ? shown : { ...shown, widgets: registry };
   const { field } = context;
   const factory = factoryFor(field, context.node, registry);
   // Kept from throwing: a widget that fails is a box naming its field, and the page goes on (contain.ts).
@@ -500,8 +505,8 @@ function numberBox(context: WidgetContext, shorthand?: (locale: Locale, labels?:
     currencyField && currencyDef && options['pickCurrency'] === true
       ? createWidget({ ...context, name: currencyField, field: currencyDef, node: { type: 'field', id: `${node.id}.currency`, field: currencyField }, id: `${id}-currency` })
       : null;
-  if (picker && currencyDef) picker.element.querySelector('input, select')?.setAttribute('aria-label', currencyDef.label);
-  if (picker?.element.matches('input, select') && currencyDef) picker.element.setAttribute('aria-label', currencyDef.label);
+  if (picker && currencyDef) picker.element.querySelector('input, select')?.setAttribute('aria-label', plainPart(currencyDef).label);
+  if (picker?.element.matches('input, select') && currencyDef) picker.element.setAttribute('aria-label', plainPart(currencyDef).label);
   // Inside the box: the currency where the page's language writes it for that currency — as every total, cell and value
   // of the page writes it, so the sign never moves between them — unless the field's money look says before or after,
   // everywhere it is written; a number's unit (options.prefix, options.suffix).

@@ -115,10 +115,7 @@ export function groupFilter(context: Pick<GroupContext, 'page' | 'count'>, key: 
 export function groupWords(context: Pick<GroupContext, 'page' | 'labels' | 'locale' | 'fill'>, name: string, group: Heading): string {
   const { page, labels, locale } = context;
   const one = intlFormat('PluralRules', locale).select(group.count) === 'one';
-  const count = context.fill(
-    one ? recordSentence(page.records, labels.groupCountNounOne, labels.groupCountOne, locale) : recordSentence(page.records, labels.groupCountNoun, labels.groupCount, locale),
-    { n: formatNumber(group.count, 0, locale) }
-  );
+  const count = one ? recordSentence(page.records, labels.groupCountNounOne, labels.groupCountOne, locale, { n: formatNumber(group.count, 0, locale) }) : recordSentence(page.records, labels.groupCountNoun, labels.groupCount, locale, { n: formatNumber(group.count, 0, locale) });
   return [name, count, ...(group.sums ? [group.sums.replace(/^·\s*/, '')] : [])].join(', ');
 }
 

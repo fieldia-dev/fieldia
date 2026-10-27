@@ -4,6 +4,7 @@ import type { Page } from '../format/page';
 import type { ResolvedFilter, ResolvedFilterCondition } from './data-source';
 import { fill } from './messages';
 import { labelAt } from './record-words';
+import { plainPart } from '../format/translate';
 import { foldDigits, foldForSearch, readNumber, stripMarks } from './input-rules';
 
 /**
@@ -63,7 +64,8 @@ export function suggestions(typed: string, page: Page, list: ListNode, words: { 
   const sought = foldDigits(stripMarks(text)).trim();
   const found: Suggestion[] = [];
   for (const field of list.searchFields ?? list.columns) {
-    const def = page.fields[field];
+    // Its words as a person reads them, read once (`plainPart`).
+    const def = plainPart(page.fields[field]);
     if (!def) continue;
     const say = (op: Suggestion['op'], value: JsonValue, valueLabel: string, label?: string) =>
       found.push({ field, fieldLabel: def.label, op, value, valueLabel, label: label ?? fill(words.searchFor, { field: labelAt(words.searchFor, 'field', page.lowerLabels, locale)(def.label), text }) });

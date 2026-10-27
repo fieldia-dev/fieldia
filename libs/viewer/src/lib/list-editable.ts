@@ -227,7 +227,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
   const drawField = list.drawField;
   const cards = () => context.element.hasAttribute('data-as');
   installEditableStyles(doc);
-  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, locale);
+  const sentence = (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(page.records, noun, words, locale, values);
   const adds = !(typeof node.editable === 'object' && node.editable.add === false);
   const nodeId = (column: string) => `${node.id}.${column}`;
   const rowFields = [...new Set([...context.reads, ...columns])].filter((name) => page.fields[name]);
@@ -242,7 +242,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
     id: `${page.id}.${node.id}`,
     ...(page.title ? { title: page.title } : {}),
     data: page.data,
-    fields: Object.fromEntries(rowFields.map((name) => [name, page.fields[name]])),
+    fields: Object.fromEntries(rowFields.map((name) => [name, (list.source ?? page).fields[name]])),
     layout: { type: 'sections', id: `${node.id}-row`, children: columns.map((name) => ({ type: 'field', id: nodeId(name), field: name })) },
     ...(page.look ? { look: page.look } : {}),
     ...(page.language ? { language: page.language } : {}),

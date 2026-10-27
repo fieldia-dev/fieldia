@@ -581,7 +581,7 @@ if (existsSync(README)) {
 const sandbox = { window: {}, self: {}, globalThis: {} };
 runInNewContext(readFileSync(OUT, 'utf8'), sandbox);
 const Fieldia = sandbox.Fieldia;
-for (const name of ['mountViewer', 'createMemoryDataSource', 'createForm', 'checkPage', 'translatePage', 'addLanguage']) {
+for (const name of ['mountViewer', 'createMemoryDataSource', 'createForm', 'checkPage', 'translatePage', 'literalWords', 'addLanguage']) {
   if (typeof Fieldia?.[name] !== 'function') throw new Error(`the script bundle does not define Fieldia.${name}`);
 }
 // Light enough for a page with no build step: no validation library, English alone, and under budget.
@@ -1554,6 +1554,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // check's missing words said at once under its fields (parts.ts, form.ts, join-missing.ts) — 575.34; a failed save
 // said as not saved, no "Saved, but not all your changes." nobody's save left, a record's draft its changes, a record
 // that could not open named by its row (viewer.ts, form.ts) — 576.64 (590,475 bytes), to 576.7.
+// 0.35.2, a brace a page's words quote (`\{list}`): one reader of a page's words, read once wherever they are drawn —
+// a part's words read as a widget is made, a value's choices as it is written, a step's and a press's words as they are
+// said, a record's nouns as its sentence is filled in one pass (words.ts, translate.ts, record-words.ts, viewer.ts,
+// widgets.ts) — 576.64 measured before, 578.23 after (592,111 bytes), to 578.3. A plain save asked again while one is on
+// its way joins it by what the values hold, not which object holds them (form.ts): 578.23 measured before, 578.32 after
+// (592,200 bytes), to 578.4.
 // 0.36's fix lane F4: what a box's own undo and redo write noted for the record's Redo (form.ts, `boxHistory`; heard in
 // the undo part, undo-history.ts), and the record's keys kept from the browser's own (undo-keys.ts): 582,019 measured
 // before, 582,108 after, to 568.5 (gzipped 189.80, inside its 189.8).
@@ -1581,7 +1587,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.36 (p3-real-tests) merged with 0.35.1, set once from the merged build: 0.35.1's 590,475 bytes and this lane's
 // +3,697 measured alone above (the typing kept, the alert, the record's keys, the parts' failure words, the words kept
 // said) — 594,172, to 580.3.
-const BUDGET_KB = 580.3;
+// 0.36 merged with 0.35.2, set once from the merged build: 0.35.2's literal braces and its plain save joining one on its
+// way beside this lane's — 595,807, to 581.9.
+const BUDGET_KB = 581.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1927,6 +1935,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.35.1, the owner's walk of 0.35 (listed with the raw budget above): 189.79 measured before; a key in a long table
 // +1.44, a guarding part's Retry and the typing kept +1.23, a save's words, a draft's and an open's +0.48 — 192.94, to
 // 193.0.
+// 0.35.2, a brace a page's words quote, read by one reader wherever they are drawn (listed with the raw budget above):
+// 192.94 measured before, 193.56 after, to 193.6. A save on its way joined by what the values hold (listed with the
+// raw budget above): 193.56 measured before, 193.63 after, to 193.7.
 // 0.36 (p3-real-tests, F1), listed with the raw budget above: a refusal's words let go from the alert, 189.79 measured
 // before, 189.87 after; the box under the keys never written over, 190.13 — to 190.2.
 // The part-failure matrix (listed with the raw budget above): what says a part could not come — under a field, over the
@@ -1939,7 +1950,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.36 (p3-real-tests, F8), a wait's words kept said (listed with the raw budget above): 190.91 measured before, 191.01
 // after, to 191.1.
 // 0.36 merged with 0.35.1 (listed with the raw budget above): 192.94 at 0.35.1, 194.23 merged (+1.29), to 194.3.
-const GZIP_BUDGET_KB = 194.3;
+// 0.36 merged with 0.35.2 (listed with the raw budget above): 194.78 merged, to 194.8.
+const GZIP_BUDGET_KB = 194.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -3083,6 +3095,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 72.95 and 24.64, to 73.0 and 24.7; a file named as a picture that is none said so (files.ts) — files 50.49 and 18.82,
 // 50.68 and 18.90, to 50.7 and 19.0; a search that failed in a toast closes its empty list, a list closed writing only
 // what changed (relations.ts) — relations 20.98 and 7.99, 21.10 and 8.01, to 21.1 and 8.1.
+// 0.35.2, a brace a page's words quote, read by the one reader wherever a part draws them, and the main script's names
+// for it each part takes (`SHARED`): answers 4.35, 4.41, to 4.5; evidence 9.18, 9.21, to 9.3; head 42.35, 42.42, to
+// 42.5; import 38.89, 38.94, to 39.0; pay 7.80, 7.83, to 7.9; print 16.49, 16.52, to 16.6 — each inside its gzipped one;
+// survey 36.42 either way, its names shorter or longer, 12.50 gzipped, to 12.6.
 // 0.36, the outbox in WebKit (p3-real-tests F7): what waits tried again by its own tries — after 2 seconds, then 4, 8
 // and 16, then every half a minute — and as the page comes back into view, as a browser may never say `online`
 // (outbox.ts) — outbox 10.97 and 4.67 measured before, 11.17 and 4.76 after, to 11.2 and 4.8; the memory source's
@@ -3114,7 +3130,8 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // beside this lane's groups kept open, a pin a finger taps, a related list's failure said) — 155.57 and 50.80, to 155.6
 // and 50.9; the files part (0.35.1's picture that is none, this lane's address let go once loaded) — 50.83 and 18.95, to
 // 50.9, inside 19.0.
-const PART_BUDGET_KB = { head: [42.4, 13.0], text: [73.0, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [155.6, 50.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [38.9, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.2, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.4, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.5, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.8, 3.5], element: [5.9, 2.6], outbox: [11.2, 4.8], loading: [9.5, 3.1] };
+// 0.36 merged with 0.35.2: the list part 155.62 and 50.80, to 155.7, inside 50.9.
+const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.0, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [155.7, 50.9], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.2, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.9, 2.6], outbox: [11.2, 4.8], loading: [9.5, 3.1] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

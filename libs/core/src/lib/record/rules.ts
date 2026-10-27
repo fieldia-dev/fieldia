@@ -7,6 +7,7 @@ import { isNumber } from '../expression/operations';
 import { foldDigits, stripMarks } from './input-rules';
 import { PATTERN_MOST, rulePattern } from '../format/pattern';
 import { fillMessage, type MessageKey, type Messages } from './messages';
+import { plainWords } from '../format/words';
 import { isEmpty, lineKind, type Line, type RelatedRecord, type Value } from './values';
 
 /**
@@ -57,7 +58,8 @@ export function checkRules(
     const level = compiled.rule.level ?? 'error';
     if (found[level] !== undefined || !compiled.when.evaluate(at.context, at.env)) continue;
     const broken = brokenAsk(compiled, field, value as Value, at.now, at.env.today?.()) ?? brokenAcross(compiled, at);
-    if (broken) found[level] = compiled.rule.message ?? fillMessage(at.messages, at.messages[broken.say], { label, ...broken.values });
+    // The page's own words, as a person reads them; else Fieldia's, the field named.
+    if (broken) found[level] = plainWords(compiled.rule.message) ?? fillMessage(at.messages, at.messages[broken.say], { label, ...broken.values });
   }
   return found;
 }

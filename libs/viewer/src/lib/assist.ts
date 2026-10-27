@@ -1,4 +1,4 @@
-import { formLanguagesPart, isEmpty, labelAt, languagesOf, listComma, type DataSource, type Field, type FieldNode, type Form, type FormState, type LineField, type Line, type Locale, type Page, type RecordId, type UploadFile, type Value, type Values } from '@fieldia/core';
+import { formLanguagesPart, isEmpty, labelAt, languagesOf, listComma, plainWords, type DataSource, type Field, type FieldNode, type Form, type FormState, type LineField, type Line, type Locale, type Page, type RecordId, type UploadFile, type Value, type Values } from '@fieldia/core';
 import { askFirst, displayValue, drawIcon, keepTabIn, type IconSet } from '@fieldia/widgets';
 import { readLines, readProposed, sameValue, type ReadHow } from './assist-read';
 import { SPARKLE } from './assist-icon';
@@ -210,7 +210,7 @@ export function watchAssist(context: AssistContext): AssistKit {
 
   // ---- the bar over the page ----------------------------------------------------------------------------------------
 
-  const fillButton = el('button', { type: 'button', class: 'fd-button fd-assist-fill', ...(page.suggest?.fromField ? {} : { 'aria-haspopup': 'dialog' }) }, ...icon(), el('span', {}, page.suggest?.label ?? labels.assistFill));
+  const fillButton = el('button', { type: 'button', class: 'fd-button fd-assist-fill', ...(page.suggest?.fromField ? {} : { 'aria-haspopup': 'dialog' }) }, ...icon(), el('span', {}, plainWords(page.suggest?.label) ?? labels.assistFill));
   fillButton.addEventListener('click', () => openFill());
   const reviewText = el('p', { class: 'fd-assist-review-text', id: `${id}-review` });
   // The app's words, in their own direction: English on an Arabic page too.
@@ -607,10 +607,10 @@ export function watchAssist(context: AssistContext): AssistKit {
     if (page.suggest?.fromField) return void fillFromField(page.suggest.fromField);
     if (context.root.querySelector('.fd-assist-dialog')) return;
     const from = page.suggest?.from ?? ['text', 'files'];
-    const title = el('h2', { id: `${id}-fill-title`, class: 'fd-form-dialog-title' }, page.suggest?.label ?? labels.assistFill);
+    const title = el('h2', { id: `${id}-fill-title`, class: 'fd-form-dialog-title' }, plainWords(page.suggest?.label) ?? labels.assistFill);
     const close = el('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close, title: labels.close }, '×');
     const hint = el('p', { class: 'fd-assist-hint', id: `${id}-fill-hint` }, labels.assistFillHint);
-    const text = el('textarea', { class: 'fd-input fd-assist-text', rows: '9', 'aria-label': labels.assistFillBox, 'aria-describedby': `${id}-fill-hint`, placeholder: page.suggest?.placeholder ?? labels.assistFillPlaceholder }) as HTMLTextAreaElement;
+    const text = el('textarea', { class: 'fd-input fd-assist-text', rows: '9', 'aria-label': labels.assistFillBox, 'aria-describedby': `${id}-fill-hint`, placeholder: plainWords(page.suggest?.placeholder) ?? labels.assistFillPlaceholder }) as HTMLTextAreaElement;
     const picker = el('input', { type: 'file', multiple: '', class: 'fd-sr-only', tabindex: '-1', 'aria-hidden': 'true' }) as HTMLInputElement;
     const pick = el('button', { type: 'button', class: 'fd-button fd-assist-pick' }, labels.assistFiles);
     const picked = el('ul', { class: 'fd-assist-files', hidden: '' });

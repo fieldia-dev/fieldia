@@ -1,4 +1,4 @@
-import { wideColumns, type FieldNode, type FieldType, type LabelPlace, type SectionNode } from '@fieldia/core';
+import { plainWords, wideColumns, type FieldNode, type FieldType, type LabelPlace, type SectionNode } from '@fieldia/core';
 
 /**
  * Where a part sits, as the viewer lays a page out: how many columns the grid
@@ -53,7 +53,7 @@ export function planSection(node: SectionNode, place: Place): SectionPlan {
       onPage: place.onPage && (style === 'plain' || style === 'line'),
       labels: node.labels ?? place.labels,
       quiet: node.quiet ?? place.quiet,
-      reason: node.readonlyReason ?? place.reason,
+      reason: plainWords(node.readonlyReason) ?? place.reason,
     },
   };
 }

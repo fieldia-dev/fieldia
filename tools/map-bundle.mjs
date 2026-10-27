@@ -160,6 +160,8 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // lights the note that says so (list-view.ts) — with a list's map and a form's 13,584 bytes measured before, 13,630
 // after, to 13.4; a list's map 22,174, 22,342, to 21.9; a form's 19,852, 19,964, inside its 19.5; the fields' 18,442,
 // 18,556, to 18.2.
+// 0.35.2, a brace a page's words quote: a card's labels read by the one reader, once (card.ts) — a form's 19,964 bytes
+// measured before, 19,973 after, to 19.6; a list's map 22,342, 22,351, inside its 21.9.
 // 0.36 (p3-real-tests, lane F3 — what the demos' how-to replays found on the maps): a box or a circle drawn, and a shape
 // carried, holding off the browser's own selection and drag and drop as Leaflet's drags do (drawing.ts, area.ts); a
 // bubble whose pins spread wider than the map shows pressed one step closer on its spot, never a fit that only pans
@@ -174,11 +176,13 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // kept at its foot, the words over the map stepping aside while it is open (styles.ts, in the chunk the parts share) —
 // a list's map 22,483 bytes, 22,752, to 22.3; a form's 20,042, 20,339, to 19.9; the fields' 18,726, 18,892, to 18.5;
 // with the page as it was.
-const BUDGET = { fields: 11.8, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
 // 0.36 merged with 0.35.1, from the merged build: both lines' map changes in each part — a list's map 22,914 bytes, to
 // 22.4; a form's 20,446, to 20.0; the fields' 19,004, to 18.6; with the page 12,018, 13,718 and 10,945, inside 11.8, 13.4
 // and 10.7.
-const PART_BUDGET = { 'view-part': 22.4, 'form-part': 20.0, 'widgets-part': 18.6 };
+const BUDGET = { fields: 11.8, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
+// 0.36 merged with 0.35.2, and a zoom under way from its press (map-core.ts): a list's map 22,943 bytes, to 22.5; a
+// form's 20,479, to 20.1; the fields' 19,021, inside 18.6.
+const PART_BUDGET = { 'view-part': 22.5, 'form-part': 20.1, 'widgets-part': 18.6 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

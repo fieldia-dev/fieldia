@@ -1,4 +1,4 @@
-import { createForm, type DataSource, type Field, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
+import { createForm, plainPart, type DataSource, type Field, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import { uncalled } from './uncalled';
 import type { Skin } from '@fieldia/viewer';
 import { askCanvasParts } from './canvas-parts';
@@ -350,7 +350,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const said = kind && PREVIEWED.has(kind) ? w.preview[kind as keyof typeof w.preview] : null;
     if (said && (kind === 'date' || kind === 'date-time' || kind === 'time')) return el('div', { class: 'fd-q-preview fd-q-preview-short fd-q-preview-date' }, said, designerIcon(doc, kind === 'time' ? 'time' : 'date'));
     if (said) return el('div', { class: `fd-q-preview fd-q-preview-${kind === 'paragraph' ? 'long' : 'short'}` }, said);
-    if (kind === 'dropdown' && def.type === 'selection') return el('ol', { class: 'fd-q-preview fd-q-preview-list' }, ...def.options.map((o, i) => el('li', {}, `${i + 1}. ${o.label}`)));
+    if (kind === 'dropdown' && def.type === 'selection') return el('ol', { class: 'fd-q-preview fd-q-preview-list' }, ...plainPart(def).options.map((o, i) => el('li', {}, `${i + 1}. ${o.label}`)));
     return kindPreview(el, page, node, kind, own);
   }
   /** Paints a question's answer into a box: the preview where there is one, else the real answer box. */

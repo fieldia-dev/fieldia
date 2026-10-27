@@ -53,7 +53,7 @@ const same = (a: Value | undefined, b: Value | undefined): boolean => {
 export function openMergeScreen(context: DuplicatesContext, here: MergeSide, there: MergeSide, opener: HTMLElement | null): Promise<Merged | null> {
   const { el, labels, fill, form, page } = context;
   /** One of its sentences in the words the page names its records by (`records`), else as it says them plainly. */
-  const sentence = (noun: string | undefined, words: string) => recordSentence(page.records, noun, words, context.locale);
+  const sentence = (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(page.records, noun, words, context.locale, values);
   const nameField = nameFieldOf(page);
   const id = `fd-merge-${++screens}`;
   const fields = mergeFields(page);

@@ -1,4 +1,4 @@
-import { optionsList, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type RecordId, type Value, type Values } from '@fieldia/core';
+import { optionsList, plainPart, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type RecordId, type Value, type Values } from '@fieldia/core';
 import { currencyOf } from './display';
 import { stillShown, whileShown } from './shown';
 import type { WidgetDialogs } from './widgets';
@@ -160,7 +160,7 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
   const shown = stillShown(form);
   if (node.lineOpens === 'record' && line.id !== undefined && dialogs.canOpen(def.relation)) {
     // A line is part of its record: its labels said as the record's page asks, unless its own page says otherwise.
-    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: def.label, withValues: true, ...lowerLabels });
+    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: plainPart(def).label, withValues: true, ...lowerLabels });
     const back = Object.fromEntries(Object.entries(saved?.values ?? {}).filter(([key]) => key in def.fields && key !== def.sequenceField));
     if (Object.keys(back).length) write(back as Values);
     return;
@@ -174,7 +174,7 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
   // Laid out by the table's lineForm when it has one, its conditions reading the line, its record as parent.
   const state = form.getState();
   const values = await dialogs.editValues({
-    title: def.label,
+    title: plainPart(def).label,
     fields,
     values: line.values,
     readonly,

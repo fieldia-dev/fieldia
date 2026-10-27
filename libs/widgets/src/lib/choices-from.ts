@@ -1,4 +1,4 @@
-import { fill, optionsList, type Field, type Option } from '@fieldia/core';
+import { fill, optionsList, plainPart, type Field, type Option } from '@fieldia/core';
 import { wordsFor } from './kind-parts';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 import { startLoading, type Wait } from './loading';
@@ -53,8 +53,12 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
    */
   const offeredNow = (): readonly Option[] | null => {
     if (listed && !form.getState().choices[name]?.options) return null;
-    const options = form.offered?.(name) ?? form.getState().choices[name]?.options ?? null;
-    return options?.some((option) => option.label.includes('{')) ? options.map((option) => (option.label.includes('{') ? { ...option, label: form.words(option.label) } : option)) : options;
+    const offered = form.offered?.(name);
+    const options = offered ?? form.getState().choices[name]?.options ?? null;
+    // The page's own options' words as a person reads them (`plainPart`); an app list's are its data, as it gives them.
+    const shown = offered ? options?.map(plainPart) : options;
+    if (!options || !shown) return null;
+    return options.some((option) => option.label.includes('{')) ? shown.map((option, i) => (options[i].label.includes('{') ? { ...option, label: form.words(options[i].label) } : option)) : shown;
   };
   const first = offeredNow();
   if (first) {

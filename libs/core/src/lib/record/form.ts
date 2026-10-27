@@ -5,7 +5,7 @@ import type { OptionRules, TakenOption } from './option-rules';
 import type { ButtonNode, FieldNode, FormNode, HeadLink, LayoutNode, MenuItem, Modifier, PressUndo, RelatedNode, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import type { PageEnding } from '../format/endings';
-import { fillValues } from '../format/words';
+import { fillValues, plainWords, READ_WORDS } from '../format/words';
 import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
@@ -1266,8 +1266,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const storeKey = () => `fieldia:draft:${ownerOf(options.user)}:${page.id}:${state.recordId ?? 'new'}`;
   /** Today, on the clock of the page's time zone (the browser's own when it names none). */
   const today = () => dayIn(options.now?.() ?? new Date(), page.timeZone);
-  /** Whether a field's own words — a label, a choice's — show a value: found once, so a page with none checks as before. */
-  const worded = /\{[A-Za-z_]\w*(\|[^{}]*)?\}/.test(JSON.stringify(page.fields));
+  /** Whether a field's own words — a label, a choice's — show a value or a brace escaped: found once, so a page with none checks as before. */
+  const worded = READ_WORDS.test(JSON.stringify(page.fields));
   const clock = () => (options.now?.() ?? new Date()).getTime();
   /** What a page's bot check saw — its hidden box filled, the captcha's token — and when the page was shown or started again. */
   let bot = { honeypot: false, captcha: null as string | null, since: clock() };
@@ -3415,6 +3415,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    */
   /** The save running now: the next one waits for it. */
   let saveRunning: Promise<unknown> | null = null;
+  /** Whether two of the form's values hold the same in every field. */
+  const sameValues = (one: Readonly<Values>, other: Readonly<Values>) => one === other || Object.keys(fields).every((name) => sameValue(fields[name], one[name], other[name]));
   /** The save asked for last, and the values it was asked for with: asked again with nothing changed, once it went, it is that one. */
   let running: { values: Readonly<Values>; mine: Promise<Stopped | null> } | null = null;
   /**
@@ -3442,7 +3444,9 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       if (before) await before;
       // Asked again while one was on its way, nothing changed between — a double press, an app's own Submit pressed
       // twice — and that one went: the same save, never a second send. Stopped or refused, this one is asked anew.
-      if (ahead && ahead.values === values && (await ahead.mine) === null) return null;
+      // Nothing changed is every field as it was, not the same object: an onchange's answer that changed nothing lands as
+      // a new one. A save a page's own moment asks for — its afterSave saving again — goes as before.
+      if (ahead && (chain.length ? ahead.values === values : sameValues(ahead.values, values)) && (await ahead.mine) === null) return null;
       return savingNow(chain, yes).catch(broken);
     })();
     const asked = (running = { values, mine });
@@ -4400,10 +4404,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     // Undo after it, in place of asking first: a built-in with `undo` asks nothing unless it says so.
     const offers = 'undo' in source ? source.undo : undefined;
     const asked = offers !== undefined ? undefined : builtin === 'archive' ? named(messages.archiveConfirmNoun, messages.archiveConfirm) : builtin === 'delete' ? named(messages.deleteConfirmNoun, messages.deleteConfirm) : undefined;
-    const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
+    // The page's own question and the press's words, as a person reads them; Fieldia's own as they are.
+    const confirm = 'confirm' in source && source.confirm !== undefined ? plainWords(source.confirm) : asked;
     if (offers !== undefined) scope.taken = takenNow(state.values);
     // Its question's Yes, and its ask steps', say what it does: its own words, else Archive or Delete.
-    scope.yes ??= source.label || (builtin === 'archive' ? messages.archiveYes : builtin === 'delete' ? messages.deleteYes : undefined);
+    scope.yes ??= plainWords(source.label) || (builtin === 'archive' ? messages.archiveYes : builtin === 'delete' ? messages.deleteYes : undefined);
     // On the record it was pressed on: another shown while its question is asked, it does nothing to that one.
     scope.generation ??= generation;
     // Pressed by the person: what is typed is read before a step reads the form or hands its values on.

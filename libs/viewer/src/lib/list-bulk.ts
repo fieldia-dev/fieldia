@@ -98,8 +98,8 @@ export function bulkQuestion(list: BulkList, count: number, field: string, value
   const one = intlFormat('PluralRules', list.locale).select(count) === 'one';
   const words = value === null || value === undefined ? '' : def.type === 'boolean' ? (value ? labels.yes : labels.no) : displayValue(def as LineField, value, {}, list.locale);
   const what = words ? fill(labels.bulkSet, { field: def.label, value: words }) : fill(labels.bulkClear, { field: def.label });
-  const ask = one ? recordSentence(list.page.records, labels.bulkAskNounOne, labels.bulkAskOne, list.locale) : recordSentence(list.page.records, labels.bulkAskNoun, labels.bulkAsk, list.locale);
-  return `${fill(ask, { n: number(count) })} ${what}`;
+  const ask = one ? recordSentence(list.page.records, labels.bulkAskNounOne, labels.bulkAskOne, list.locale, { n: number(count) }) : recordSentence(list.page.records, labels.bulkAskNoun, labels.bulkAsk, list.locale, { n: number(count) });
+  return `${ask} ${what}`;
 }
 
 /** Why the source refused a record, as the list says it: who changed it since it was listed, the field's own words, or the source's. */

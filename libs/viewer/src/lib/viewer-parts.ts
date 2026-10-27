@@ -1,4 +1,4 @@
-import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formJoins, formApprovalsPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { asksLoadingPart, loadingPart, loadingSettings, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -99,7 +99,7 @@ export const answersPart: Part<AnswersPart> = lazyPart('answers', () => import('
  * are drawn without it, as before (on a page with the part, as a sentence says them).
  */
 const showsAnswers = (page: Page): boolean =>
-  !!page.endings?.length || /\{[A-Za-z_]\w*(\|[^{}]*)?\}/.test(JSON.stringify([page.fields, page.layout], (key, value) => (key === 'text' || key === 'message' ? undefined : value)));
+  !!page.endings?.length || READ_WORDS.test(JSON.stringify([page.fields, page.layout], (key, value) => (key === 'text' || key === 'message' ? undefined : value)));
 
 /**
  * A page's opening, closing and limits said as it opens, and Continue later, loaded with the page's parts where it

@@ -125,6 +125,35 @@ describe('save() asked twice', () => {
     expect(memory.responses[1].key).not.toBe(memory.responses[0].key);
   });
 
+  it('a stored record saved again while its save is on its way joins it, though an onchange answer that changed nothing landed between', async () => {
+    const memory = createMemoryDataSource({ records: { m: { 1: { name: 'Acme', price: 5 } } } });
+    const answers: (() => void)[] = [];
+    let onchanged!: () => void;
+    const ds: DataSource = {
+      ...memory,
+      // Its answer comes once the first save is on its way, and changes nothing.
+      onchange: () => new Promise((resolve) => (onchanged = () => resolve({}))),
+      save: (request) => new Promise((resolve) => answers.push(() => resolve(memory.save(request)))),
+    };
+    const form = createForm({ page: record, dataSource: ds, recordId: 1 });
+    await form.load();
+    form.setValue('price', 6);
+    const first = form.save();
+    await tick();
+    expect(answers).toHaveLength(1);
+    onchanged();
+    await tick();
+    const second = form.save();
+    answers[0]();
+    await first;
+    await tick(10);
+    // Never asked of the source a second time: the same save.
+    expect(answers).toHaveLength(1);
+    answers.slice(1).forEach((go) => go());
+    expect(await second).toBe(true);
+    expect(memory.calls.filter((call) => call.method === 'save')).toHaveLength(1);
+  });
+
   it('a new record saved twice at once is saved once', async () => {
     let m = 0;
     const ds: DataSource = {
