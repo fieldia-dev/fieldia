@@ -32,6 +32,10 @@ export async function countsOf(page: Page, browser: Browser, act: () => Promise<
     w.__watch.observe(document.querySelector(selector) ?? document.body, { subtree: true, childList: true, attributes: true, characterData: true });
   }, root);
   page.on('request', asked);
+  // What the actions before it left to draw is drawn first, outside the count: two frames. Started on a frame still to
+  // be drawn — the last key of a word typed before, a part a condition showed — the trace counted its layout as this
+  // action's, one run in three (0.36's CI: "a key in a field a rule reads" laid out 1, 2 or 3 times as the frames fell).
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await browser.startTracing(page, { categories: ['devtools.timeline'] });
   await act();
   // What the action put off for a moment (a frame, a microtask) counts with it.
