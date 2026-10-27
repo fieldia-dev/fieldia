@@ -598,6 +598,23 @@ describe('createForm — onchange', () => {
       expect(line(form)).toMatchObject({ qty: 20, price: 100, subtotal: 2000 });
     });
 
+    it('another box’s leaving said late, as a press’s click ends, lays nothing of the box still typed in', async () => {
+      // The person pressed Quantity, leaving Note: Note's leaving waits for the press's click (press.ts), and they had
+      // already emptied Quantity — the answer's 1 for it held — when it came.
+      const { form, leave } = await typing();
+      form.updateLine('line_ids', 'l1', 'qty', null);
+      await form.settled();
+      expect(line(form)).toMatchObject({ qty: null, subtotal: 100 });
+      form.boxLeft('note');
+      await form.settled();
+      expect(line(form)).toMatchObject({ qty: null });
+      // Its own box left: laid.
+      leave();
+      form.boxLeft('line_ids.l1.qty');
+      await form.settled();
+      expect(line(form)).toMatchObject({ qty: 1, subtotal: 100 });
+    });
+
     it('a field of its own: kept as typed, the other fields its answer sets laid at once', async () => {
       const { form, source, leave } = await typing();
       form.setValue('note', null);
