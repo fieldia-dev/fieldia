@@ -164,7 +164,9 @@ What is deprecated now, and the minor it changes in. The console's warning links
 0.35.0, measured, on a desktop and on a mid-range phone (412 px wide, its CPU four times slower):
 
 - A key typed on the 500-field example page is worked out in 3.9–6.9 ms on a desktop and 17–36 ms on the phone. It
-  brings 16 of its parts up to date, not all 533.
+  brings 16 of its parts up to date, not all 533. From 0.36.0 each section is a paint layer of its own, so a key
+  repaints its section alone: 1.4 ms of paint on a desktop and 6.0 ms on the phone, where 0.35 painted the page's 500
+  fields (4.0 and 34.6 ms).
 - A list of 5,000 rows keeps some 1,600 DOM nodes in the page, not 130,343. A tick, a Tab or a fold costs what it
   did at 100 rows.
 - A table of 200 lines draws again only the lines a change touches. A Gantt of 500 tasks moves a bar in place.
@@ -176,6 +178,7 @@ by the browser, so a slow runner changes none of them.
 | What | Desktop | Phone | Gate |
 | --- | --- | --- | --- |
 | A key typed in a field a rule reads, 500 fields | 16 ms | 64 ms | `e2e/perf.spec.ts` ("type in a field a rule reads") |
+| A key's paint in a field nothing reads, 500 fields | 3 ms | 12 ms | `e2e/perf.spec.ts` ("paint a key in a field nothing reads") |
 | A choice that shows or hides 10 fields | 100 ms | 400 ms | `e2e/perf.spec.ts` ("choose: 10 fields show or hide") |
 | A viewer's first paint, 500 fields | 400 ms | 1,600 ms | `e2e/perf.spec.ts` |
 | A key's work, 500 fields: parts brought up to date | 17 | 17 | `e2e/perf-scale.spec.ts` ("a key works out only what reads it") |
@@ -187,12 +190,12 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 
 | App | First paint | Usable | Gate |
 | --- | --- | --- | --- |
-| A record form | 244.8 KB | 336.8 KB | `tools/npm-first-load.mjs` |
-| A list | 244.0 KB | 331.4 KB | `tools/npm-first-load.mjs` |
-| The screen designer | 597.8 KB | 829.1 KB | `tools/npm-first-load.mjs` |
+| A record form | 250.3 KB | 342.9 KB | `tools/npm-first-load.mjs` |
+| A list | 249.4 KB | 339.0 KB | `tools/npm-first-load.mjs` |
+| The screen designer | 604.2 KB | 837.9 KB | `tools/npm-first-load.mjs` |
 
 Usable counts the whole check, which a page asks for once it is drawn. The one-tag script, `fieldia.js`, is held to
-191.2 KB gzipped, the whole check it asks for after the first draw (`fieldia.check.js`) to 17.3 KB, and each other part
+196.6 KB gzipped, the whole check it asks for after the first draw (`fieldia.check.js`) to 17.3 KB, and each other part
 it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
 
 These are budgets, not measurements. A count's budget is what the release counted, with a little room; a timing's is
@@ -205,14 +208,21 @@ an iPhone runs Safari's engine); and Chrome on Android. The npm packages are ES2
 
 | Browser | Checked in CI | Not checked in CI |
 | --- | --- | --- |
-| Chrome, Edge | Chromium 141, Playwright's build: every browser spec, in every framework's demo, and the perf gates | Chrome's and Edge's own builds; the major before |
-| Firefox | Firefox 142, Playwright's build: the smoke set (104 specs) in the plain demo | The rest of the specs; the major before |
-| Safari | WebKit 26.0, Safari's engine as Playwright builds it: the smoke set (104 specs) in the plain demo | Safari itself; the major before |
-| Safari on iOS | WebKit at a phone's size with touch, in the smoke set's phone specs | A real iPhone |
+| Chrome, Edge | Chromium 156, Playwright's build: every browser spec, in every framework's demo, every demo's how-to replayed by hand, and the perf gates; the key screens compared with their stored images in Playwright's own container | Chrome's and Edge's own builds; the major before |
+| Firefox | Firefox 157, Playwright's build: the smoke set (113 specs) in the plain demo | The rest of the specs; the major before |
+| Safari | WebKit 27.2, Safari's engine as Playwright builds it: the smoke set (113 specs) in the plain demo | Safari itself; the major before |
+| Safari on iOS | WebKit at an iPhone 14's size with touch: every demo's how-to replayed by a finger (`how-to-phone`), and the smoke set's phone specs | A real iPhone |
 | Chrome on Android | Chromium at a phone's size with touch; the perf gates on a phone's CPU | A real Android phone |
 
-A person checks a real iPhone and a real Android phone by hand at each minor, before it is released: the screens
-that matter, from the real-device checklist in the maintainers' docs. No gate: a person runs it.
+Each part the one-tag script loads is failed in turn in all three engines, and the page must still draw and say so
+(`e2e/part-failures.spec.ts`). A test that fails and then passes on a re-run of the same commit is a flake: CI's
+browser jobs keep `retries: 0`, run what failed once more, and log each flake in the job's summary and an artifact
+(`tools/flake-log.mjs`, held by `tools/workflows.test.mjs`).
+
+From 0.37.0, each minor waits for a real iPhone and a real Android phone checked by hand; 0.36.0 was checked only by
+CI's phones (WebKit iPhone 14 with touch, Chromium at a phone's size). The checklist and its record are
+`docs/maintainers/real-devices.md`; `node tools/release.mjs publish` and `tools/publish-packs.mjs` refuse a minor from
+0.37.0 on without a row that passed. **Gate:** `tools/real-devices.test.mjs` ("the gate bites from 0.37.0").
 
 **Gate:** `tools/promises.test.mjs` ("the browsers CI runs are the ones this page names") holds this table to
 `playwright.config.ts`, `.github/workflows/ci.yml` and the browsers Playwright installs.

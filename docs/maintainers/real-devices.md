@@ -7,12 +7,16 @@ itself, its keyboard rising over the page and its zoom on a small box, its camer
 code it offers from a text message, its pinch and its long press, its own way of going offline, or Chrome on a real
 Android phone. Playwright cannot drive any of those (and its WebKit on Linux is not Safari).
 
-So a person runs the checklist below on a **real iPhone** and a **real Android phone** before each minor release
-(`0.x.0`), on the release candidate's demos — `https://fieldia.dev/demos/` once the candidate is deployed there, or the
-built demos served on the local network (`node tools/serve.mjs dist/demos 4321`, opened at the machine's address) —
-and records it at the end of this page. `node tools/release.mjs publish` and `tools/publish-packs.mjs` refuse a minor
-with no row in the record that names it, its day, both phones, who checked and "passed" (`tools/real-devices.mjs`,
-held by `tools/real-devices.test.mjs`). A patch holds fixes alone and is not asked for one.
+From 0.37.0, each minor waits for a real iPhone and a real Android phone checked by hand; 0.36.0 was checked only by
+CI's phones (WebKit iPhone 14 with touch, Chromium at a phone's size). The checklist came in 0.36.0, and no person
+could check real phones for it, so the gate bites from 0.37.0 (`CHECKED_FROM` in `tools/real-devices.mjs`).
+
+So a person runs the checklist below on a **real iPhone** and a **real Android phone** before each minor release from
+0.37.0 (`0.x.0`), on the release candidate's demos — `https://fieldia.dev/demos/` once the candidate is deployed
+there, or the built demos served on the local network (`node tools/serve.mjs dist/demos 4321`, opened at the machine's
+address) — and records it at the end of this page. `node tools/release.mjs publish` and `tools/publish-packs.mjs`
+refuse a minor with no row in the record that names it, its day, both phones, who checked and "passed"
+(`tools/real-devices.mjs`, held by `tools/real-devices.test.mjs`). A patch holds fixes alone and is not asked for one.
 
 Each phone as people have it: the newest iOS and its Safari, and an Android phone with the newest Chrome; light mode,
 then the same screens again in dark mode where a step says so. Write down the model, the system's version and the
@@ -61,7 +65,8 @@ tapped; the words fit; light and dark both read.
 
 ## The record
 
-One row per minor, the newest first. "passed" or "passed, …" with what was noted; anything else holds the release.
+One row per minor from 0.37.0, the newest first. "passed" or "passed, …" with what was noted; anything else holds the
+release. 0.36.0 has none: it was checked only by CI's phones.
 
 | Version | Day | iPhone | Android | Checked by | Result |
 |---|---|---|---|---|---|

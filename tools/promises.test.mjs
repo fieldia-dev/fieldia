@@ -10,7 +10,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { siteOnly } from './ci-scope.mjs';
-import { browserProblems, browsersRun, deprecationProblems, gateProblems, namedProblems, numberProblems, PAGE, promiseProblems } from './promises.mjs';
+import { browserProblems, browsersRun, budgetsUnsaid, deprecationProblems, gateProblems, namedProblems, numberProblems, PAGE, promiseProblems } from './promises.mjs';
 import { readDeprecations } from './release-train.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
@@ -67,7 +67,7 @@ test('a number the code does not hold is refused: the page written otherwise, or
     };
     edit('e2e/perf.spec.ts', '  viewerKey: 16,', '  viewerKey: 24,');
     edit('libs/viewer/src/lib/import-dialog.ts', 'export const IMPORT_MOST = 50000;', 'export const IMPORT_MOST = 20000;');
-    edit('tools/script-bundle.mjs', 'const GZIP_BUDGET_KB = 191.2;', 'const GZIP_BUDGET_KB = 230.0;');
+    edit('tools/script-bundle.mjs', /^const GZIP_BUDGET_KB = [\d.]+;/m.exec(readFileSync(join(copy, 'tools/script-bundle.mjs'), 'utf8'))[0], 'const GZIP_BUDGET_KB = 230.0;');
     const moved = numberProblems(doc, copy).map((one) => one.replace(/ \(its row: .*\)$/, ''));
     assert.deepEqual(moved, [
       'the bounds: an import: the code holds "20,000 rows", which the page does not say',
@@ -78,6 +78,23 @@ test('a number the code does not hold is refused: the page written otherwise, or
   } finally {
     rmSync(copy, { recursive: true, force: true });
   }
+});
+
+test('a budget of the viewer\'s timings the page does not give is refused: a new one is a promise not yet made', () => {
+  assert.deepEqual(budgetsUnsaid(WORKSPACE), []);
+  const copy = mkdtempSync(join(tmpdir(), 'fieldia-promises-'));
+  try {
+    mkdirSync(join(copy, 'e2e'), { recursive: true });
+    const perf = readFileSync(join(WORKSPACE, 'e2e/perf.spec.ts'), 'utf8');
+    assert.ok(perf.includes('  viewerKeyPaint: 3,'));
+    writeFileSync(join(copy, 'e2e/perf.spec.ts'), perf.replace('  viewerKeyPaint: 3,', '  viewerKeyPaint: 3,\n  viewerScroll: 16,'));
+    assert.deepEqual(budgetsUnsaid(copy), ['perf: e2e/perf.spec.ts budgets viewerScroll (16 ms), which the page does not give (tools/promises.mjs, numbersHeld)']);
+  } finally {
+    rmSync(copy, { recursive: true, force: true });
+  }
+  // The key's paint taken off the page: refused, its desktop and phone budgets both.
+  const paint = numberProblems(changed('| A key\'s paint in a field nothing reads, 500 fields | 3 ms | 12 ms |', '| A key\'s paint in a field nothing reads, 500 fields | 4 ms | 16 ms |'), WORKSPACE).map((one) => one.replace(/ \(its row: .*\)$/, ''));
+  assert.deepEqual(paint, ['perf: a key\'s paint: the code holds "3 ms", which the page does not say', 'perf: a key\'s paint: the code holds "12 ms", which the page does not say']);
 });
 
 test('every deprecation is in the table, as the list says it — and the table holds no other', async () => {

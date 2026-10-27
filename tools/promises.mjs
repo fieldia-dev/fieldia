@@ -5,7 +5,7 @@
  * - every file the page names exists, and every test it quotes ("…" after a file) is in that file;
  * - every promise of its security and stability sections names a gate, or says it has none ("No gate");
  * - every number it gives is the one the code holds: the bounds, the deadline, the perf budgets, the first-load and
- *   script budgets, the slack;
+ *   script budgets, the slack; and every budget of the viewer's timings (`viewer…` in e2e/perf.spec.ts) is one it gives;
  * - its deprecations table is the list (`DEPRECATIONS`), entry for entry;
  * - its browsers are the ones CI runs: Playwright's engines and their versions, the smoke set, the jobs, the targets.
  *
@@ -160,6 +160,7 @@ export function numbersHeld(workspace = WORKSPACE) {
     ['the bounds: checkSubmission', 'Answers `checkSubmission` reads', [`${written(submissionMost / MB)} MB`]],
     ['the deadline', null, [`(${written(c('libs/core/src/lib/record/deadline.ts', /export const SEND_TIMEOUT_MS = ([\d_]+)/) / 1000)} s unless the app says)`]],
     ['perf: a key', 'A key typed in a field a rule reads', [ms(budget.viewerKey), ms(budget.viewerKey * cpu)]],
+    ['perf: a key\'s paint', 'A key\'s paint in a field nothing reads', [ms(budget.viewerKeyPaint), ms(budget.viewerKeyPaint * cpu)]],
     ['perf: a choice', 'A choice that shows or hides', [ms(budget.viewerClick), ms(budget.viewerClick * cpu)]],
     ['perf: a first paint', 'A viewer\'s first paint', [ms(budget.viewerMount), ms(budget.viewerMount * cpu)]],
     ['perf: the slack and the phone', null, [`${WORDS[slack]} times the budget's slack`, `the phone's budgets are ${WORDS[cpu]} times a desktop's`, `its CPU ${WORDS[cpu]} times slower`]],
@@ -175,9 +176,21 @@ export function numbersHeld(workspace = WORKSPACE) {
   ];
 }
 
+/** The viewer's timing budgets the page gives (`numbersHeld`): a new one is a promise the page has not made yet. */
+export const VIEWER_BUDGETS_SAID = ['viewerKey', 'viewerKeyPaint', 'viewerClick', 'viewerMount'];
+
+/** Every budget of the viewer's timings in e2e/perf.spec.ts is one the page gives. */
+export function budgetsUnsaid(workspace = WORKSPACE) {
+  const perf = read(workspace, 'e2e/perf.spec.ts');
+  const budget = Function(`return (${/const BUDGET = (\{[\s\S]*?\n\});/.exec(perf)[1].replace(/\/\*\*[\s\S]*?\*\//g, '')})`)();
+  return Object.keys(budget)
+    .filter((name) => name.startsWith('viewer') && !VIEWER_BUDGETS_SAID.includes(name))
+    .map((name) => `perf: e2e/perf.spec.ts budgets ${name} (${budget[name]} ms), which the page does not give (tools/promises.mjs, numbersHeld)`);
+}
+
 /** Every number the page gives is the one the code holds: each in its row of a table, or in the page's words. */
 export function numberProblems(doc, workspace = WORKSPACE) {
-  const problems = [];
+  const problems = [...budgetsUnsaid(workspace)];
   const flat = doc.replace(/\s*\n\s*/g, ' ');
   for (const [what, row, words] of numbersHeld(workspace)) {
     const found = row ? rowOf(doc, row) : null;
@@ -224,8 +237,13 @@ export function browsersRun(workspace = WORKSPACE) {
     firefox: version('firefox').split('.')[0],
     webkit: version('webkit'),
     smoke,
-    // Chromium runs every spec but the perf gates, which run in their own projects; Firefox and WebKit the smoke set.
-    chromiumWhole: /testIgnore: PERF \}/.test(project('chromium')) && !/testMatch/.test(project('chromium')),
+    // Chromium runs every spec but the perf gates and the key screens, which run in their own projects (the screens in
+    // Playwright's container, its own job); Firefox and WebKit the smoke set.
+    chromiumWhole:
+      /testIgnore: \[\.\.\.PERF, 'screens\.spec\.ts'\] \}/.test(project('chromium')) &&
+      !/testMatch/.test(project('chromium')) &&
+      /name: 'screens',[\s\S]*?testMatch: \['screens\.spec\.ts'\]/.test(config) &&
+      /npx playwright test --project=screens\n/.test(ci),
     enginesSmoke: ['firefox', 'webkit'].every((name) => new RegExp(`name: '${name}',[\\s\\S]*?\\.\\.\\.smoke`).test(config)),
     phone: /name: 'perf-phone',[\s\S]*?isMobile: true, hasTouch: true/.test(config),
     jobs: {

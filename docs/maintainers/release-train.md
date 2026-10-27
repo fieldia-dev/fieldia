@@ -97,7 +97,8 @@ train's own rule applies to it, the deprecation `page.invalid`:
   its words are where the form would be. The whole check is a part of its own (`fieldia.check.js`, a chunk in an app's
   bundle), asked for once the page is drawn and the browser idle, never delaying the draw. What only it finds is said
   once in the console and to `onError` (`stage: "check"`, `warning: true`), and the page stays drawn. A part that
-  cannot come says nothing. `fieldia.js` stays at 191.2 KB gzipped.
+  cannot come says nothing (`e2e/part-failures.spec.ts`, its `check` case). The whole check is not in `fieldia.js`,
+  196.6 KB gzipped at 0.36.0, under the owner's 200.
   *Gates:* `refused.spec.ts` (a page 0.35 drew is drawn and said once; one it refused is refused with the words),
   `shape-parity.spec.ts` (the check before the draw refuses nothing the whole check passes), the script bundle's
   in-page check (the part never asked for before the draw, a mistake said after it).
