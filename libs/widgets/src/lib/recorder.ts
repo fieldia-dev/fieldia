@@ -3,6 +3,7 @@ import { keepTabIn } from './focus-trap';
 import { fillIn, maker, setHidden, setText } from './kind-parts';
 import type { WidgetLabels } from './labels';
 import { installRecordStyles } from './styles-record';
+import { withDuration } from './webm-duration';
 import { intlFormat } from '@fieldia/core';
 
 /**
@@ -10,8 +11,10 @@ import { intlFormat } from '@fieldia/core';
  * form: the browser asks for the microphone (and the camera for a film) as it opens — a refusal, no device, or one
  * another app holds said in words, with Try again — then a film's live picture or a voice's level, Start recording,
  * the time against the longest a recording may be (`maxSeconds`), and Stop; at the limit, or at the largest file the
- * field takes, it stops itself and says why. Stopped, it plays back in the browser's own player, with Use this
- * recording and Record again. A recording made and not used is never let go without asking: Escape, × and Cancel ask
+ * field takes, it stops itself and says why. Its clock runs from when the browser's recorder has begun — Chrome's begins
+ * up to a second and more after Start (0.36) — and a recording stopped before it began keeps nothing, said, with Start
+ * recording again. Stopped, it plays back in the browser's own player, its length written into a WebM (which a
+ * browser's recorder leaves out), with Use this recording and Record again. A recording made and not used is never let go without asking: Escape, × and Cancel ask
  * first. Used, it is handed to the field as a file picked is (`use`), named by when it was made on the page's clock,
  * and stored the way the field stores its files (the data source's `upload`, else inside the record).
  *
@@ -249,6 +252,7 @@ export function openRecorder(context: RecorderContext): Recorder {
     chunks = [];
     bytes = 0;
     stoppedBy = '';
+    began = 0;
     const taken = recorder;
     taken.addEventListener('dataavailable', (event) => {
       if (!event.data?.size) return;
@@ -257,18 +261,24 @@ export function openRecorder(context: RecorderContext): Recorder {
       // Near the largest file the field takes: stopped, so what is kept fits.
       if (context.maxBytes && bytes >= context.maxBytes * 0.95 && taken.state === 'recording') finish(words.recordStoppedSize);
     });
-    taken.addEventListener('stop', () => stopped(taken, type));
+    // The clock and "Recording…" wait for the browser's own start: its recorder may begin a second and more after it is
+    // asked (Chrome 156's MP4 one did, under load), and a clock run from the press counted time nothing was recorded in.
+    taken.addEventListener('start', () => {
+      if (gone || taken !== recorder || taken.state !== 'recording') return;
+      began = Date.now();
+      ticking = setInterval(() => {
+        seconds = Math.min(limit, (Date.now() - began) / 1000);
+        showTime();
+        if (seconds >= limit) finish(fillIn(words.recordStoppedAt, { time: clock(limit) }));
+      }, 250);
+      say(words.recordingNow);
+    });
+    taken.addEventListener('stop', () => void stopped(taken, type));
     taken.start(1000);
-    began = Date.now();
     seconds = 0;
     showTime();
-    ticking = setInterval(() => {
-      seconds = Math.min(limit, (Date.now() - began) / 1000);
-      showTime();
-      if (seconds >= limit) finish(fillIn(words.recordStoppedAt, { time: clock(limit) }));
-    }, 250);
     box.classList.add('fd-recording');
-    say(words.recordingNow);
+    say(words.recordStarting);
     showing(stop);
     stop.focus();
   }
@@ -279,19 +289,36 @@ export function openRecorder(context: RecorderContext): Recorder {
     stoppedBy = why;
     clearInterval(ticking);
     ticking = undefined;
-    seconds = Math.min(limit, (Date.now() - began) / 1000);
+    // Stopped before the browser's recorder began: nothing of it was recorded.
+    seconds = began ? Math.min(limit, (Date.now() - began) / 1000) : 0;
     showTime();
     recorder.stop();
   }
 
-  function stopped(taken: Recorded, asked: string) {
+  async function stopped(taken: Recorded, asked: string) {
     box.classList.remove('fd-recording');
     if (gone || taken !== recorder) return;
     recorder = null;
-    letGoDevices();
+    clearInterval(ticking);
+    ticking = undefined;
     const type = bare(taken.mimeType || chunks[0]?.type || asked) || bare(asked);
-    const blob = new Blob(chunks, { type });
+    const recorded = chunks;
     chunks = [];
+    // Nothing recorded — stopped before the browser's recorder began, which then hands back no bytes: no recording
+    // offered (an empty file plays nowhere), the microphone kept, Start recording again.
+    if (!recorded.some((one) => one.size)) {
+      seconds = 0;
+      showTime();
+      say(words.recordNothing);
+      showing(start);
+      if (asking.hidden) start.focus();
+      return;
+    }
+    letGoDevices();
+    // A WebM's length written into it, which a browser's recorder never does: its player says how long it is (never
+    // Infinity) and can be scrubbed, here and wherever the file is played once it is kept.
+    const blob = await withDuration(new Blob(recorded, { type }), seconds * 1000);
+    if (gone) return;
     const name = `${fillIn(film ? words.recordingNameVideo : words.recordingNameVoice, { when: madeAt(context.now(), context.timeZone) })}.${EXTENSION[type] ?? (film ? 'webm' : 'webm')}`;
     const file = new File([blob], name, { type });
     const url = URL.createObjectURL(blob);

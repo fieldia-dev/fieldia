@@ -202,6 +202,12 @@ export interface WidgetLabels {
   recordStart: string;
   recordStop: string;
   recordingNow: string;
+  /**
+   * Start pressed, the browser's recorder not begun yet (0.36: Chrome's takes up to a second and more): its clock waits
+   * for it. And a recording stopped before the browser recorded anything: none offered, Start again.
+   */
+  recordStarting: string;
+  recordNothing: string;
   recordStoppedAt: string;
   recordStoppedSize: string;
   recordDone: string;
@@ -932,6 +938,8 @@ const en: WidgetLabels = {
   recordStart: 'Start recording',
   recordStop: 'Stop',
   recordingNow: 'Recording…',
+  recordStarting: 'Starting the recording…',
+  recordNothing: 'Nothing was recorded: the recording had not started yet. Press Start recording to try again.',
   recordStoppedAt: 'Stopped at {time}, the longest a recording may be here.',
   recordStoppedSize: 'Stopped: the recording reached the largest file this field takes.',
   recordDone: 'Recorded {time}. Play it back, then use it or record again.',

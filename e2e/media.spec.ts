@@ -125,11 +125,10 @@ async function devices(page: Page, how: 'allow' | 'refuse') {
 }
 const records = (page: Page) => page.evaluate(() => typeof (window as any).MediaRecorder === 'function');
 /**
- * What went wrong on a page that played a recording back from its blob: Chromium 156 reads past the end of the WebM
- * MediaRecorder made — it carries no duration — and says the range failed ("Failed to load resource:
- * net::ERR_REQUEST_RANGE_NOT_SATISFIABLE", the blob's address its location); the recording plays and is kept all the same.
+ * A recording's length as its review player says it: a number of seconds, never Infinity (a WebM a browser's recorder
+ * wrote has none, until the recorder writes it in) nor NaN — what a person sees beside the player and scrubs along.
  */
-const problemsBesidesPlayback = (problems: string[]) => problems.filter((problem) => problem !== 'console: Failed to load resource: net::ERR_REQUEST_RANGE_NOT_SATISFIABLE');
+const lengthOf = (player: Locator) => player.evaluate((media: HTMLMediaElement) => (media.readyState > 0 && Number.isFinite(media.duration) ? media.duration : -1));
 
 test.describe('a voice note and a short film recorded on the page', () => {
   test('a voice note recorded, played back, used, and stored with the visit; a film recorded from the camera', async ({ page }) => {
@@ -156,7 +155,10 @@ test.describe('a voice note and a short film recorded on the page', () => {
     await expect(dialog.getByRole('status')).toHaveText(/^Recorded 0:0\d\. Play it back, then use it or record again\.$/);
     const playback = dialog.locator('.fd-recorder-review audio');
     await expect(playback).toHaveAccessibleName(/^Voice note \d{4}-\d\d-\d\d \d\d\.\d\d\.\d\d\.(webm|m4a|ogg)$/);
-    await expect.poll(() => playback.evaluate((sound: HTMLAudioElement) => sound.readyState)).toBeGreaterThan(0);
+    // 0.36: it holds what was recorded — the clock ran from when the browser's recorder began, not from the press (Chrome
+    // 156's began a second and more after it, under load, and a Stop sooner kept an empty file no player could read) —
+    // and its length is a real one, at least the second the clock showed.
+    await expect.poll(() => lengthOf(playback)).toBeGreaterThan(0.9);
     await screen(page, 'media-recorded', { viewport: true });
     await dialog.getByRole('button', { name: 'Use this recording' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -179,10 +181,65 @@ test.describe('a voice note and a short film recorded on the page', () => {
     await expect(film.getByRole('timer')).toHaveText(/^0:0[1-9] \/ 0:30$/);
     await film.getByRole('button', { name: 'Stop' }).click();
     await expect(film.locator('.fd-recorder-review video')).toBeVisible();
+    await expect.poll(() => lengthOf(film.locator('.fd-recorder-review video'))).toBeGreaterThan(0.9);
     await film.getByRole('button', { name: 'Use this recording' }).click();
     await expect(node(page, 'f-clips').locator('.fd-file-item')).toHaveCount(1);
     await screen(page, 'media-site-visit-recorded');
-    expect(problemsBesidesPlayback(problems)).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  test('a recorder slow to begin: its clock waits for it, and a Stop before it began keeps nothing, said, with Start again', async ({ page }) => {
+    // Chrome 156's MP4 recorder began up to 1.4 s after it was asked, under load (0.36): a Stop sooner gave an empty file
+    // no player could read ("Format error"). The browser's own recorder, made to begin 1.5 s late as that one did — and,
+    // stopped before then, to give no bytes, as it did.
+    await devices(page, 'allow');
+    await page.addInitScript(() => {
+      const Real = (window as any).MediaRecorder;
+      if (typeof Real !== 'function') return;
+      (window as any).MediaRecorder = class extends Real {
+        private wait: ReturnType<typeof setTimeout> | undefined;
+        private asked = false;
+        get state() {
+          return this.asked ? 'recording' : super.state;
+        }
+        start(timeslice?: number) {
+          this.asked = true;
+          this.wait = setTimeout(() => {
+            this.asked = false;
+            super.start(timeslice);
+          }, 1500);
+        }
+        stop() {
+          if (!this.asked) return super.stop();
+          clearTimeout(this.wait);
+          this.asked = false;
+          this.dispatchEvent(Object.assign(new Event('dataavailable'), { data: new Blob([], { type: this.mimeType }) }));
+          this.dispatchEvent(new Event('stop'));
+        }
+      };
+      (window as any).MediaRecorder.isTypeSupported = Real.isTypeSupported.bind(Real);
+    });
+    const { problems } = await open(page, 'plain', 'page=site-visit&record=1&skin=outlined');
+    if (!(await records(page))) return;
+    await voice(page).getByRole('button', { name: 'Record a voice note' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Record a voice note' });
+    const start = dialog.getByRole('button', { name: 'Start recording' });
+    await start.click();
+    // Asked, not begun: said so, its clock at 0:00.
+    await expect(dialog.getByRole('status')).toHaveText('Starting the recording…');
+    await expect(dialog.getByRole('timer')).toHaveText('0:00 / 2:00');
+    await dialog.getByRole('button', { name: 'Stop' }).click();
+    await expect(dialog.getByRole('status')).toHaveText('Nothing was recorded: the recording had not started yet. Press Start recording to try again.');
+    await expect(start).toBeFocused();
+    await expect(dialog.locator('.fd-recorder-review audio')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Use this recording' })).toBeHidden();
+    // Again, waited for: the clock from when it began, the recording as long as it showed.
+    await start.click();
+    await expect(dialog.getByRole('status')).toHaveText('Recording…', { timeout: 5000 });
+    await expect(dialog.getByRole('timer')).toHaveText(/^0:0[1-9] \/ 2:00$/);
+    await dialog.getByRole('button', { name: 'Stop' }).click();
+    await expect.poll(() => lengthOf(dialog.locator('.fd-recorder-review audio'))).toBeGreaterThan(0.9);
+    expect(problems).toEqual([]);
   });
 
   test('a refused microphone said with Try again; a recording let go only once the person says so', async ({ page }) => {
@@ -219,6 +276,6 @@ test.describe('a voice note and a short film recorded on the page', () => {
     await dialog.getByRole('button', { name: 'Discard' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(voice(page).locator('.fd-file-item')).toHaveCount(1);
-    expect(problemsBesidesPlayback(problems)).toEqual([]);
+    expect(problems).toEqual([]);
   });
 });

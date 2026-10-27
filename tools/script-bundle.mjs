@@ -2366,7 +2366,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 18.8; French 61.35 and 18.50, 62.32 and 18.75, to 62.4 and 18.8; Turkish 68.43 and 18.84, 69.43 and 19.09, to 69.5
 // and 19.1; Persian 167.78 and 23.23, 170.67 and 23.53, to 170.7 and 23.6; Urdu 170.52 and 23.31, 173.51 and 23.64, to
 // 173.6 and 23.7; Spanish 58.53 and 18.30, 59.35 and 18.53, to 59.4 and 18.6.
-const ADD_ON_BUDGET_KB = { ar: [137.2, 21.9], de: [61.3, 18.8], fr: [62.4, 18.8], tr: [69.5, 19.1], fa: [170.7, 23.6], ur: [173.6, 23.7], es: [59.4, 18.6] };
+// 0.36, a recorder slow to begin (Chrome 156's MP4 one): "Starting the recording…" and "Nothing was recorded…" in every
+// add-on (recordStarting, recordNothing) — Arabic 137.17 and 21.88 measured before, 137.66 and 21.94 after, to 137.7 and
+// 22.0; German 61.30 and 18.77, 61.50 and 18.81, to 61.5 and 18.9; French 62.32 and 18.75, 62.56 and 18.79, to 62.6;
+// Turkish 69.43 and 19.09, 69.65 and 19.13, to 69.7 and 19.2; Persian 170.67 and 23.53, 171.14 and 23.57, to 171.2;
+// Urdu 173.51 and 23.64, 174.17 and 23.69, to 174.2; Spanish 59.35 and 18.53, 59.53 and 18.57, to 59.6.
+const ADD_ON_BUDGET_KB = { ar: [137.7, 22.0], de: [61.5, 18.9], fr: [62.6, 18.8], tr: [69.7, 19.2], fa: [171.2, 23.6], ur: [174.2, 23.7], es: [59.6, 18.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3187,7 +3192,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // photos within 0.1; element 5.83 and 2.59 → 5.78 and 2.56, to 5.8; loading 9.1 and 3.06 measured, to 9.1 (0.35's 9.5
 // left room the part no longer takes); check 65.21 and 17.27, new (p3-promises), to 65.3 and 17.3. Every other part as
 // it was, its budget its size rounded up.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [158.9, 52.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+// 0.36, a recorder slow to begin: its clock run from the browser's own start, a recording stopped before it began kept
+// as nothing and said, and a WebM's length written into it, which a browser's recorder leaves out (recorder.ts,
+// webm-duration.ts) — record 10.85 and 4.40 measured before, 13.33 and 5.45 after, to 13.4 and 5.5. fieldia.js the same
+// to the byte (586.45 KB); gzipped 196.59 to 196.60, only the record part's and the add-ons' hashes it carries changed.
+const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [158.9, 52.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

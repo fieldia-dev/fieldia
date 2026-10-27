@@ -13,9 +13,22 @@ import { recordingType } from './recorder';
  * microphone's light goes out whenever the recorder closes.
  */
 
-// jsdom has no object URLs, no microphone and no recorder: the browser's are stood in for.
+// jsdom has no object URLs, no microphone and no recorder, and its Blob reads no bytes of itself (no arrayBuffer): the
+// browser's are stood in for.
 const made: string[] = [];
 beforeAll(() => {
+  if (typeof Blob.prototype.arrayBuffer !== 'function')
+    Object.defineProperty(Blob.prototype, 'arrayBuffer', {
+      configurable: true,
+      value(this: Blob) {
+        return new Promise<ArrayBuffer>((done, fail) => {
+          const reader = new FileReader();
+          reader.onload = () => done(reader.result as ArrayBuffer);
+          reader.onerror = () => fail(reader.error);
+          reader.readAsArrayBuffer(this);
+        });
+      },
+    });
   Object.assign(URL, { createObjectURL: () => (made.push(`blob:${made.length + 1}`), made[made.length - 1]), revokeObjectURL: () => undefined });
 });
 
@@ -37,7 +50,12 @@ class Stream {
 }
 class Recorder {
   static isTypeSupported = (type: string) => /^(audio|video)\/webm/.test(type);
+  /** How long the browser's recorder takes to begin once asked (Chrome 156's MP4 one, a second and more under load). */
+  static startsAfter = 0;
+  /** What it hands back once stopped, having begun: a WebM's first bytes, unless a test gives a whole one. */
+  static recording: Uint8Array<ArrayBuffer> = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3]);
   state = 'inactive';
+  began = false;
   mimeType: string;
   private listeners: Record<string, ((event: Event & { data?: Blob }) => void)[]> = {};
   constructor(_stream: Stream, options?: { mimeType?: string }) {
@@ -46,15 +64,29 @@ class Recorder {
   addEventListener(type: string, listener: (event: Event & { data?: Blob }) => void) {
     (this.listeners[type] ??= []).push(listener);
   }
+  private tell(type: string, more: object = {}) {
+    for (const listener of this.listeners[type] ?? []) listener(Object.assign(new Event(type), more));
+  }
+  /** As a browser's: recording at once, its `start` told once it has begun — a moment after, never in the same turn. */
   start() {
     this.state = 'recording';
+    setTimeout(() => {
+      if (this.state !== 'recording') return;
+      this.began = true;
+      this.tell('start');
+    }, Recorder.startsAfter);
   }
-  /** As a browser's: its last data and its end told a moment after it is stopped, never in the same turn. */
+  /**
+   * As a browser's: its last data and its end told a moment after it is stopped, never in the same turn. Stopped before
+   * it began, as Chrome 156's: its start told late, then no bytes, then its end.
+   */
   stop() {
+    const began = this.began;
     this.state = 'inactive';
     setTimeout(() => {
-      for (const listener of this.listeners['dataavailable'] ?? []) listener(Object.assign(new Event('dataavailable'), { data: new Blob([new Uint8Array([0x1a, 0x45, 0xdf, 0xa3])], { type: this.mimeType }) }));
-      for (const listener of this.listeners['stop'] ?? []) listener(new Event('stop'));
+      if (!began) this.tell('start');
+      this.tell('dataavailable', { data: new Blob(began ? [Recorder.recording] : [], { type: this.mimeType }) });
+      this.tell('stop');
     }, 5);
   }
 }
@@ -67,6 +99,8 @@ function devices(on: boolean) {
 beforeEach(() => {
   asked = [];
   tracks.length = 0;
+  Recorder.startsAfter = 0;
+  Recorder.recording = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3]);
   answer = async () => new Stream();
   devices(true);
 });
@@ -142,6 +176,9 @@ describe('Record beside a file field’s picker', () => {
     expect(document.activeElement?.textContent).toContain('Start recording');
     expect(box.querySelector('.fd-recorder-time')?.textContent).toBe('0:00 / 2:00');
     button(box, 'Start recording')?.click();
+    // Its clock waits for the browser's recorder to begin.
+    expect(said()).toBe('Starting the recording…');
+    await until(() => said() === 'Recording…');
     expect(said()).toBe('Recording…');
     expect(box.classList.contains('fd-recording')).toBe(true);
     expect(shown('Stop') && !shown('Start recording')).toBe(true);
@@ -174,6 +211,7 @@ describe('Record beside a file field’s picker', () => {
     expect(asked).toEqual([{ audio: true, video: { facingMode: 'environment' } }]);
     expect(recorder()?.querySelector('video.fd-recorder-live')).not.toBeNull();
     button(recorder() as HTMLElement, 'Start recording')?.click();
+    await until(() => said() === 'Recording…');
     button(recorder() as HTMLElement, 'Stop')?.click();
     await until(() => shown('Use this recording'));
     expect(recorder()?.querySelector('.fd-recorder-review video')?.getAttribute('aria-label')).toBe('Video 2026-10-21 07.30.05.webm');
@@ -230,6 +268,7 @@ describe('Record beside a file field’s picker', () => {
     button(el, 'Record a voice note')?.click();
     await until(() => shown('Start recording'));
     button(recorder() as HTMLElement, 'Start recording')?.click();
+    await until(() => said() === 'Recording…');
     button(recorder() as HTMLElement, 'Stop')?.click();
     // Escape at once, the recording still being finished: asked too, never let go unasked.
     key(recorder() as HTMLElement, 'Escape');
@@ -251,6 +290,65 @@ describe('Record beside a file field’s picker', () => {
     button(recorder() as HTMLElement, 'Cancel')?.click();
     expect(recorder()).toBeNull();
     expect(tracks.every((track) => track.stopped)).toBe(true);
+  });
+
+  it('runs its clock from when the browser’s recorder began; stopped before it began, keeps nothing and says so, Start again', async () => {
+    Recorder.startsAfter = 300;
+    const { el, value } = setup({ record: 'audio' });
+    button(el, 'Record a voice note')?.click();
+    await until(() => shown('Start recording'));
+    const box = recorder() as HTMLElement;
+    button(box, 'Start recording')?.click();
+    // Asked, not begun: no time counted, Stop offered.
+    expect(said()).toBe('Starting the recording…');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(box.querySelector('.fd-recorder-time')?.textContent).toBe('0:00 / 2:00');
+    expect(shown('Stop')).toBe(true);
+    button(box, 'Stop')?.click();
+    await until(() => shown('Start recording'));
+    // Nothing recorded: none offered to play or use, the microphone kept, Start recording again, focused.
+    expect(said()).toBe('Nothing was recorded: the recording had not started yet. Press Start recording to try again.');
+    expect(box.querySelector('.fd-recorder-review audio')).toBeNull();
+    expect(shown('Use this recording')).toBe(false);
+    expect(tracks.some((track) => track.stopped)).toBe(false);
+    expect(document.activeElement?.textContent).toContain('Start recording');
+    // Again, waited for: recorded, used.
+    button(box, 'Start recording')?.click();
+    await until(() => said() === 'Recording…');
+    button(box, 'Stop')?.click();
+    await until(() => shown('Use this recording'));
+    button(box, 'Use this recording')?.click();
+    await until(() => value().length);
+    expect(value()).toHaveLength(1);
+  });
+
+  it('keeps a WebM recording with its length written in, which the browser’s recorder leaves out', async () => {
+    // A WebM as Chrome's and Firefox's recorders write it: the Segment's Info with its timecode scale, no Duration.
+    const el_ = (id: number[], data: number[]) => [...id, 0x80 | data.length, ...data];
+    Recorder.recording = new Uint8Array([
+      ...el_([0x1a, 0x45, 0xdf, 0xa3], el_([0x42, 0x82], [0x77, 0x65, 0x62, 0x6d])),
+      ...[0x18, 0x53, 0x80, 0x67, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+      ...el_([0x15, 0x49, 0xa9, 0x66], el_([0x2a, 0xd7, 0xb1], [0x0f, 0x42, 0x40])),
+      ...el_([0x16, 0x54, 0xae, 0x6b], [0xae, 0x80]),
+    ]);
+    const { el, value } = setup({ record: 'audio' });
+    button(el, 'Record a voice note')?.click();
+    await until(() => shown('Start recording'));
+    button(recorder() as HTMLElement, 'Start recording')?.click();
+    await until(() => said() === 'Recording…');
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    button(recorder() as HTMLElement, 'Stop')?.click();
+    await until(() => shown('Use this recording'));
+    button(recorder() as HTMLElement, 'Use this recording')?.click();
+    await until(() => value().length);
+    // Inside the record: its bytes hold a Duration (0x4489) of about the time it ran, in milliseconds.
+    const bytes = Uint8Array.from(atob(value()[0].data as string), (c) => c.charCodeAt(0));
+    const at = bytes.findIndex((_, i) => bytes[i] === 0x44 && bytes[i + 1] === 0x89 && bytes[i + 2] === 0x88);
+    expect(at).toBeGreaterThan(0);
+    const ms = new DataView(bytes.buffer, at + 3, 8).getFloat64(0);
+    expect(ms).toBeGreaterThan(500);
+    expect(ms).toBeLessThan(3000);
+    expect(value()[0].size).toBe(Recorder.recording.length + 11 + 7);
   });
 
   it('closes, the microphone let go, when the field goes', async () => {

@@ -151,6 +151,8 @@ export const ar: WidgetLabels = {
   recordStart: 'بدء التسجيل',
   recordStop: 'إيقاف',
   recordingNow: 'جارٍ التسجيل…',
+  recordStarting: 'جارٍ بدء التسجيل…',
+  recordNothing: 'لم يُسجَّل شيء: لم يكن التسجيل قد بدأ بعد. اضغط بدء التسجيل لتحاول مرة أخرى.',
   recordStoppedAt: 'توقف عند {time}، وهي أطول مدة مسموح بها للتسجيل هنا.',
   recordStoppedSize: 'توقف: بلغ التسجيل أكبر حجم ملف يقبله هذا الحقل.',
   recordDone: 'تم تسجيل {time}. شغّله للمراجعة، ثم استخدمه أو أعد التسجيل.',

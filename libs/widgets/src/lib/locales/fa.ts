@@ -159,6 +159,8 @@ export const fa: WidgetLabels = {
   recordStart: 'شروع ضبط',
   recordStop: 'توقف',
   recordingNow: 'در حال ضبط…',
+  recordStarting: 'در حال شروع ضبط…',
+  recordNothing: 'چیزی ضبط نشد: ضبط هنوز شروع نشده بود. برای تلاش دوباره «شروع ضبط» را بزنید.',
   recordStoppedAt: 'در {time} متوقف شد؛ این حداکثر مدت مجاز ضبط در اینجاست.',
   recordStoppedSize: 'متوقف شد: ضبط به بزرگ‌ترین اندازهٔ فایلی رسید که این فیلد می‌پذیرد.',
   recordDone: '{time} ضبط شد. آن را پخش کنید، سپس از آن استفاده کنید یا دوباره ضبط کنید.',

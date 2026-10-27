@@ -66,7 +66,7 @@ export const PART_WORDS = {
   editable: { widgets: ['cellName'], viewer: ['rowEditHint', 'rowAdd', 'rowAddNoun', 'rowDrop', 'rowNotSaved', 'rowSaved', 'rowOpen', 'rowChange', 'rowCell', 'rowLocked', 'rowLockedNoun', 'pasteAsk', 'pasteAskChange', 'pasteAskAdd', 'pasteYes', 'pasteUndo', 'pasteUndone', 'rowsNotSaved', 'rowsNotSavedOne', 'rowsDrop', 'rowsPutBack'] },
   record: {
     widgets: [
-      'recordVoice', 'recordVideo', 'recordAskMic', 'recordAskCamera', 'recordReady', 'recordStart', 'recordStop', 'recordingNow', 'recordStoppedAt', 'recordStoppedSize', 'recordDone', 'recordUse', 'recordAgain', 'recordDiscardAsk', 'recordDiscard', 'recordGoBack',
+      'recordVoice', 'recordVideo', 'recordAskMic', 'recordAskCamera', 'recordReady', 'recordStart', 'recordStop', 'recordingNow', 'recordStarting', 'recordNothing', 'recordStoppedAt', 'recordStoppedSize', 'recordDone', 'recordUse', 'recordAgain', 'recordDiscardAsk', 'recordDiscard', 'recordGoBack',
       'recordMicRefused', 'recordCameraRefused', 'recordNoMic', 'recordNoCamera', 'recordBusy', 'recordCannot', 'recordTryAgain', 'recordingNameVoice', 'recordingNameVideo',
     ],
   },
