@@ -53,7 +53,9 @@ export default defineConfig({
   reporter: process.env['CI'] ? [['list'], ['github'], ['json']] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${demoPort}`,
-    trace: 'retain-on-failure',
+    // A failure's trace in CI. Here none: each worker keeps every test's trace resources until it exits, and a
+    // three-engine run filled 11 GB in half an hour. Re-run one failing test with --trace=on to read it.
+    trace: process.env['CI'] ? 'retain-on-failure' : 'off',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: [...PERF, 'screens.spec.ts'] },
