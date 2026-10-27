@@ -45,11 +45,15 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * 0.35's merge, set once from the merged build: perf-lists' window in the list's part and its lines' in theirs, and
  * perf-form's quick way in every form and viewer (and the designer's drafts): a record form 237.5 / 310.3 (57 / 64); in
  * Arabic 237.5 / 332.5 (57 / 67); a list 236.7 / 305.2 (57 / 61); the designer 583.2 / 796.0 (74 / 83).
+ * 0.36 (p3-real-tests) merged with 0.35.2, measured: what every page now carries — a part that never came said, the box
+ * under the keys never written over, a wait's words kept said (this lane), 0.35.1's and 0.35.2's own — a record form
+ * 242.6 / 316.0 (57 / 64), in Arabic 242.6 / 338.4, a list 241.8 / 311.3 (57 / 61), the designer 588.8 / 803.0: the
+ * pages over their room raised to what is measured, never more — a record's 242.7, a list's 241.9.
  */
 const BUDGET = {
-  record: { page: 242.3, usable: 316.6, files: 70 },
-  'record-ar': { page: 242.3, usable: 339.2, files: 73 },
-  list: { page: 241.5, usable: 311.3, files: 67 },
+  record: { page: 242.7, usable: 316.6, files: 70 },
+  'record-ar': { page: 242.7, usable: 339.2, files: 73 },
+  list: { page: 241.9, usable: 311.3, files: 67 },
   designer: { page: 594.9, usable: 811.9, files: 90 },
 };
 
