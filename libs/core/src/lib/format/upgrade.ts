@@ -67,8 +67,38 @@ const isObject = (value: unknown): value is PageJson => value !== null && typeof
  *
  * `checkPage` and `validatePage` do this first, and so the viewer and the designer read an older page as a current one.
  * An app that stores pages can upgrade them as it loads them, and write them back in the current format.
+ *
+ * It is the door every reader of a page comes through — `checkPage`, `validatePage`, `createForm`, the designer — and so
+ * where a choice that writes no `options` is read as having none (`options: []`): one whose options come from the app's
+ * list (`optionsFrom`) is drawn, and the list fills them, as 0.13 drew it. Every choice of the page's fields, its lines'
+ * and links', and the fields a list or a related list shows. The page given is never changed; where no choice leaves its
+ * options out, the page is handed back as said above.
  */
 export function upgradePage<T>(page: T, history: FormatHistory = { versions: FORMAT_VERSIONS, steps: PAGE_UPGRADES }): T {
+  const read = upTo(page, history);
+  if (!isObject(read)) return read;
+  const fields = choicesRead(read['fields'], isObject(read['fields']));
+  const layout = choicesRead(read['layout']);
+  return fields === read['fields'] && layout === read['layout'] ? read : ({ ...read, fields, layout } as T);
+}
+
+/**
+ * A part of a page with each choice in a map of fields by name (`fields`, at any depth) that writes no options read as
+ * having none: the part itself where none does. `fields`: the part is such a map, each entry a field.
+ */
+function choicesRead(part: unknown, fields = false): unknown {
+  if (part === null || typeof part !== 'object') return part;
+  let out: Record<string, unknown> | null = null;
+  for (const [key, inner] of Object.entries(part)) {
+    let read = choicesRead(inner, !fields && key === 'fields' && isObject(inner));
+    if (fields && isObject(read) && read['type'] === 'selection' && !Array.isArray(read['options'])) read = { ...read, options: [] };
+    if (read !== inner) (out ??= (Array.isArray(part) ? [...part] : { ...part }) as Record<string, unknown>)[key] = read;
+  }
+  return out ?? part;
+}
+
+/** The page brought up to its current format, by the steps above. */
+function upTo<T>(page: T, history: FormatHistory): T {
   if (!isObject(page)) return page;
   const from = page['fieldia'];
   const current = history.versions[history.versions.length - 1];

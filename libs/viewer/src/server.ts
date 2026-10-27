@@ -69,9 +69,10 @@ const FIRST_PAINT_CSS = [
  * `data-fd-first-paint`, which the viewer mounts over. Put it inside the element the viewer is mounted in.
  */
 export function firstPaint(page: Page, options: FirstPaintOptions = {}): string {
-  const shown = options.locale ? localizePage(page, options.locale) : page;
   // The form's own rules, run as the browser will run them: defaults, values worked out, what is hidden, locked, required.
-  const form = createForm({ page: shown, values: options.values ?? {} });
+  const form = createForm({ page: options.locale ? localizePage(page, options.locale) : page, values: options.values ?? {} });
+  // The page as the form reads it, through its door (upgradePage): a choice's options left out read as none.
+  const shown = form.page;
   const state = form.getState();
   const values = state.values as Values;
   const tag = options.locale ?? shown.language ?? 'en';
