@@ -98,13 +98,18 @@ try {
 The React, Vue and Angular bindings catch it: the words stay in the form's place,
 `onError` (`(partError)` in Angular) is told, and the app around it stays mounted.
 
-After the first draw, once the browser is idle, the viewer runs the whole check
-(`checkPageWhole`, `validatePage`'s verdict, a part of its own). In 0.36 a page
-it finds mistakes in stays drawn, as 0.35 drew it: the mistakes are said once in
-the console, and `onError` hears them as a warning — `{ stage: 'check', part:
-'page', warning: true }`, the error a `PageInvalid` with its `issues`. From 0.37
-such a page is refused (`page.invalid`): check pages with `validatePage` or
-`npx fieldia-check` before they are stored.
+Before the first draw the viewer runs the whole check too (`checkPageWhole`,
+`validatePage`'s verdict), and refuses what it finds the same way — `onError`
+hears `{ stage: 'check', part: 'page' }` (0.37; 0.36 drew such a page and said it,
+`page.invalid`). Check pages with `validatePage` or `npx fieldia-check` before
+they are stored. In an app's bundle the whole check comes with the viewer, and
+the checks of what a part draws (a list's settings, a map's) in a chunk of their
+own, asked for with the page's parts: a page with a mistake there is refused once
+they came, `drawn` rejecting with the `PageRefused`. In the one-tag script the
+whole check is `fieldia.check.js`, asked for as the script starts and waited for
+as a page's parts are (`partFiles` names it); where it cannot come, the page is
+drawn on the checks `fieldia.js` carries, and `onError` hears `{ stage: 'check',
+part: 'page', warning: true }`: the page could not be fully checked.
 
 ## While it waits: skeletons, spinners, bars — as you like
 
