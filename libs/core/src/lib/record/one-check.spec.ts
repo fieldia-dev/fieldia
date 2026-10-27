@@ -222,6 +222,7 @@ describe('form.leave(): the one check', () => {
   async function atRisk(more: Partial<FormOptions> = {}) {
     const ds = plainSource();
     const form = await opened(ds, more);
+    form.setValue('phone', '+201009998887');
     await typedWhileSaving(form, ds, () => form.save());
     return { ds, form };
   }
@@ -410,6 +411,7 @@ describe('every way the values go passes the check (each fails without it)', () 
     const form = createForm({ page: placed, dataSource: ds, recordId: 1, host: asking.host });
     await form.load();
     const inner = form.embed('p-consent', consent);
+    form.setValue('phone', '+201009998887');
     await typedWhileSaving(form, ds, () => form.save());
     expect(await inner.run([{ do: 'close' }])).toMatchObject({ done: false, reason: 'no' });
     expect(asking.asked).toEqual([DISCARD]);

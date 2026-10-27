@@ -649,7 +649,12 @@ export interface Form {
    * read first, each problem said under its field, true when there is none. The problems said are those it found.
    */
   validate(within?: string): boolean;
-  /** `how.yes`: the words of what set it off — the Submit button's —, which the page's `beforeSave` questions' Yes says. */
+  /**
+   * Save, or send. A plain save: a stored record with nothing changed since its last load or answered save sends nothing
+   * and is saved as it is, at once (0.36) — a button's press, a step's or an action's save (`press`, `run`) goes to the
+   * source as ever. `how.yes`: the words of what set it off — the Submit button's —, which the page's `beforeSave`
+   * questions' Yes says.
+   */
   save(how?: { yes?: string }): Promise<boolean>;
   reset(): void;
   /**
@@ -3378,8 +3383,13 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return values;
   }
 
-  async function save(chain: readonly string[] = [], yes?: string): Promise<boolean> {
-    return (await saving(chain, yes)) === null;
+  /**
+   * `plain`: a save the person or the app asked for with no button, action or step — Ctrl+Enter, the Save button,
+   * `form.save()` — which sends nothing where the record is stored and nothing changed since its last load or answered
+   * save (`unchangedSince`). Never a press's, a run's, a moment's or an action's: their purpose may be the source's call.
+   */
+  async function save(chain: readonly string[] = [], yes?: string, plain = false): Promise<boolean> {
+    return (await saving(chain, yes, plain)) === null;
   }
 
   /** A send — a response's, a save's, an upload's — through the parts that join the form, each around the next. Null: kept, not sent. */
@@ -3435,7 +3445,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
    * save with the version the first got back, never as someone else's. A save
    * the page's own beforeSave steps ask for runs inside the one that set them off.
    */
-  function saving(chain: readonly string[], yes?: string): Promise<Stopped | null> {
+  function saving(chain: readonly string[], yes?: string, plain = false): Promise<Stopped | null> {
     if (chain.includes('on.beforeSave')) return savingNow(chain, yes).catch(broken);
     const before = saveRunning;
     const ahead = running;
@@ -3447,7 +3457,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // Nothing changed is every field as it was, not the same object: an onchange's answer that changed nothing lands as
       // a new one. A save a page's own moment asks for — its afterSave saving again — goes as before.
       if (ahead && (chain.length ? ahead.values === values : sameValues(ahead.values, values)) && (await ahead.mine) === null) return null;
-      return savingNow(chain, yes).catch(broken);
+      return savingNow(chain, yes, plain).catch(broken);
     })();
     const asked = (running = { values, mine });
     void mine.then(() => {
@@ -3522,7 +3532,28 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return { reason: 'save', message };
   }
 
-  async function savingNow(chain: readonly string[], yes?: string): Promise<Stopped | null> {
+  /**
+   * Whether the record shown is stored and as its last load or answered save left it — nothing typed, set aside, on its
+   * way, still worked out or failed to reach the store, no save before it refused, no conflict waiting, no draft on the
+   * server to end: a plain save of it has nothing to send.
+   */
+  function unchangedSince(): boolean {
+    return (
+      page.data.kind === 'record' &&
+      state.recordId != null &&
+      state.loaded !== false &&
+      !unsavedWork(state) &&
+      !state.saveProblem &&
+      !state.conflict &&
+      !serverKey &&
+      !asking.size &&
+      !Object.values(state.asked).some((found) => found.failed !== undefined) &&
+      !filesGoing() &&
+      !Object.keys(fileProblems()).length
+    );
+  }
+
+  async function savingNow(chain: readonly string[], yes?: string, plain = false): Promise<Stopped | null> {
     // A record its source does not let this person change is refused here, in its words or the form's: no source is asked.
     if (page.data.kind === 'record' && state.can?.edit === false) {
       const problem: SaveProblem = { kind: 'rule', message: state.can.reason ?? named(messages.mayNotEditNoun, messages.mayNotEdit) };
@@ -3543,6 +3574,18 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const waiting = readTyped();
     if (waiting) await waiting;
     if (asked !== generation) return elsewhere();
+    // A plain save (Ctrl+Enter, the Save button, `form.save()`) of a stored record with nothing changed since it was
+    // loaded or its last save answered has nothing to send: saved as it is, at once — no key, no steps, no `save` event —
+    // and never sent again to move its version (another person's tab would see a change that is none). One its own
+    // checks refuse, or whose checking parts have not come, is checked as any save is: its problems said. A press's, a
+    // step's or an action's save goes as before: the source's call may be its purpose (a wizard's Create).
+    if (plain && unchangedSince() && !guardsOwed() && !Object.keys(collectErrors()).length) {
+      forgetDraft();
+      // The record as this save left it, as one that went: a change made from here on is one no save took.
+      sentAs = baseline;
+      set({ status: 'saved', error: null, saveProblem: null });
+      return null;
+    }
     // Every part that guards a send in before anything goes (fail closed): one that could not come is asked for once more,
     // and still missing, nothing is sent — the person told which, in words, with Retry. Options by condition among them:
     // what is saved never holds one they would take out; a text in several languages checked in each.
@@ -4642,7 +4685,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       return Object.keys(errors).length === 0;
     },
 
-    save: (how) => track(save([], how?.yes)),
+    // Plain: no button, action or step asked for it (`unchangedSince`).
+    save: (how) => track(save([], how?.yes, true)),
 
     canUpload: () => typeof options.dataSource?.upload === 'function',
     today,

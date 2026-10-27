@@ -65,6 +65,31 @@ test('Ctrl+Enter pressed twice while the first save is on its way saves once —
   expect(problems).toEqual([]);
 });
 
+// 0.36: only a PLAIN save of an unchanged stored record sends nothing (a button's press, a step's save still go to the
+// source: real-sales.spec's Create invoices, loading.spec's Mark as active).
+test('Ctrl+Enter pressed again once the save answered, nothing changed since: no second save, its version as the save left it', async ({ page }) => {
+  const problems = await openDemo(page);
+  const form = yours(page);
+  const phone = field(form, 'phone').locator('input');
+  await phone.fill('+20 100 999 8887');
+  await phone.press('Control+Enter');
+  await page.evaluate(() => (window as any).fieldiaDemo.handle.form.settled());
+  await expect(form.locator('.fd-status')).toHaveText('Saved');
+  expect(await saveCalls(page)).toBe(1);
+  const saved = await state(page);
+  await phone.press('Control+Enter');
+  await page.evaluate(() => (window as any).fieldiaDemo.handle.form.settled());
+  await phone.press('Control+Enter');
+  await page.evaluate(() => (window as any).fieldiaDemo.handle.form.settled());
+  expect(await saveCalls(page)).toBe(1);
+  await expect(form.locator('.fd-status')).toHaveText('Saved');
+  // The record's version as the save left it: another tab sees no change of hers that is none.
+  expect(await state(page)).toMatchObject({ status: 'saved', version: saved.version, dirty: [] });
+  expect(await stored(page)).toMatchObject({ phone: '+20 100 999 8887' });
+  await expect(phone).toBeFocused();
+  expect(problems).toEqual([]);
+});
+
 test('after Reload, the pager asks before Sara’s changes set aside are left behind: Cancel keeps her place, Discard moves on', async ({ page }) => {
   const problems = await openDemo(page);
   const form = await conflictInYourTab(page);
