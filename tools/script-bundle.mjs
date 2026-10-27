@@ -1974,7 +1974,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // p3-promises +1.40, perf-leftovers +0.01, p3-real-tests +1.15, each measured on its own base (196.31); merged 196.49,
 // the lanes' code compressing together a little less well than apart; the plain save sending nothing +0.10 — 196.59,
 // to 196.6: under the owner's 200 (+2.96 on 0.35.2).
-const GZIP_BUDGET_KB = 196.6;
+// 0.36, CI's input-tables flake a product bug (another box's late leaving lays nothing of the box typed in): 196.599,
+// a byte under, to 196.616 — to 196.7.
+const GZIP_BUDGET_KB = 196.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

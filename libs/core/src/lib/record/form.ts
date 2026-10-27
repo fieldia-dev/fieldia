@@ -4654,7 +4654,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // What was held back from under the person's keys is laid as they leave that box. Another box's leaving, said late
       // — a press moved the focus, and what leaving says waits for the press's click (press.ts) — while they already type
       // in the next box lays nothing of that one: its emptied Quantity would show the rule's 1.00 under their keys.
-      if (!typingNow() || (held !== null && (held.path === path || held.path.startsWith(`${path}.`)))) layHeldBack();
+      if (!typingNow() || (held && `${held.path}.`.startsWith(`${path}.`))) layHeldBack();
       noted.push([path.split('.')[0]]);
       const problem = leftProblem(path);
       if (!problem || state.errors[path] === problem) return;
