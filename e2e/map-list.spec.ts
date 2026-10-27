@@ -336,6 +336,7 @@ test('Ctrl-click (⌘-click) chooses a home on the map, a tick on its pin; the c
   await expect(pin.locator('.fd-map-face')).toHaveAttribute('data-chosen', '');
   await expect(card(page)).toHaveCount(0);
   await pin.click();
+  await cardShown(page);
   await expect(card(page).getByLabel('Choose')).toBeChecked();
   await card(page).getByRole('button', { name: 'Close' }).click();
   await expect(card(page)).toHaveCount(0);
@@ -727,6 +728,10 @@ for (const variant of ['react', 'vue', 'angular']) {
     const pin: Locator = pins(page).first();
     const id = (await pin.getAttribute('data-id'))!;
     await pin.click();
+    // Pressed once it stands still, as a person presses it: a press tried four times while the map still moves scrolls
+    // the map's box to it (Playwright's fourth try aligns it to the start), Leaflet scrolls it back, and the click lands
+    // on the map, not on the card.
+    await cardShown(page);
     await card(page).getByLabel('Choose').check();
     await expect(rowOf(page, id).locator('.fd-list-checkbox')).toBeChecked();
     expect(problems).toEqual([]);
