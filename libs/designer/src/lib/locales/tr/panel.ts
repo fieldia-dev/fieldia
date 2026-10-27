@@ -19,6 +19,7 @@ const NAMES: Record<string, string> = {
   Required: 'Zorunlu',
   'Read-only': 'Salt okunur',
   'Never kept in a draft': 'Taslakta asla saklanmaz',
+  'Copied with the record': 'Kayıtla birlikte kopyalanır',
   'When it shows': 'Ne zaman görünür',
   'Field name': 'Alan adı',
   'Stored as': 'Saklama biçimi',
@@ -630,6 +631,8 @@ export const panel: DesignerWords['panel'] = {
   scanHint: 'Kutunun yanındaki Tara düğmesi kamerayla barkod, QR ya da DataMatrix kodu okur. Barkod okuyucu tabanca kutuya her zamanki gibi yazar.',
   secret: 'Taslakta asla saklanmaz',
   secretHint: 'Yanıtı kayıtla gider, ancak ne bu cihazda ne de sunucunuzda bir taslakta asla saklanmaz: bir PIN, bir kimlik numarası.',
+  copied: 'Kayıtla birlikte kopyalanır',
+  copiedHint: 'Kaydın kopyası değerini korur. Kapalıyken kopya onu yeni bir kayıt gibi başlatır: ilk değeri, yoksa boş; bir durum, bir numara.',
   scanCodeField: 'Kodun saklandığı alan',
   scanCodeFieldHint: 'Bağlı kayıtların kodunu tutan alan, örneğin barkod. Boş bırakılırsa kod bir ad olarak aranır.',
   keyboards: {

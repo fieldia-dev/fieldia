@@ -232,6 +232,7 @@ export const refusals: DesignerWords['refusals'] = {
   pageSize: 'Listenin bir sayfası 1 ile 500 arasında satır tutar',
   filterName: 'Filtre için kişilerin tanıyacağı bir ad gerekir; örneğin Etkin',
   filterCondition: 'Filtre için bir koşul gerekir',
+  filterGroup: 'Bir filtrenin grubu tek sözcüktür, örneğin zaman',
   buttonWords: 'Düğme için metin gerekir',
   listButtonAction: 'Düğme için eyleminin adı gerekir; örneğin archive',
   cellWidth: 'Sütun 1 ile 200 karakter veya 8 ile 4000 piksel genişliğindedir',

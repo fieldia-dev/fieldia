@@ -753,6 +753,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-list-filter-condition { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; }
 .fd-list-filter-value { display: contents; }
 .fd-list-filter-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fd-list-filter-group { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; font-size: 13px; color: var(--fd-muted); }
 .fd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .fd-chips:empty { display: none; }
 .fd-chip { display: inline-flex; align-items: center; gap: 4px; padding-block: 2px; padding-inline: 8px 2px; border-radius: 4px; background: var(--fd-success-soft); color: var(--fd-success); font-size: 13px; }

@@ -300,6 +300,8 @@ export interface QuestionPatch {
   inputmode?: InputMode | '';
   /** Never kept in a draft (the field's `secret`): a PIN, an ID number. A field of the app's model keeps its own. */
   secret?: boolean;
+  /** Kept by a copy of the record (false: the field's `copy: false`, a status, a number). A field of the app's model keeps its own. */
+  copy?: boolean;
 }
 
 /** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
@@ -1205,6 +1207,11 @@ export function createDesigner(options: {
           if (patch.secret !== undefined) {
             if (patch.secret) field.secret = true;
             else delete field.secret;
+          }
+          // Copied unless it says not: true leaves nothing written.
+          if (patch.copy !== undefined) {
+            if (patch.copy) delete field.copy;
+            else field.copy = false;
           }
           if (patch.required !== undefined) {
             if (patch.required) field.required = true;
