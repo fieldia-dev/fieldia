@@ -29,6 +29,8 @@ and save through a small data-source interface that your app implements.
 | `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | on npm |
 | `@fieldia/testing` | Your app's forms tested as people use them — fill, pick, check, press, `errorsOf`, `valueOf` — for Testing Library and Playwright, and `fieldia-check`, which keeps stored pages valid in CI | on npm from 0.31 |
 
+Building an app with npm's `engine-strict` on needs Node 24 or later: `@zxing/library`, the code reader behind `@fieldia/widgets`' scanner, asks for `node >= 24` (its 0.22 and 0.23 both do). That is the install's only need of Node; the packages themselves run in the browser, in every browser Fieldia supports.
+
 ### The screen editor
 
 The screen is drawn the way the viewer draws it, and edited where it stands:
