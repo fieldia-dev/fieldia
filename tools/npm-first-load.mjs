@@ -56,13 +56,15 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * under the keys never written over, a wait's words kept said (this lane), 0.35.1's and 0.35.2's own — a record form
  * 242.6 / 316.0 (57 / 64), in Arabic 242.6 / 338.4, a list 241.8 / 311.3 (57 / 61), the designer 588.8 / 803.0: the
  * pages over their room raised to what is measured, never more — a record's 242.7, a list's 241.9.
- * Provisional for the 0.36 merge; set once from the merged build.
+ * 0.36's merge, set once from the merged build, about 2% room as at 0.35's: the four lanes, 0.35.2's literal words and
+ * its join, and the plain save that sends nothing — a record form 245.3 / 336.1 (63 / 71), in Arabic 245.3 / 358.7
+ * (63 / 74), a list 244.5 / 332.3 (63 / 68), the designer 592.3 / 821.4 (76 / 86).
  */
 const BUDGET = {
-  record: { page: 247.8, usable: 339.8, files: 74 },
-  'record-ar': { page: 247.8, usable: 362.6, files: 77 },
-  list: { page: 247.0, usable: 334.4, files: 71 },
-  designer: { page: 600.8, usable: 832.1, files: 92 },
+  record: { page: 250.3, usable: 342.9, files: 73 },
+  'record-ar': { page: 250.3, usable: 365.9, files: 76 },
+  list: { page: 249.4, usable: 339.0, files: 70 },
+  designer: { page: 604.2, usable: 837.9, files: 90 },
 };
 
 /** A record of the customer page's, with the fields it shows. */

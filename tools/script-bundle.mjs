@@ -1598,7 +1598,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // said) — 594,172, to 580.3.
 // 0.36 merged with 0.35.2, set once from the merged build: 0.35.2's literal braces and its plain save joining one on its
 // way beside this lane's — 595,807, to 581.9.
-// Provisional for the 0.36 merge; set once from the merged build.
+// 0.36's merge, set once from the merged build: 0.35.2's 592,200 bytes; deps-maint's names +297, p3-promises' checks
+// (the check before the draw as 0.35's, a refused page's words, the whole check's handle) +4,016, perf-leftovers'
+// sections +31, p3-real-tests' words for a part that never came, its typing kept and its waits said +3,607 — the lanes
+// meeting +12 — 600,162; a plain save of an unchanged stored record sending nothing (form.ts) +358: 600,520, to 586.5.
 const BUDGET_KB = 586.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -1967,7 +1970,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // after, to 191.1.
 // 0.36 merged with 0.35.1 (listed with the raw budget above): 192.94 at 0.35.1, 194.23 merged (+1.29), to 194.3.
 // 0.36 merged with 0.35.2 (listed with the raw budget above): 194.78 merged, to 194.8.
-// Provisional for the 0.36 merge; set once from the merged build.
+// 0.36's merge, set once from the merged build (listed with the raw budget above): 193.63 at 0.35.2; deps-maint +0.12,
+// p3-promises +1.40, perf-leftovers +0.01, p3-real-tests +1.15, each measured on its own base (196.31); merged 196.49,
+// the lanes' code compressing together a little less well than apart; the plain save sending nothing +0.10 — 196.59,
+// to 196.6: under the owner's 200 (+2.96 on 0.35.2).
 const GZIP_BUDGET_KB = 196.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
@@ -2354,6 +2360,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 18.7; French's 61.85 and 18.61, to 61.9 and 18.7; Turkish's 68.88 and 18.94, to 68.9, inside 19.0; Persian's 169.10
 // and 23.34, to 169.1 and 23.4; Urdu's 171.91 and 23.46, to 172.0 and 23.5; Spanish's 58.94 and 18.39, to 59.0, inside
 // 18.4.
+// 0.36's merge, set once from the merged build: a refused page's words (p3-promises), a part that never came and the
+// map's touch words (p3-real-tests), an endless list's rows on paper (paperHeld, paperHeldPrint) — Arabic 134.74 and
+// 21.59 at 0.35.2, 137.17 and 21.88 merged, to 137.2 and 21.9; German 60.39 and 18.52, 61.30 and 18.77, to 61.3 and
+// 18.8; French 61.35 and 18.50, 62.32 and 18.75, to 62.4 and 18.8; Turkish 68.43 and 18.84, 69.43 and 19.09, to 69.5
+// and 19.1; Persian 167.78 and 23.23, 170.67 and 23.53, to 170.7 and 23.6; Urdu 170.52 and 23.31, 173.51 and 23.64, to
+// 173.6 and 23.7; Spanish 58.53 and 18.30, 59.35 and 18.53, to 59.4 and 18.6.
 const ADD_ON_BUDGET_KB = { ar: [137.2, 21.9], de: [61.3, 18.8], fr: [62.4, 18.8], tr: [69.5, 19.1], fa: [170.7, 23.6], ur: [173.6, 23.7], es: [59.4, 18.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
@@ -3164,7 +3176,18 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 50.9; the files part (0.35.1's picture that is none, this lane's address let go once loaded) — 50.83 and 18.95, to
 // 50.9, inside 19.0.
 // 0.36 merged with 0.35.2: the list part 155.62 and 50.80, to 155.7, inside 50.9.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [158.9, 52.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [51.0, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.9, 2.6], outbox: [11.2, 4.8], loading: [9.5, 3.1], check: [65.3, 17.3] };
+// 0.36's merge, set once from the merged build, each part that moved from 0.35.2 (raw and gzipped, then its budget):
+// list 154.85 and 50.50 → 158.90 and 51.96 (perf-leftovers' reload near the view, p3-real-tests' open groups and a
+// pin's tap, p3-promises' column twice, the merge's paper note), to 158.9 and 52.0; lines 46.27 and 16.07 → 47.59 and
+// 16.45 (cards' ↑ and ↓), to 47.6 and 16.5; undo 6.39 and 3.01 → 6.91 and 3.16, to 7.0 and 3.2; schedule 20.51 and
+// 7.94 → 20.77 and 8.05, to 20.8 and 8.1; files 50.68 and 18.90 → 50.90 and 18.97 (deps-maint's names, a picture's
+// address kept until it loads), to 50.9 and 19.0; outbox 10.97 and 4.68 → 11.17 and 4.76, to 11.2 and 4.8; date 23.96
+// and 9.29 → 24.06 and 9.33, to 24.1 and 9.4; editable 35.15 and 12.67 → 35.30 and 12.73, to 35.3 and 12.8; scan 20.47
+// and 8.51 → 20.60 and 8.57, to 20.6 and 8.6; phone 45.12 and 19.25 → 45.22 and 19.28, to 45.3; months, text, views and
+// photos within 0.1; element 5.83 and 2.59 → 5.78 and 2.56, to 5.8; loading 9.1 and 3.06 measured, to 9.1 (0.35's 9.5
+// left room the part no longer takes); check 65.21 and 17.27, new (p3-promises), to 65.3 and 17.3. Every other part as
+// it was, its budget its size rounded up.
+const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [158.9, 52.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.5], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
