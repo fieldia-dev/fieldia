@@ -79,5 +79,7 @@ export { DUPLICATE_KINDS, comparable } from './lib/format/duplicate-kinds';
 export { pageJsonSchema } from './lib/format/json-schema';
 // A starting page from a JSON Schema, an OpenAPI document or a model's fields — what could not be taken as it is, said.
 export { pageFromSchema, schemaChoices, schemaNoteWords, SchemaRefused, type PageFromSchema, type PageFromSchemaOptions, type SchemaNote, type SchemaRefusal } from './lib/format/from-schema';
+// An Odoo or Flectra search view's filters, each separator a group of them: for a page made from an Odoo screen.
+export { searchViewFilters, type SearchViewFilters, type SearchViewNote } from './lib/format/search-view';
 // The purposes a browser fills a box in with, from the HTML standard, as the format checks them.
 export { AUTOFILL, AUTOFILL_CONTACT, AUTOFILL_NAMES, autofillProblem, autofillPurpose } from './lib/format/autofill';
