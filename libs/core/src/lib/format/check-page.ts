@@ -5,6 +5,7 @@ import { ReferenceCheck, type CheckOptions, type PageIssue, type PageValidation 
 import type { FunctionsKnown } from '../expression/app-functions';
 import { formatProblem } from './version';
 import { upgradePage } from './upgrade';
+import { wholeChecks } from './all-checks';
 
 const isObject = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const LAYOUTS = ['sheet', 'sections', 'tabs', 'wizard'];
@@ -63,17 +64,31 @@ export function pageReferences(page: Page, options: PageCheckOptions, sense?: Ch
 }
 
 /**
- * The check a page gets before it is drawn — what the viewer refuses, as 0.35's viewer refused it: its outline, then
- * every name and condition in it, the same as `validatePage` finds them (its warnings — a value of a kind a function
- * does not take — are said where pages are made, and stop nothing). It leaves out the key-by-key check of the format
- * and the settings held to themselves: the whole check (`checkPageWhole`, a part of its own, check-whole.ts) — which
- * gives `validatePage`'s verdict, and which the viewer runs after the first draw, saying what it finds in 0.36 and
- * refusing it from 0.37 (`page.invalid`). Run `validatePage` where pages are made or tested. A page that passes is
- * handed back as it is — one in an older format, brought up to date (`upgradePage`). A line's own form — a page of a
- * table's line fields — is checked with `parent`, the fields of the record the line is on, which its conditions read
- * as `parent`; `functions`, the app's own, which its expressions may call besides Fieldia's.
+ * The check a page gets before it is drawn, as 0.35's viewer refused a page: its outline, then every name and condition
+ * in it, the same as `validatePage` finds them (its warnings — a value of a kind a function does not take — are said
+ * where pages are made, and stop nothing). It leaves out the key-by-key check of the format and the settings held to
+ * themselves: the whole check (`checkPageWhole`, check-whole.ts), which gives `validatePage`'s verdict and which every
+ * viewer runs before the first draw too (0.37), refusing what it finds. Run `validatePage` where pages are made or
+ * tested. A page that passes is handed back as it is — one in an older format, brought up to date (`upgradePage`). A
+ * line's own form — a page of a table's line fields — is checked with `parent`, the fields of the record the line is on,
+ * which its conditions read as `parent`; `functions`, the app's own, which its expressions may call besides Fieldia's.
+ *
+ * Whole at once: the checks of what a part draws (a list's settings, a map's: owed-checks.ts) run too — but in the
+ * one-tag script, which owes those until each part has come (`later`).
  */
 export function checkPage(given: unknown, options: PageCheckOptions = {}): PageValidation {
+  wholeChecks();
+  return checkPageOwing(given, options);
+}
+
+/**
+ * `checkPage` as a viewer runs it before the draw: the checks of what a part draws (owed-checks.ts) run where they are in,
+ * and are owed where they are not (`later`, the parts whose checks are owed) — in an app's bundle one chunk brings them
+ * all (`formatChecksPart`), in the one-tag script each comes with its part. The viewer asks for what is owed with the
+ * page's parts, and checks again once it came, before the page is drawn: an app showing a record with no list or map
+ * never fetches a list's or a map's checks.
+ */
+export function checkPageOwing(given: unknown, options: PageCheckOptions = {}): PageValidation {
   const outline = pageOutline(given);
   if (!outline.page || outline.issues.length) return { ok: false, issues: outline.issues };
   const page = outline.page as unknown as Page;

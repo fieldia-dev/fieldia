@@ -18,31 +18,15 @@ import { DUPLICATE_KINDS } from './duplicate-kinds';
 import { isTimeZone } from '../record/zones';
 import { fill, MESSAGES } from '../record/messages';
 import { autofillGroupProblem } from './autofill-group';
-import { checkLimits } from './limits-checks';
-import { checkApproval } from './approval-checks';
-import { checkLanguages } from './languages-checks';
 import { hasLanguages } from '../record/languages';
 import { checkSeats } from './seats-checks';
-import { checkList, checkRelated, type ListTools } from './list-checks';
-import { checkEditable } from './editable-checks';
+// The checks a part carries in the one-tag script, through their stand-ins (owed-checks.ts): owed until they are in.
+import { checkLimits, checkApproval, checkLanguages, checkList, checkRelated, checkEditable, checkSlots, checkSchedule, checkTemplates, checkRecording, checkSignature, checkRewrite, checkSuggest, checkScan, checkEndings, checkSurveyFlow, checkAddressSearch, checkMap, checkPlace, checkLineKinds, checkTable, checkStatusbar, checkOptionRules, checkPrefill, checkVerify, checkPayment, checkOutbox } from './owed-checks';
+import type { ListTools } from './list-checks';
+import type { MapTools } from './map-checks';
+import type { TableTools } from './table-checks';
 import type { FieldTools } from './part-checks';
-import { checkSlots } from './slots-checks';
-import { checkSchedule } from './schedule-checks';
-import { checkTemplates } from './templates-checks';
-import { checkRecording, checkSignature } from './signature-checks';
-import { checkRewrite, checkSuggest } from './assist-checks';
-import { checkScan } from './scan-checks';
-import { checkEndings } from './endings-checks';
-import { checkSurveyFlow } from './flow-checks';
 import { surveyFlow } from '../record/survey';
-import { checkAddressSearch, checkMap, checkPlace, type MapTools } from './map-checks';
-import { checkLineKinds, checkTable, type TableTools } from './table-checks';
-import { checkStatusbar } from './statusbar-checks';
-import { checkOptionRules } from './option-checks';
-import { checkPrefill } from './prefill-checks';
-import { checkVerify } from './verify-checks';
-import { checkPayment } from './payment-checks';
-import { checkOutbox } from './outbox-checks';
 import type { SenseChecks } from './sense-checks';
 
 export interface PageIssue {

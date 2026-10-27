@@ -7,9 +7,10 @@ import { stampPage } from './stamp';
 
 /**
  * docs/agents.md, the guide for AI agents writing pages, says what the checks say: each mistake of its table refused
- * by `validatePage` and the whole check alike, in the very words the guide quotes; what a 0.36 viewer does with it —
- * refuses it before the draw (`checkPage`), or draws it and says it — as its table says; and its worked example answered
- * as it shows: the first page's four problems, the one a viewer refuses it for, the second page passing, stamped "0.3".
+ * by `validatePage` and the whole check alike, in the very words the guide quotes; what a 0.37 viewer does with it —
+ * refuses it as 0.35's did (`checkPage`), or as only the whole check finds it, which 0.36 drew — as its table says; and
+ * its worked example answered as it shows: the first page's four problems, the one the check before the draw refuses it
+ * for, the second page passing, stamped "0.3".
  */
 const GUIDE = readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'docs', 'agents.md'), 'utf8');
 const base = () => ({
@@ -68,7 +69,7 @@ const MISTAKES: [string, Page][] = [
 ];
 
 describe('docs/agents.md says what the checks say', () => {
-  it.each(MISTAKES)('"%s": quoted in the guide, said by validatePage, refused by the whole check, a 0.36 viewer as it says', (words, page) => {
+  it.each(MISTAKES)('"%s": quoted in the guide, said by validatePage, refused by the whole check, a 0.37 viewer as it says', (words, page) => {
     expect(GUIDE).toContain(`\`${words}\``);
     const validated = validatePage(page);
     expect(validated.ok).toBe(false);
@@ -76,10 +77,10 @@ describe('docs/agents.md says what the checks say', () => {
     // The guide may end a long one with "…": what it quotes is the start of what the check says.
     expect(said).toContain(words.replace(/, …$/, ''));
     expect(wholeCheck(page).ok).toBe(false);
-    // Its row says what a 0.36 viewer does: refuses it before the draw, or draws it and says it (refused from 0.37).
+    // Its row says what a 0.37 viewer does: refuses it as 0.35's did, or as only the whole check finds it (0.36 drew it).
     const row = GUIDE.split('\n').find((line) => line.startsWith('| ') && line.includes(`\`${words}\``)) ?? '';
     const viewer = row.split(/(?<!\\)\|/)[3]?.trim();
-    expect(viewer).toBe(checkPage(page).ok ? 'draws it, says it' : 'refuses it');
+    expect(viewer).toBe(checkPage(page).ok ? 'refuses it (0.36 drew it)' : 'refuses it, as 0.35 did');
   });
 
   it('every row of its table is one of these', () => {
@@ -95,7 +96,7 @@ describe('docs/agents.md says what the checks say', () => {
     expect(blocks.length).toBeGreaterThan(3);
     const refused = validatePage(JSON.parse(first));
     expect(refused.ok ? [] : refused.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(answer.split('\n'));
-    // A viewer refuses it before the draw, for the one mistake the guide names; fixed alone, it draws it and says the rest.
+    // The check before the draw refuses it for the one mistake the guide names; fixed alone, the whole check the rest.
     const before = checkPage(JSON.parse(first));
     expect(before.ok ? [] : before.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(['fields.email: a field needs a type Fieldia knows and a label']);
     expect(example).toContain('`fields.email: a field needs a type Fieldia knows and a label`');

@@ -8,35 +8,32 @@ import type * as CheckPart from './check-part';
 export type PageCheckPart = typeof CheckPart;
 
 /**
- * The whole check of a page in a part of its own (`fieldia.check.js` in the one-tag script, a chunk of its own in an
- * app's bundle): fetched after a page's first draw, never before it (0.36), or by `checkPageWhole`.
+ * The whole check of a page in a part of its own: `fieldia.check.js` in the one-tag script, asked for as the script
+ * starts — beside the page's own data and parts, never after them — which a viewer waits for before a page's first draw,
+ * as for the page's parts (0.37); in an app's bundle a chunk `checkPageWhole` fetches (its viewer carries the whole check
+ * itself: check-now.ts).
  */
 export const pageCheckPart: Part<PageCheckPart> = lazyPart('check', () => import('./check-part'));
 
 /**
  * `validatePage`'s verdict without the validation library (the whole check, shape-parity.spec.ts holds the two to one):
  * the page's whole shape, every name and condition, its settings held to themselves — its part fetched the first time.
- * `checkPage` is the check before the draw, as 0.35's viewer checked a page.
+ * The check every viewer runs before a page's first draw (0.37). `checkPage` is the part of it 0.35's viewer ran.
  */
 export async function checkPageWhole(given: unknown, options: PageCheckOptions = {}): Promise<PageValidation> {
   return (await pageCheckPart.load()).wholeCheck(given, options);
 }
 
-/** A page drawn whose whole check found mistakes, as the viewer tells `onError` (`stage: "check"`, a warning). */
+/** 0.36's error for a page drawn whose whole check found mistakes, as its viewer told `onError` as a warning. */
 export type PageInvalid = Error & { issues: PageIssue[] };
 
-/** The most of a page's mistakes the console's warning lists: every one is on the error `onError` hears. */
-const SAID = 10;
-
 /**
- * A page drawn that the whole check refuses (0.36): what `validatePage` refuses and 0.35's viewer drew — a list's
- * `pageSize` past 500, a key the format does not have, its least more than its most, a first value outside its
- * choices — said once in the page's console (`page.invalid`), refused from 0.37; and handed back as the error the
- * viewer tells `onError`, each problem on it by its path.
+ * 0.36's error for a page drawn that the whole check refuses, which its viewer told `onError` as a warning. A 0.37
+ * viewer refuses such a page before it is drawn, and tells `onError` a `PageRefused` (`stage: "check"`, @fieldia/viewer):
+ * nothing in Fieldia makes this error any more. Deprecated in 0.37, gone in 0.38 (`core.page-invalid`).
  */
 export function pageInvalid(issues: readonly PageIssue[]): PageInvalid {
+  deprecated('core.page-invalid', 'pageInvalid() is 0.36\'s: a viewer refuses such a page, telling onError a PageRefused', '0.38');
   const listed = issues.map((issue) => `${issue.path}: ${issue.message}`);
-  const said = `${listed.slice(0, SAID).join('; ')}${listed.length > SAID ? `; and ${listed.length - SAID} more` : ''}`;
-  deprecated('page.invalid', `a page drawn has mistakes validatePage refuses (${said}) — drawn as 0.35 drew it`, '0.37');
-  return Object.assign(new Error(`This page has mistakes validatePage refuses: drawn in 0.36, refused from 0.37.\n${listed.map((line) => `  ${line}`).join('\n')}`), { issues: [...issues] });
+  return Object.assign(new Error(`This page has mistakes validatePage refuses.\n${listed.map((line) => `  ${line}`).join('\n')}`), { issues: [...issues] });
 }

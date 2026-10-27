@@ -4,6 +4,7 @@ import { functionTable, type FunctionsKnown } from '../expression/app-functions'
 import { parseExpression } from '../expression/expression';
 import { kindProblems, kindProblemWords } from '../expression/kinds';
 import { SENSE } from './sense-checks';
+import { wholeChecks } from './all-checks';
 
 /**
  * The reference check of a page, reading the kinds of value its expressions hand their functions as warnings: what
@@ -19,6 +20,8 @@ export function kindCheck(page: Page, functions: FunctionsKnown | undefined): Re
       return [];
     }
   };
+  // Whole at once: the checks a part carries in the one-tag script put in first (all-checks.ts).
+  wholeChecks();
   return new ReferenceCheck(page, undefined, { functions, kinds, sense: SENSE });
 }
 
@@ -28,6 +31,7 @@ export function kindCheck(page: Page, functions: FunctionsKnown | undefined): Re
  * changed against the format's schemas itself (the designer's edits).
  */
 export function referenceIssues(page: Page, options: { functions?: FunctionsKnown } = {}): PageIssue[] {
+  wholeChecks();
   try {
     // Its kinds left unread: what they say is a warning, never a refusal (`pageWarnings` reads them).
     return new ReferenceCheck(page, undefined, { functions: options.functions, sense: SENSE }).run();
