@@ -2033,7 +2033,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // refused once it came, the words and onError's warning where it cannot come, the part asked for as the script starts
 // (script-entry.ts) — less 0.36's check after the draw and its warning (whenIdle, pageInvalid's console words); the 28
 // checks a part carries called through one table of stand-ins (owed-checks.ts), not 28 generated copies: 197.38 with
-// those copies, 197.23 without (−0.15). 197.02 measured before, 197.23 after (+0.21; raw 601,597 → 600,780, −817), to
+// those copies, 197.23 without (−0.15); the first wait drawn for no wait of the whole check's alone, and checkPage kept
+// apart from the owing check, +0.04. 197.02 measured before, 197.27 after (+0.25; raw 601,597 → 600,942, −655), to
 // 197.3: under the owner's 200.
 const GZIP_BUDGET_KB = 197.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
