@@ -145,7 +145,9 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   0.35.
 - What an app rule, a step, the app or an `onchange` answer makes of the box
   being typed in lands when the box is left ("20" no longer becomes "1.002"),
-  in a repeat field too.
+  in a repeat field too — that box's leaving, not another's said late as a
+  press's click ends: an emptied Quantity stays empty under the keys, not the
+  rule's 1.00.
 - A list's open groups stay open as it is drawn again; a pin a finger taps
   lights its row without scrolling the list; why a locked row is locked goes
   once a press is over, so nothing moves under it.
@@ -282,7 +284,7 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   recorder's start and an empty recording — are machine-made and not yet
   reviewed by a native speaker.
 
-**Size:** `fieldia.js` 586.4 KB, 196.6 gzipped (0.35.2: 578.3, 193.6): +2.97 KB
+**Size:** `fieldia.js` 586.5 KB, 196.6 gzipped (0.35.2: 578.3, 193.6): +2.99 KB
 gzipped, under the owner's 200, all of it what every page runs. By lane, each
 measured on its own base: deps-maint 0.12 (a control's name holding what it
 shows, `nameShowing`); p3-promises 1.40 (the check before the draw as 0.35's, a
@@ -292,7 +294,8 @@ for a part that never came, which must live in the main script, 0.81; the box
 under the keys never written over and the alert letting a refusal go, 0.34);
 merged, 0.18 more as their code compresses together; the plain save that sends
 nothing 0.10; the recorder's fix 0.01 (the hashes of the parts it carries; the
-same bytes). The parts, gzipped:
+same bytes); another box's late leaving laying nothing of the box typed in 0.02.
+The parts, gzipped:
 
 - check 17.27, new: the whole check, fetched after a page's first draw;
 - list 50.50 → 51.96: the reload near the view, open groups kept, a pin's tap,
