@@ -67,6 +67,12 @@ export interface WindowContext {
   placed(tr: HTMLTableRowElement, row: WindowRow): void;
   /** How many columns a gap row spans. */
   span(): number;
+  /**
+   * The view has come near rows above those the window holds, which the list did not ask for again (an endless list
+   * asked again near its view, `set`'s `above`): at least this many of them, the nearest, are wanted. Asked again as
+   * the view moves while they have not come.
+   */
+  need?(rows: number): void;
   /** Rows drawn whole up to this many (WINDOW_FROM unless a test says). */
   from?: number;
   /** The page's geometry, unless a test gives its own (jsdom lays nothing out). */
@@ -74,8 +80,20 @@ export interface WindowContext {
 }
 
 export interface RowWindow {
-  /** The rows to show, in order, in place of those shown before (the list asked again). */
-  set(rows: WindowRow[]): void;
+  /**
+   * The rows to show, in order, in place of those shown before (the list asked again). `above`: rows before these that
+   * the list holds no more (an endless list asked again near its view): a gap as tall as they stood in their place,
+   * counted in the table's rows; as the view comes to it, the window asks for them (`need`).
+   */
+  set(rows: WindowRow[], above?: number): void;
+  /** Rows above those it holds, as they came (`need`): the nearest of those not held; `above` is how many are left over them. */
+  prepend(rows: WindowRow[], above: number): void;
+  /** How many rows above those it holds the list did not ask for again. */
+  above(): number;
+  /** The place among all the rows (those above counted) of the row of this key, or null where none is shown. */
+  index(key: string): number | null;
+  /** The places among all the rows (those above counted) of the rows in the view, [from, to); null where nothing is laid out. */
+  reading(): { from: number; to: number } | null;
   /** Rows after these: the next page of an endless list, a row added, the work kept on a row the list no longer holds. */
   append(rows: WindowRow[]): void;
   /** A row taken away (a row added and dropped). */
@@ -179,8 +197,14 @@ export function rowWindow(context: WindowContext): RowWindow {
   let heights = new Map<string, number>();
   let plain = { sum: 0, n: 0 };
   let estimate = ROW;
-  /** The view as last measured, from the rows' top: where the rows the list asks for again are drawn first. */
+  /** The view as last measured, from the table body's top: where the rows the list asks for again are drawn first. */
   let lastView: { top: number; bottom: number } | null = null;
+  /** Rows above those held, the list did not ask for again, and how tall their gap is: as they stood, or as rows are thought to be. */
+  let above = 0;
+  let aboveHeight = 0;
+  const lead = () => (above ? aboveHeight : 0);
+  /** A view from the body's top, as from the rows' own top: under the gap of the rows above. */
+  const inRows = (at: { top: number; bottom: number }) => ({ top: at.top - lead(), bottom: at.bottom - lead() });
   let frame = 0;
   const gaps: HTMLTableRowElement[] = [];
   /** Each shown row's top, from the rows' top: worked out as rows or their heights change. */
@@ -289,8 +313,25 @@ export function rowWindow(context: WindowContext): RowWindow {
     return gap;
   }
 
+  /** The gap of the rows above those held (`above`), first in the body: as tall as they stood, or are thought to be. */
+  let leadGap: HTMLTableRowElement | null = null;
+  function leading(): HTMLTableRowElement {
+    if (!leadGap) {
+      leadGap = doc.createElement('tr');
+      leadGap.className = 'fd-list-gap';
+      leadGap.setAttribute('aria-hidden', 'true');
+      leadGap.setAttribute('data-aside', '');
+      leadGap.setAttribute('data-above', '');
+      leadGap.append(doc.createElement('td'));
+    }
+    const cell = leadGap.firstElementChild as HTMLTableCellElement;
+    cell.colSpan = context.span();
+    cell.style.height = `${Math.max(0, aboveHeight)}px`;
+    return leadGap;
+  }
+
   /** Every row drawn: few enough of them (a page of a list), or for paper or cards — those under a closed parent hidden. */
-  const full = () => wholly.size > 0 || all.length <= least;
+  const full = () => wholly.size > 0 || (all.length <= least && !above);
 
   /** The rows round the view drawn, those being worked on with them wherever they are; the rest as gaps. */
   function render(from: number, to: number) {
@@ -321,6 +362,7 @@ export function rowWindow(context: WindowContext): RowWindow {
     const keep = new Set(order);
     for (const row of drawn) if (!keep.has(row)) unplace(row, false);
     for (const gap of gaps) gap.remove();
+    leadGap?.remove();
     const staying = drawn.filter((row) => keep.has(row) && row.tr?.parentElement === body);
     let next = 0;
     let before = -1;
@@ -342,6 +384,8 @@ export function rowWindow(context: WindowContext): RowWindow {
     }
     if (withGaps && before < shown.length - 1) body.append(gapFor(before + 1, shown.length, used++));
     gaps.length = Math.min(gaps.length, used + 2);
+    // The rows above those held, the list's to ask for again as the view comes to them: their gap first.
+    if (withGaps && above) body.insertBefore(leading(), body.firstChild);
     drawn = order;
   }
 
@@ -355,12 +399,13 @@ export function rowWindow(context: WindowContext): RowWindow {
   /** The table's rows counted, and each drawn row's place among them: the header first, the totals last. */
   function say() {
     const foot = table.tFoot?.rows.length ?? 0;
-    const count = String(1 + shown.length + foot);
+    // The rows above those held are the table's rows too, not in the page as those far from the view are not.
+    const count = String(1 + above + shown.length + foot);
     if (table.getAttribute('aria-rowcount') !== count) table.setAttribute('aria-rowcount', count);
     for (const tr of table.tHead?.rows ?? []) tr.setAttribute('aria-rowindex', '1');
-    for (const [i, tr] of [...(table.tFoot?.rows ?? [])].entries()) tr.setAttribute('aria-rowindex', String(2 + shown.length + i));
+    for (const [i, tr] of [...(table.tFoot?.rows ?? [])].entries()) tr.setAttribute('aria-rowindex', String(2 + above + shown.length + i));
     for (const row of drawn) {
-      const place = String(2 + (placeOf.get(row) as number));
+      const place = String(2 + above + (placeOf.get(row) as number));
       if (row.tr && row.tr.getAttribute('aria-rowindex') !== place) row.tr.setAttribute('aria-rowindex', place);
     }
   }
@@ -390,10 +435,13 @@ export function rowWindow(context: WindowContext): RowWindow {
       return;
     }
     measure();
-    const at = geometry.view(body);
-    if (!at) return;
-    lastView = at;
+    const seen = geometry.view(body);
+    if (!seen) return;
+    lastView = seen;
+    const at = inRows(seen);
     const margin = Math.max(at.bottom - at.top, LEAST_MARGIN);
+    // Near the rows above those held: the nearest of them asked for, as many as reach the view's margin.
+    if (above && at.top - margin < 0) context.need?.(Math.min(above, Math.max(1, Math.ceil((margin - at.top) / Math.max(estimate, 1)))));
     const edges = offsets();
     const [top, bottom] = [edges[range.from], edges[range.to]];
     const pins = pinned();
@@ -405,22 +453,39 @@ export function rowWindow(context: WindowContext): RowWindow {
     });
     reached.clear();
     if (enough && !stray) return;
-    // What the person reads stays where it is as rows above it come and go: the first row drawn reaching into the view.
-    const anchor = anchors ? null : drawn.find((row) => {
-      const place = placeOf.get(row) as number;
-      return edges[place + 1] > at.top;
-    });
-    const was = anchor?.tr ? geometry.top(anchor.tr) : null;
+    const keep = holding();
     const [from, to] = around(at);
     render(from, to);
-    if (anchor?.tr && was !== null) {
+    keep();
+  }
+
+  /**
+   * What the person reads stays where it is as rows above it come and go — where the browser keeps nothing in place
+   * itself (WebKit): the first row drawn reaching into the view, and how to put it back where it was.
+   */
+  function holding(): () => void {
+    if (anchors) return () => undefined;
+    const seen = geometry.view(body);
+    if (!seen) return () => undefined;
+    const at = inRows(seen);
+    const edges = offsets();
+    const anchor = drawn.find((row) => edges[(placeOf.get(row) as number) + 1] > at.top);
+    const was = anchor?.tr ? geometry.top(anchor.tr) : null;
+    return () => {
+      if (!anchor?.tr || was === null) return;
       const now = geometry.top(anchor.tr);
       const by = now === null ? 0 : now - was;
-      if (Math.abs(by) >= 1) {
-        const scroller = scrollerOf(doc, table);
-        if (scroller) scroller.scrollTop += by;
-      }
-    }
+      if (Math.abs(by) < 1) return;
+      const scroller = scrollerOf(doc, table);
+      if (scroller) scroller.scrollTop += by;
+    };
+  }
+
+  /** How far under the body's top the row at this place among all rows (those above counted) stands now; null past those held. */
+  function standsAt(place: number): number | null {
+    if (place <= above) return above ? (aboveHeight * place) / above : 0;
+    const at = place - above;
+    return at > shown.length ? null : lead() + offsets()[at];
   }
 
   const later = () => {
@@ -430,10 +495,10 @@ export function rowWindow(context: WindowContext): RowWindow {
   function now() {
     if (!active) return;
     if (full()) renderAll();
-    else if (lastView) render(...around(lastView));
+    else if (lastView) render(...around(inRows(lastView)));
     else {
       const at = geometry.view(body);
-      if (at) render(...around(at));
+      if (at) render(...around(inRows(at)));
       else render(0, opening());
     }
     later();
@@ -465,7 +530,12 @@ export function rowWindow(context: WindowContext): RowWindow {
   }
 
   return {
-    set(rows) {
+    set(rows, rowsAbove = 0) {
+      // The rows above those asked for again, as tall as they stood where the window held them (the list asked again in
+      // its place), else as rows are thought to be: those asked for stand where they stood.
+      const stood = rowsAbove ? standsAt(rowsAbove) : 0;
+      above = rowsAbove;
+      aboveHeight = stood ?? rowsAbove * estimate;
       // Back from rows the list drew itself (its groups): those let go.
       if (!active) body.replaceChildren();
       active = true;
@@ -503,6 +573,39 @@ export function rowWindow(context: WindowContext): RowWindow {
       if (full()) renderAll();
       else render(range.from, range.to);
       later();
+    },
+    prepend(rows, rowsAbove) {
+      const fresh = rows.filter((row) => !byKey.has(keyOf(row)));
+      const was = above;
+      above = Math.max(0, Math.min(rowsAbove, was));
+      // The gap keeps the share of its height of the rows still over it; those come are as tall as rows are thought to be.
+      aboveHeight = was && above ? (aboveHeight * above) / was : 0;
+      if (!fresh.length && above === was) return;
+      const keep = active ? holding() : () => undefined;
+      all = [...fresh, ...all];
+      for (const row of fresh) byKey.set(keyOf(row), row);
+      reshow();
+      if (!active) return;
+      // The same rows drawn as before, at their new places; those come drawn as the view reaches them.
+      if (full()) renderAll();
+      else render(range.from + fresh.length, range.to + fresh.length);
+      keep();
+      later();
+    },
+    above: () => above,
+    index(key) {
+      const row = byKey.get(key);
+      const place = row ? placeOf.get(row) : undefined;
+      return place === undefined ? null : above + place;
+    },
+    reading() {
+      const seen = geometry.view(body);
+      if (!seen || !active) return null;
+      const at = inRows(seen);
+      // In the gap of the rows above, by its rows' height on average.
+      const each = above ? aboveHeight / above : estimate;
+      const where = (y: number) => (y < 0 ? Math.max(0, Math.floor(above + y / Math.max(each, 1))) : above + placeAt(y));
+      return { from: where(at.top), to: Math.min(above + shown.length, where(at.bottom) + 1) };
     },
     remove(tr) {
       const row = ofTr.get(tr);
@@ -582,12 +685,15 @@ export function rowWindow(context: WindowContext): RowWindow {
       placeOf = new Map();
       byKey = new Map();
       for (const gap of gaps) gap.remove();
+      leadGap?.remove();
+      above = 0;
+      aboveHeight = 0;
       table.removeAttribute('aria-rowcount');
       for (const tr of [...(table.tHead?.rows ?? []), ...(table.tFoot?.rows ?? [])]) tr.removeAttribute('aria-rowindex');
     },
     later,
     spread() {
-      for (const gap of gaps) (gap.firstElementChild as HTMLTableCellElement).colSpan = context.span();
+      for (const gap of [...gaps, ...(leadGap ? [leadGap] : [])]) (gap.firstElementChild as HTMLTableCellElement).colSpan = context.span();
     },
     destroy() {
       if (frame) view?.cancelAnimationFrame(frame);

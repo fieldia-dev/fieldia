@@ -29,8 +29,9 @@ const PHONE = () => test.info().project.name === 'perf-phone';
  * 200 lines), now none; a list of 5,000 rows kept 100,511 nodes and 30,141 listeners, and a row ticked laid out 110,121
  * objects, now some 1,600 and 470, and 1,311; a key in a line of the 200 wrote 1,600 changes, now 4; six rows pointed
  * at moved Leaflet's pins 96 times (every pin, at each), now 12; a Gantt of 500 tasks put 4,101 elements in the page for
- * a change of scale and 8,799 for a bar dropped, now 91 and 31. What stays as it was: a key still lays the whole form out (4,920 objects: no section is contained —
- * perf-form's proposal, sections as paint layers, is not in 0.35).
+ * a change of scale and 8,799 for a bar dropped, now 91 and 31. What stays as it was: a key still lays the whole form out (4,920 objects: no section is contained for
+ * layout). 0.36 makes each section a paint layer of its own, so a key repaints its section alone (perf.spec.ts times
+ * that paint; e2e/section-popups.spec.ts holds that no popup is cut or covered by it).
  */
 /** A scenario's counts: the browser's (`Counts`) and those it counts of its own. */
 type Held = Partial<Counts> & Record<string, number>;
@@ -47,6 +48,12 @@ const BUDGET: Record<string, Record<'desktop' | 'phone', Held>> = {
   'rows pointed at, one after the other, and away': { desktop: { markerMoves: 13 }, phone: { markerMoves: 13 } },
   'a change of scale, 500 tasks': { desktop: { added: 96 }, phone: { added: 96 } },
   'a bar dropped, 500 tasks': { desktop: { added: 33 }, phone: { added: 33 } },
+  /**
+   * 0.36: a pick moves the focus once the frame that draws it open is laid out, and lets the focus go before anything is
+   * written — 0.35's click laid out three times: to let the focus go from the card about to be drawn anew, then twice to
+   * put it in the words clicked (the canvas and its panel written by then).
+   */
+  'a pick in the screen editor, 500 fields: what its click lays out': { desktop: { layouts: 0 }, phone: { layouts: 0 } },
 };
 
 /** Hold counts to the scenario's budget, saying all of them; and note them for the trend (test-results/perf). */
@@ -290,4 +297,34 @@ test('500 tasks: a bar dropped and a change of scale write what changed, never t
     await page.mouse.up();
   });
   hold('a bar dropped, 500 tasks', { added: dropped.added });
+});
+
+test('500 fields in the screen editor: a pick lays nothing out in its click — the focus moved once its frame is drawn', async ({ page, browser }) => {
+  test.skip(PHONE(), 'the editors are drawn for a desktop');
+  test.setTimeout(180_000);
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('fieldia.designer.mode', 'simple');
+    } catch {
+      // No storage: Simple.
+    }
+  });
+  await page.goto('/screen/?start=big');
+  const words = (id: string) => page.locator(`.fd-canvas-field[data-node="${id}"] .fd-label`);
+  await expect(words('f-s25-reference')).toHaveCount(1, { timeout: 60_000 });
+  await words('f-s02-name').click();
+  const picked = 'f-s02-code';
+  await words(picked).scrollIntoViewIfNeeded();
+  await frames(page);
+  // The layouts run inside the click's own handlers, from Chromium's trace.
+  await browser.startTracing(page, { categories: ['devtools.timeline', 'disabled-by-default-devtools.timeline'] });
+  await words(picked).click();
+  await frames(page);
+  const { traceEvents } = JSON.parse((await browser.stopTracing()).toString()) as { traceEvents: { name: string; ph: string; ts: number; dur?: number; pid: number; tid: number; args?: { data?: { type?: string } } }[] };
+  const click = traceEvents.find((event) => event.name === 'EventDispatch' && event.args?.data?.type === 'click');
+  expect(click, 'the click, in the trace').toBeTruthy();
+  const inside = traceEvents.filter((event) => event.name === 'Layout' && event.ph === 'X' && event.pid === click?.pid && event.tid === click?.tid && event.ts >= (click?.ts ?? 0) && event.ts < (click?.ts ?? 0) + (click?.dur ?? 0));
+  hold('a pick in the screen editor, 500 fields: what its click lays out', { layouts: inside.length });
+  // And the cursor in the words clicked, once drawn.
+  await expect(page.locator(`.fd-canvas-field[data-node="${picked}"] [data-inline="label"]`)).toBeFocused();
 });

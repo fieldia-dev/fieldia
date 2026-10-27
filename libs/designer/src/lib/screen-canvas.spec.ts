@@ -3,6 +3,8 @@ import { blankPage, createDesigner } from './designer';
 import { screenCanvas, type ScreenCanvas } from './screen-canvas';
 
 const model: Record<string, Field> = { email: { type: 'char', label: 'Email' } };
+/** The end of the frame that draws a field picked by a press open: where the cursor goes into its words (0.36). */
+const frameEnd = () => new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
 const nodes = (page: Page) => (page.layout as { children: SectionNode[] }).children.flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field'));
 
 let canvas: ScreenCanvas;
@@ -60,7 +62,7 @@ describe('the screen canvas — drawn as the viewer draws it', () => {
     expect(widget.querySelector('input')).not.toBeNull();
   });
 
-  it('gives every field a grip to carry it by, picked or not', () => {
+  it('gives every field a grip to carry it by, picked or not', async () => {
     const { card, date, step, designer } = visit();
     for (const id of [date, step]) {
       const grip = card(id).querySelector('[data-grip]') as HTMLElement;
@@ -72,6 +74,7 @@ describe('the screen canvas — drawn as the viewer draws it', () => {
     expect([card(date).getAttribute('role'), card(date).getAttribute('tabindex')]).toEqual(['button', '0']);
     card(date).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect(designer.getState().selected).toBe(date);
+    await frameEnd();
     expect(document.activeElement).toBe(card(date).querySelector('[data-inline="label"]'));
     designer.select(null);
     designer.select(date);
@@ -100,10 +103,13 @@ describe('the screen canvas — a field edited where it stands', () => {
     expect(canvas.element.querySelectorAll('.fd-editing')).toHaveLength(1);
   });
 
-  it('puts the cursor in the words clicked, and keeps it there while typing', () => {
+  it('puts the cursor in the words clicked, and keeps it there while typing', async () => {
     const { designer, card, date } = visit();
     (card(date).querySelector('.fd-label') as HTMLElement).click();
     const label = card(date).querySelector('[data-inline="label"]') as HTMLInputElement;
+    // At the end of the frame that draws it open, the page laid out: not at once, which laid the canvas out again.
+    expect(document.activeElement).not.toBe(label);
+    await frameEnd();
     expect(document.activeElement).toBe(label);
     label.value = 'Day of the visit';
     label.dispatchEvent(new Event('input', { bubbles: true }));
@@ -115,6 +121,19 @@ describe('the screen canvas — a field edited where it stands', () => {
     help.value = '';
     help.dispatchEvent(new Event('input', { bubbles: true }));
     expect(designer.getPage().fields[nodes(designer.getPage())[0].field].help).toBeUndefined();
+  });
+
+  it('puts the cursor in the words clicked before a key pressed at once, so what is typed lands in them', () => {
+    const { card, date, step } = visit();
+    (card(date).querySelector('.fd-label') as HTMLElement).click();
+    const label = card(date).querySelector('[data-inline="label"]') as HTMLInputElement;
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    expect(document.activeElement).toBe(label);
+    // A press elsewhere before the frame's end: the cursor goes where that press puts it, never back to the words.
+    (card(step).querySelector('.fd-label') as HTMLElement).click();
+    document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }));
+    expect(document.activeElement).not.toBe(card(step).querySelector('[data-inline="label"]'));
   });
 
   it('types a model field’s label onto the page, not into the model', () => {

@@ -52,7 +52,7 @@ import { searchBar } from './search-bar';
 import { markSort, pressedSort, sortWith } from './list-sort';
 import { endlessRows } from './list-endless';
 import { cameBack, keepPlace, placeKept, topRow, type ListPlace } from './list-place';
-import { rowWindow, type RowWindow, type WindowRow } from './list-window';
+import { rowWindow, windowDefaults, type RowWindow, type WindowRow } from './list-window';
 import type { SavedViews, ViewsSource } from './saved-views';
 import { assistPart, cardsPart, columnsPart, editablePart, filtersPart, importPart, rowsPart, viewsPart, type AssistPart, type ColumnsPart } from './viewer-parts';
 import type { EditableRows, ListRows, NewForm } from './list-editable';
@@ -271,6 +271,14 @@ export function listView(context: ListContext): ListView {
   /** Rows loaded as the list is scrolled, in place of its pages (`endless`): how many it holds, kept as it asks again. */
   const endless = node.endless === true && context.inRecord !== true;
   let reach = pageSize;
+  /**
+   * Rows over those it holds that it did not ask for again (`reach` counts them): an endless list holding more rows than
+   * its window draws asks again for those in and near the view first (`nearView`), the rows over them as the view comes
+   * to them (`earlier`), those under them as it is scrolled on (`more`) — never every row it had loaded, all at once.
+   */
+  let skipped = 0;
+  /** The rows the list holds a place for: those over it not asked for again, and those it holds. */
+  const held = () => skipped + rows.length;
   /** The page of records, when the list is not grouped. */
   let rows: Row[] = [];
   /** Each record's row, for the records on show however they are grouped. */
@@ -563,7 +571,12 @@ export function listView(context: ListContext): ListView {
    */
   async function openRow(id: RecordId, lit = true, name?: string) {
     // Where the list stands, kept for Back: let go again where the record opens over the list, which stays.
-    if (!context.inRecord && !context.search) keepPlace(doc, placeKey, { facets, keys, offset, reach: endless ? rows.length : pageSize, ...topRow(body.querySelectorAll<HTMLElement>('.fd-list-row')), open: String(id) });
+    if (!context.inRecord && !context.search) {
+      const top = topRow(body.querySelectorAll<HTMLElement>('.fd-list-row'));
+      // Its place among the rows loaded, too: a long list come back to asks for the rows near it first.
+      const index = top && win && windowing() ? win.index(top.at) : null;
+      keepPlace(doc, placeKey, { facets, keys, offset, reach: endless ? held() : pageSize, ...top, ...(index === null ? {} : { index }), open: String(id) });
+    }
     const answer = context.onOpenRecord?.(id, name);
     if (!isPromise(answer)) return;
     keepPlace(doc, placeKey, null);
@@ -729,6 +742,7 @@ export function listView(context: ListContext): ListView {
           body,
           draw: drawRow,
           pins: () => rowEdits?.working() ?? [],
+          need: (n) => void earlier(n),
           placed: (tr) => {
             details?.placed(tr);
             rowEdits?.placed(tr);
@@ -841,6 +855,8 @@ export function listView(context: ListContext): ListView {
         // In a gallery, the card over or under this one; else the row — past the last loaded, the next page first.
         const beside = element.dataset['as'] === 'gallery' ? cardBeside(tr, event.key === 'ArrowDown') : shownBeside(tr, event.key === 'ArrowDown');
         if (!beside && event.key === 'ArrowDown' && endless) void more().then(() => focusRow(shownBeside(tr, true)));
+        // Up past the first row held, where the list did not ask again for those over it: the page over it first.
+        else if (!beside && event.key === 'ArrowUp' && skipped) void earlier(1).then(() => focusRow(shownBeside(tr, false)));
         else focusRow(beside);
       } else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && element.hasAttribute('data-as')) {
         // Cards: the next towards the line's end, the one before towards its start.
@@ -1044,7 +1060,23 @@ export function listView(context: ListContext): ListView {
     }
     for (const box of body.querySelectorAll<HTMLInputElement>('.fd-list-checkbox')) box.checked = chooseAll.checked;
     drawChoice();
+    // Every row loaded, those over the rows held too (not asked for again): asked for, and chosen as they come — unless
+    // the box is pressed again meanwhile.
+    const mine = ++choosing;
+    if (chooseAll.checked && skipped) void chooseEarlier(mine);
   });
+  let choosing = 0;
+  async function chooseEarlier(mine: number) {
+    while (skipped && mine === choosing && !destroyed) {
+      const was = skipped;
+      await earlier(skipped);
+      if (skipped === was) return;
+    }
+    if (mine !== choosing || destroyed) return;
+    for (const record of visible()) chosen.add(record.id);
+    for (const box of body.querySelectorAll<HTMLInputElement>('.fd-list-checkbox')) box.checked = true;
+    drawChoice();
+  }
 
   function drawChoice() {
     const shown = visible();
@@ -1113,7 +1145,7 @@ export function listView(context: ListContext): ListView {
       bar.hidden = pager.hidden && search.element.hidden;
     }
     // As the page writes numbers, as the count of those chosen is: "1–10 / 1,284".
-    range.textContent = sentence(labels.rangeNoun, labels.range, { from: number(offset + 1), to: number(Math.min(offset + rows.length, total)), total: number(total) });
+    range.textContent = sentence(labels.rangeNoun, labels.range, { from: number(offset + 1), to: number(Math.min(offset + held(), total)), total: number(total) });
     if (shownOf) {
       shownOf.hidden = rows.length >= total;
       shownOf.textContent = sentence(labels.relatedShownNoun, labels.relatedShown, { n: number(rows.length), total: number(total) });
@@ -1122,7 +1154,7 @@ export function listView(context: ListContext): ListView {
     next.disabled = offset + pageSize >= total;
     // Loaded as it is scrolled: its count alone, and Show more at the rows' end while some are left.
     previous.hidden = next.hidden = endless;
-    endlessEnd?.drawn(groupedNow || !failed.hidden ? 0 : total - rows.length, fill(labels.loadMore, { n: number(Math.min(pageSize, total - rows.length)) }));
+    endlessEnd?.drawn(groupedNow || !failed.hidden ? 0 : total - held(), fill(labels.loadMore, { n: number(Math.min(pageSize, total - held())) }));
   }
 
   function drawSort() {
@@ -1203,9 +1235,13 @@ export function listView(context: ListContext): ListView {
         matching = groups.reduce((sum, group) => sum + group.count, 0);
         drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
       } else {
-        // Loaded as it is scrolled: every row it held, asked again from the first.
+        // Loaded as it is scrolled: the rows it held, asked again — those in and near the view first, where it holds more
+        // than its window draws (`nearView`), else from the first.
         // A tree loaded as it opens: its records with no parent, while no search is on.
-        const request = { model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize };
+        const near = nearView();
+        const request = near
+          ? { model, fields, filter, sort, offset: near.from, limit: near.to - near.from }
+          : { model, fields, filter: tree ? [...filter, ...tree.top()] : filter, sort, offset, limit: endless ? Math.max(pageSize, reach) : pageSize };
         // The first page asked for already, as the list's part came, where it answers this request: taken once. Its wait's
         // timeout tells it to stop as it tells the list's own request.
         const early = earlyFor(context.early, request, waiting.settings.timeout ? wait.signal : undefined);
@@ -1217,11 +1253,19 @@ export function listView(context: ListContext): ListView {
           offset = Math.floor((answer.total - 1) / pageSize) * pageSize;
           return void (await load());
         }
+        // Near a view the records no longer reach (most of them gone): from the first, a page of them.
+        if (near && !answer.records.length && answer.total > 0) {
+          reach = pageSize;
+          place = null;
+          wait.stop();
+          return void (await load());
+        }
         rows = answer.records;
+        skipped = near ? near.from : 0;
         total = answer.total;
         matching = total;
         groupedNow = false;
-        reach = Math.max(pageSize, rows.length);
+        reach = Math.max(pageSize, held());
         rows.forEach(know);
         // Kept by the window, which draws those near the view; else drawn here, every one.
         drawn = win ? ordered(rows) : nest(rows);
@@ -1239,7 +1283,7 @@ export function listView(context: ListContext): ListView {
     loadedOnce = true;
     failed.hidden = true;
     // Its records' rows, to the window; its groups' rows, drawn here, the window letting the rows be meanwhile.
-    if (win && windowing()) win.set(drawn as WindowRow[]);
+    if (win && windowing()) win.set(drawn as WindowRow[], skipped);
     else {
       win?.clear();
       body.replaceChildren(...(drawn as HTMLTableRowElement[]));
@@ -1282,6 +1326,7 @@ export function listView(context: ListContext): ListView {
   /** Its records could not be loaded: none shown, its own sentence and why where the source said, with Retry. */
   function saidFailed(_message: string, _retry: unknown, why: string) {
     rows = [];
+    skipped = 0;
     total = 0;
     matching = 0;
     win?.clear();
@@ -1321,13 +1366,62 @@ export function listView(context: ListContext): ListView {
   };
 
   /**
+   * Where an endless list holding more rows than its window draws is asked again — its own rows asked again in place (a
+   * press, an Undo), or come back to (Back, `place.index`): the pages round the rows in the view, a margin of rows over
+   * and under them; null to ask for them all from the first (a page or so of them, a list whose rows are not its own).
+   */
+  function nearView(): { from: number; to: number } | null {
+    if (!endless || !win || tree || ranks || parentField || reach <= windowDefaults.from) return null;
+    // Come back to: near the row that was at the top. Asked again in place: near the view, where rows are left out of the page.
+    const at = place ? (place.index === undefined ? null : { from: place.index, to: place.index + 1 }) : windowing() && win.windowed() ? win.reading() : null;
+    if (!at) return null;
+    const margin = Math.max(pageSize, windowDefaults.from);
+    const from = Math.max(0, Math.floor((at.from - margin) / pageSize) * pageSize);
+    const to = Math.min(reach, Math.max(from + pageSize, Math.ceil((at.to + margin) / pageSize) * pageSize));
+    return from === 0 && to >= reach ? null : { from, to };
+  }
+  /**
+   * Rows over those the list holds, where it did not ask for them again (`skipped`): as the view comes to them (the
+   * window's `need`) or the keys go past the first held — at least `n`, a page or more, the nearest. Asked for once at a
+   * time; one that fails is asked again as the view moves on.
+   */
+  let asked: Promise<void> | null = null;
+  function earlier(n: number): Promise<void> {
+    const list = context.dataSource?.list?.bind(context.dataSource);
+    if (!skipped || groupedNow || !list || destroyed) return Promise.resolve();
+    asked ??= (async () => {
+      const mine = asking;
+      const from = Math.max(0, Math.floor((skipped - Math.max(n, pageSize)) / pageSize) * pageSize);
+      try {
+        const answer = await list({ model, fields, filter: currentFilter(), sort, offset: from, limit: skipped - from });
+        if (mine !== asking || destroyed) return;
+        const kept = new Set(rows.map((record) => String(record.id)));
+        const fresh = answer.records.filter((record) => !kept.has(String(record.id)));
+        skipped = from;
+        rows = [...fresh, ...rows];
+        total = answer.total;
+        matching = total;
+        fresh.forEach(know);
+        win?.prepend(ordered(fresh), skipped);
+        drawPager();
+        changed();
+      } catch {
+        // Not come: the gap stays, and the view moving on asks again.
+      } finally {
+        asked = null;
+      }
+    })();
+    return asked;
+  }
+
+  /**
    * The next page of rows, where they load as the list is scrolled: put after those it holds — any already there (moved
    * meanwhile) never twice — its count, its grips and what is chosen with them. A list that asked again meanwhile draws
    * them itself; one that cannot be asked says so.
    */
   async function more(): Promise<boolean | void> {
     const source = context.dataSource;
-    if (!endless || groupedNow || rows.length >= total || !source?.list || !endlessEnd) return;
+    if (!endless || groupedNow || held() >= total || !source?.list || !endlessEnd) return;
     const mine = asking;
     // Its wait where the rows will come (`more`): "Loading more…" unless the page says otherwise; a failure said there,
     // with Retry — the person's ask, after which its end in sight asks by itself again (list-endless.ts).
@@ -1337,7 +1431,7 @@ export function listView(context: ListContext): ListView {
     const wait = startLoading(end.element, 'more', waiting, { part: node.id, retry: () => end.retry(), ...(waiting.settings.error === 'toast' ? { failWords: failedWords } : {}) });
     let answer: Awaited<ReturnType<NonNullable<DataSource['list']>>>;
     try {
-      answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: rows.length, limit: pageSize, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) });
+      answer = await source.list({ model, fields, filter: currentFilter(), sort, offset: held(), limit: pageSize, ...(waiting.settings.timeout ? { signal: wait.signal } : {}) });
     } catch (error) {
       if (mine !== asking || destroyed) return wait.stop();
       wait.fail(error);
@@ -1346,12 +1440,12 @@ export function listView(context: ListContext): ListView {
     }
     if (mine !== asking || destroyed) return wait.stop();
     await wait.done(() => {
-      const held = new Set(rows.map((record) => String(record.id)));
-      const fresh = answer.records.filter((record) => !held.has(String(record.id)));
+      const had = new Set(rows.map((record) => String(record.id)));
+      const fresh = answer.records.filter((record) => !had.has(String(record.id)));
       rows = [...rows, ...fresh];
       total = answer.total;
       matching = total;
-      reach = rows.length;
+      reach = held();
       fresh.forEach(know);
       if (win && windowing()) win.append(ordered(fresh));
       else body.append(...nest(fresh));

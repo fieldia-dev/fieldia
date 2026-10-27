@@ -914,7 +914,7 @@ first; the row with the focus, and a row being changed, stay in the page
 wherever the view goes; Select all chooses every row loaded; a block pasted
 goes down the rows not drawn yet; what the person reads stays in place as rows
 of differing heights come and go above it (in WebKit, which keeps nothing in
-place itself, the list does); paper prints every row loaded. Two things differ
+place itself, the list does); paper prints every row it holds. Two things differ
 from a page of rows. The browser's find in page sees only the rows in the page:
 Ctrl or ⌘ and F in such a list take the person to the list's own search, which
 finds any record, and say so under it; pressed again there, they are the
@@ -1227,8 +1227,12 @@ feed, a log — the next page of rows comes as the rows' end comes in sight, put
 after those already there, in place of the pager's pages: its count stays
 ("1–60 of 1,284 entries"), its arrows go, and "Show 30 more" waits at the end
 for a hand or the keys (↓ past the last row loads the next and goes on). As the
-list asks again (a row's button, a record closed) it keeps every row it held; a
-new search or order starts from the first page. On a phone, cards far out of
+list asks again (a row's button, a record closed, Back to it) it keeps every row
+it held; a new search or order starts from the first page. Holding more rows
+than it draws, it asks first for the pages round the rows in view, which stand
+where they stood; the rows over them come as the view, ↑ or Select all reaches
+them, those under them as it is scrolled on — the source is never asked for
+every row it held at once. On paper it prints the rows it holds. On a phone, cards far out of
 sight skip their drawing. Not for rows under their parent (`parentField`).
 
 **A tree too big for a page.** Rows nest under their parent (`parentField`) on

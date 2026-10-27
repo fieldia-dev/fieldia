@@ -544,7 +544,14 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 
 /* ---- sections, tabs ---------------------------------------------------- */
 .fd-sections { display: grid; gap: var(--fd-gap-block, 24px); }
-.fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
+/*
+ * Each section a paint layer of its own (position: relative, no offset): a key repaints the section it is in, not the
+ * page — on a phone, 500 fields' Paint per key went from about 22 ms to 4. Not contain: paint or isolation, which
+ * paint as quickly: the first cuts what reaches out of a section (a date's calendar, a field's help, a focus ring at its
+ * edge), and both make it a stacking context, so a popup with a z-index inside it would go under the next section. With
+ * no z-index it is none: every popup, menu, date picker, dialog, toast and tooltip shows whole (e2e/section-popups).
+ */
+.fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; position: relative; }
 .fd-section-title { font-size: 15px; font-weight: 650; padding: 0; margin: 0; float: inline-start; width: 100%; }
 .fd-section-title ~ * { clear: both; }
 .fd-form[data-fd-skin="underline"] .fd-section-title {

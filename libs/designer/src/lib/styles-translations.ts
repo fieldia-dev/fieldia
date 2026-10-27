@@ -45,7 +45,9 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 }
 .fd-words-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 14px; }
 .fd-words-table th, .fd-words-table td { padding: 0; text-align: start; vertical-align: top; border-block-end: 1px solid var(--fd-border); }
-.fd-words-table tr > * + * { border-inline-start: 1px solid var(--fd-border); }
+/* Every cell but a row's first (not "* + *": a sibling rule naming nothing on its left restyles, for each element put
+   in the page anywhere, every element beside it and inside them — tools/style-siblings.mjs). */
+.fd-words-table tr > :not(:first-child) { border-inline-start: 1px solid var(--fd-border); }
 .fd-words-table tbody tr:last-child > * { border-block-end: 0; }
 .fd-words-table thead th { position: sticky; top: 0; z-index: 2; min-width: 200px; padding: 8px 10px; background: var(--fd-page); font-size: 13px; font-weight: 600; }
 /* The page's own words stay in sight as the languages scroll by. */
