@@ -153,11 +153,17 @@ export function lazyTree(context: TreeContext): LazyTree | null {
       const moreRow = el('tr', { class: 'fd-list-tree-more', 'data-aside': '' }, el('td', { colspan: String(context.span()) }, button));
       moreRow.style.setProperty('--fd-depth', String(depthOf(parent) + 1));
       const next = async () => {
+        // Pressed with the keys on it, they go on to the first of the rows that came — else to the Show more after them —
+        // where they were not put elsewhere meanwhile. 0.35 looked for the row before it once it was gone: the page's.
+        const doc = moreRow.ownerDocument;
+        const held = moreRow.contains(doc.activeElement);
         const wait = waitAt(moreRow, parent, moreRow, () => void next());
         try {
-          const first = await children(parent, offset + answer.records.length, body, moreRow, wait);
+          await children(parent, offset + answer.records.length, body, moreRow, wait);
+          const came = moreRow.nextElementSibling as HTMLElement | null;
+          const lost = held && (moreRow.contains(doc.activeElement) || doc.activeElement === doc.body);
           moreRow.remove();
-          if (first) (moreRow.previousElementSibling as HTMLElement | null)?.focus?.();
+          if (lost) (came?.classList.contains('fd-list-row') ? came : came?.querySelector('button'))?.focus();
         } catch (error) {
           wait.fail(error);
         }

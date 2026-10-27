@@ -217,11 +217,17 @@ async function groupRow(context: GroupContext, group: Heading, level: number, wi
     moreRow.style.setProperty('--fd-level', String(level));
     arrows(context, more, moreRow, false);
     more.addEventListener('click', async () => {
+      // Pressed with the keys on it, they go on to the first record that came — else to the Show more after them — where
+      // they were not put elsewhere meanwhile: never to the page as its row goes, as 0.35's did.
+      const doc = moreRow.ownerDocument;
+      const held = moreRow.contains(doc.activeElement);
       more.disabled = true;
       const next = await recordsFrom(offset + answer.records.length);
       if (!moreRow.isConnected) return;
+      const lost = held && (moreRow.contains(doc.activeElement) || doc.activeElement === doc.body);
       moreRow.replaceWith(...next);
       context.changed();
+      if (lost) (next[0]?.classList.contains('fd-list-row') ? next[0] : next[0]?.querySelector('button'))?.focus();
     });
     return [...rows, moreRow];
   }
