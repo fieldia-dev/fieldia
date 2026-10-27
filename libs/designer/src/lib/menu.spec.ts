@@ -47,6 +47,17 @@ describe('a menu of choices', () => {
     expect(document.querySelector('.fd-menu')).toBeNull();
   });
 
+  it('keeps by its button as the page scrolls under it, never left where it opened', () => {
+    const { anchor } = setup();
+    const menu = document.querySelector('.fd-menu') as HTMLElement;
+    const opened = parseFloat(menu.style.top);
+    // The page scrolled 120 pixels: the button 120 higher on the screen, and the menu with it.
+    const at = anchor.getBoundingClientRect();
+    jest.spyOn(anchor, 'getBoundingClientRect').mockReturnValue({ top: at.top - 120, bottom: at.bottom - 120, left: at.left, right: at.right, x: at.x, y: at.y - 120, width: at.width, height: at.height, toJSON: () => ({}) } as DOMRect);
+    document.dispatchEvent(new Event('scroll'));
+    expect(parseFloat(menu.style.top)).toBe(opened - 120);
+  });
+
   const key = (k: string) => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
 
   it('moves with the arrows and picks with Enter', () => {
