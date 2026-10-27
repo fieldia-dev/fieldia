@@ -99,6 +99,49 @@ describe('<FieldiaForm>', () => {
     rerender(app(good));
     expect(document.querySelector('.fd-unshown')).toBeNull();
     expect(screen.getByLabelText('Note')).toBeTruthy();
+    // Refused before the draw from 0.37, as validatePage refuses it (page.invalid): told as the whole check's.
+    told.length = 0;
+    rerender(app({ ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page));
+    expect(screen.getByRole('heading', { name: 'The app' })).toBeTruthy();
+    expect([...document.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['fields.note.required']);
+    expect(document.querySelector('.fd-field')).toBeNull();
+    expect(told).toEqual([{ stage: 'check', part: 'page' }]);
+    rerender(app(good));
+    expect(document.querySelector('.fd-unshown')).toBeNull();
+    expect(screen.getByLabelText('Note')).toBeTruthy();
+    quiet.mockRestore();
+  });
+
+  it('a page refused once the checks it waited for came (a list\'s settings, in their own chunk) says why in its place too, and goes with it', async () => {
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    // The packages in a registry of their own: no check a part carries in yet. React's own with them (one React).
+    let fresh!: { binding: typeof import('./fieldia-form'); react: typeof import('react'); dom: typeof import('react-dom/client') };
+    await jest.isolateModulesAsync(async () => {
+      const [binding, react, dom] = await Promise.all([import('./fieldia-form'), import('react'), import('react-dom/client')]);
+      fresh = { binding, react, dom };
+    });
+    const { createElement, act: freshAct } = fresh.react;
+    const told: unknown[] = [];
+    const list = { fieldia: '0.13', id: 'people', data: { kind: 'record', model: 'partner' }, fields: { name: { type: 'char', label: 'Name' } }, layout: { type: 'list', id: 'l', columns: ['name'], defaultFilters: ['nope'] } } as unknown as Page;
+    const good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
+    const app = (shown: Page) => createElement('main', null, createElement('h1', null, 'The app'), createElement(fresh.binding.FieldiaForm, { page: shown, onError: (_: unknown, where: unknown) => told.push(where) }));
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = fresh.dom.createRoot(container);
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    await freshAct(async () => root.render(app(list)));
+    // Mounted: its checks owed, asked for with its parts — then refused, in its place, the app round it kept.
+    for (let i = 0; i < 100 && !container.querySelector('.fd-unshown'); i++) await freshAct(() => new Promise((resolve) => setTimeout(resolve, 10)));
+    expect(container.querySelector('.fd-unshown li code')?.textContent).toBe('layout.defaultFilters[0]');
+    expect(told).toEqual([{ stage: 'draw', part: 'page' }]);
+    expect(container.querySelector('h1')?.textContent).toBe('The app');
+    expect(container.querySelector('.fd-list')).toBeNull();
+    // The next page, in its place.
+    await freshAct(async () => root.render(app(good)));
+    expect(container.querySelector('.fd-unshown')).toBeNull();
+    expect(container.querySelector('.fd-field input')).not.toBeNull();
+    await freshAct(async () => root.unmount());
+    container.remove();
     quiet.mockRestore();
   });
 

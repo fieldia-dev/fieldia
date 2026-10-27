@@ -14,14 +14,17 @@ export function refusal(issues: readonly PageIssue[]): PageRefused {
 }
 
 /**
- * A page the viewer's check refused (the audit's R-M6): why, in words, where the form would be — never a blank area —
+ * A page the viewer's checks refused (the audit's R-M6): why, in words, where the form would be — never a blank area —
  * its problems listed under "What is wrong" for whoever made the page, the app's `onError` told, and the error handed
  * back for the viewer to throw. The words are in the page's language where Fieldia has its words, its look Fieldia's.
+ * `stage`: `"draw"` for what the check before the draw refuses (`checkPage`, what 0.35's viewer refused), `"check"`
+ * for what only the whole check finds (`validatePage`'s verdict, refused before the draw from 0.37).
  */
 export function showRefused(
   host: HTMLElement,
   options: { page?: unknown; locale?: string; labels?: Partial<ViewerLabels>; nonce?: string; onError?: ErrorHandler },
-  issues: readonly PageIssue[]
+  issues: readonly PageIssue[],
+  stage: 'draw' | 'check' = 'draw'
 ): PageRefused {
   const error = refusal(issues);
   const doc = host.ownerDocument;
@@ -57,7 +60,7 @@ export function showRefused(
   host.append(box);
   console.error(`[Fieldia] ${error.message}`);
   try {
-    options.onError?.(error, { stage: 'draw', part: 'page' });
+    options.onError?.(error, { stage, part: 'page' });
   } catch (thrown) {
     // The app's handler may not throw the page's words down either.
     console.error('[Fieldia] onError threw', thrown);

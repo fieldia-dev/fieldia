@@ -9,7 +9,7 @@ import { partFiles } from './server';
  * browser): what it writes as `<script async>` tags before fieldia.js, so they come beside it.
  */
 describe('partFiles', () => {
-  it('names each file a page draws from — a list’s and its cards’, a date box’s — and none for a plain form', () => {
+  it('names each file a page draws from — a list’s and its cards’, a date box’s — and the whole check every page waits for', () => {
     const customers = {
       fieldia: '0.13',
       id: 'customers',
@@ -18,14 +18,16 @@ describe('partFiles', () => {
       layout: { type: 'list', id: 'people', columns: ['name', 'phone'], card: {} },
     } as unknown as Page;
     // The loading part with them, as the viewer asks for it: the list's first wait, a skeleton of its rows, is drawn from it.
-    expect(partFiles(customers)).toEqual(['fieldia.list.js', 'fieldia.cards.js', 'fieldia.loading.js']);
+    // And the whole check (0.37), which every page is checked with before its first draw: last, beside them.
+    expect(partFiles(customers)).toEqual(['fieldia.list.js', 'fieldia.cards.js', 'fieldia.loading.js', 'fieldia.check.js']);
     // A list whose first wait is words, or none, draws nothing from it — nor does a page whose app's own way says so.
-    expect(partFiles({ ...customers, loading: { first: 'text', refresh: 'dim' } } as Page)).toEqual(['fieldia.list.js', 'fieldia.cards.js']);
-    expect(partFiles(customers, undefined, undefined, { first: 'none', refresh: 'none', more: 'none' })).toEqual(['fieldia.list.js', 'fieldia.cards.js']);
+    expect(partFiles({ ...customers, loading: { first: 'text', refresh: 'dim' } } as Page)).toEqual(['fieldia.list.js', 'fieldia.cards.js', 'fieldia.check.js']);
+    expect(partFiles(customers, undefined, undefined, { first: 'none', refresh: 'none', more: 'none' })).toEqual(['fieldia.list.js', 'fieldia.cards.js', 'fieldia.check.js']);
     const visit = { fieldia: '0.13', id: 'visit', data: { kind: 'responses' }, fields: { day: { type: 'date', label: 'Day' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-day', field: 'day' }] } } as unknown as Page;
-    expect(partFiles(visit)).toEqual(['fieldia.date.js']);
+    expect(partFiles(visit)).toEqual(['fieldia.date.js', 'fieldia.check.js']);
     expect(partFiles(customers).every((file) => /^fieldia\.[a-z]+\.js$/.test(file))).toBe(true);
     const plain = { fieldia: '0.13', id: 'call', data: { kind: 'responses' }, fields: { name: { type: 'char', label: 'Name' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }] } } as unknown as Page;
-    expect(partFiles(plain)).toEqual([]);
+    // A plain form draws from no part: its whole check alone.
+    expect(partFiles(plain)).toEqual(['fieldia.check.js']);
   });
 });

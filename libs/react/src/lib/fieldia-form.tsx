@@ -297,6 +297,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     return () => {
       live = false;
       mounted.destroy();
+      // A page refused once the checks it waited for came (its `drawn` rejected): its words go with it too.
+      for (const words of element.querySelectorAll(':scope > .fd-unshown')) words.remove();
       setHandle(null);
       setPortals([]);
     };

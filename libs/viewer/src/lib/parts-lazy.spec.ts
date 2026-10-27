@@ -17,7 +17,7 @@ import { filtersPart, headPart, installListStyles, listPart, partsFor } from './
  */
 
 const page = (layout: unknown, fields: Record<string, unknown> = { name: { type: 'char', label: 'Name' } }): Page =>
-  ({ fieldia: '0.1', id: 'p', title: 'P', data: { kind: 'record', model: 'x' }, fields, layout }) as unknown as Page;
+  ({ fieldia: '0.13', id: 'p', title: 'P', data: { kind: 'record', model: 'x' }, fields, layout }) as unknown as Page;
 const sections = (...children: unknown[]) => ({ type: 'sections', id: 's', children });
 const PLAIN = page(sections({ type: 'section', id: 'g', title: 'Group', collapsible: true, children: [{ type: 'field', id: 'f-name', field: 'name' }] }));
 

@@ -1,13 +1,15 @@
-import { pageCheckPart, type Page, type PageInvalid } from '@fieldia/core';
+import type { Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from './viewer';
 import type { PageRefused } from './refused';
 
 /**
- * A page the viewer refuses (the audit's R-M5, R-M6) — what the check before the draw refuses, as 0.35's viewer refused
- * it — said where the form would be, never a blank area: why, in words, its problems under "What is wrong", the app's
- * `onError` told, the error thrown with its `issues`. And a page 0.35's viewer drew that `validatePage` refuses — the
- * mistakes an AI agent writing a page makes most among them — drawn in 0.36, the whole check run after the first draw
- * saying what it found once in the console and to `onError`, as a warning: refused from 0.37 (`page.invalid`).
+ * A page the viewer refuses (the audit's R-M5, R-M6) said where the form would be, never a blank area: why, in words,
+ * its problems under "What is wrong", the app's `onError` told, the error thrown with its `issues`. What the check before
+ * the draw refuses — as 0.35's viewer refused it — is told as `stage: "draw"`; a page 0.35's viewer drew that
+ * `validatePage` refuses — the mistakes an AI agent writing a page makes most among them — drawn and said in 0.36, is
+ * refused before the draw from 0.37 (`page.invalid`), told as `stage: "check"`: an app's viewer carries the whole check.
+ * And in an app's bundle the checks of what a part draws (a list's settings, a map's) come in a chunk of their own, as
+ * the one-tag script's come with each part: a page with a mistake there is refused once they came, before it is drawn.
  */
 let handle: ViewerHandle | undefined;
 let quiet: jest.SpyInstance;
@@ -54,10 +56,6 @@ function mount(page: Page) {
 /** What a page has said of a deprecation, kept on the page itself (deprecations.ts): forgotten, for each test its own page. */
 const SAID = Symbol.for('fieldia.deprecations.said');
 const forget = () => delete (globalThis as { [SAID]?: unknown })[SAID];
-/** Until `done` holds, a moment at a time: the whole check runs once the page is drawn and the browser idle. */
-async function until(done: () => boolean) {
-  for (let i = 0; i < 200 && !done(); i++) await new Promise((resolve) => setTimeout(resolve, 10));
-}
 
 describe('a page the check before the draw refuses, as 0.35 refused it', () => {
   it('says why where the form would be, lists what is wrong, tells onError and throws the problems', () => {
@@ -87,14 +85,13 @@ describe('a page the check before the draw refuses, as 0.35 refused it', () => {
   });
 });
 
-describe('a page 0.35 drew that validatePage refuses (page.invalid)', () => {
+describe('a page 0.35 drew that validatePage refuses: refused before the draw (page.invalid, 0.37)', () => {
   let warn: jest.SpyInstance;
   beforeEach(() => {
     forget();
     warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
   afterEach(() => warn.mockRestore());
-  const deprecations = () => warn.mock.calls.map((call) => String(call[0])).filter((words) => words.includes('(page.invalid;'));
 
   it.each([
     ['"required": "yes"', made((p) => (p.fields['name']['required'] = 'yes')), 'fields.name.required'],
@@ -106,56 +103,101 @@ describe('a page 0.35 drew that validatePage refuses (page.invalid)', () => {
       p.fields['qty'] = { type: 'integer', label: 'Qty', min: 10, max: 5 };
       p.layout.children.push({ type: 'field', id: 'f-qty', field: 'qty' });
     }), 'fields.qty.min'],
-  ])('draws %s, then says it once in the console and to onError, as a warning — refused from 0.37', async (_, page, path) => {
+    ['a stamp older than a setting it uses (format.under-stamped)', made((p) => {
+      p['fieldia'] = '0.10';
+      p.fields['pin'] = { type: 'char', label: 'PIN', secret: true };
+      p.layout.children.push({ type: 'field', id: 'f-pin', field: 'pin' });
+    }), 'fields.pin.secret'],
+  ])('refuses %s: its words where the form would be, onError told (stage "check"), the problems thrown — nothing drawn', (_, page, path) => {
     const { host, told, thrown } = mount(page);
-    expect(thrown).toBeNull();
-    expect(host.querySelector('.fd-unshown')).toBeNull();
-    await handle?.drawn;
-    expect(host.querySelector('.fd-form input, .fd-form select')).not.toBeNull();
-    // What 0.35 did with it besides, it does: options as words draw their field as a box that says it failed.
-    const checked = () => told.filter((one) => (one as { where: { stage: string } }).where.stage === 'check');
-    await until(() => checked().length > 0);
-    expect(checked()).toEqual([{ error: expect.objectContaining({ issues: expect.arrayContaining([expect.objectContaining({ path })]) }), where: { stage: 'check', part: 'page', warning: true } }]);
-    expect((checked()[0] as { error: PageInvalid }).error.message).toMatch(/^This page has mistakes validatePage refuses: drawn in 0\.36, refused from 0\.37\./);
-    const said = deprecations();
-    expect(said.length).toBe(1);
-    expect(said[0].startsWith(`Fieldia: a page drawn has mistakes validatePage refuses (${path}: `)).toBe(true);
-    expect(said[0].endsWith(' — deprecated, it changes in 0.37 (page.invalid; https://fieldia.dev/promises/#deprecations).')).toBe(true);
-    // Still drawn: nothing taken away.
-    expect(host.querySelector('.fd-unshown')).toBeNull();
-    expect(host.querySelector('.fd-form input, .fd-form select')).not.toBeNull();
+    expect(thrown?.issues).toEqual(expect.arrayContaining([expect.objectContaining({ path })]));
+    expect(thrown?.message).toMatch(/^This page cannot be shown:\n/);
+    const box = host.querySelector('.fd-form.fd-unshown') as HTMLElement;
+    expect(box.querySelector('[role="alert"]')?.textContent).toBe('This form cannot be shown: its page has mistakes. Whoever made it can check it with validatePage.');
+    expect([...box.querySelectorAll('details li code')].map((code) => code.textContent)).toContain(path);
+    expect(told).toEqual([{ error: thrown, where: { stage: 'check', part: 'page' } }]);
+    expect(host.querySelector('.fd-field, input, select')).toBeNull();
+    // Refused, never warned of: page.invalid and format.under-stamped are changed (0.37).
+    expect(warn).not.toHaveBeenCalled();
   });
 
-  it('says it once in a page: another form of it tells its onError, the console nothing more', async () => {
+  it('what 0.35 refused is told as before (stage "draw"), even with a mistake only the whole check finds beside it', () => {
+    const { thrown, told } = mount(made((p) => {
+      p.layout.children[0]['field'] = 'phone';
+      p.fields['name']['required'] = 'yes';
+    }));
+    expect(thrown?.issues).toEqual([{ path: 'layout.children[0].field', message: 'no field "phone"' }]);
+    expect(told).toEqual([{ error: thrown, where: { stage: 'draw', part: 'page' } }]);
+  });
+
+  it('a line\'s own form and a dialog\'s are held to it too: another mount of it is refused the same', () => {
     const page = made((p) => (p.fields['name']['required'] = 'yes'));
-    const first = mount(page);
-    await until(() => first.told.length > 0);
-    const firstHandle = handle;
-    const second = mount(page);
-    await until(() => second.told.length > 0);
-    expect(second.told).toEqual([{ error: expect.objectContaining({ issues: [expect.objectContaining({ path: 'fields.name.required' })] }), where: { stage: 'check', part: 'page', warning: true } }]);
-    expect(deprecations().length).toBe(1);
-    firstHandle?.destroy();
+    expect(mount(page).thrown?.issues).toEqual([expect.objectContaining({ path: 'fields.name.required' })]);
+    expect(mount(page).thrown?.issues).toEqual([expect.objectContaining({ path: 'fields.name.required' })]);
+  });
+});
+
+describe('a page whose mistake is in what a part checks, in an app\'s bundle (perf-leftovers\' item 5)', () => {
+  type Packages = typeof import('./viewer') & typeof import('@fieldia/core');
+  /** The packages in a module registry of their own: no check a part carries put in yet (all-checks.ts). */
+  async function fresh(): Promise<Packages> {
+    let packages!: Packages;
+    await jest.isolateModulesAsync(async () => {
+      const [viewer, core] = await Promise.all([import('./viewer'), import('@fieldia/core')]);
+      packages = { ...core, ...viewer };
+    });
+    return packages;
+  }
+  const list = (more: Record<string, unknown> = {}): Page =>
+    ({
+      fieldia: '0.13',
+      id: 'customers',
+      data: { kind: 'record', model: 'res.partner' },
+      fields: { name: { type: 'char', label: 'Name' }, state: { type: 'selection', label: 'State', options: [{ value: 'draft', label: 'Draft' }] } },
+      layout: { type: 'list', id: 'people', columns: ['name', 'state'], filters: [{ id: 'drafts', label: 'Drafts', filter: [{ field: 'state', op: '=', value: 'draft' }] }], ...more },
+    }) as unknown as Page;
+
+  it('carries none of those checks before they are owed, asks for their chunk with the page\'s parts, and refuses it once they came — before it is drawn', async () => {
+    const fieldia = await fresh();
+    expect(fieldia.formatChecksPart?.loaded).toBeUndefined();
+    // Owed, not run: the check before the draw passes what it cannot check yet.
+    const broken = list({ defaultFilters: ['nope'] });
+    expect(fieldia.checkPageOwing(broken)).toMatchObject({ ok: true, later: ['list'] });
+    const host = document.createElement('div');
+    document.body.append(host);
+    const told: unknown[] = [];
+    // The mount returns: the page waits for its parts, the checks' chunk among them, nothing drawn meanwhile.
+    const opened = fieldia.mountViewer(host, { page: broken, onError: (error, where) => told.push({ error, where }) });
+    expect(host.querySelector('.fd-unshown, .fd-list')).toBeNull();
+    let refused: PageRefused | null = null;
+    await opened.drawn.catch((error: PageRefused) => (refused = error));
+    expect(fieldia.formatChecksPart?.loaded).toBeDefined();
+    expect((refused as PageRefused | null)?.issues).toEqual([{ path: 'layout.defaultFilters[0]', message: 'no filter "nope" in this list' }]);
+    expect(host.querySelector('.fd-unshown [role="alert"]')?.textContent).toMatch(/^This form cannot be shown/);
+    expect(host.querySelector('.fd-list, table')).toBeNull();
+    // A list's settings were refused by 0.35's viewer too: told as the check before the draw tells it.
+    expect(told).toEqual([{ error: refused, where: { stage: 'draw', part: 'page' } }]);
+    opened.destroy();
   });
 
-  it('a page that passes the whole check: nothing said, once it has run', async () => {
-    const { told, thrown } = mount(good());
-    expect(thrown).toBeNull();
-    await handle?.drawn;
-    await pageCheckPart.load();
-    await until(() => false);
-    expect(told).toEqual([]);
-    expect(deprecations()).toEqual([]);
+  it('checkPage, validatePage and checkPageWhole stay whole: they refuse it at once', async () => {
+    const fieldia = await fresh();
+    const broken = list({ defaultFilters: ['nope'] });
+    expect(fieldia.checkPage(broken)).toMatchObject({ ok: false, issues: [{ path: 'layout.defaultFilters[0]' }] });
+    expect(fieldia.validatePage(broken)).toMatchObject({ ok: false, issues: [{ path: 'layout.defaultFilters[0]' }] });
+    expect(await fieldia.checkPageWhole(broken)).toMatchObject({ ok: false, issues: [{ path: 'layout.defaultFilters[0]' }] });
   });
 
-  it('a form taken away before the whole check ran says nothing', async () => {
-    const { told } = mount(made((p) => (p.fields['name']['required'] = 'yes')));
-    handle?.destroy();
-    handle = undefined;
-    await pageCheckPart.load();
-    await until(() => false);
-    expect(told).toEqual([]);
-    expect(deprecations()).toEqual([]);
+  it('a record with none of what they check never asks for them', async () => {
+    const fieldia = await fresh();
+    const host = document.createElement('div');
+    document.body.append(host);
+    const opened = fieldia.mountViewer(host, { page: good() });
+    expect(host.querySelector('input')).not.toBeNull();
+    await opened.drawn;
+    expect(fieldia.formatChecksPart?.coming).toBeFalsy();
+    expect(fieldia.formatChecksPart?.loaded).toBeUndefined();
+    opened.destroy();
   });
 });
 

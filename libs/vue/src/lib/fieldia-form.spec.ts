@@ -104,6 +104,20 @@ describe('<FieldiaForm> for Vue', () => {
     await nextTick();
     expect(wrapper.find('.fd-unshown').exists()).toBe(false);
     expect(wrapper.find('input').exists()).toBe(true);
+    // Refused before the draw from 0.37, as validatePage refuses it (page.invalid): told as the whole check's.
+    told.length = 0;
+    shown.value = { ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page;
+    await nextTick();
+    await nextTick();
+    expect(wrapper.find('h1').text()).toBe('The app');
+    expect(wrapper.findAll('.fd-unshown li code').map((code) => code.text())).toEqual(['fields.note.required']);
+    expect(wrapper.find('.fd-field').exists()).toBe(false);
+    expect(told).toEqual([{ stage: 'check', part: 'page' }]);
+    shown.value = good;
+    await nextTick();
+    await nextTick();
+    expect(wrapper.find('.fd-unshown').exists()).toBe(false);
+    expect(wrapper.find('input').exists()).toBe(true);
     wrapper.unmount();
     quiet.mockRestore();
   });

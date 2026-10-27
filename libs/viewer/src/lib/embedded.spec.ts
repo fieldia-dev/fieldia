@@ -14,7 +14,7 @@ const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
 const example = (name: string): Page => JSON.parse(readFileSync(join(EXAMPLES, `${name}.page.json`), 'utf8'));
 
 const address: Page = {
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'address',
   title: 'Address',
   data: { kind: 'responses' },
@@ -27,7 +27,7 @@ const address: Page = {
 
 function delivery(...extra: Record<string, unknown>[]): Page {
   return {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'delivery',
     title: 'Delivery',
     data: { kind: 'responses' },

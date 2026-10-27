@@ -87,9 +87,32 @@ describe('a picture’s width, place, link and caption', () => {
     expect(figure.querySelector('figcaption')?.textContent).toBe('The hall is on the first floor');
   });
 
-  it('opens no address that is not a web or mail one, whatever the page says: drawn without it, as 0.35 drew it', () => {
-    // The whole check, after the first draw, says such a page (`page.invalid`): refused from 0.37.
-    expect(shown({ href: 'javascript:alert(1)' }).querySelector('a')).toBeNull();
+  it('a page whose picture links to an address that is not a web or mail one is refused before it is drawn (0.37)', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    expect(() => mountViewer(host, { page: { ...page, layout: { type: 'sections', id: 'root', children: [{ type: 'image', id: 'map', src: 'https://example.com/map.png', alt: 'A map', href: 'javascript:alert(1)' }] } } as Page })).toThrow(/layout\.children\[0\]\.href/);
+    expect(host.querySelector('.fd-unshown')).not.toBeNull();
+    expect(host.querySelector('a, img')).toBeNull();
     expect(shown({}).querySelector('figcaption')).toBeNull();
+  });
+
+  it('opens no address that is not a web or mail one, whatever the page says, where its whole check could not come: drawn without it', async () => {
+    // The one-tag script with its whole check never come (offline): the address checked as it is used (safeUrl).
+    let fresh!: typeof import('./viewer');
+    await jest.isolateModulesAsync(async () => {
+      jest.doMock('../../../core/src/lib/format/check-now', () => ({ WHOLE_CHECK_APART: true, wholeCheckNow: () => null }));
+      fresh = await import('./viewer');
+    });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const told: unknown[] = [];
+    const opened = fresh.mountViewer(host, { page: { ...page, layout: { type: 'sections', id: 'root', children: [{ type: 'image', id: 'map', src: 'https://example.com/map.png', alt: 'A map', href: 'javascript:alert(1)' }] } } as Page, onError: (_, where) => told.push(where) });
+    await opened.drawn;
+    expect(host.querySelector('[data-node="map"] img')).not.toBeNull();
+    expect(host.querySelector('[data-node="map"] a')).toBeNull();
+    expect(told).toEqual([{ stage: 'check', part: 'page', warning: true }]);
+    opened.destroy();
+    warn.mockRestore();
   });
 });
