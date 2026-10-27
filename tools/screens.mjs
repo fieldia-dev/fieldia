@@ -14,7 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, realpathSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-export const IMAGE = 'mcr.microsoft.com/playwright:v1.56.1-noble@sha256:f1e7e01021efd65dd1a2c56064be399f3e4de00fd021ac561325f2bfbb2b837a';
+export const IMAGE = 'mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 
@@ -33,7 +33,9 @@ function main(argv) {
     '-e', 'FIELDIA_SCREENS=container', '-e', 'FIELDIA_SITE=off', '-e', `FIELDIA_DEMO_PORT=${port}`,
     ...mounts, '-w', WORKSPACE, IMAGE,
     'npx', 'playwright', 'test', '--project=screens', '--output=test-results/screens-run',
-    ...(argv.includes('--update') ? ['--update-snapshots'] : []),
+    // Every screen stored again, as docs/maintainers/screens.md says — not only those over the tolerance (Playwright's
+    // `changed`), which would let a screen drift a little at each update.
+    ...(argv.includes('--update') ? ['--update-snapshots=all'] : []),
     ...argv.filter((arg) => arg !== '--update'),
   ];
   return spawnSync('docker', args, { stdio: 'inherit' }).status ?? 1;
