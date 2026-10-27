@@ -22,6 +22,282 @@ under **Deprecated** in the minor that first warns of it, and cited where it
 changes; each Upgrading item says whether it adds, fixes or changes what was
 deprecated ([the release train](docs/maintainers/release-train.md)).
 
+## 0.36.0 — 2026-10-27
+
+**Stability adopters can plan on.** Fieldia now writes down what it promises
+and holds each promise to a gate that fails the build when it stops being true
+([What Fieldia promises](docs/promises.md), on the site at `/promises/`): what
+it guarantees in the browser and what an app's server must still do; what never
+changes without a minor and a deprecation a minor before (a release train: a
+patch holds fixes alone, a minor every 2–4 weeks, a deprecation warned of once
+in the console); the browsers it runs in and which of them CI tests; the sizes
+and timings each release is held to. Every demo's how-to is replayed by hand —
+the mouse and keys in Chromium, a finger on an iPhone's screen in WebKit — each
+step's result checked; each part the one-tag script loads is failed in turn,
+and the page must still draw and say so; the key screens are compared with
+stored images in a pinned container; and a test that fails then passes on a
+re-run is logged as a flake, never retried away. A page that drew in 0.35 still
+draws: what only the new whole check finds is said once in the console and to
+`onError`, and refused from 0.37 (`page.invalid`). Beside these, 0.35's speed
+leftovers — a key repaints only its section, a long list scrolled on a phone
+restyles only the rows it brings, an endless list asked again asks first for
+the rows near its view — and a plain save of an unchanged record sends nothing.
+The page format stays 0.13: no merge changed its shape (the shapes recorded for
+each format were hashed again by the fixed `shapeOf`, each to one new value).
+
+**New:**
+
+- **[What Fieldia promises](docs/promises.md)**: the security model (what Fieldia
+  guarantees in the browser, what the app's server must still do), stability
+  (the release train and its deprecations), performance (0.35's measured
+  numbers and the budgets that fail the build, phone included) and the browsers
+  CI runs. Every claim names its gate or says it has none; `tools/promises.mjs`
+  holds the page to the code — every file, quoted test and number. `SECURITY.md`
+  gains the security model.
+- **A release train and a deprecation path**: `DEPRECATIONS` and
+  `deprecated(id, words, changesIn)` in `@fieldia/core` (said once in a page's
+  console, linked to fieldia.dev/promises/#deprecations);
+  [docs/maintainers/release-train.md](docs/maintainers/release-train.md); from
+  0.37 the release check refuses a minor whose Upgrading items change what was
+  not deprecated a minor before, or that comes sooner than 14 days after the one
+  before.
+- **One check, and the whole check after the draw**: every viewer runs
+  `checkPage` before it draws (what 0.35's viewer refused), and once the page is
+  drawn and the browser idle it fetches and runs the whole check
+  (`checkPageWhole`: `validatePage`'s verdict without zod, in `fieldia.check.js`
+  or a chunk of its own). What only the whole check finds is said once in the
+  console and to `onError` as `{ stage: 'check', part: 'page', warning: true }`,
+  the error carrying its `issues`. New exports: `checkPageWhole`,
+  `pageCheckPart`, `pageInvalid`, `referenceIssues`, `PageInvalid`, and
+  `showRefused` and `PageRefused` in `@fieldia/viewer`.
+- **New checks** in `validatePage` and the whole check: a field's least is not
+  more than its most; a first value is of its field's kind, inside its bounds
+  and its options; each option value and each list column once. A required field
+  that no part shows is a warning.
+- **A page stamped with the lowest format it needs**: `stampPage` and
+  `lowestFormat` in `@fieldia/core/schema`; the designer publishes stamped
+  pages, which every Fieldia that knows their settings reads (a page that uses
+  nothing new reads in 0.30's viewer). `DEFAULT_CHANGES` lists the four defaults
+  that changed between formats, each with the setting that keeps the old way.
+- `page.schema.json` describes every setting (1,982 of them), from the types'
+  own docs.
+- **[A guide for AI agents writing pages](docs/agents.md)** (fieldia.dev/agents/):
+  what a page is, how to check one, the mistakes the checks catch and what a
+  0.36 viewer does with each, a worked example.
+- **Every demo's how-to replayed by hand** (`e2e/how-to.spec.ts`, made from the
+  catalogue: 135 demos, 611 steps): in Chromium, and on a phone in WebKit with a
+  finger (`how-to-phone`, its own CI job in two shards).
+- **Each part failing in turn** (`e2e/part-failures.spec.ts`): every part the
+  one-tag script can ask for — read from the built `fieldia.js` — refused by the
+  network and changed after it was built, in three engines: the page drawn,
+  said, the typing kept, a send it guards refused. The whole check's part is the
+  one that says nothing when it fails: in 0.36 it only warns.
+- **Key screens compared** (`e2e/screens.spec.ts`): 8 screens — light, dark, the
+  three looks, a phone, right to left, a list, a survey — against stored images,
+  in Playwright's container pinned by digest, CI's `screens` job; how to store
+  them again: [docs/maintainers/screens.md](docs/maintainers/screens.md).
+- **A flake log** in every CI browser job (`tools/flake-log.mjs`): `retries: 0`
+  stays; what failed is run once more on the same commit, and what passes then
+  is said in the job's summary and kept as an artifact.
+- **A real-device checklist** (docs/maintainers/real-devices.md): ten screens a
+  person checks on a real iPhone and a real Android phone, and a record.
+- On a phone, the lines of a table drawn as cards have ↑ and ↓ to move a line;
+  a map's legend folds.
+- `tools/style-siblings.mjs` in CI: no stylesheet's sibling rule (`+`, `~`) may
+  name nothing on its left.
+- CI's `angular-newest` job builds and runs the Angular bindings and the Angular
+  demos on Angular's newest major (22), from `tools/angular-newest`'s own install,
+  while the workspace builds them with the oldest it supports (21).
+
+**Fixes:**
+
+- **A plain save of a record with nothing changed since its last answer sends
+  nothing** (0.34–0.35.2 sent it again, moving its version, and another
+  person's tab saw a change that was none). Ctrl+Enter, the Save button and
+  `form.save()` with no button or action save such a record as it is, at once;
+  a button's press, a step's save or an action's goes to the source as ever (a
+  wizard's Create). 0.35.2's join stays: a plain save asked again while one is on
+  its way joins it by what its values hold.
+- **On paper, an endless list holding fewer rows than it has says which it
+  holds**: "Rows 151–450 of 5,000 — scroll through the list to load the rest
+  before printing", and, where the page gives the list its own Print, that its
+  Print prints them all. Asked again (a press, Undo, a record closed, Back), an
+  endless list now holds only the rows near its view; paper never passes for
+  the whole list. The list's own Print asks its source for every row, as before.
+- **A key repaints the section it is in, not the page** (each section a paint
+  layer of its own). At 500 fields, a key's paint 4.0 → 1.4 ms on a desktop and
+  34.6 → 6.0 ms on a phone, a key on a phone 40 → 20 ms. Every popup, menu, date
+  picker, dialog, toast and tooltip opened in a section still shows whole over
+  the next, in three engines.
+- Picking a field in the screen editor lays nothing out in its click; the cursor
+  goes into the clicked words as the frame is drawn, and a key pressed sooner
+  still lands in them.
+- A long list scrolled fast restyles only the rows it brings: 1,487 → about 311
+  elements a step; a phone's frames over 50 ms 39 → about 18.
+- An endless list holding more rows than it draws, asked again, asks first for
+  the pages around its view, and the rest as the view, ↑ or Select all reach
+  them: about 300 rows, not 5,000.
+- **A part that never came is said**, never an empty box: a field keeps its plain
+  box with "Part of this field could not load, so it is shown plainly." and
+  Retry; the page says once that part of it could not load; Undo and printing
+  say so as they are asked for; a `<fieldia-form>` whose part never came says
+  its form could not be loaded, with Retry. 46 of 53 parts failed silently in
+  0.35.
+- What an app rule, a step, the app or an `onchange` answer makes of the box
+  being typed in lands when the box is left ("20" no longer becomes "1.002"),
+  in a repeat field too.
+- A list's open groups stay open as it is drawn again; a pin a finger taps
+  lights its row without scrolling the list; why a locked row is locked goes
+  once a press is over, so nothing moves under it.
+- Maps: drawing selects no text; a bubble pressed zooms one step closer; the
+  legend folds on a phone; the drawing hint lets taps through, in a finger's
+  words; "1 point"; a zoom key pressed mid-zoom is kept; a card fits a phone's
+  map.
+- Redo inside a box after the box's own undo; the scanner's fallback box selects
+  the text it keeps; a picture's preview address is kept until it has loaded;
+  the screen reader's alert lets a refusal go once it is put right; a wait's
+  words stay said until the last wait ends.
+- The outbox, and the chatter, try again on their own tries and as the page
+  comes back into view, not only on the browser's `online` (WebKit may never
+  say it).
+- A tile can be dragged out of the designer's toolbox sheet.
+- **Every control's name holds the words it shows** (WCAG 2.5.3, now an axe rule
+  of its own): calendar days and bookings, a phone's country and its links,
+  repeat days, scan, files, tab counts, list groups, filters and saved views,
+  timeline groups, map pins and bubbles, and the designer's start cards, Checks,
+  Find anything, outline and column choices. Required date boxes carry
+  `aria-required`.
+- In Chrome 156 and later, a yes-or-no question shown as a switch is seen again
+  on the survey designer's card and in Try it.
+- A refused page says why where the form would be; React, Vue and Angular apps
+  stay mounted.
+- `validatePage` no longer throws on a node whose widget is named like an object
+  member (`constructor`); the designer's "unpublished" ignores the format stamp.
+- Development dependencies: Playwright 1.64.1 (Chromium 156, Firefox 157, WebKit
+  27.2), axe 4.14, ESLint 10.13, typescript-eslint 8.71.2, ts-jest 29.4.15,
+  jest-preset-angular 17.0.3, React 19.3.1, Vue 3.5.44, @types/node 24 (the Node
+  `.nvmrc` runs).
+
+**Deprecated** — each said once in a page's console, refused from 0.37:
+
+- `format.under-stamped` (page authors): a page stamped older than a setting it
+  uses. Stamp it with `stampPage(page)`.
+- `page.invalid` (page authors): a page `validatePage` refuses that 0.35's viewer
+  drew — a list's `pageSize` over 500, a key the format does not have, its least
+  more than its most, a first value outside its choices, an option or a column
+  twice. Drawn in 0.36, its mistakes said; check pages with `validatePage` or
+  `npx fieldia-check` before they are stored.
+
+**Upgrading** — grouped by who it touches:
+
+- *Page authors:*
+  - A page that only the whole check refuses is drawn, and said once in the
+    console (`page.invalid`); from 0.37 it is refused. A page 0.35's viewer
+    refused is refused as before, now with its problems where the form would be.
+  - `validatePage` may warn of a required field that no part shows, and of a
+    page stamped older than a setting it uses (`format.under-stamped`).
+  - Nothing else: the format stays 0.13.
+- *App code:*
+  - `onError` also hears `{ stage: 'check', part: 'page', warning: true }`, the
+    error carrying `issues`: ignore it or log it. `PartFailure` gains the stage
+    `'check'`.
+  - On a page 0.35 refused, `mountViewer` still throws — now a `PageRefused`
+    with `issues` — after drawing the words and telling `onError` (`stage:
+    'draw'`, `part: 'page'`). React, Vue and Angular keep the app mounted.
+  - `PageStore.publish` receives pages stamped with their lowest format (for
+    example "0.1").
+  - **`form.save()` on a stored record with nothing changed since its last load
+    or answered save makes no source call**: it resolves `true` at once, runs no
+    `beforeSave`/`afterSave` steps and emits no `save` event. A button's press, a
+    step's save or an action's still calls the source.
+  - What `setValues`, a step or an `onchange` answer writes to the field being
+    typed in lands when the box is left (`form.settle()` reads it). New:
+    `Form.boxHistory`; `WidgetContext.unloaded` (optional, a fake may leave it);
+    `MemoryDataSourceOptions.offline` may return a promise; `ListPlace.index`.
+  - An endless list asked again holds only the rows near its view; the rows over
+    them stand as a gap row with `data-above`, asked for as the view comes.
+  - App-supplied label sets gain `pageUnshown`, `pageUnshownWhy`,
+    `partPlainField`, `partPlainPage`, `undoNotLoaded`, `printNotLoaded`,
+    `paperHeld` and `paperHeldPrint`; `MapLabels` gains `drawPolygonTouch`,
+    `measureHintTouch` and `pointsOne`.
+- *Tests and CSS:*
+  - Every page fetches `fieldia.check.js` (or its chunk) after the draw: leave it
+    out where a test counts a page's scripts.
+  - New elements: `.fd-unshown` and `.fd-unshown-why` on a refused page;
+    `.fd-part-unloaded` under a field and `.fd-parts-unloaded` over a page whose
+    part never came; `p.fd-list-shown.fd-list-held`, on paper alone, in an
+    endless list holding fewer rows than it has.
+  - Names that hold what they show (find controls by them): a day head
+    "Saturday 24 October, Sat 24"; a booking "10:30 Sara Lotfy Mona Adel,
+    Saturday 24 October, 10:30 to 12:00"; a repeat day "Sunday, Sun"; a phone's
+    country "Country of Phone, +20"; scan "Count Products by scanning, Scan"; a
+    timeline group "Strip-out, 2 records" (its "Hide Strip-out" a description);
+    a list group with sums "Café Amsel, € 12.5, 1 record"; a map bubble "15K,
+    15,076 here. Zoom in to see them."; "Find anything, Ctrl K". A card of lines'
+    ↑/↓ buttons are named "Move … up/down", so a role query by a card's title
+    needs `exact: true`. A designer start card's button is its title alone (a
+    press anywhere on the card still picks it).
+  - DOM text has a space between counts, sizes and labels ("Quotations 5",
+    "Checks ✓"); `.fd-file-icon` and the toolbar's B/ab glyphs draw their letters
+    from `data-ext` / `data-glyph`, so their text is empty.
+  - `.fd-section` is `position: relative` (no offset, no z-index): an app's
+    absolute element inside a section with no positioned ancestor between is
+    placed against the section, and an app's overlay without a z-index reaching
+    over the next section goes under it. The group gap applies after a group's
+    description or grid; the designer's translations table uses
+    `tr > :not(:first-child)`.
+  - In the screen editor, `document.activeElement` is the clicked words one frame
+    after the click. The locked-row note goes on click, not on press-down.
+    `.fd-map-legend-title` is a button; the map's note, legend and Follow hide
+    while a card is open. `.fd-loading-said` keeps its words until the last wait
+    ends. Date boxes carry `aria-required`.
+- *Self-hosters:* serve `fieldia.check.js` beside `fieldia.js`, as every part:
+  the viewer asks for it after a page's first draw. Sizes below;
+  `page.schema.json` is about 562 KB with its descriptions.
+- *Release:* from 0.37.0, each minor waits for a real iPhone and a real Android
+  phone checked by hand (`node tools/release.mjs publish` and
+  `tools/publish-packs.mjs` refuse one without a passed row in
+  docs/maintainers/real-devices.md); 0.36.0 was checked only by CI's phones
+  (WebKit iPhone 14 with touch, Chromium at a phone's size). From 0.37 a minor
+  comes no sooner than 14 days after the one before, and its Upgrading items say
+  `(adds)`, `(fix)` or `(deprecated in 0.N: id)`. `@fieldia/angular` is built
+  with Angular 21 and checked in CI on Angular 22. `shapeOf` keeps settings
+  named `title` or `description`; every recorded format shape was hashed again.
+  `node tools/screens.mjs --update` stores every screen again, not only those
+  past the tolerance.
+- *Translators:* the new words in the seven add-ons — a part that could not load,
+  a refused page, an endless list's rows on paper, the map's touch words — are
+  machine-made and not yet reviewed by a native speaker.
+
+**Size:** `fieldia.js` 586.4 KB, 196.6 gzipped (0.35.2: 578.3, 193.6): +2.96 KB
+gzipped, under the owner's 200, all of it what every page runs. By lane, each
+measured on its own base: deps-maint 0.12 (a control's name holding what it
+shows, `nameShowing`); p3-promises 1.40 (the check before the draw as 0.35's, a
+refused page's words, the deprecations and the whole check's handle — the whole
+check itself is a part, below); perf-leftovers 0.01; p3-real-tests 1.15 (words
+for a part that never came, which must live in the main script, 0.81; the box
+under the keys never written over and the alert letting a refusal go, 0.34);
+merged, 0.18 more as their code compresses together; the plain save that sends
+nothing 0.10. The parts, gzipped:
+
+- check 17.27, new: the whole check, fetched after a page's first draw;
+- list 50.50 → 51.96: the reload near the view, open groups kept, a pin's tap,
+  a column twice, the paper's note; lines 16.07 → 16.45 (cards' ↑ and ↓); undo
+  3.01 → 3.16; schedule 7.94 → 8.05; outbox 4.68 → 4.76; files 18.90 → 18.97;
+  scan 8.51 → 8.57; editable 12.67 → 12.73; date 9.29 → 9.33; phone 19.25 →
+  19.28; element 2.59 → 2.56; every other part within 0.02;
+- the language add-ons 0.23–0.32 each (the new words): Arabic 21.59 → 21.88,
+  Persian 23.23 → 23.53, Urdu 23.31 → 23.64.
+
+From the npm packages, an app's first load (KB gzipped, with the page / to
+usable, bundled by esbuild; usable now holds the whole check's chunk, fetched
+after the draw): a record form 241.5 → 245.3 / 314.5 → 336.1; in Arabic 241.5 →
+245.3 / 336.8 → 358.7; a list 240.8 → 244.5 / 309.9 → 332.3; the screen
+designer 587.6 → 592.3 / 801.1 → 821.4. `@fieldia/map`'s parts: a list's map
+22,350 → 22,973 bytes, a form's 19,977 → 20,559, its fields 18,555 → 19,022;
+with the page 11,932 → 12,018. `@fieldia/calendar`'s calendar 17,825 → 17,883
+bytes, `@fieldia/gantt`'s timeline 15,338 → 15,383.
+
 ## 0.35.2 — 2026-10-26
 
 **A page's words can quote a brace.** Since 0.27 a `{name}` in any of a page's
