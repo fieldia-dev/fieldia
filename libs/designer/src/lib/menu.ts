@@ -114,12 +114,9 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
   };
   doc.addEventListener('pointerdown', onOutside, true);
   const unkept = keepPopup(anchor, () => close(false));
-  /** Where the menu goes as the page scrolls under it: by its button still (set as it is placed). */
-  let follow: (() => void) | null = null;
 
   function close(focusAnchor = false) {
     doc.removeEventListener('pointerdown', onOutside, true);
-    if (follow) doc.removeEventListener('scroll', follow, true);
     unkept();
     if (open?.close === close) open = null;
     if (!menu.isConnected) return;
@@ -135,17 +132,10 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
   const view = doc.defaultView;
   const width = menu.offsetWidth || 240;
   const height = menu.offsetHeight || 0;
-  // Under its button, or over it where it does not fit under and does over: the side chosen as it opens.
-  const over = !!view && r.bottom + 6 + height > view.innerHeight - 8 && r.top - height - 6 > 8;
-  // By its button wherever the page scrolls it: fixed, a menu left where it opened would lie over what came there —
-  // its own bar's buttons among them (0.35's, once the page scrolled).
-  follow = () => {
-    const at = anchor.getBoundingClientRect();
-    const left = Math.max(8, Math.min(at.left, (view?.innerWidth ?? 1024) - width - 8));
-    Object.assign(menu.style, { left: `${left}px`, top: `${over ? at.top - height - 6 : at.bottom + 6}px` });
-  };
-  follow();
-  doc.addEventListener('scroll', follow, true);
+  const left = Math.max(8, Math.min(r.left, (view?.innerWidth ?? 1024) - width - 8));
+  const below = r.bottom + 6;
+  const top = view && below + height > view.innerHeight - 8 && r.top - height - 6 > 8 ? r.top - height - 6 : below;
+  Object.assign(menu.style, { left: `${left}px`, top: `${top}px` });
   // The current choice takes the keyboard first; in a menu of things to do, the first of them.
   (options.actions ? buttons[0] : buttons.find((b) => b.getAttribute('aria-checked') === 'true') ?? buttons[0])?.focus();
   if (empty) menu.focus();
