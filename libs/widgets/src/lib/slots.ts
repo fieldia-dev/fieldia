@@ -145,9 +145,12 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   const keyFor = (first: Date) => `${keyOf(first)}|${depends}`;
   /** The response a page of responses last sent, or none: once one is sent, the times it booked are no one else's. */
   let sentAs = form.getState().sent;
-  /** A booking's length, in minutes: the source's, else the page's, else 30. */
+  /** A booking's length, in minutes: the source's, else the page's, else 30 — known once the page or the source says. */
   let length = pageLength ?? 30;
+  let lengthKnown = pageLength !== undefined;
   let readonly = false;
+  /** True while a time picked is written: its end with it, never laid. */
+  let picking = false;
   /** A time picked being checked, and what the picker says under the times now. */
   let checking: number | null = null;
   let said: { words: string; tone?: 'warning'; again?: () => void } | null = null;
@@ -170,7 +173,26 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
   }
   function take(result: SlotsResult) {
     if (typeof result.length === 'number' && result.length > 0) length = result.length;
+    lengthKnown = true;
   }
+  /**
+   * A new booking's end, where its time came from outside — a calendar's empty slot pressed, a step, a link — and the
+   * person has not set it: its slot's end, as a time picked here ends, laid as the booking starts (no change to save of
+   * itself). A stored booking keeps the end it was kept with, its own length. 0.35's calendar gave a new 45-minute drive
+   * at 10:00 its own hour: "Back by 11:00" under "10:00 to 10:45".
+   */
+  function fitEnd() {
+    const at = held();
+    const state = form.getState();
+    if (!endName || at === null || !lengthKnown || picking || readonly || state.recordId != null || state.dirty.includes(endName)) return;
+    const end = new Date(at + length * 60000).toISOString();
+    if (state.values[endName] !== end) form.setValues({ [endName]: end }, { stored: true });
+  }
+  /** When the booking held ends: its end field's where that is after its start (its own length), else its slot's. */
+  const endOf = (at: number) => {
+    const end = endName ? Date.parse(String(form.getState().values[endName] ?? '')) : NaN;
+    return end > at ? end : at + length * 60000;
+  };
   /** A month's days asked of the source, once for the values it depends on — or again, after it failed. */
   function load(first: Date) {
     const key = keyFor(first);
@@ -182,6 +204,7 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
       (result) => {
         take(result);
         months.set(key, monthOf(result));
+        fitEnd();
         if (key === keyFor(month)) draw(false);
       },
       () => {
@@ -303,7 +326,7 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
     const at = held();
     setHidden(chosen, at === null);
     if (at !== null) {
-      const booked = fillIn(words.slotChosen, { day: dayName.format(dateOf(dayIn(at, zone))), from: clock(at), to: clock(at + length * 60000) });
+      const booked = fillIn(words.slotChosen, { day: dayName.format(dateOf(dayIn(at, zone))), from: clock(at), to: clock(endOf(at)) });
       setText(chosen, markedIn(at, zone) ? `${booked} ${zoneName(at, zone, locale)}` : booked);
     }
     const away = !!zone && !isOwnZone(zone);
@@ -426,8 +449,10 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
       return;
     }
     say('');
+    picking = true;
     form.setValue(name, new Date(at).toISOString());
     if (endName) form.setValue(endName, new Date(at + length * 60000).toISOString());
+    picking = false;
   }
 
   prev.addEventListener('click', () => {
@@ -488,6 +513,8 @@ export const slotsWidget: WidgetFactory = (context: WidgetContext): Widget => {
       // Drawn again where the day's times may have changed; the focus kept on the time it was on.
       if (changed || moved || locked) draw(false);
       else drawChosen();
+      // A time come from outside: a new booking's end, its slot's.
+      if (changed) fitEnd();
     },
   };
 };

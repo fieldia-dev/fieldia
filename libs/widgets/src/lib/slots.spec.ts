@@ -179,6 +179,38 @@ describe('booking slots', () => {
     expect(el.querySelector('.fd-slots-chosen')?.textContent).toBe(`${named(2026, 11, 3)}, 10:00 to 10:45 CET`);
   });
 
+  it('ends a new booking whose time came from outside as its slot ends — a calendar’s hour on is no drive’s length', async () => {
+    // A calendar's empty slot pressed: 10:00 in Berlin, and its own guess at the end, an hour on.
+    const { form, el } = await mount({ values: { start: '2026-10-19T08:00:00.000Z', stop: '2026-10-19T09:00:00.000Z' } });
+    await settle();
+    expect(form.getState().values['stop']).toBe('2026-10-19T08:45:00.000Z');
+    expect(el.querySelector('.fd-slots-chosen')?.textContent).toBe(`${named(2026, 10, 19)}, 10:00 to 10:45 CEST`);
+    // Laid as the booking starts: nothing the person changed, nothing to save until they do.
+    expect(form.getState().dirty).toEqual([]);
+    // A time set by a step later on ends as its slot does too.
+    form.setValues({ start: '2026-10-19T09:00:00.000Z' });
+    await settle();
+    expect(form.getState().values['stop']).toBe('2026-10-19T09:45:00.000Z');
+  });
+
+  it('keeps a stored booking’s own end, and says it: one stretched on a calendar lasts as long as it was made to', async () => {
+    const records = { drive: { 1: { car: { id: 1, label: 'Model 3' }, start: '2026-10-19T08:00:00.000Z', stop: '2026-10-19T09:30:00.000Z' } } };
+    const dataSource = createMemoryDataSource({ records, slots: scheduleSlots({ showroom: SHOWROOM }, { now: NOW }) });
+    const form = createForm({ page: PAGE, dataSource, now: NOW, recordId: 1 });
+    await form.load();
+    const node = (PAGE.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'start', field: form.page.fields['start'], node, id: 'fd-start', document, labels: WIDGET_LABELS.en, locale: 'en' });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['start'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    await settle();
+    await settle();
+    expect(form.getState().values['stop']).toBe('2026-10-19T09:30:00.000Z');
+    expect(widget.element.querySelector('.fd-slots-chosen')?.textContent).toBe(`${named(2026, 10, 19)}, 10:00 to 11:30 CEST`);
+    expect(form.getState().dirty).toEqual([]);
+  });
+
   it('says the free times could not be found, with Try again', async () => {
     let fail = true;
     const memory = createMemoryDataSource({ slots: scheduleSlots({ showroom: SHOWROOM }, { now: NOW }) });

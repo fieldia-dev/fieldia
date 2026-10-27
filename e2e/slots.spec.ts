@@ -250,6 +250,28 @@ test.describe('a test drive booked from the times free, on Berlin’s clock', ()
     expect(problems).toEqual([]);
   });
 
+  test('a drive made from the calendar’s empty slot is back as its slot ends, not an hour on, and closes unasked', async ({ page }) => {
+    // The showroom's week of drives, its day view a column a car: an hour of the estate's free from 09:00, pressed.
+    const { problems } = await open(page, 'plain', `page=test-drives&skin=outlined&${NOW}`);
+    await expect(page.locator('.fd-cal-body')).not.toHaveAttribute('aria-busy', 'true');
+    await page.locator('.fd-cal-ranges button[data-range="day"]').click();
+    const estate = page.locator('.fd-cal-col[data-column="1"]');
+    await expect(estate).toHaveAttribute('aria-label', /Family estate, hybrid$/);
+    let hour = 9;
+    while (hour < 18 && !(await estate.locator(`.fd-cal-slot[data-minutes="${hour * 60}"]`).getAttribute('aria-label'))?.endsWith(', free')) hour++;
+    const at = String(hour).padStart(2, '0');
+    await estate.locator(`.fd-cal-slot[data-minutes="${hour * 60}"]`).click();
+    const drive = page.getByRole('dialog');
+    await expect(drive.locator('.fd-slots-chosen')).toHaveText(new RegExp(`, ${at}:00 to ${at}:45 (CEST|CET)$`));
+    // Back by: the drive's own 45 minutes, as the times it is booked from say — 0.35 said the calendar's hour, :00.
+    await expect(drive.locator('[data-node="f-stop"]').getByRole('textbox')).toHaveValue(new RegExp(`, ${at}:45$`));
+    // Nothing the person changed: Escape closes it at once.
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    await expect(drive).toHaveCount(0);
+    expect(problems).toEqual([]);
+  });
+
   test('opens a booking on its day, its own time pressed: free to it, though booked', async ({ page }) => {
     await open(page, 'plain', `page=test-drive&skin=outlined&record=1&${NOW}`);
     await settled(page);

@@ -102,7 +102,9 @@ export const replay: DemoReplay = {
         await press(empty);
         const dialog = page.getByRole('dialog', { name: 'New' });
         await see(dialog).toBeVisible();
-        await see(dialog.locator('.fd-slots-chosen')).toHaveText(new RegExp(`^${label} \\d{4}, ${time} to \\d\\d:\\d\\d (CEST|CET)$`));
+        await see(dialog.locator('.fd-slots-chosen')).toHaveText(new RegExp(`^${label} \\d{4}, ${time} to ${time.slice(0, 3)}45 (CEST|CET)$`));
+        // Back by its drive's 45 minutes on, as the times say: the calendar's own hour is no drive's length.
+        await see(dialog.locator('[data-node="f-stop"]').getByRole('textbox')).toHaveValue(new RegExp(`, ${time.slice(0, 3)}45$`));
         await see(dialog.locator('[data-node="f-car"]').getByRole('combobox')).toHaveValue('Family estate, hybrid');
       },
     },
