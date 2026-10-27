@@ -354,6 +354,8 @@ export const es: ViewerLabels = {
   relatedNone: 'Aún no hay nada.',
   relatedNoneNoun: 'Aún no hay {records}.',
   relatedShown: '{n} de {total}',
+  paperHeld: 'Filas {from}–{to} de {total}: recorra la lista para cargar el resto antes de imprimir.',
+  paperHeldPrint: 'Filas {from}–{to} de {total}: recorra la lista para cargar el resto antes de imprimir, o use su botón Imprimir, que las imprime todas.',
   rowsKey: 'Leyenda de las filas',
   relatedShownNoun: '{n} de {total} {records}',
   rowEditHint: 'Enter o escribir reemplaza el valor de la celda, F2 lo modifica por dentro, Tab pasa a la siguiente y Esc la restablece; cada fila se guarda al salir de ella.',

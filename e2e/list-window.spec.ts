@@ -9,7 +9,8 @@ import { everyRowLoaded, longList } from './support';
  * (`aria-rowcount`) and each its place (`aria-rowindex`); the page's elements as many at 3,000 rows wherever the view
  * is; Down past the last row drawn reaches the next; the focus kept on its row as the view scrolls away and back; every
  * row loaded chosen; what the person reads kept in place as rows of differing heights come and go above it — WebKit has
- * no scroll anchoring of its own, so the list keeps it there; right to left; every row on paper; and Ctrl or ⌘ and F
+ * no scroll anchoring of its own, so the list keeps it there; right to left; every row on paper, and an endless list
+ * holding fewer rows than it has saying on paper which it holds; and Ctrl or ⌘ and F
  * taking the person to the list's own search, the browser's find seeing only the rows in the page. The rows drawn are
  * the rows drawn whole (the oracle, in libs/viewer/src/lib/list-window.spec.ts).
  */
@@ -35,8 +36,10 @@ async function mountList(page: Page, n: number, layout: Record<string, unknown> 
     [FIELDS, PEOPLE(n), layout, dir, longList(n), layout['detail'] ? VISITS(n) : {}] as const
   );
   // A long list counts its rows, those in the page fewer; a page of a list holds every row, as it always did. Past a
-  // page's 500, an endless list, every row loaded first, as the person scrolling to its end would.
-  if (n > 500) await everyRowLoaded(page, n);
+  // page's 500, an endless list, every row loaded first, as the person scrolling to its end would — unless the spec
+  // gives the list its own page (`pageSize`): its first page alone.
+  if (typeof layout['pageSize'] === 'number') await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', String(layout['pageSize'] + 1), { timeout: 30000 });
+  else if (n > 500) await everyRowLoaded(page, n);
   else if (n > 100) await expect(page.locator('#app .fd-list-table')).toHaveAttribute('aria-rowcount', String(n + 1), { timeout: 30000 });
   else await expect(page.locator('#app tbody tr.fd-list-row')).toHaveCount(n, { timeout: 30000 });
   await frames(page);
@@ -244,6 +247,75 @@ test('prints every row loaded, and is back to the rows near the view after', asy
   await page.evaluate(() => dispatchEvent(new Event('afterprint')));
   await frames(page);
   expect((await inPage(page)).rows).toBeLessThan(200);
+});
+
+test('on paper, an endless list holding fewer rows than it has says which it holds — asked again near its view, the rows round it', async ({ page }) => {
+  // perf-leftovers × print (0.36): an endless list asked again (a press, Undo, a record closed, Back) holds only the rows
+  // round its view, so paper printed then would silently miss rows. The paper says which rows it holds and how to have
+  // the rest; on the screen, nothing (the list's count says it there).
+  await mountList(page, 5000, { pageSize: 150, endless: true });
+  const table = page.locator('#app .fd-list-table');
+  const held = page.locator('#app .fd-list-held');
+  // Its Show more pressed in the page, the view where it is (as everyRowLoaded presses it).
+  const more = () => page.evaluate(() => document.querySelector<HTMLButtonElement>('#app .fd-list-more-rows:not([hidden]):not([data-fd-wait]) button')?.click());
+  // The first page: on the screen nothing; on paper, the rows it holds.
+  await expect(held).toBeHidden();
+  await page.emulateMedia({ media: 'print' });
+  await expect(held).toBeVisible();
+  await expect(held).toHaveText('Rows 1–150 of 5,000 — scroll through the list to load the rest before printing.');
+  await page.emulateMedia({ media: 'screen' });
+  // Two pages more, to 450, then the view near row 300 and the list asked again: it holds the pages round the view.
+  // Pressed while fewer rows than wanted are held and no page is on its way: never a page more than asked for.
+  for (const rows of [300, 450]) {
+    await expect.poll(async () => (Number(await table.getAttribute('aria-rowcount')) < rows + 1 && (await more()), table.getAttribute('aria-rowcount'))).toBe(String(rows + 1));
+  }
+  // The view at row 340 of the 450 held — never at their end, which would load more by itself: asked again, the list
+  // asks for the pages round it (a page's margin over and under the view), rows 151 to 450.
+  await page.evaluate(() => {
+    const box = (document.querySelector('#app .fd-list-table') as HTMLElement).getBoundingClientRect();
+    window.scrollTo(0, scrollY + box.top + (box.height * 340) / 450);
+  });
+  await frames(page);
+  await frames(page);
+  const row340 = page.locator('#app tbody tr.fd-list-row[aria-rowindex="341"]');
+  await expect(row340).toHaveCount(1);
+  await page.evaluate(() => document.querySelector('#app tbody tr.fd-list-row[aria-rowindex="341"]')?.scrollIntoView({ block: 'start' }));
+  await frames(page);
+  await page.evaluate(() => (window as unknown as { list: { reload(): Promise<unknown> } }).list.reload());
+  await frames(page);
+  // Rows 151–450 held, the 150 over them a gap until the view comes to them.
+  await expect(page.locator('#app tbody tr.fd-list-gap[data-above]')).toHaveCount(1);
+  await page.emulateMedia({ media: 'print' });
+  await expect(held).toHaveText('Rows 151–450 of 5,000 — scroll through the list to load the rest before printing.');
+  await expect(held).toBeVisible();
+  // What paper prints: the 300 rows held, every one of them, the gap off it.
+  const onPaper = await page.evaluate(
+    () =>
+      new Promise<{ rows: number; first: string | null; last: string | null; gaps: number }>((resolve) => {
+        addEventListener('beforeprint', () => {
+          const rows = document.querySelectorAll('#app tbody tr.fd-list-row');
+          const name = (row: Element | undefined) => row?.querySelector('td[data-col="name"]')?.textContent ?? null;
+          resolve({ rows: rows.length, first: name(rows[0]), last: name(rows[rows.length - 1]), gaps: document.querySelectorAll('#app tbody tr.fd-list-gap').length });
+        }, { once: true });
+        dispatchEvent(new Event('beforeprint'));
+      })
+  );
+  expect(onPaper).toEqual({ rows: 300, first: 'Customer 0151', last: 'Customer 0450', gaps: 0 });
+  await page.evaluate(() => dispatchEvent(new Event('afterprint')));
+  await page.emulateMedia({ media: 'screen' });
+  await expect(held).toBeHidden();
+});
+
+test('on paper, an endless list holding every row it has says nothing more; with its own Print, the note names that Print', async ({ page }) => {
+  await mountList(page, 300, { pageSize: 150, endless: true, print: true });
+  const held = page.locator('#app .fd-list-held');
+  await page.emulateMedia({ media: 'print' });
+  await expect(held).toHaveText('Rows 1–150 of 300 — scroll through the list to load the rest before printing, or use its Print, which prints them all.');
+  await page.emulateMedia({ media: 'screen' });
+  const table = page.locator('#app .fd-list-table');
+  await expect.poll(async () => (await page.evaluate(() => document.querySelector<HTMLButtonElement>('#app .fd-list-more-rows:not([hidden]):not([data-fd-wait]) button')?.click()), table.getAttribute('aria-rowcount'))).toBe('301');
+  await page.emulateMedia({ media: 'print' });
+  await expect(held).toBeHidden();
 });
 
 test('takes Ctrl or ⌘ and F to the list’s own search, saying why; the same keys there are the browser’s own find', async ({ page }) => {

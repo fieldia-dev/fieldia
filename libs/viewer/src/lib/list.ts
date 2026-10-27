@@ -560,6 +560,13 @@ export function listView(context: ListContext): ListView {
   const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, failedWords, failedWhy, ' ', retry);
   // In a record, on paper (its pager left off): how many of how many it shows, where they run past a page — "5 of 23".
   const shownOf = inRecord ? el('p', { class: 'fd-list-shown', hidden: '' }) : null;
+  /**
+   * On paper, an endless list holding fewer rows than it has says which it holds (0.36), and how to have the rest: asked
+   * again, it holds the rows round its view ("Rows 151–450 of 5,000"), and scrolled part way, the rows to there. Paper
+   * never passes for the whole list. Its own Print (`print: true`) asks the source for every row; Ctrl+P prints the
+   * page as it stands, and the browser's print cannot wait for 5,000 rows to come.
+   */
+  const heldOnPaper = endless ? el('p', { class: 'fd-list-shown fd-list-held', hidden: '' }) : null;
   retry.addEventListener('click', () => void load());
 
   /** Mark the row of the record open, and only it. */
@@ -1154,6 +1161,11 @@ export function listView(context: ListContext): ListView {
     if (shownOf) {
       shownOf.hidden = rows.length >= total;
       shownOf.textContent = sentence(labels.relatedShownNoun, labels.relatedShown, { n: number(rows.length), total: number(total) });
+    }
+    if (heldOnPaper) {
+      heldOnPaper.hidden = groupedNow || !rows.length || (skipped === 0 && held() >= total);
+      // Where the page gives it a Print of its own (`print`), that Print asks for every row.
+      heldOnPaper.textContent = fill(node.print === true && !!context.dataSource?.list ? labels.paperHeldPrint : labels.paperHeld, { from: number(skipped + 1), to: number(held()), total: number(total) });
     }
     previous.disabled = offset === 0;
     next.disabled = offset + pageSize >= total;
@@ -2154,7 +2166,7 @@ export function listView(context: ListContext): ListView {
     findNote.hidden = false;
   };
   /** Its records: the table, the end of rows loaded as it is scrolled, what it holds none or could not load, its pager. Where it waits. */
-  const records = el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(endlessEnd ? [endlessEnd.element] : []), ...(shownOf ? [shownOf] : []), empty, failed, ...(fieldsSearch ? [pager] : []));
+  const records = el('div', { class: 'fd-list-records' }, el('div', { class: 'fd-list-scroll' }, table), ...(endlessEnd ? [endlessEnd.element] : []), ...(shownOf ? [shownOf] : []), ...(heldOnPaper ? [heldOnPaper] : []), empty, failed, ...(fieldsSearch ? [pager] : []));
   const element = el(
     'div',
     {

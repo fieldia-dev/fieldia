@@ -362,6 +362,8 @@ export const tr: ViewerLabels = {
   relatedNone: 'Henüz yok.',
   relatedNoneNoun: 'Henüz {record} yok.',
   relatedShown: '{n} / {total}',
+  paperHeld: 'Satır {from}–{to} / {total} — yazdırmadan önce kalanını yüklemek için listeyi sonuna kadar kaydırın.',
+  paperHeldPrint: 'Satır {from}–{to} / {total} — yazdırmadan önce kalanını yüklemek için listeyi sonuna kadar kaydırın ya da hepsini yazdıran Yazdır düğmesini kullanın.',
   rowsKey: 'Satırların açıklaması',
   relatedShownNoun: '{n} / {total} {record}',
   rowEditHint: 'Enter ya da yazmak hücrenin değerinin yerine geçer, F2 değerin içinde değiştirir, Tab sonrakine geçer, Escape eski hâline getirir; satır, ondan ayrıldığınızda kaydedilir.',

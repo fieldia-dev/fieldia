@@ -354,6 +354,8 @@ export const de: ViewerLabels = {
   relatedNone: 'Noch keine.',
   relatedNoneNoun: 'Noch keine {records}.',
   relatedShown: '{n} von {total}',
+  paperHeld: 'Zeilen {from}–{to} von {total} – durch die Liste scrollen, um den Rest vor dem Drucken zu laden.',
+  paperHeldPrint: 'Zeilen {from}–{to} von {total} – durch die Liste scrollen, um den Rest vor dem Drucken zu laden, oder ihr „Drucken“ verwenden, das alle druckt.',
   rowsKey: 'Legende der Zeilen',
   rowEditHint: 'Enter oder Tippen ersetzt den Wert der Zelle, F2 ändert darin, Tab geht weiter, Escape stellt sie wieder her; eine Zeile wird beim Verlassen gespeichert.',
   rowAdd: 'Zeile hinzufügen',

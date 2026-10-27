@@ -1599,7 +1599,7 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.36 merged with 0.35.2, set once from the merged build: 0.35.2's literal braces and its plain save joining one on its
 // way beside this lane's — 595,807, to 581.9.
 // Provisional for the 0.36 merge; set once from the merged build.
-const BUDGET_KB = 586.2;
+const BUDGET_KB = 586.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1968,7 +1968,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.36 merged with 0.35.1 (listed with the raw budget above): 192.94 at 0.35.1, 194.23 merged (+1.29), to 194.3.
 // 0.36 merged with 0.35.2 (listed with the raw budget above): 194.78 merged, to 194.8.
 // Provisional for the 0.36 merge; set once from the merged build.
-const GZIP_BUDGET_KB = 196.5;
+const GZIP_BUDGET_KB = 196.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2354,7 +2354,7 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 18.7; French's 61.85 and 18.61, to 61.9 and 18.7; Turkish's 68.88 and 18.94, to 68.9, inside 19.0; Persian's 169.10
 // and 23.34, to 169.1 and 23.4; Urdu's 171.91 and 23.46, to 172.0 and 23.5; Spanish's 58.94 and 18.39, to 59.0, inside
 // 18.4.
-const ADD_ON_BUDGET_KB = { ar: [136.3, 21.9], de: [61.1, 18.8], fr: [62.1, 18.8], tr: [69.1, 19.1], fa: [169.7, 23.5], ur: [172.5, 23.6], es: [59.2, 18.5] };
+const ADD_ON_BUDGET_KB = { ar: [137.2, 21.9], de: [61.3, 18.8], fr: [62.4, 18.8], tr: [69.5, 19.1], fa: [170.7, 23.6], ur: [173.6, 23.7], es: [59.4, 18.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3164,7 +3164,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // and 50.9; the files part (0.35.1's picture that is none, this lane's address let go once loaded) — 50.83 and 18.95, to
 // 50.9, inside 19.0.
 // 0.36 merged with 0.35.2: the list part 155.62 and 50.80, to 155.7, inside 50.9.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [158.5, 52.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [51.0, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.9, 2.6], outbox: [11.2, 4.8], loading: [9.5, 3.1], check: [65.3, 17.3] };
+const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [158.9, 52.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [51.0, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.9, 2.6], outbox: [11.2, 4.8], loading: [9.5, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

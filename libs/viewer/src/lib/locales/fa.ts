@@ -364,6 +364,8 @@ export const fa: ViewerLabels = {
   relatedNone: 'هنوز موردی نیست.',
   relatedNoneNoun: 'هنوز {record} ثبت نشده است.',
   relatedShown: '{n} از {total}',
+  paperHeld: 'ردیف‌های {from}–{to} از {total} — پیش از چاپ، فهرست را تا آخر پیمایش کنید تا بقیه بارگیری شود.',
+  paperHeldPrint: 'ردیف‌های {from}–{to} از {total} — پیش از چاپ، فهرست را تا آخر پیمایش کنید تا بقیه بارگیری شود، یا دکمهٔ «چاپ» آن را بزنید که همه را چاپ می‌کند.',
   rowsKey: 'راهنمای ردیف‌ها',
   relatedShownNoun: '{n} از {total} {record}',
   rowEditHint: 'Enter یا تایپ کردن مقدار خانه را جایگزین می‌کند، F2 درون آن تغییر می‌دهد، Tab به بعدی می‌رود، Escape آن را برمی‌گرداند؛ هر ردیف هنگام خروج از آن ذخیره می‌شود.',

@@ -353,6 +353,8 @@ export const ur: ViewerLabels = {
   relatedNone: 'ابھی کچھ نہیں۔',
   relatedNoneNoun: 'ابھی کوئی {record} نہیں۔',
   relatedShown: '{n} از {total}',
+  paperHeld: 'قطاریں {from}–{to}، کل {total} میں سے — پرنٹ سے پہلے باقی لوڈ کرنے کے لیے فہرست آخر تک اسکرول کریں۔',
+  paperHeldPrint: 'قطاریں {from}–{to}، کل {total} میں سے — پرنٹ سے پہلے باقی لوڈ کرنے کے لیے فہرست آخر تک اسکرول کریں، یا اس کا «پرنٹ کریں» استعمال کریں جو سب پرنٹ کرتا ہے۔',
   rowsKey: 'قطاروں کی وضاحت',
   relatedShownNoun: '{total} میں سے {n} {records}',
   rowEditHint: 'Enter یا ٹائپ کرنے سے سیل کی قدر بدل جاتی ہے، اس کے اندر تبدیلی کے لیے F2، آگے جانے کے لیے Tab، پہلے جیسا کرنے کے لیے Escape؛ قطار چھوڑتے ہی وہ محفوظ ہو جاتی ہے۔',

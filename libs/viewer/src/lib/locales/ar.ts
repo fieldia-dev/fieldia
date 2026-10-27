@@ -317,6 +317,8 @@ export const ar: ViewerLabels = {
   relatedUnsaved: 'لا شيء هنا حتى يُحفظ هذا السجل.',
   relatedNone: 'لا شيء بعد.',
   relatedShown: '{n} من {total}',
+  paperHeld: 'الصفوف {from}–{to} من {total} — مرّر القائمة حتى آخرها لتحميل الباقي قبل الطباعة.',
+  paperHeldPrint: 'الصفوف {from}–{to} من {total} — مرّر القائمة حتى آخرها لتحميل الباقي قبل الطباعة، أو استخدم زر طباعة فيها، فهو يطبع الصفوف كلها.',
   rowsKey: 'مفتاح الصفوف',
   rowEditHint: 'Enter أو الكتابة يستبدل قيمة الخلية، وF2 يعدّل داخلها، وTab ينتقل، وEscape يعيدها؛ ويُحفظ الصف عند مغادرته.',
   rowAdd: 'إضافة سطر',

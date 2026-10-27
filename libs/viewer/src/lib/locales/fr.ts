@@ -344,6 +344,8 @@ export const fr: ViewerLabels = {
   relatedUnsaved: 'Rien ici tant que cet enregistrement n’est pas enregistré.',
   relatedNone: 'Aucun pour l’instant.',
   relatedShown: '{n} sur {total}',
+  paperHeld: 'Lignes {from}–{to} sur {total} — parcourez la liste pour charger le reste avant d’imprimer.',
+  paperHeldPrint: 'Lignes {from}–{to} sur {total} — parcourez la liste pour charger le reste avant d’imprimer, ou utilisez son bouton Imprimer, qui les imprime toutes.',
   rowsKey: 'Légende des lignes',
   rowEditHint: 'Entrée ou la saisie remplace la valeur de la cellule, F2 la modifie sur place, Tab passe à la suivante, Échap la remet ; une ligne est enregistrée dès que vous la quittez.',
   rowAdd: 'Ajouter une ligne',

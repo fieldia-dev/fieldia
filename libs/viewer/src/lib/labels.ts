@@ -527,6 +527,13 @@ export interface ViewerLabels {
   relatedNone: string;
   relatedNoneNoun?: string;
   relatedShown: string;
+  /**
+   * An endless list on paper holding fewer rows than it has (0.36): which it holds (`{from}`–`{to}` of `{total}`), and
+   * how to have the rest before printing — scrolling through it, or, where the page gives the list its own Print
+   * (`paperHeldPrint`), that Print, which asks for every row. Shown on paper alone, never on the screen.
+   */
+  paperHeld: string;
+  paperHeldPrint: string;
   /** The key over a list's rows: what their tones and their bold mean, where the page says (`rowTones` labels, `rowBoldLabel`). */
   rowsKey: string;
   relatedShownNoun?: string;
@@ -1303,6 +1310,8 @@ const en: ViewerLabels = {
   relatedNone: 'None yet.',
   relatedNoneNoun: 'No {records} yet.',
   relatedShown: '{n} of {total}',
+  paperHeld: 'Rows {from}–{to} of {total} — scroll through the list to load the rest before printing.',
+  paperHeldPrint: 'Rows {from}–{to} of {total} — scroll through the list to load the rest before printing, or use its Print, which prints them all.',
   rowsKey: 'Key to the rows',
   relatedShownNoun: '{n} of {total} {records}',
   rowEditHint: 'Enter or typing replaces the cell’s value, F2 changes within it, Tab moves on, Escape puts it back; a row is saved as you leave it.',
