@@ -29,11 +29,12 @@ function paste(input: HTMLInputElement, text: string) {
   input.setRangeText(text, start, input.selectionEnd ?? start, 'end');
   input.dispatchEvent(new InputEvent('input', { inputType: 'insertFromPaste', bubbles: true }));
 }
-/** Text dropped on the box where the caret is. */
+/** Text dropped on the box where the caret is, as a browser drops it: its `drop`, then — taken by no one — its beforeinput. */
 function drop(input: HTMLInputElement, text: string) {
   const event = new Event('drop', { cancelable: true, bubbles: true });
   Object.defineProperty(event, 'dataTransfer', { value: { getData: () => text } });
   if (!input.dispatchEvent(event)) return;
+  if (!input.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertFromDrop', data: text, cancelable: true, bubbles: true }))) return;
   const start = input.selectionStart ?? input.value.length;
   input.setRangeText(text, start, input.selectionEnd ?? start, 'end');
   input.dispatchEvent(new InputEvent('input', { inputType: 'insertFromDrop', bubbles: true }));
