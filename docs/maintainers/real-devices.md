@@ -45,7 +45,9 @@ tapped; the words fit; light and dark both read.
    set a follow-up's hour with the phone's own time wheel.
 6. **Photos, camera and sound** — [Photos stored as they are picked](https://fieldia.dev/demos/plain/?page=listing-photos&skin=outlined):
    take a photo with the camera and pick two from the library; watch them upload. Then [a site visit's films and voice notes](https://fieldia.dev/demos/plain/?page=site-visit&record=1&skin=outlined):
-   record a voice note (allow the microphone) and play it back.
+   record a voice note (allow the microphone) and play it back. Then press Stop straight after Start: the dialog says
+   nothing was recorded, never a note that cannot play; and record one of about 20 seconds: it plays back whole, from
+   its first word, and its length is shown (0.36's recorder clock starts when the phone's recorder does).
 7. **A code scanned** — [An injectable's lot](https://fieldia.dev/demos/plain/?page=clinic-treatment&record=1&skin=outlined):
    press Scan, allow the camera, scan a code from [the codes to scan](https://fieldia.dev/demos/samples/codes-to-scan.html)
    on another screen; then refuse the camera once and type the code instead.
