@@ -4,7 +4,7 @@ import { gridWidgets } from './grid';
 
 /** The grid's buttons besides those on each line: lines chosen with a tick and a bar of buttons for them, buttons beside Add a line, and a copy of a line. */
 const page = {
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'mo',
   data: { kind: 'record', model: 'mrp.production' },
   fields: {
@@ -123,7 +123,7 @@ describe('the grid’s buttons beside Add a line, and a line copied', () => {
 
 describe('a grid’s line opening its own record’s page', () => {
   const matter = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'matter',
     data: { kind: 'record', model: 'legal.matter' },
     fields: {
@@ -132,7 +132,7 @@ describe('a grid’s line opening its own record’s page', () => {
     layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-h', field: 'hearing_ids', widget: 'grid', lineOpens: 'record' }] },
   } as unknown as Page;
   const hearing = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'hearing',
     data: { kind: 'record', model: 'legal.hearing' },
     fields: { court: { type: 'char', label: 'Court' }, judge: { type: 'char', label: 'Presiding judge' } },
@@ -166,7 +166,7 @@ describe('a grid’s line opening its own record’s page', () => {
 
 describe('the grid on a phone', () => {
   const order = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'order',
     data: { kind: 'record', model: 'sale.order' },
     fields: {
