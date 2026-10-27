@@ -8,12 +8,12 @@
  * date's box, a theme, the quiet look, a memory source's members — comes in
  * parts loaded the first time a page uses them (tools/script-parts.ts).
  */
-import type { Page, PageLoading } from '@fieldia/core';
+import { pageCheckPart, type Page, type PageLoading } from '@fieldia/core';
 import { addLanguage, defineFieldiaForm, partFiles } from '@fieldia/viewer';
 import { partsComeByScriptTag } from '@fieldia/widgets';
 import { partWords } from '../libs/viewer/src/lib/add-language';
 import type { LanguageHost } from './script-language';
-import { partTag, startParts } from './script-parts';
+import { partsCanCome, partTag, startParts } from './script-parts';
 
 // The runtime alone: the format's schemas and validation library stay out of a page with no build step.
 export * from '../libs/core/src/runtime';
@@ -25,7 +25,8 @@ export * from '@fieldia/viewer';
 
 /**
  * The tags of the parts a page draws from (`partFiles`: the loading part too, where the viewer asks for it with them —
- * `loading`, the viewer's own, where the app gives one), as this script asks for each: its address beside fieldia.js and
+ * `loading`, the viewer's own, where the app gives one — and the whole check, which every page waits for), as this
+ * script asks for each: its address beside fieldia.js and
  * all it carries — `crossorigin`, `integrity` (the sha256 of its file) — for a page that knows its page before it mounts
  * it, to write them exactly so as `<script async>` tags or `<link rel="preload" as="script">` links, which the browser
  * then uses as they are.
@@ -41,6 +42,12 @@ export const VERSION: string = __FIELDIA_VERSION__;
 startParts(partWords);
 // Each part a script tag of its own, asked for anew after a failure: what offers to try again may (`Part.asksAgain`).
 partsComeByScriptTag();
+
+// The whole check every page is checked with before it is drawn (0.37), asked for now — beside the page's own data and
+// parts, never after them — so a page mounted once its data came finds it in. One that could not come is asked for anew
+// as a page is mounted (parts.ts); the page's own tag for it (`partTags`) is taken, never asked for twice. Nowhere to
+// ask (no page, or this script came from no address of its own): left to the mount, which says so.
+if (partsCanCome()) void pageCheckPart.load().catch(() => undefined);
 
 // `<fieldia-form>` defined as the script starts: a page needs no code of its own to show a form (its work in
 // fieldia.element.js, loaded the first time one is put on a page).
