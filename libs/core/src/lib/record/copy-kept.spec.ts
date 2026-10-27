@@ -6,6 +6,8 @@ import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
 import { dayIn } from './zones';
 import type { Line } from './values';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /**
  * A field a copy does not keep (`copy: false`, Odoo's `copy=False`): the data source's copy holds the field as a new
@@ -111,6 +113,15 @@ describe('a field a copy does not keep: the memory source’s copy', () => {
     expect((source.records['account.move'][1]['lines'] as Line[]).map((line) => line.values['lot'])).toEqual(['LOT-A', 'LOT-B']);
     const none = await posted().copy({ model: 'account.move', id: 1, fields: bill({}, { lines: { copy: false } }).fields });
     expect(none.values?.['lines']).toEqual([]);
+  });
+
+  it('copies the vendor-bill demo’s posted bill as a draft by its page alone: its status says copy: false, its first value a draft', async () => {
+    const page = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages', 'vendor-bill.page.json'), 'utf8')) as Page;
+    expect(page.fields['state']).toMatchObject({ default: 'draft', copy: false });
+    expect(page.fieldia).toBe('0.14');
+    const source = createMemoryDataSource({ records: { 'account.move': { 1: { name: 'BILL/2026/10/0001', state: 'posted', ref: 'INV-778' } } } });
+    const made = await source.copy({ model: 'account.move', id: 1, fields: page.fields });
+    expect(made.values).toMatchObject({ name: 'BILL/2026/10/0001 (copy)', state: 'draft', ref: 'INV-778' });
   });
 
   it('is one act: Duplicate shows the copy as its source made it, and Fieldia writes nothing to it after', async () => {
