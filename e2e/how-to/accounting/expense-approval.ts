@@ -13,7 +13,7 @@ export const replay: DemoReplay = {
         // Her reason, under it.
         await see(band(hand).locator('.fd-approval-reason')).toHaveText('Four of us for two guests is over the meals policy: claim the dinner for you and the two from Nile Traders, and name them.');
         // Open again: the amount his to change.
-        const amount = page.getByRole('textbox', { name: 'Amount', exact: true });
+        const amount = page.getByRole('textbox', { name: /^Amount( Locked: Amount)?$/ });
         await see(amount).toBeEditable();
         await type(amount, '3200', { clear: true });
         await see(amount).toHaveValue('3200');
@@ -28,12 +28,12 @@ export const replay: DemoReplay = {
         await see(approvalTitle(hand)).toHaveText('Waiting for Manager: Karim Fathy');
         await see(levels(hand)).toHaveText(['ManagerWaiting', 'FinanceLater']);
         // Every field but the notes locked: typed at, the amount keeps what it was sent with.
-        const amount = page.getByRole('textbox', { name: 'Amount', exact: true });
+        const amount = page.getByRole('textbox', { name: /^Amount( Locked: Amount)?$/ });
         await see(amount).not.toBeEditable();
         await type(amount, '9');
         await see(amount).toHaveValue('3,200.00');
-        await see(page.getByRole('textbox', { name: 'Expense *What was it for?' })).not.toBeEditable();
-        await see(page.getByRole('textbox', { name: 'Spent on', exact: true })).not.toBeEditable();
+        await see(page.getByRole('textbox', { name: 'Expense What was it for?' })).not.toBeEditable();
+        await see(page.getByRole('textbox', { name: /^Spent on( Locked: Spent on)?$/ })).not.toBeEditable();
         await see(page.getByRole('combobox', { name: 'Category' })).toBeDisabled();
         await see(page.getByRole('textbox', { name: 'Who was there' })).not.toBeEditable();
         // The notes take what is typed.
@@ -52,7 +52,7 @@ export const replay: DemoReplay = {
         await see(approvalTitle(hand)).toHaveText('Waiting for Manager: Karim Fathy');
         // Omar's claim: Karim reads it, told why it is not his to change, and changes nothing.
         await see(page.getByText('Only Omar Said, whose claim it is, can change it.')).toBeVisible();
-        const amount = page.getByRole('textbox', { name: 'Amount', exact: true });
+        const amount = page.getByRole('textbox', { name: /^Amount( Locked: Amount)?$/ });
         await see(amount).toHaveValue('3,200.00');
         await see(amount).not.toBeEditable();
         await type(amount, '1');

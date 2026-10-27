@@ -43,9 +43,9 @@ export const replay: DemoReplay = {
         await press(listNames(page, phone).filter({ hasText: 'Teeth cleaning' }));
         const name = page.getByRole('group', { name: 'Service', exact: true });
         await see(name.getByRole('tablist', { name: 'Languages of Service' }).getByRole('tab')).toHaveText(['English', 'العربية']);
-        await see(name.getByRole('textbox', { name: 'Service* English' })).toHaveValue('Teeth cleaning');
+        await see(name.getByRole('textbox', { name: 'Service English' })).toHaveValue('Teeth cleaning');
         await press(name.getByRole('tab', { name: 'العربية' }));
-        await see(name.getByRole('textbox', { name: 'Service* العربية' })).toHaveValue('تنظيف الأسنان');
+        await see(name.getByRole('textbox', { name: 'Service العربية' })).toHaveValue('تنظيف الأسنان');
         const notes = page.getByRole('group', { name: 'What to tell the patient' });
         await see(notes.getByRole('tab')).toHaveText(['English', 'العربية']);
         await see(notes.getByRole('textbox', { name: 'What to tell the patient English' })).toHaveText('Eat as usual before the visit.');

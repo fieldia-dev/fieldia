@@ -34,10 +34,10 @@ export const replay: DemoReplay = {
       says: 'Type a patient’s name, a date of birth, a treatment',
       async run(hand) {
         const { page, press, type, keys, see } = hand;
-        await type(page.getByRole('textbox', { name: 'Patient', exact: true }), 'Laila Mostafa');
-        await type(page.getByRole('textbox', { name: 'Date of birth', exact: true }), '12/04/1991');
+        await type(page.getByRole('textbox', { name: /^Patient( Locked: Patient)?$/ }), 'Laila Mostafa');
+        await type(page.getByRole('textbox', { name: /^Date of birth( Locked: Date of birth)?$/ }), '12/04/1991');
         await keys('Tab');
-        const treatment = page.getByRole('combobox', { name: 'Treatment', exact: true });
+        const treatment = page.getByRole('combobox', { name: /^Treatment( Locked: Treatment)?$/ });
         await choose(hand, treatment, 'Anti-wrinkle injections');
         await see(treatment.locator('option:checked')).toHaveText('Anti-wrinkle injections');
         await press(page.getByRole('checkbox', { name: 'Forehead' }));
@@ -71,7 +71,7 @@ export const replay: DemoReplay = {
         await press(ask.getByRole('button', { name: 'Change answers' }));
         await see(consentSign(page).locator('.fd-signature-note')).toHaveText('Signature taken away: change your answers, then sign again.');
         await see(consentEvidence(page)).toBeHidden();
-        const treatment = page.getByRole('combobox', { name: 'Treatment', exact: true });
+        const treatment = page.getByRole('combobox', { name: /^Treatment( Locked: Treatment)?$/ });
         await see(treatment).toBeEnabled();
         await choose(hand, treatment, 'Chemical peel');
         await see(treatment.locator('option:checked')).toHaveText('Chemical peel');
@@ -109,17 +109,17 @@ export const replay: DemoReplay = {
         await press(page.getByRole('button', { name: 'Save', exact: true }));
         await see(page.locator('.fd-status')).toHaveText('Saved');
         await follow('open Mona Adel’s consent');
-        await see(page.getByRole('textbox', { name: 'Patient', exact: true })).toHaveValue('Mona Adel');
+        await see(page.getByRole('textbox', { name: /^Patient( Locked: Patient)?$/ })).toHaveValue('Mona Adel');
         await see(consentEvidence(page).locator('.fd-signature-who')).toHaveText(/^Signed by Mona Adel, 14 Oct 2026, \d{2}:\d{2}( \S+)?$/);
         await see(consentEvidence(page).locator('.fd-signature-state')).toHaveText('✓The answers are as they were signed.');
-        await see(page.getByRole('combobox', { name: 'Treatment', exact: true })).toBeDisabled();
+        await see(page.getByRole('combobox', { name: /^Treatment( Locked: Treatment)?$/ })).toBeDisabled();
       },
     },
     {
       says: 'Open Hana Fouad’s: Cheeks was added in the clinic’s system',
       async run({ page, follow, see }) {
         await follow('Open Hana Fouad’s');
-        await see(page.getByRole('textbox', { name: 'Patient', exact: true })).toHaveValue('Hana Fouad');
+        await see(page.getByRole('textbox', { name: /^Patient( Locked: Patient)?$/ })).toHaveValue('Hana Fouad');
         await see(page.getByRole('checkbox', { name: 'Cheeks' })).toBeChecked();
         const said = consentEvidence(page).locator('.fd-signature-state');
         await see(said).toHaveText('⚠An answer has changed since it was signed.');
