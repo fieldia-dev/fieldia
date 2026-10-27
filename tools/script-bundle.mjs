@@ -1560,7 +1560,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // widgets.ts) — 576.64 measured before, 578.23 after (592,111 bytes), to 578.3. A plain save asked again while one is on
 // its way joins it by what the values hold, not which object holds them (form.ts): 578.23 measured before, 578.32 after
 // (592,200 bytes), to 578.4.
-const BUDGET_KB = 578.4;
+// 0.35.3, NexiBI's and Flowyard's report, on every page: a key of a map by name read as a name, never a setting
+// (translate.ts), 592,411 bytes; a choice that writes no options read as having none at the page's door (upgrade.ts),
+// 592,858; every answer of the app's source the engine's own promise, the app's handled where it is made (deadline.ts),
+// 593,027 — 578.32 measured before, 579.13 after, to 579.2.
+const BUDGET_KB = 579.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1909,7 +1913,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.35.2, a brace a page's words quote, read by one reader wherever they are drawn (listed with the raw budget above):
 // 192.94 measured before, 193.56 after, to 193.6. A save on its way joined by what the values hold (listed with the
 // raw budget above): 193.56 measured before, 193.63 after, to 193.7.
-const GZIP_BUDGET_KB = 193.7;
+// 0.35.3, NexiBI's and Flowyard's report (listed with the raw budget above): 193.63 measured before; a map by name
+// +0.04, a choice's options left out +0.16, the source's answers handled where they are made +0.06 — 193.89, to 194.0.
+const GZIP_BUDGET_KB = 194.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
