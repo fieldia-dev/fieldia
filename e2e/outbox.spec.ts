@@ -103,13 +103,11 @@ test.describe('a network that answers nothing', () => {
 });
 
 test('opened again with no signal at all — the connection really off — the page comes from the device, its send still waiting', async ({ page, context, browserName }) => {
-  // The walk of 0.31: with the connection off, a reload gave a blank page. What each engine under Playwright 1.56 can
-  // show of it (f7's probes, tools-local/p3-real-tests/f7):
-  // - WebKit, set offline, fails every load its page's service worker would answer — the page's address, each script,
-  //   a fetch the worker answers from its copy — before the worker is asked ("WebKit encountered an internal error"),
-  //   as a real Safari with its network gone does not: microsoft/playwright#42775, fixed in Playwright 1.64. Its offline
-  //   reaches every request, none came to the server while it was set: from 1.64 it should be the one engine here
-  //   whose worker answers from its copy because it must.
+  // The walk of 0.31: with the connection off, a reload gave a blank page. What each engine can show of it (f7's
+  // probes, tools-local/p3-real-tests/f7):
+  // - WebKit, set offline, reaches no server for any request: the page's address, each script and each fetch are
+  //   answered by its service worker from its copy because they must. Under Playwright 1.56 it failed every such load
+  //   before the worker was asked (microsoft/playwright#42775); from 1.64.1 it runs here (20 of 20 at the 0.36 merge).
   // - Firefox, set offline, refuses the page's reload (NS_ERROR_OFFLINE) before its worker is asked — not every time:
   //   where it lets one through, the worker's own requests still reach the network.
   // - Chromium opens the page and its send waits — but Playwright sets the page offline, never its service worker
@@ -117,7 +115,6 @@ test('opened again with no signal at all — the connection really off — the p
   //   opening and its kept copy there (caches.match, below), not the page coming from that copy. That is a real
   //   device's to show (the lane's real-device checklist), and WebKit's once Playwright is 1.64; the outbox's own part —
   //   the send kept, still waiting after the reload, sent once back — every engine's, in the tests above.
-  test.skip(browserName === 'webkit', 'Playwright 1.56’s WebKit, set offline, fails every load a service worker would answer (microsoft/playwright#42775, fixed in 1.64)');
   test.skip(browserName === 'firefox', 'Playwright’s Firefox, set offline, refuses the reload (NS_ERROR_OFFLINE) before its service worker is asked');
   ({ problems } = await open(page, 'plain', 'page=viewing-report&skin=outlined'));
   // Its service worker in place, and what the page loaded kept.

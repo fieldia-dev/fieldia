@@ -70,7 +70,6 @@ export const replay: DemoReplay = {
     },
     {
       says: 'Send another with the connection off, then reload',
-      notOnPhone: 'Playwright’s WebKit cannot reload a page with the connection off (microsoft/playwright#42775): a phone’s reload from its service worker is not replayable there',
       async run(hand) {
         const { page, press, see } = hand;
         // Its own service worker in place, as it is once the page has been opened.
