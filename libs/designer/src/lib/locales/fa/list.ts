@@ -129,6 +129,7 @@ export const list: DesignerWords['list'] = {
   group: 'گروه',
   filterGroup: 'گروه فیلتر',
   filterGroupHint: 'فیلترهای یک گروه هر کدام را می\u200cیابند؛ فیلترهای دو گروه، هر دو را. یک کلمه، مانند «زمان»؛ خالی برای هیچ.',
+  groupExample: 'زمان',
   remove: 'برداشتن',
   removeFilter: (label) => `برداشتن فیلتر ${label}`,
   byHand: 'شرط‌های آن دستی نوشته شده‌اند: همان‌طور که هستند می‌مانند.',

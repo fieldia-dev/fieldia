@@ -118,6 +118,7 @@ export const list: DesignerWords['list'] = {
   group: 'المجموعة',
   filterGroup: 'مجموعة عامل التصفية',
   filterGroupHint: 'عوامل التصفية في مجموعة واحدة تجد أيًّا منها، وفي مجموعتين تجد ما يحقق الاثنتين. كلمة واحدة، مثل «الموعد»؛ فارغة لعدم وجود مجموعة.',
+  groupExample: 'الموعد',
   remove: 'إزالة',
   removeFilter: (label) => `إزالة عامل التصفية ${label}`,
   byHand: 'كُتبت شروطه يدويًا: تبقى كما هي.',

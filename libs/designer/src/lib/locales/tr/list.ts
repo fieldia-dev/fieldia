@@ -135,6 +135,7 @@ export const list: DesignerWords['list'] = {
   group: 'Grup',
   filterGroup: 'Filtre grubu',
   filterGroupHint: 'Bir gruptaki filtreler herhangi birini bulur; iki gruptakiler ikisini birden. Tek sözcük, örneğin zaman; grup yoksa boş.',
+  groupExample: 'zaman',
   remove: 'Kaldır',
   removeFilter: (label) => `Filtreyi kaldır: ${label}`,
   byHand: 'Koşulları elle yazılmış: oldukları gibi kalırlar.',

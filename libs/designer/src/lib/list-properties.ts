@@ -89,7 +89,7 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-link fd-button-danger' }, w.remove);
   remove.addEventListener('click', () => designer.removeListFilter(id));
   // Its group, by a word, kept as the box is left: filters of a group are any of them, groups each.
-  const group = el('input', { class: 'fd-input', 'aria-label': w.filterGroup, title: w.filterGroupHint, placeholder: 'when', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+  const group = el('input', { class: 'fd-input', 'aria-label': w.filterGroup, title: w.filterGroupHint, placeholder: w.groupExample, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
   group.addEventListener('change', () => designer.updateListFilter(id, { group: group.value }));
   const byHand = el('p', { class: 'fd-properties-hint', hidden: '' }, w.byHand);
   const condition = el('div', { class: 'fd-list-filter-condition' }, which, test, valueBox);

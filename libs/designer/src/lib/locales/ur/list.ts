@@ -120,6 +120,7 @@ export const list: DesignerWords['list'] = {
   group: 'گروپ',
   filterGroup: 'فلٹر کا گروپ',
   filterGroupHint: 'ایک گروپ کے فلٹر ان میں سے کوئی بھی تلاش کرتے ہیں؛ دو گروپوں کے، دونوں۔ ایک لفظ، جیسے «وقت»؛ کوئی نہیں تو خالی۔',
+  groupExample: 'وقت',
   remove: 'ہٹائیں',
   removeFilter: (label) => `فلٹر ${label} ہٹائیں`,
   byHand: 'اس کی شرائط ہاتھ سے لکھی گئی تھیں: وہ جوں کی توں رہتی ہیں۔',

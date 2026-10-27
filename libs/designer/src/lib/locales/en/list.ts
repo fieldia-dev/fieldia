@@ -123,6 +123,7 @@ export const list = {
   group: 'Group',
   filterGroup: 'Filter group',
   filterGroupHint: 'Filters of one group find any of them; filters of two groups, both. One word, such as when; empty for none.',
+  groupExample: 'when',
   remove: 'Remove',
   removeFilter: (label: string) => `Remove the filter ${label}`,
   byHand: 'Its conditions were written by hand: they stay as they are.',

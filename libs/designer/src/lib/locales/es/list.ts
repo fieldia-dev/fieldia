@@ -142,6 +142,7 @@ export const list: DesignerWords['list'] = {
   group: 'Grupo',
   filterGroup: 'Grupo del filtro',
   filterGroupHint: 'Los filtros de un grupo encuentran cualquiera de ellos; los de dos grupos, ambos. Una palabra, como plazo; vacío para ninguno.',
+  groupExample: 'plazo',
   remove: 'Quitar',
   removeFilter: (label) => `Quitar el filtro ${label}`,
   byHand: 'Sus condiciones se escribieron a mano: se mantienen tal como están.',
