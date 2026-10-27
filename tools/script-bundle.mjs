@@ -3240,7 +3240,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // to the byte (586.45 KB); gzipped 196.59 to 196.60, only the record part's and the add-ons' hashes it carries changed.
 // 0.36 merged with p3-found, from the merged build: its slots, choice, filters and rows as it measured them; the list
 // part with both lines in it 159.13 and 52.07, to 159.2 and 52.1; survey 36.44 and 12.51, to 12.6, as p3-found had it.
-// 0.37 (p37-format), each measured before and after: list 159.13 and 52.07 → 160.04 and 52.37 (a chip for each group of
+// 0.37 (p37-format), each measured before and after: list 159.13 and 52.07 → 160.00 and 52.36 (a chip for each group of
 // named filters on, a line between groups in the menu, each counted as alone of its group, the printout's words by
 // group: search-bar.ts, list-print.ts), to 160.1 and 52.4; lines 47.59 → 47.63 (a line's copy starts a field that says
 // copy: false as a new line's: line-moves.ts), to 47.7; memory 25.22 and 9.12 → 26.14 and 9.46 (its copy starts such a
