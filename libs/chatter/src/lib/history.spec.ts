@@ -233,6 +233,21 @@ describe('the list and the change chosen', () => {
     expect(host.querySelectorAll('.fd-history-detail .fd-history-old')).toHaveLength(0);
   });
 
+  it('fetched again with nothing changed — its tab shown again — keeps its rows: a press on one is never lost to it drawn anew', async () => {
+    const from = source();
+    const host = await mount({}, from);
+    const before = rows(host);
+    expect(before.length).toBeGreaterThan(3);
+    await handle!.refresh();
+    expect(rows(host)).toEqual(before);
+    expect(before.every((row) => row.isConnected)).toBe(true);
+    // Something changed meanwhile: drawn anew, the new change at the top.
+    await from.post(bug, { kind: 'message', body: '<p>Counted again.</p>' });
+    await handle!.refresh();
+    expect(rows(host)).toHaveLength(before.length + 1);
+    expect(summaries(host)[0]).toBe('Mona Adel commented');
+  });
+
   it('moves and chooses with the arrow keys through the groups’ headings and rows, Home and End, the change following', async () => {
     const host = await mount({ now: () => new Date('2026-07-23T09:00:00') }, source(MESSAGES.slice(2)));
     const list = rows(host);

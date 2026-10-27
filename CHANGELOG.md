@@ -226,6 +226,9 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
 - A tab chosen by a step right after another was chosen — Home, then a step back
   to the last tab, before the page draws again — comes into the strip's sight;
   the strip took it as still in sight from before, and left it out.
+- A record's History, fetched again as its tab is shown, draws its rows anew
+  only when something changed: a tap on a change as the tab opened is no longer
+  lost to its row replaced under the finger.
 
 **Deprecated** — each said once in a page's console, refused from 0.37:
 

@@ -516,6 +516,8 @@ function drawHistory(host: HTMLElement, options: MountHistoryOptions): HistoryHa
 
   // ---- loading -----------------------------------------------------------------
 
+  /** The record whose history is drawn: fetched again, the same answer draws nothing anew. */
+  let drawnFor: typeof record | false = false;
   async function load() {
     const current = record;
     if (!current) {
@@ -526,9 +528,16 @@ function drawHistory(host: HTMLElement, options: MountHistoryOptions): HistoryHa
     }
     const messages = await options.source.messages(current);
     if (destroyed || record !== current) return; // another record, or gone, meanwhile
-    entries = historyEntries(messages, options.stateField, options.reasonField);
-    drawGraph(entries);
-    drawList();
+    const next = historyEntries(messages, options.stateField, options.reasonField);
+    // Fetched again as it is shown again: drawn again only where something changed — never the same rows drawn anew
+    // under a press (a phone's tap on a change, as its tab opened, lost to its row replaced).
+    const same = drawnFor === current && JSON.stringify(next) === JSON.stringify(entries);
+    entries = next;
+    drawnFor = current;
+    if (!same) {
+      drawGraph(entries);
+      drawList();
+    }
     fit();
   }
   void load();
