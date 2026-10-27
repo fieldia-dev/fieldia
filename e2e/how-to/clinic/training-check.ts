@@ -11,12 +11,12 @@ export const replay: DemoReplay = {
         await press(page.getByRole('button', { name: 'Start' }));
         const clock = page.getByRole('timer');
         await see(clock).toContainText(/Time left: (10:00|9:5\d)/);
-        await type(page.getByRole('textbox', { name: '*Your name' }), 'Nadia Samir');
+        await type(page.getByRole('textbox', { name: 'Your name', exact: true }), 'Nadia Samir');
         await press(page.getByRole('radio', { name: 'Nurse' }));
         await press(page.getByRole('button', { name: 'Next', exact: true }));
         await see(page.getByRole('region', { name: 'Fillers' })).toBeVisible();
         await press(page.getByRole('radio', { name: 'Calcium hydroxylapatite' }));
-        await type(page.getByRole('textbox', { name: '*Which enzyme dissolves it?' }), 'hyaluronidase');
+        await type(page.getByRole('textbox', { name: 'Which enzyme dissolves it?', exact: true }), 'hyaluronidase');
         await press(page.getByRole('checkbox', { name: 'Blanching of the skin' }));
         await press(page.getByRole('checkbox', { name: 'Severe pain at the site' }));
         await see(page.getByRole('radio', { name: 'Calcium hydroxylapatite' })).toBeChecked();
@@ -62,7 +62,7 @@ export const replay: DemoReplay = {
         await press(review.getByRole('button', { name: 'Edit Which enzyme dissolves it?' }));
         await see(review).toBeHidden();
         await see(page.getByRole('region', { name: 'Fillers' })).toBeVisible();
-        await see(page.getByRole('textbox', { name: '*Which enzyme dissolves it?' })).toBeFocused();
+        await see(page.getByRole('textbox', { name: 'Which enzyme dissolves it?', exact: true })).toBeFocused();
         await press(page.getByRole('button', { name: 'Back to review' }));
         await see(review).toBeVisible();
         await press(page.getByRole('button', { name: 'Send my answers' }));

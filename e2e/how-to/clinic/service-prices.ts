@@ -36,7 +36,7 @@ export const replay: DemoReplay = {
           await press(service(page, 'Hydrafacial').locator('.fd-list-card'));
           const sheet = page.getByRole('dialog', { name: 'Change Hydrafacial' });
           await see(sheet).toBeVisible();
-          await type(sheet.getByRole('textbox', { name: 'Price*' }), '3000', { clear: true });
+          await type(sheet.getByRole('textbox', { name: 'Price', exact: true }), '3000', { clear: true });
           await see(sheet.getByRole('textbox', { name: 'Per hour' })).toHaveValue('3,000');
           return;
         }
@@ -76,7 +76,7 @@ export const replay: DemoReplay = {
         if (phone) {
           await press(service(page, 'Laser, face').locator('.fd-list-card'));
           const sheet = page.getByRole('dialog', { name: 'Change Laser, face' });
-          await type(sheet.getByRole('textbox', { name: 'Minutes*' }), '2', { clear: true });
+          await type(sheet.getByRole('textbox', { name: 'Minutes', exact: true }), '2', { clear: true });
           await see(sheet).toContainText('Fix Minutes to see Per hour');
           await press(sheet.getByRole('button', { name: 'Save & Close' }));
           await see(sheet).toContainText('Minutes must be at least 5');
@@ -109,10 +109,10 @@ export const replay: DemoReplay = {
         await press(page.getByRole('button', { name: 'Add a service' }));
         if (phone) {
           const sheet = page.getByRole('dialog');
-          await see(sheet.getByRole('textbox', { name: 'Service*' })).toBeFocused();
+          await see(sheet.getByRole('textbox', { name: 'Service', exact: true })).toBeFocused();
           await page.keyboard.type('Laser, back', { delay: 15 });
-          await type(sheet.getByRole('textbox', { name: 'Minutes*' }), '45', { clear: true });
-          await type(sheet.getByRole('textbox', { name: 'Price*' }), '2600', { clear: true });
+          await type(sheet.getByRole('textbox', { name: 'Minutes', exact: true }), '45', { clear: true });
+          await type(sheet.getByRole('textbox', { name: 'Price', exact: true }), '2600', { clear: true });
           await press(sheet.getByRole('button', { name: 'Save & Close' }));
           await see(sheet).toHaveCount(0);
         } else {
@@ -180,7 +180,7 @@ export const replay: DemoReplay = {
         if (phone) {
           await press(service(page, first).locator('.fd-list-card'));
           const sheet = page.getByRole('dialog');
-          await type(sheet.getByRole('textbox', { name: 'Minutes*' }), '100', { clear: true });
+          await type(sheet.getByRole('textbox', { name: 'Minutes', exact: true }), '100', { clear: true });
           await press(sheet.getByRole('button', { name: 'Save & Close' }));
         } else {
           await press(priceCell(page, first, 'minutes'));
@@ -225,7 +225,7 @@ export const replay: DemoReplay = {
         await press(service(page, 'Hydrafacial').locator('.fd-list-card'));
         const sheet = page.getByRole('dialog', { name: 'Change Hydrafacial' });
         await see(sheet).toBeVisible();
-        await see(sheet.getByRole('textbox', { name: 'Price*' })).toHaveValue('3,000');
+        await see(sheet.getByRole('textbox', { name: 'Price', exact: true })).toHaveValue('3,000');
       },
     },
   ],

@@ -42,10 +42,10 @@ export const replay: DemoReplay = {
         booked.time = (await first.innerText()).trim();
         await press(first);
         await see(first).toHaveAttribute('aria-pressed', 'true');
-        await type(page.getByRole('textbox', { name: '*Your name' }), 'Sara Hassan');
-        await type(page.getByRole('textbox', { name: '*Phone' }), '+20 100 123 4567');
-        await type(page.getByRole('textbox', { name: '*Email' }), 'sara@example.com');
-        await see(page.getByRole('textbox', { name: '*Email' })).toHaveValue('sara@example.com');
+        await type(page.getByRole('textbox', { name: 'Your name', exact: true }), 'Sara Hassan');
+        await type(page.getByRole('textbox', { name: 'Phone', exact: true }), '+20 100 123 4567');
+        await type(page.getByRole('textbox', { name: 'Email', exact: true }), 'sara@example.com');
+        await see(page.getByRole('textbox', { name: 'Email', exact: true })).toHaveValue('sara@example.com');
       },
     },
     {

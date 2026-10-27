@@ -51,7 +51,7 @@ export const replay: DemoReplay = {
     {
       says: 'Change Duration (min) or Start: End follows',
       async run({ page, press, type, keys, see }) {
-        const start = await page.getByRole('textbox', { name: 'Start*' }).inputValue();
+        const start = await page.getByRole('textbox', { name: 'Start', exact: true }).inputValue();
         const end = apptRead(page, 'f-stop');
         await see(end).toHaveText(later(start, 45));
         await type(page.getByRole('textbox', { name: 'Duration (min)' }), '60', { clear: true });

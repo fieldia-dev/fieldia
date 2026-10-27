@@ -14,7 +14,7 @@ async function codeOnThePhone({ page, see }: Hand) {
 async function askForACode(hand: Hand, number: string) {
   const { page, press, type, keys, see } = hand;
   const mobile = part(page, 'f-phone');
-  await type(mobile.getByRole('textbox', { name: '*Mobile' }), number, { clear: true });
+  await type(mobile.getByRole('textbox', { name: 'Mobile', exact: true }), number, { clear: true });
   await keys('Tab');
   await press(mobile.getByRole('button', { name: 'Send a code by WhatsApp' }));
   const box = mobile.getByRole('textbox', { name: /^Code sent to/ });
@@ -61,7 +61,7 @@ export const replay: DemoReplay = {
     {
       says: 'Fill in your name, pick a viewing and Submit',
       async run({ page, press, type, see }) {
-        await type(page.getByRole('textbox', { name: '*Full name' }), 'Hana Fouad');
+        await type(page.getByRole('textbox', { name: 'Full name', exact: true }), 'Hana Fouad');
         await press(page.getByRole('radio', { name: 'Book a viewing' }));
         await press(page.getByRole('button', { name: 'Submit', exact: true }));
         await see(page.locator('.fd-done-title')).toHaveText('Thank you, Hana Fouad');
@@ -80,8 +80,8 @@ export const replay: DemoReplay = {
         const { page, press, type, keys, see } = hand;
         await press(page.getByRole('button', { name: 'Submit another response' }));
         const mobile = part(page, 'f-phone');
-        await type(page.getByRole('textbox', { name: '*Full name' }), 'Hana Fouad', { clear: true });
-        await type(mobile.getByRole('textbox', { name: '*Mobile' }), '010 1234 5678', { clear: true });
+        await type(page.getByRole('textbox', { name: 'Full name', exact: true }), 'Hana Fouad', { clear: true });
+        await type(mobile.getByRole('textbox', { name: 'Mobile', exact: true }), '010 1234 5678', { clear: true });
         await keys('Tab');
         await press(page.getByRole('radio', { name: 'Book a viewing' }));
         await press(page.getByRole('button', { name: 'Submit', exact: true }));
@@ -91,7 +91,7 @@ export const replay: DemoReplay = {
         // Confirmed, then changed: a code asked for again. (Another number than the first: a number's code is asked
         // again only after 30 seconds, and says so.)
         await confirmMobile(hand, '011 2222 3333');
-        await type(mobile.getByRole('textbox', { name: '*Mobile' }), '012 3456 7890', { clear: true });
+        await type(mobile.getByRole('textbox', { name: 'Mobile', exact: true }), '012 3456 7890', { clear: true });
         await keys('Tab');
         await see(mobile.locator('.fd-verify-done')).toBeHidden();
         await see(mobile.getByRole('button', { name: 'Send a code by WhatsApp' })).toBeVisible();
@@ -128,7 +128,7 @@ export const replay: DemoReplay = {
         const unit = page.getByRole('textbox', { name: 'Unit' });
         await see(unit).toHaveValue('C-3');
         await type(unit, 'C-4', { clear: true });
-        await type(page.getByRole('textbox', { name: '*Full name' }), 'Omar Said', { clear: true });
+        await type(page.getByRole('textbox', { name: 'Full name', exact: true }), 'Omar Said', { clear: true });
         await confirmMobile(hand, '015 5555 6666');
         await press(page.getByRole('radio', { name: 'A call about prices and plans' }));
         await press(page.getByRole('button', { name: 'Submit', exact: true }));

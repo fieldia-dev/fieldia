@@ -9,7 +9,7 @@ const PHOTO = { name: 'kitchen.png', mimeType: 'image/png', buffer: Buffer.from(
 const outboxSaid = (page: Page) => page.locator('.fd-outbox-said:visible');
 /** A viewing report filled in as a broker fills it: the unit typed, the condition picked. */
 async function viewingReport({ page, press, type }: Hand, unit: string, condition: string) {
-  await type(page.getByRole('textbox', { name: '*Unit' }), unit, { clear: true });
+  await type(page.getByRole('textbox', { name: 'Unit', exact: true }), unit, { clear: true });
   await press(page.getByRole('radio', { name: condition }));
 }
 

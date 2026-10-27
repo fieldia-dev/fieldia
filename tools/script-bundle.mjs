@@ -1957,8 +1957,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.36 merged with 0.35.1 (listed with the raw budget above): 192.94 at 0.35.1, 194.23 merged (+1.29), to 194.3.
 // 0.36 merged with 0.35.2 (listed with the raw budget above): 194.78 merged, to 194.8.
 // 0.36 (p3-found), a choice's options taken in place (listed with the raw budget above): 194.78 measured before, 194.85
-// after, to 194.9; a line's dialog of the table's columns, 194.89, inside it.
-const GZIP_BUDGET_KB = 194.9;
+// after, to 194.9; a line's dialog of the table's columns, 194.89, inside it; a required field's star drawn and never
+// said (styles.ts: 596,079 measured before, 596,113 after, +34, inside the raw budget above), 194.90 — to 195.0.
+const GZIP_BUDGET_KB = 195.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

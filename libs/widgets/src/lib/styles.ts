@@ -152,10 +152,14 @@ const SKINS_CSS = /* css */ `
 .fd-label { font-weight: var(--fd-label-weight); color: var(--fd-text); }
 /* The ✓ of a field filled in right, by its label. */
 .fd-valid-mark { color: var(--fd-success); width: 1em; height: 1em; margin-inline-start: 6px; vertical-align: -0.15em; stroke-width: 2.4; }
-/* No space between the star and the label's last word, its gap a margin: a line never breaks before it. */
-.fd-field.fd-required > .fd-label::after { content: "*"; margin-inline-start: 0.25em; color: var(--fd-error); }
+/*
+ * No space between the star and the label's last word, its gap a margin: a line never breaks before it. Drawn, never
+ * said: its alternative text is none ("*" / ""), so the field is named by its label's words in every look ("Full name",
+ * required: aria-required says it), never "*Full name" or "Full name*"; a browser that cannot read that has the star alone.
+ */
+.fd-field.fd-required > .fd-label::after { content: "*"; content: "*" / ""; margin-inline-start: 0.25em; color: var(--fd-error); }
 .fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-field.fd-required > .fd-label::after { content: none; }
-.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-field.fd-required > .fd-label::before { content: "*"; margin-inline-end: 0.25em; color: var(--fd-error); }
+.fd-form:is([data-fd-skin="outlined"], [data-fd-skin="quiet"]) .fd-field.fd-required > .fd-label::before { content: "*"; content: "*" / ""; margin-inline-end: 0.25em; color: var(--fd-error); }
 .fd-help { color: var(--fd-muted); font-size: 12.5px; }
 /* A field's help behind a (?) by its label: a bubble on hover, focus or a tap. */
 .fd-help-tip-wrap { position: relative; display: inline-flex; vertical-align: 0.05em; margin-inline-start: 6px; }

@@ -66,7 +66,7 @@ export const replay: DemoReplay = {
         for (const [i, angle] of ['Right side', 'Front', 'Left side'].entries()) {
           await type(after.getByRole('textbox', { name: `Caption for photo ${i + 1} of 3` }), angle);
         }
-        await press(page.getByRole('textbox', { name: '*Patient' }));
+        await press(page.getByRole('textbox', { name: 'Patient', exact: true }));
         for (const [i, angle] of ['Right side', 'Front', 'Left side'].entries()) {
           await see(after.getByRole('button', { name: `${angle}, photo ${i + 1} of 3` })).toBeVisible();
         }

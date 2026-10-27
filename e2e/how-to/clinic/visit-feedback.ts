@@ -6,7 +6,7 @@ export const replay: DemoReplay = {
     {
       says: 'Tick Botox and Chemical peel: “Which would you have again?”',
       async run({ page, press, see }) {
-        const had = page.getByRole('group', { name: '*Which treatments did you have?' });
+        const had = page.getByRole('group', { name: 'Which treatments did you have?', exact: true });
         await press(had.getByRole('checkbox', { name: 'Botox' }));
         await press(had.getByRole('checkbox', { name: 'Chemical peel' }));
         const again = page.locator('[data-node="f-again"]');
@@ -23,7 +23,7 @@ export const replay: DemoReplay = {
         const again = page.locator('[data-node="f-again"]');
         await press(again.getByRole('radio', { name: 'Chemical peel' }));
         await see(again.getByRole('radio', { name: 'Chemical peel' })).toBeChecked();
-        await press(page.getByRole('group', { name: '*Which treatments did you have?' }).getByRole('checkbox', { name: 'Chemical peel' }));
+        await press(page.getByRole('group', { name: 'Which treatments did you have?', exact: true }).getByRole('checkbox', { name: 'Chemical peel' }));
         await see(again.locator('label.fd-choice')).toHaveText(['Botox', 'None of them']);
         await see(again.locator(':scope > .fd-warning')).toHaveText('Chemical peel is no longer offered, so it was taken out');
         await see(page.locator('[data-node="f-try-next"] label.fd-choice')).toHaveText(['Filler', 'Chemical peel', 'Laser hair removal', 'HydraFacial']);
@@ -54,7 +54,7 @@ export const replay: DemoReplay = {
       async run({ page, press, see }) {
         const tell = page.getByRole('group', { name: 'May we tell you about…' });
         await see(tell.getByRole('checkbox', { name: 'Offers on what you had' })).toBeVisible();
-        await press(page.getByRole('group', { name: '*Which treatments did you have?' }).getByRole('checkbox', { name: 'None of these' }));
+        await press(page.getByRole('group', { name: 'Which treatments did you have?', exact: true }).getByRole('checkbox', { name: 'None of these' }));
         await see(page.getByRole('checkbox', { name: 'Botox' }).first()).not.toBeChecked();
         await see(page.locator('[data-node="f-again"]')).toBeHidden();
         await see(tell.getByRole('checkbox', { name: 'Offers on what you had' })).toHaveCount(0);

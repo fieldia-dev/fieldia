@@ -15,11 +15,11 @@ export const replay: DemoReplay = {
     {
       says: 'Choose Mark as fully paid: the account to post the difference in',
       async run({ page, press, see }) {
-        await see(page.getByRole('combobox', { name: 'Post Difference In*' })).toBeHidden();
+        await see(page.getByRole('combobox', { name: 'Post Difference In', exact: true })).toBeHidden();
         await press(page.getByRole('radio', { name: 'Mark as fully paid' }));
         await see(page.getByRole('radio', { name: 'Mark as fully paid' })).toBeChecked();
-        await see(page.getByRole('combobox', { name: 'Post Difference In*' })).toBeVisible();
-        await see(page.getByRole('textbox', { name: 'Label*' })).toHaveValue('Write-Off');
+        await see(page.getByRole('combobox', { name: 'Post Difference In', exact: true })).toBeVisible();
+        await see(page.getByRole('textbox', { name: 'Label', exact: true })).toHaveValue('Write-Off');
       },
     },
     {
@@ -38,18 +38,18 @@ export const replay: DemoReplay = {
     {
       says: 'Pick the Bank — CIB journal and the Postdated Check method',
       async run({ page, press, type, see }) {
-        const journal = page.getByRole('combobox', { name: 'Journal*' });
+        const journal = page.getByRole('combobox', { name: 'Journal', exact: true });
         await type(journal, 'CIB', { clear: true });
         await press(page.getByRole('option', { name: 'Bank — CIB', exact: true }));
         await see(journal).toHaveValue('Bank — CIB');
-        await see(page.getByRole('textbox', { name: 'Check / Bill Number*' })).toBeHidden();
+        await see(page.getByRole('textbox', { name: 'Check / Bill Number', exact: true })).toBeHidden();
         const method = page.getByRole('combobox', { name: /^Payment Method/ });
         await type(method, 'Postdated', { clear: true });
         await press(page.getByRole('option', { name: 'Postdated Check', exact: true }));
         await see(method).toHaveValue('Postdated Check');
         // Asked for: shown, and required — Create Payment says so.
-        await see(page.getByRole('textbox', { name: 'Check / Bill Number*' })).toBeVisible();
-        await see(page.getByRole('textbox', { name: 'Check Due Date*' })).toBeVisible();
+        await see(page.getByRole('textbox', { name: 'Check / Bill Number', exact: true })).toBeVisible();
+        await see(page.getByRole('textbox', { name: 'Check Due Date', exact: true })).toBeVisible();
         await press(page.getByRole('button', { name: 'Create Payment', exact: true }));
         await see(page.locator('[data-node="f-bill-no"] .fd-error')).toHaveText('Check / Bill Number is required');
       },

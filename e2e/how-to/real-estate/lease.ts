@@ -14,7 +14,7 @@ export const replay: DemoReplay = {
     {
       says: 'Type 01/06/1448 in the Hijri box beside Starts on',
       async run({ page, press, type, keys, see }) {
-        const starts = page.getByRole('textbox', { name: 'Starts on*' });
+        const starts = page.getByRole('textbox', { name: 'Starts on', exact: true });
         const hijri = page.getByRole('textbox', { name: 'Starts on (Hijri)' });
         await see(starts).toHaveValue('13 Oct 2026');
         await see(hijri).toHaveValue('2 Jumada I 1448 AH');
@@ -35,7 +35,7 @@ export const replay: DemoReplay = {
     {
       says: 'Type 30 in a Hijri month of 29 days and leave the box',
       async run({ page, type, keys, see }) {
-        const starts = page.getByRole('textbox', { name: 'Starts on*' });
+        const starts = page.getByRole('textbox', { name: 'Starts on', exact: true });
         const hijri = page.getByRole('textbox', { name: 'Starts on (Hijri)' });
         // Jumada II 1448 has 29 days by Umm al-Qura.
         await type(hijri, '30/06/1448', { clear: true });
@@ -134,7 +134,7 @@ export const replay: DemoReplay = {
         await keys('Backspace', 'Backspace');
         await see(cells).toHaveText(['4', '8', '2', '9', '', '']);
         // Left at four digits, by a press elsewhere: two still to type.
-        await press(page.getByRole('textbox', { name: 'Tenant*' }));
+        await press(page.getByRole('textbox', { name: 'Tenant', exact: true }));
         await see(code.locator('.fd-error')).toHaveText('Code sent to the tenant’s phone is not whole yet: 2 more to type');
       },
     },

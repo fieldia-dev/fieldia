@@ -8,10 +8,10 @@ export const replay: DemoReplay = {
       says: 'On Your health, turn on I have allergies',
       async run({ page, press, type, keys, see }) {
         // About you first, as the form asks: its required answers, then Next.
-        await type(page.getByRole('textbox', { name: '*Full name' }), 'Mona Adel');
-        await type(page.getByRole('textbox', { name: '*Date of birth' }), '12/04/1991');
+        await type(page.getByRole('textbox', { name: 'Full name', exact: true }), 'Mona Adel');
+        await type(page.getByRole('textbox', { name: 'Date of birth', exact: true }), '12/04/1991');
         await keys('Tab');
-        await type(page.getByRole('textbox', { name: '*Phone' }), '01001234567');
+        await type(page.getByRole('textbox', { name: 'Phone', exact: true }), '01001234567');
         await press(page.getByRole('button', { name: 'Next', exact: true }));
         const health = page.getByRole('region', { name: 'Your health' });
         await see(health).toBeVisible();
@@ -19,7 +19,7 @@ export const replay: DemoReplay = {
         const allergies = health.getByRole('switch', { name: 'I have allergies' });
         await press(allergies);
         await see(allergies).toBeChecked();
-        const box = health.getByRole('textbox', { name: '*Which allergies, and what happens?' });
+        const box = health.getByRole('textbox', { name: 'Which allergies, and what happens?', exact: true });
         await see(box).toBeVisible();
         await see(box).toHaveAttribute('aria-required', 'true');
         // Required: Next with it empty asks for it.
@@ -35,7 +35,7 @@ export const replay: DemoReplay = {
         await press(page.getByRole('button', { name: 'Next', exact: true }));
         const consent = page.getByRole('region', { name: 'Consent' });
         await see(consent).toBeVisible();
-        const signature = consent.getByRole('group', { name: '*Signature' });
+        const signature = consent.getByRole('group', { name: 'Signature', exact: true });
         const pad = signature.locator('canvas');
         await pad.scrollIntoViewIfNeeded();
         const box = (await pad.boundingBox())!;

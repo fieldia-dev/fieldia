@@ -41,7 +41,7 @@ export const replay: DemoReplay = {
       says: 'Click Teeth cleaning: its page has a switch over its name',
       async run({ page, phone, press, see }) {
         await press(listNames(page, phone).filter({ hasText: 'Teeth cleaning' }));
-        const name = page.getByRole('group', { name: 'Service*' });
+        const name = page.getByRole('group', { name: 'Service', exact: true });
         await see(name.getByRole('tablist', { name: 'Languages of Service' }).getByRole('tab')).toHaveText(['English', 'العربية']);
         await see(name.getByRole('textbox', { name: 'Service* English' })).toHaveValue('Teeth cleaning');
         await press(name.getByRole('tab', { name: 'العربية' }));

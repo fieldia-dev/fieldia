@@ -552,3 +552,39 @@ test.describe('every field', () => {
 });
 });
 }
+
+/**
+ * A required field is named by its label's words in every look — the skins and the themes over them — as a screen
+ * reader says it and a person speaking to their computer says it (WCAG 2.5.3): "Full name", required. Its mark is drawn
+ * beside the words, as decoration, never said: 0.35's outlined and quiet looks named it "*Full name", the underline
+ * "Full name*".
+ */
+test.describe('a required field’s name in every look', () => {
+  const LOOKS = ['skin=underline', 'skin=outlined', 'skin=quiet', ...['material', 'fluent', 'apple', 'bootstrap', 'shadcn', 'ant', 'odoo', 'google-forms'].map((theme) => `theme=${theme}`)];
+  for (const look of LOOKS) {
+    test(`is its label’s words, its mark drawn and unsaid: ${look}`, async ({ page }) => {
+      await open(page, 'plain', `page=signup&${look}`);
+      const name = node(page, 'f-name');
+      await expect(name).toHaveClass(/fd-required/);
+      const words = ((await name.locator('.fd-label').first().textContent()) ?? '').trim();
+      expect(words).toBe('Full name');
+      await expect(field(page, 'f-name')).toHaveAccessibleName(words);
+      await expect(page.getByRole('textbox', { name: words, exact: true })).toBeVisible();
+      // Its mark drawn beside the words all the same.
+      const marks = await name.locator('.fd-label').first().evaluate((label) => [getComputedStyle(label, '::before').content, getComputedStyle(label, '::after').content].join(' '));
+      expect(marks).toContain('*');
+    });
+  }
+  for (const template of ['template-contact-us', 'template-support-request']) {
+    test(`is its label’s words in a template’s own look: ${template}`, async ({ page }) => {
+      await open(page, 'plain', `page=${template}`);
+      const required = page.locator('.fd-field.fd-required:visible');
+      await expect(required.first()).toBeVisible();
+      for (let i = 0; i < Math.min(3, await required.count()); i++) {
+        const words = ((await required.nth(i).locator('.fd-label').first().textContent()) ?? '').trim();
+        const control = required.nth(i).locator('input, textarea, select, [role="combobox"], [role="radiogroup"]').first();
+        await expect(control).toHaveAccessibleName(words);
+      }
+    });
+  }
+});
