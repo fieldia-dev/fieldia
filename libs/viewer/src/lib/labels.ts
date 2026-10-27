@@ -895,11 +895,25 @@ export interface ViewerLabels {
   payFailed: string;
   payFailedWhy: string;
   payNotStarted: string;
-  /** A `<fieldia-form>` whose page could not be read: its address answered nothing, or no page. */
+  /**
+   * A `<fieldia-form>` whose page could not be read: its address answered nothing, or no page — or whose part
+   * (fieldia.element.js) could not come, said with Retry: in the main script, as what could not come cannot say it.
+   */
   formNotLoaded: string;
   /** A page the viewer's check refused, said where the form would be; under it, "What is wrong" and each problem. */
   pageUnshown: string;
   pageUnshownWhy: string;
+  /**
+   * A part of the page that could not come (offline, or not the file its fieldia.js was built with), the page drawn
+   * plainly without it: under a field whose own box it draws (Retry after, where asking again can bring it), and once
+   * over the page for one with no place of its own (a record's head, AI help, a list's cards or filter bar…) — each with
+   * how to try again (the form's `guardTryAgain`, `guardReload`). Undo and printing, as a person asks for them. In the
+   * main script: what could not come cannot say it.
+   */
+  partPlainField: string;
+  partPlainPage: string;
+  undoNotLoaded: string;
+  printNotLoaded: string;
   /**
    * An offline outbox (`outbox`, the outbox part): how many sends wait on this device (`{count}`), no signal, while they
    * are sent, all sent, Send now, a send refused once it went (`{why}`) with Try again and Discard (asked first), and a
@@ -1553,6 +1567,10 @@ const en: ViewerLabels = {
   formNotLoaded: 'This form could not be loaded.',
   pageUnshown: 'This form cannot be shown: its page has mistakes. Whoever made it can check it with validatePage.',
   pageUnshownWhy: 'What is wrong',
+  partPlainField: 'Part of this field could not load, so it is shown plainly.',
+  partPlainPage: 'Part of this page could not load, so it is shown plainly.',
+  undoNotLoaded: 'Undo could not load.',
+  printNotLoaded: 'The print layout could not load, so the page prints as it is shown.',
   outboxWaiting: '{count} sends wait on this device.',
   outboxWaitingOne: '1 send waits on this device.',
   outboxOffline: 'No signal:',

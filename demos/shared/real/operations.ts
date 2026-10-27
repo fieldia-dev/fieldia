@@ -487,8 +487,16 @@ function pickingMovesChanged(values: Values): Values {
   const lines = linesOf(values, 'move_ids_without_package').map((line) => {
     const id = idOf(line.values['product_id']);
     const p = id ? PRODUCTS[id] : null;
-    if (!p) return line;
+    // A line just added, as Flectra's defaults give a new move: a draft (so its Product is open to choose), added after
+    // the receipt's confirmation if it was, nothing counted or forecast yet (one Forecast Report, not both).
+    if (!p) {
+      if (line.values['state'] != null) return line;
+      const fresh = { state: 'draft', additional: confirmed, is_initial_demand_editable: true, is_quantity_done_editable: true };
+      return { ...line, values: { ...line.values, ...fresh, quantity: line.values['quantity'] ?? 0, forecast_availability: line.values['forecast_availability'] ?? 0, has_tracking: line.values['has_tracking'] ?? 'none' } };
+    }
     const v = { ...line.values };
+    // Its product chosen on a receipt already confirmed: confirmed with it, as Flectra confirms a move added then.
+    if (confirmed && v['additional'] && v['state'] === 'draft') v['state'] = 'assigned';
     const productChanged = v['description_picking'] !== p.name;
     if (productChanged || !v['product_uom']) {
       v['product_uom'] = p.uom;

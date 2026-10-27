@@ -755,7 +755,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   // The watch on the picked parts' sizes, ended with the canvas.
   const unwatch = () => stopWatchingBars(element);
   const drag: CanvasDrag = {
-    press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
+    press: (source, event, tile, lifted) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile, lifted),
     destroy() {
       simpleDrag.destroy();
       advanced.destroy();

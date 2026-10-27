@@ -1569,8 +1569,37 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // rules, a field's settings held to themselves, the format each place came in — in a part of its own (fieldia.check.js),
 // asked for after a page's first draw, what it finds said once in the console (page-check.ts, deprecations.ts): 582,019
 // measured before, 586,035 after, to 572.4.
+// 0.36's fix lane F4: what a box's own undo and redo write noted for the record's Redo (form.ts, `boxHistory`; heard in
+// the undo part, undo-history.ts), and the record's keys kept from the browser's own (undo-keys.ts): 582,019 measured
+// before, 582,108 after, to 568.5 (gzipped 189.80, inside its 189.8).
+// 0.36 (p3-real-tests, F1): a refused send's words let go from the screen reader's alert once nothing is wrong
+// (viewer.ts) — 582,019 bytes measured before, 582,227 after (+208); and, on every page that types, the box under the
+// person's keys never written over by what an onchange, a step, the app or a line's dialog makes of their change —
+// held back and laid once the box is left (form.ts: `keepTyped`, `layHeldBack`) — 657 more, 582,884, to 569.3
+// (gzipped 190.13, inside its 190.2).
+// The part-failure matrix (e2e/part-failures.spec.ts; the audits' R-H1, R-M13): a part that could not come is said,
+// never silent — so what says it is here, as what could not come cannot say it (tools/part-words.mjs). Under a field
+// whose box its part draws, the plain box kept, "Part of this field could not load, so it is shown plainly." and Retry
+// (widget-parts.ts `unloaded`, viewer.ts `partNote`); once over the page for any other part of it (viewer.ts
+// `partUnloaded`, the parts said in their own place in viewer-parts.ts); a record's related list whose list part never
+// came said in its place, never an empty box; Ctrl+Z's and printing's own words; a `<fieldia-form>` whose part never
+// came says its form could not be loaded, with Retry, never an empty box (element.ts, `formNotLoaded` now this
+// script's); a value worked out by a function whose part could not come said in the page's words, asked for once
+// (functions.ts, form.ts) — five sentences and their two notes' rules: 582,019 measured before, 584,573 after (+2,554),
+// to 570.9.
+// 0.36's merge of its fix lanes (p3-real-tests), set once from the merged build: F1's typing and alert (+865), F4's
+// record's keys (+89), F7's outbox (0), the part-failure matrix's words (+2,554), each measured alone above —
+// 582,019 at 0.35, 585,508 merged, to 571.9.
+// 0.36 (p3-real-tests, F8): a wait's words said once its place is in the page (a list drawn at once in the page's wait,
+// put in the page a moment after), and kept said while any wait that said them goes on (loading.ts) — 585,508
+// measured before, 585,735 after (+227), to 572.1.
+// 0.36 (p3-real-tests) merged with 0.35.1, set once from the merged build: 0.35.1's 590,475 bytes and this lane's
+// +3,697 measured alone above (the typing kept, the alert, the record's keys, the parts' failure words, the words kept
+// said) — 594,172, to 580.3.
+// 0.36 merged with 0.35.2, set once from the merged build: 0.35.2's literal braces and its plain save joining one on its
+// way beside this lane's — 595,807, to 581.9.
 // Provisional for the 0.36 merge; set once from the merged build.
-const BUDGET_KB = 582.7;
+const BUDGET_KB = 586.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1925,8 +1954,21 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // (the coordinator's 26 Oct: at or under ~200, the owner's guardrail) — a refused page's words 0.7 of what came, what
 // will change 0.3, the whole check's handle and its words 0.4: 189.79 measured before, 191.19 after, to 191.2. (Carried
 // in this script, the whole check made it 206.71.)
+// 0.36 (p3-real-tests, F1), listed with the raw budget above: a refusal's words let go from the alert, 189.79 measured
+// before, 189.87 after; the box under the keys never written over, 190.13 — to 190.2.
+// The part-failure matrix (listed with the raw budget above): what says a part could not come — under a field, over the
+// page, as Ctrl+Z, printing and an element ask for one — every page's, as any page may meet a part that never came
+// (offline, a cache that kept an older fieldia.js beside a newer part): 189.79 measured before, 190.60 after (+0.81),
+// to 190.6.
+// 0.36's merge of its fix lanes, set once from the merged build (listed with the raw budget above): 189.79 at 0.35,
+// 190.92 merged (+1.13: the parts' failure words 0.81, a typed box never written over and the alert let go 0.34) —
+// to 191.0.
+// 0.36 (p3-real-tests, F8), a wait's words kept said (listed with the raw budget above): 190.91 measured before, 191.01
+// after, to 191.1.
+// 0.36 merged with 0.35.1 (listed with the raw budget above): 192.94 at 0.35.1, 194.23 merged (+1.29), to 194.3.
+// 0.36 merged with 0.35.2 (listed with the raw budget above): 194.78 merged, to 194.8.
 // Provisional for the 0.36 merge; set once from the merged build.
-const GZIP_BUDGET_KB = 195.2;
+const GZIP_BUDGET_KB = 196.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2302,7 +2344,17 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 23.31, to 170.6 and 23.4; Spanish's 58.39 and 18.26, 58.53 and 18.30, to 58.6 and 18.4.
 // 0.36: a refused page's words, two in each (pageUnshown, pageUnshownWhy): ar 134.76 and 21.62, de 60.41 and 18.53,
 // fr 61.35 and 18.52, tr 68.42 and 18.87, fa 167.82 and 23.25, ur 170.49 and 23.31, es 58.55 and 18.32.
-const ADD_ON_BUDGET_KB = { ar: [135.2, 21.7], de: [60.6, 18.7], fr: [61.6, 18.7], tr: [68.7, 18.9], fa: [168.4, 23.4], ur: [171.1, 23.5], es: [58.8, 18.5] };
+// The part-failure matrix: a part that could not come said in every add-on — under a field, over the page, Undo's and
+// printing's, a value a function could not work out (the words machine-assisted, not yet reviewed by a native speaker) —
+// Arabic's 135.43 and 21.66 after, to 135.5 and 21.7; German's 60.67 and 18.57, to 60.7 and 18.6; French's 61.66 and
+// 18.56, to 61.7 and 18.6; Turkish's 68.70 and 18.90, inside 68.7, to 19.0; Persian's 168.57 and 23.29, to 168.6 and
+// 23.3; Urdu's 171.37 and 23.39, to 171.4 and 23.4; Spanish's 58.80 and 18.35, inside 58.8, to 18.4.
+// 0.36 merged with 0.35.1: both lines' words in every add-on — the parts' failure words and the map's touch words beside
+// 0.35.1's draft and picture words — Arabic's 135.84 and 21.71, to 135.9 and 21.8; German's 60.83 and 18.63, to 60.9 and
+// 18.7; French's 61.85 and 18.61, to 61.9 and 18.7; Turkish's 68.88 and 18.94, to 68.9, inside 19.0; Persian's 169.10
+// and 23.34, to 169.1 and 23.4; Urdu's 171.91 and 23.46, to 172.0 and 23.5; Spanish's 58.94 and 18.39, to 59.0, inside
+// 18.4.
+const ADD_ON_BUDGET_KB = { ar: [136.3, 21.9], de: [61.1, 18.8], fr: [62.1, 18.8], tr: [69.1, 19.1], fa: [169.7, 23.5], ur: [172.5, 23.6], es: [59.2, 18.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3080,7 +3132,39 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 0.36: an endless list holding more rows than it draws, asked again, asks first for the pages round its view, the rows
 // over them as the view, the keys or Select all reach them (list.ts, list-window.ts) — list 154.80 and 50.50 measured
 // before, 157.47 and 51.50 after, to 157.6 and 51.6.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.0, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.0, 9.3], months: [13.7, 5.6], typed: [14.3, 6.0], list: [157.7, 51.7], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.2, 12.7], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [46.3, 16.1], business: [32.7, 12.0], files: [50.8, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.6, 8.0], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [6.4, 3.1], print: [16.6, 5.3], memory: [25.2, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.9, 2.6], outbox: [11.0, 4.7], loading: [9.5, 3.1], check: [65.3, 17.3] };
+// 0.36, the outbox in WebKit (p3-real-tests F7): what waits tried again by its own tries — after 2 seconds, then 4, 8
+// and 16, then every half a minute — and as the page comes back into view, as a browser may never say `online`
+// (outbox.ts) — outbox 10.97 and 4.67 measured before, 11.17 and 4.76 after, to 11.2 and 4.8; the memory source's
+// `offline` answered later, as a request to the network answers (memory-data-source.ts) — memory 25.19 and 9.12, 25.22
+// and 9.12, to 25.3.
+// 0.36's fix lane F4: what a box's own undo and redo write, heard and noted for the record's Redo (undo-history.ts,
+// history-steps.ts) — undo 6.39 and 3.01 measured before, 6.91 and 3.16 after, to 7.0 and 3.2.
+// The box a scan falls back to with its words chosen (scan.ts) — scan 20.47 and 8.50, 20.54 and 8.54, to 20.6.
+// A picture's address let go once it has loaded, never while it loads (files.ts, `letGoOnceLoaded`) — files 50.49 and
+// 18.82, 50.64 and 18.86, to 50.7.
+// 0.36 (p3-real-tests, F1): a required date says it is required on its box (aria-required), as a required text box
+// does — a date's, a date and time's, a time's, a month's and a range's two (date-box.ts, date-range.ts): date 23.93 and
+// 9.28 measured before, 24.03 and 9.32 after, to 24.1 and 9.4; the Hijri box beside a date (hijri-box.ts): months
+// 13.70 and 5.58, 13.76 and 5.60, to 13.8 and 5.7.
+// 0.36's presses: why a locked row is locked goes once the next press is over, never as it goes down, so nothing moves
+// under that press (list-editable.ts) — editable 35.13 and 12.66 measured before, 35.28 and 12.72 after, to 35.3 and
+// 12.8. A list's groups opened stay open as it is drawn again — sorted, archived, searched — and only a new grouping
+// starts closed (list-groups.ts, list.ts) — list 153.23 and 49.88, 153.78 and 50.10, to 153.8 and 50.2.
+// A pin a finger taps lights its row where it is, the page never scrolled under the press (list.ts) — list 153.78 and
+// 50.10, 153.99 and 50.16, to 154.0, inside 50.2.
+// 0.36's how-to replays: a table of lines drawn as cards moves a line a place by its ↑ and ↓ — a phone has no grip
+// there and no Alt key (lines-table.ts, styles-lines.ts) — lines 46.25 and 16.04 measured before, 47.57 and 16.41
+// after, to 47.6 and 16.5.
+// 0.36's merge: the list part with both lanes' changes in it (a list's open groups kept, a pin a finger taps never
+// scrolling the page, a related list's failure said) — 154.00 measured merged, to 154.1.
+// A repeat field's box emptied while it is typed in stays empty, the rule as it was until the box is left (repeat.ts):
+// schedule 20.51 and 7.94, 20.73 and 8.04, to 20.8 and 8.1.
+// 0.36 merged with 0.35.1, each from the merged build: the list part with both lines in it (0.35.1's place found again
+// beside this lane's groups kept open, a pin a finger taps, a related list's failure said) — 155.57 and 50.80, to 155.6
+// and 50.9; the files part (0.35.1's picture that is none, this lane's address let go once loaded) — 50.83 and 18.95, to
+// 50.9, inside 19.0.
+// 0.36 merged with 0.35.2: the list part 155.62 and 50.80, to 155.7, inside 50.9.
+const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.0, 4.8], filters: [23.0, 7.9], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [158.5, 52.0], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.5, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [51.0, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [10.9, 4.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.2, 5.9], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.9, 2.6], outbox: [11.2, 4.8], loading: [9.5, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

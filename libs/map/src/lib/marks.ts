@@ -44,6 +44,14 @@ export const byKeys = (event: Event | undefined) => !!event && event.type.starts
 /**
  * A card over the map, its tip on a mark `height` pixels tall: Escape closes
  * it (back to its mark), and the arrows stay with the card, not the map.
+ *
+ * Every card stays inside the map and clear of what is drawn over it: the
+ * map pans it between the columns of buttons at the map's sides (48 pixels
+ * each) and above the credits at its foot, no wider than that leaves, and
+ * no taller than the map leaves room for (`--fd-map-card-room`): a phone's
+ * map is shorter than a card, whose picture and lines then scroll under its
+ * buttons (styles.ts). The map says it has one open (`data-card`), and the
+ * words over it step out of its way.
  */
 export function popCard(map: Leaflet.Map, L: LeafletModule, options: { at: LatLng; height: number; card: Card; focus: boolean; escape(): void }): Leaflet.Popup {
   options.card.element.addEventListener('keydown', (event) => {
@@ -52,9 +60,24 @@ export function popCard(map: Leaflet.Map, L: LeafletModule, options: { at: LatLn
       options.escape();
     } else if (MOVE_KEYS.has(event.key)) event.stopPropagation();
   });
-  const popup = L.popup({ closeButton: false, autoPanPadding: [16, 16], className: 'fd-map-card-popup', minWidth: 220, maxWidth: 280, offset: [0, 4 - options.height] })
+  const size = map.getSize();
+  const width = Math.min(280, Math.max(200, size.x - 96));
+  // Its tip and the room under it (40), and the room above and below it (8 and 4).
+  options.card.element.style.setProperty('--fd-map-card-room', `${size.y - 52}px`);
+  const box = map.getContainer();
+  const popup = L.popup({
+    closeButton: false,
+    autoPanPaddingTopLeft: [48, 8],
+    autoPanPaddingBottomRight: [48, 4],
+    className: 'fd-map-card-popup',
+    minWidth: Math.min(220, width),
+    maxWidth: width,
+    offset: [0, 4 - options.height],
+  })
     .setLatLng([options.at.lat, options.at.lng])
-    .setContent(options.card.element);
+    .setContent(options.card.element)
+    .on('add', () => box.toggleAttribute('data-card', true))
+    .on('remove', () => box.removeAttribute('data-card'));
   popup.openOn(map);
   if (options.focus) options.card.focus();
   return popup;
@@ -70,14 +93,20 @@ export function bubbleFace(doc: Document, n: number, locale: Locale): HTMLElemen
 }
 
 /**
- * A bubble pressed: the map closer, until its pins part. Pins on one spot,
- * that no zoom parts (a tower's flats), are not zoomed to: false, and the
- * bubble lists them instead.
+ * A bubble pressed: the map closer, until its pins part — fitted to them,
+ * or, where they spread wider than the map shows (a source's bubbles
+ * gathered again, a phone's small map), a fit that would come no closer, one
+ * step closer on the bubble's own spot (`middle`), as a person zooms in on
+ * it: never a fit that only pans or backs away, the bubble whole. Pins on one
+ * spot, that no zoom parts (a tower's flats), and a map already as close as
+ * it comes are not zoomed: false, and the bubble lists them instead.
  */
-export function zoomToPart(map: Leaflet.Map, L: LeafletModule, spots: LatLng[], room: number): boolean {
+export function zoomToPart(map: Leaflet.Map, L: LeafletModule, spots: LatLng[], room: number, middle: LatLng): boolean {
   const most = Math.min(map.getMaxZoom(), 19);
+  const now = map.getZoom();
   const bounds = L.latLngBounds(spots.map((p) => [p.lat, p.lng] as [number, number]));
-  if (map.getZoom() >= most || bounds.getNorthEast().equals(bounds.getSouthWest(), 1e-7)) return false;
-  map.fitBounds(bounds, { padding: [room, room], maxZoom: most });
+  if (now >= most || bounds.getNorthEast().equals(bounds.getSouthWest(), 1e-7)) return false;
+  if (map.getBoundsZoom(bounds, false, L.point(room * 2, room * 2)) > now) map.fitBounds(bounds, { padding: [room, room], maxZoom: most });
+  else map.setView([middle.lat, middle.lng], now + 1);
   return true;
 }

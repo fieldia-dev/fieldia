@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMemoryDataSource, type Page } from '@fieldia/core';
 import { undoKeys } from './undo-keys';
+import { undoPart } from './viewer-parts';
 import { mountViewer, type ViewerHandle } from './viewer';
 
 /**
@@ -19,8 +20,8 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function mount(keys?: { undo?: boolean }) {
-  const dataSource = createMemoryDataSource({ records: { project: { 1: { name: 'Office fit-out', email: 'site@example.com', signed: false } } } });
+async function mount(keys?: { undo?: boolean }, values: Record<string, unknown> = {}) {
+  const dataSource = createMemoryDataSource({ records: { project: { 1: { name: 'Office fit-out', email: 'site@example.com', signed: false, ...values } } } });
   const host = document.createElement('div');
   document.body.append(host);
   handle = mountViewer(host, { page: page('fields'), dataSource, recordId: 1, ...(keys ? { keys } : {}) });
@@ -93,6 +94,42 @@ describe('Ctrl+Z while filling', () => {
     expect(form.getState().values['email']).toBe('site@example.com');
   });
 
+  it("makes again what a number box's own undo took back, once it is left: the record's Redo, never the browser's", async () => {
+    // The how-to replay of 0.35 (a course's price): its own undo, the notes taken back and made again, then Ctrl+Shift+Z
+    // was the browser's, whose history put "11000" after the price grouped as it was left — "9,500.0011000", refused.
+    const { host, form } = await mount(undefined, { area: 9500 });
+    const area = box(host, 'f-area');
+    area.focus();
+    // The undo part, asked for as the form is first entered: in before the person has typed.
+    await undoPart.load();
+    await Promise.resolve();
+    expect(area.value).toBe('9500.0');
+    // Typed over, all of it chosen.
+    area.select();
+    area.setRangeText('', 0, area.value.length);
+    area.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }));
+    type(area, '11000');
+    expect(form.getState().values['area']).toBe(11000);
+    // Its own undo, the browser's: back to what it showed as it was entered.
+    expect(press('z')).toBe(false);
+    area.value = '9500.0';
+    area.dispatchEvent(new InputEvent('input', { inputType: 'historyUndo', bubbles: true }));
+    expect(form.getState().values['area']).toBe(9500);
+    // Left: grouped again, the browser's history no longer what the box holds. Redo is the record's, and makes it again.
+    const name = box(host, 'f-name');
+    name.focus();
+    await Promise.resolve();
+    expect(area.value).toBe('9,500.0');
+    expect(press('z', true)).toBe(true);
+    expect(form.getState().values['area']).toBe(11000);
+    expect(document.activeElement).toBe(area);
+    await Promise.resolve();
+    expect(area.value).toBe('11000.0');
+    // Nothing left to make again: still the record's key, the browser's own kept out of it.
+    expect(press('z', true)).toBe(true);
+    expect(form.getState().values['area']).toBe(11000);
+  });
+
   it('takes nothing when there is nothing to take back, and nothing at all where the app turned it off', async () => {
     const { host, form } = await mount({ undo: false });
     const name = box(host, 'f-name');
@@ -109,7 +146,11 @@ describe('Ctrl+Z while filling', () => {
     const fresh = await mount();
     box(fresh.host, 'f-email').focus();
     await Promise.resolve();
-    expect(press('z')).toBe(false);
+    // Nothing of the record's to take back: kept from the browser all the same — its history is the page's, the last
+    // typing in another box, which a box may have written again since.
+    expect(press('z')).toBe(true);
+    expect(press('z', true)).toBe(true);
+    expect(fresh.form.getState().values).toMatchObject({ name: 'Office fit-out', email: 'site@example.com' });
   });
 });
 

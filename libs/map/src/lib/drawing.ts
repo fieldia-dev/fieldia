@@ -1,6 +1,8 @@
 import type * as Leaflet from 'leaflet';
+import type { Locale } from '@fieldia/core';
+import { inPlural } from '@fieldia/widgets';
 import { boxFrom, metresBetween, type Area, type LatLng, type Shape } from './geo';
-import { fill, type MapLabels } from './labels';
+import { forHand, type MapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import type { MapBox } from './map-core';
 
@@ -24,9 +26,25 @@ const CLOSE_PX = 22;
 /** A press that moves less than this is a press, not a drag: no box, no circle. */
 const DRAG_PX = 4;
 
+/**
+ * The browser's own held off while a drag of the map's own code lasts — a box or a circle drawn, a shape carried — as
+ * Leaflet holds them off through its own drags (its Draggable): no words selected as the pointer crosses the zoom's
+ * "+ −" or the bar over the map, and nothing dragged and dropped. Words left selected over the map are picked up by
+ * the browser at the next press on the shape as a drag and drop of its own, which takes the pointer from the shape's
+ * drag (pointercancel): the shape moved a few pixels for a drag of sixty. Returns what lets them go again (Leaflet
+ * holds each once, however often asked).
+ */
+export function holdBrowserDrag(L: LeafletModule): () => void {
+  L.DomUtil.disableTextSelection();
+  L.DomUtil.disableImageDrag();
+  return () => (L.DomUtil.enableTextSelection(), L.DomUtil.enableImageDrag());
+}
+
 export interface ShapeDrawingOptions {
   box: MapBox;
   labels: MapLabels;
+  /** The page's language: its words for one point and for more. */
+  locale?: Locale;
   /** Where the drawing's keys are heard, wherever the focus is inside it: a field, or a list's map. */
   keys: HTMLElement;
   announce(words: string): void;
@@ -85,10 +103,14 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
   box.shield(hint);
   box.follow(hint);
 
+  /** How many points so far, in the page's language: "1 point", "4 points". */
+  const counted = () => inPlural(labels.points, labels.pointsOne, points.length, options.locale);
+
   function sayStep() {
     if (!mode) return;
-    const words = mode === 'polygon' ? labels.drawPolygon : mode === 'box' ? labels.drawBox : labels.drawCircle;
-    hintWords.textContent = mode === 'polygon' && points.length ? `${words} ${fill(labels.points, { n: points.length })}.` : words;
+    // A box and a circle are dragged by a finger as by a mouse; a polygon's points are tapped.
+    const words = mode === 'polygon' ? forHand(doc, labels.drawPolygon, labels.drawPolygonTouch) : mode === 'box' ? labels.drawBox : labels.drawCircle;
+    hintWords.textContent = mode === 'polygon' && points.length ? `${words} ${counted()}.` : words;
     finishButton.hidden = mode !== 'polygon' || points.length < 3;
   }
 
@@ -167,7 +189,7 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
       sayStep();
       remark();
       retrace();
-      announce(fill(labels.points, { n: points.length }));
+      announce(counted());
       return;
     }
     if (!anchor) {
@@ -210,12 +232,12 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
       if (mode === 'polygon' && points.length) retrace({ lat: event.latlng.lat, lng: event.latlng.lng });
     });
     // A box and a circle are drawn by dragging: pointer events, which a mouse, a finger and a pen all raise.
-    let pressed: { x: number; y: number; id: number } | null = null;
+    let pressed: { x: number; y: number; id: number; letGo: () => void } | null = null;
     box.element.addEventListener('pointerdown', (event) => {
       if ((mode !== 'box' && mode !== 'circle') || event.button !== 0) return;
       if ((event.target as Element).closest(over)) return;
       const at = m.mouseEventToLatLng(event as unknown as MouseEvent);
-      pressed = { x: event.clientX, y: event.clientY, id: event.pointerId };
+      pressed = { x: event.clientX, y: event.clientY, id: event.pointerId, letGo: holdBrowserDrag(leaflet) };
       anchor = { lat: at.lat, lng: at.lng };
       box.element.setPointerCapture?.(event.pointerId);
     });
@@ -228,6 +250,7 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
       if (!pressed || event.pointerId !== pressed.id) return;
       const moved = Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y);
       const at = m.mouseEventToLatLng(event as unknown as MouseEvent);
+      pressed.letGo();
       pressed = null;
       // A press with no drag is no shape: the tool stays in hand.
       if (event.type === 'pointercancel' || moved < DRAG_PX) {
@@ -260,7 +283,7 @@ export function shapeDrawing(options: ShapeDrawingOptions): ShapeDrawing {
       sayStep();
       remark();
       retrace();
-      announce(fill(labels.points, { n: points.length }));
+      announce(counted());
     } else if (event.key === ' ' && onMap && map) {
       event.preventDefault();
       const c = map.getCenter();

@@ -39,3 +39,13 @@ it('says the time a day and time leaves out where a day goes', () => {
   input.dispatchEvent(new Event('change', { bubbles: true }));
   expect(hint.hidden).toBe(true);
 });
+
+it('says a required day is required on its box, as the date part’s box does', () => {
+  const form = createForm({ page });
+  const widget = plainDateWidget('date')({ form, name: 'day', field: page.fields['day'] as Field, node: { type: 'field', id: 'f-day', field: 'day' }, id: 'fd-day', document, labels: WIDGET_LABELS.en, locale: 'en' });
+  document.body.replaceChildren(widget.element);
+  widget.update({ value: null, values: form.getState().values, readonly: false, required: true, invalid: false });
+  expect((widget.element as HTMLInputElement).getAttribute('aria-required')).toBe('true');
+  widget.update({ value: null, values: form.getState().values, readonly: false, required: false, invalid: false });
+  expect((widget.element as HTMLInputElement).getAttribute('aria-required')).toBe('false');
+});

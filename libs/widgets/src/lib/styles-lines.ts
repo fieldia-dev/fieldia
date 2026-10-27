@@ -43,6 +43,10 @@ export const LINES_CSS = /* css */ `
   .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) :is(.fd-combo-open, .fd-combo-clear) { visibility: hidden; }
 }
 .fd-line-grip { display: block; margin-block-start: 7px; cursor: grab; }
+/* A line's ↑ and ↓, on its card only (below): there the grip is not, and a phone has no Alt key. A finger's size. The
+   table's own, never a grid's card's, whose buttons share the name (@fieldia/grid draws them always). */
+.fd-lines .fd-line-move { display: none; border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 8px; border-radius: 4px; min-width: 32px; min-height: 32px; }
+.fd-lines .fd-line-move:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
 /* A line dragged by its grip follows the pointer, lifted over the others, which slide out of its way. */
 .fd-lines-dragging, .fd-lines-dragging * { cursor: grabbing; user-select: none; }
 .fd-lines-dragging > tr:not(.fd-line-lifted) { transition: transform 0.15s ease; }
@@ -82,6 +86,7 @@ export const LINES_CSS = /* css */ `
   .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-grip .fd-line-grip { display: none; }
   .fd-lines[data-cards="narrow"] .fd-lines-table tr:has(.fd-line-pick) { padding-inline-start: 36px; }
   .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-tools { width: auto; text-align: end; }
+  .fd-lines[data-cards="narrow"] .fd-line-move:not([hidden]) { display: inline-block; }
   .fd-lines[data-cards="narrow"] .fd-lines-totals td:empty { display: none; }
 }
 .fd-lines[data-cards="always"] .fd-lines-table, .fd-lines[data-cards="always"] .fd-lines-table :is(tbody, tfoot) { display: block; }
@@ -91,6 +96,7 @@ export const LINES_CSS = /* css */ `
 .fd-lines[data-cards="always"] .fd-lines-table td[data-label]:not([colspan]:not([colspan="1"]))::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--fd-muted); }
 .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-grip, .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { grid-column: 1 / -1; width: auto; }
 .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { text-align: end; }
+.fd-lines[data-cards="always"] .fd-line-move:not([hidden]) { display: inline-block; }
 /* A section heads the lines below it; a note reads as a remark between them. */
 /* A value typed in a line — a text cell, a section's or a note's words — reads in its own direction, lined up with the
    table (styles.ts: one rule for every value a person typed). */
@@ -98,9 +104,9 @@ export const LINES_CSS = /* css */ `
 .fd-line-section td { background: var(--fd-page); }
 .fd-line-section .fd-input { font-weight: 600; }
 .fd-line-note .fd-input { font-style: italic; }
-/* On paper: the lines, not the ticks to choose them nor the arrow that opens one. */
+/* On paper: the lines, not the ticks to choose them, the arrow that opens one nor the ↑ and ↓ that move one. */
 @media print {
-  .fd-form :is(.fd-line-pick, .fd-line-open, .fd-line-lead) { display: none !important; }
+  .fd-form :is(.fd-line-pick, .fd-line-open, .fd-line-lead, .fd-line-move) { display: none !important; }
   /* A block round the table on paper, which every engine breaks between its rows: Firefox moved a grid's part whole. */
   .fd-form .fd-lines { display: block; }
   .fd-form .fd-lines > * + * { margin-block-start: 6px; }

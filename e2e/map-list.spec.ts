@@ -515,6 +515,54 @@ test('at a phone’s width: the map over the table, shorter, and nothing sideway
   await screen(page, 'map-list-phone');
 });
 
+test.describe('a finger on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('a pin tapped opens its card, its row lit where it is: the page never scrolls under the finger', async ({ page }) => {
+    // The how-to's replay on a phone: the tap's mouseover lit the pin's row and scrolled it into view, the map went up
+    // under the finger, and the click landed on the Offer column's header, sorting the list; no card opened.
+    await openList(page);
+    await zamalek(page);
+    const pin = await pinInView(page);
+    const id = (await pin.getAttribute('data-id'))!;
+    // The row is under the map, out of sight: lighting it must not bring it up.
+    await expect(rowOf(page, id)).not.toBeInViewport();
+    const sorted = await page.locator('.fd-list-table th[aria-sort]').evaluateAll((all) => all.map((th) => `${th.textContent}: ${th.getAttribute('aria-sort')}`));
+    const scrolled = await page.evaluate(() => scrollY);
+    await pin.tap();
+    await cardShown(page);
+    await expect(card(page).locator('.fd-map-card-title')).toBeVisible();
+    expect(await page.evaluate(() => scrollY), 'the page moved under the finger').toBe(scrolled);
+    await expect(rowOf(page, id)).not.toBeInViewport();
+    expect(await page.locator('.fd-list-table th[aria-sort]').evaluateAll((all) => all.map((th) => `${th.textContent}: ${th.getAttribute('aria-sort')}`))).toEqual(sorted);
+    await screen(page, 'map-list-phone-pin-tapped', { viewport: true });
+  });
+});
+
+test('a pin pointed at by a mouse brings its row into view under the map, as it lights it', async ({ page }) => {
+  // A press's light never scrolls (above); the mouse resting on a pin still does — here the map over the table.
+  await page.setViewportSize({ width: 800, height: 700 });
+  await openList(page);
+  await zamalek(page);
+  if (!(await pins(page).count())) await closer(page, 1);
+  await page.evaluate(() => scrollTo(0, 0));
+  const map = (await theMap(page).boundingBox())!;
+  const inside = await pins(page).evaluateAll(
+    (all, m) =>
+      all.flatMap((pin) => {
+        const b = (pin.querySelector('.fd-map-face') ?? pin).getBoundingClientRect();
+        return b.x > m.x + 40 && b.right < m.x + m.width - 50 && b.y > m.y + 50 && b.bottom < m.y + m.height - 30 ? [(pin as HTMLElement).dataset['id'] as string] : [];
+      }),
+    map
+  );
+  const below: string[] = [];
+  for (const id of inside) if (await rowOf(page, id).evaluate((tr) => tr.getBoundingClientRect().top >= innerHeight)) below.push(id);
+  expect(below.length, 'no pin in the map whose row is out of sight').toBeGreaterThan(0);
+  await page.locator(`.fd-map-list .fd-map-mark[data-id="${below[0]}"]`).hover();
+  await expect(rowOf(page, below[0])).toHaveClass(/fd-list-hot/);
+  await expect(rowOf(page, below[0])).toBeInViewport();
+});
+
 test('in Arabic, right to left: the map’s words, a card written right to left, and axe finds nothing', async ({ page }) => {
   await openList(page, 'plain', `${HOMES}&locale=ar&dir=rtl`);
   await expect(view(page, 'قائمة وخريطة')).toHaveAttribute('aria-pressed', 'true');
@@ -638,7 +686,8 @@ test('a polygon drawn by the keys, the pins letting every press through while it
   // A press on a pin is a point of the polygon, not the pin's card.
   await bubbles(page).first().click({ force: true });
   await expect(card(page)).toHaveCount(0);
-  await expect(page.locator('.fd-map-list .fd-map-hint')).toContainText('1 points');
+  // One point, said as one (0.35 said "1 points").
+  await expect(page.locator('.fd-map-list .fd-map-hint')).toContainText('Click the first point, double-click or press Enter to finish. 1 point.');
   // By the keys: Space puts a point at the cross, the arrows move the map under it, Enter finishes.
   await theMap(page).focus();
   for (const key of ['ArrowLeft', 'ArrowDown']) {

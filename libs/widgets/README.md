@@ -52,7 +52,10 @@ What a page uses only now and then comes in parts, each loaded the first time a
 page shows it (`datePart`, `linesPart`, `choicePart`, …): the viewer waits for a
 page's parts before it draws it (`loadParts` in `@fieldia/viewer`). A widget
 drawn before its part came is drawn plainly, keeps its value and what is typed
-in it, and the part's own takes its place. A link to other records —
+in it, and the part's own takes its place. One whose part cannot come stays
+plain, and works, and tells its field (`context.unloaded(part, retry)`: the
+viewer says so under it, with Retry, which asks for the part again and puts its
+widget in place as it comes). A link to other records —
 `many2oneWidget`, `tagsWidget`, `linkCheckboxesWidget`, `referenceWidget`,
 `charTagsWidget` — comes in `relationsPart` (`fieldia.relations.js` beside the
 script bundle): meanwhile a many2one is a plain box whose words are handed to

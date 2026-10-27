@@ -34,8 +34,8 @@ export interface AdvancedDragOptions {
 }
 
 export interface AdvancedDrag {
-  /** A toolbox tile was pressed: carry it if the pointer moves. */
-  press(source: DragSource, event: PointerEvent, element: HTMLElement): void;
+  /** A toolbox tile was pressed: carry it if the pointer moves, `lifted` run first as it does (canvas-drag.ts). */
+  press(source: DragSource, event: PointerEvent, element: HTMLElement, lifted?: () => void): void;
   /** Off in Simple mode: the canvas's own presses are left to it. */
   setEnabled(on: boolean): void;
   destroy(): void;
@@ -90,6 +90,8 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
     bar: HTMLElement | null;
     zone: HTMLElement | null;
     drop: Drop | null;
+    /** What the press asked done as it becomes a drag. */
+    lifted?: () => void;
   }
   let drag: Drag | null = null;
   let tabTimer: ReturnType<typeof setTimeout> | undefined;
@@ -113,8 +115,8 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
 
   const moving = (d: Drag) => ('node' in d.source ? d.source.node : undefined);
 
-  function begin(source: DragSource, element: HTMLElement, x: number, y: number) {
-    drag = { source, element, start: { x, y }, started: false, chip: null, where: null, bar: null, zone: null, drop: null };
+  function begin(source: DragSource, element: HTMLElement, x: number, y: number, lifted?: () => void) {
+    drag = { source, element, start: { x, y }, started: false, chip: null, where: null, bar: null, zone: null, drop: null, lifted };
   }
 
   function onDown(event: PointerEvent) {
@@ -131,6 +133,8 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
 
   function lift(current: Drag) {
     current.started = true;
+    // First what the press asked: a sheet over the page put away, before anything is found under the pointer.
+    current.lifted?.();
     canvas.classList.add('fd-dragging');
     doc.getSelection()?.removeAllRanges();
     const name = 'node' in current.source ? nameOf(designer.getPage(), nodeOf(designer.getPage(), current.source.node), designer.words) : (current.element.querySelector('.fd-tool-name')?.textContent ?? current.element.textContent ?? '').trim();
@@ -253,16 +257,19 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
       end(false);
     }
   };
+  // The browser's own drag never starts while a press is held here, as on the Simple canvas (canvas-drag.ts).
+  const onNativeDrag = (event: Event) => void (drag && event.preventDefault());
   canvas.addEventListener('pointerdown', onDown);
   doc.addEventListener('pointermove', onMove);
   doc.addEventListener('pointerup', onUp);
   doc.addEventListener('pointercancel', onCancel);
   doc.addEventListener('keydown', onKey, true);
+  doc.addEventListener('dragstart', onNativeDrag, true);
 
   return {
-    press(source, event, element) {
+    press(source, event, element, lifted) {
       if (!enabled || event.button !== 0 || drag) return;
-      begin(source, element, event.clientX, event.clientY);
+      begin(source, element, event.clientX, event.clientY, lifted);
     },
     setEnabled(on) {
       enabled = on;
@@ -275,6 +282,7 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
       doc.removeEventListener('pointerup', onUp);
       doc.removeEventListener('pointercancel', onCancel);
       doc.removeEventListener('keydown', onKey, true);
+      doc.removeEventListener('dragstart', onNativeDrag, true);
     },
   };
 }

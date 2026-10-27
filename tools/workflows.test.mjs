@@ -210,3 +210,33 @@ test('SECURITY.md says how to report privately, the disclosure window and the ve
   assert.match(text, /90 days/, 'no disclosure window');
   assert.match(text, /^## Supported versions/m, 'no supported versions');
 });
+
+// The flake log (tools/flake-log.mjs, the audit's R-M14): with `retries: 0`, what failed is run once more on the same
+// commit, and what passed then is a flake — said in the job's summary and kept as its artifact.
+test('every browser job of ci.yml writes its report, runs what failed again, says its flake log and keeps it', () => {
+  const jobs = jobsOf(readFileSync(join(WORKFLOWS, 'ci.yml'), 'utf8'));
+  const browserJobs = Object.entries(jobs).filter(([, block]) => /npx playwright test/.test(block));
+  assert.ok(browserJobs.length >= 5, browserJobs.map(([id]) => id).join(', '));
+  for (const [id, block] of browserJobs) {
+    const runs = [...block.matchAll(/run: npx playwright test[^\n]*\n(?:\s+env:\n(?:\s{10,}[^\n]*\n)+)?/g)].map((m) => m[0]);
+    assert.ok(runs.length, `${id}: no run of Playwright read`);
+    for (const run of runs) assert.match(run, /PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log\/first(-[\w-]+)?\.json/, `${id}: a run writes no report for the flake log`);
+    assert.match(block, /if: failure\(\) && steps\.[\w-]+\.outcome == 'failure'[^\n]*\n\s+run: node tools\/flake-log\.mjs rerun flake-log /, `${id}: what failed is not run again`);
+    assert.match(block, /if: always\(\)\n\s+run: node tools\/flake-log\.mjs log flake-log --job "[^"]+" >> "\$GITHUB_STEP_SUMMARY"/, `${id}: the flake log is not said in the job's summary`);
+    assert.match(block, /name: flake-log-[^\n]+\n\s+path: flake-log\/flakes\.json/, `${id}: the flake log is not kept as an artifact`);
+  }
+});
+
+// The key screens (e2e/screens.spec.ts, the audit's R-M13): compared in one container, the one tools/screens.mjs runs
+// locally, by its digest, and its Playwright the one package.json installs — so a stored image and CI's agree.
+test('ci.yml: the key screens are compared in the Playwright container tools/screens.mjs names, of package.json’s Playwright', async () => {
+  const { IMAGE } = await import('./screens.mjs');
+  const { screens } = jobsOf(readFileSync(join(WORKFLOWS, 'ci.yml'), 'utf8'));
+  assert.ok(screens, 'ci.yml has no screens job');
+  assert.match(IMAGE, /^mcr\.microsoft\.com\/playwright:v[\d.]+-[a-z]+@sha256:[0-9a-f]{64}$/, 'the container is named by its digest, which cannot be moved to other code');
+  assert.ok(screens.includes(`    container:\n      image: ${IMAGE}\n`), `the screens job runs in another container than ${IMAGE}`);
+  const playwright = JSON.parse(readFileSync(join(WORKSPACE, 'package.json'), 'utf8')).devDependencies['@playwright/test'];
+  assert.ok(IMAGE.includes(`:v${playwright}-`), `the container is Playwright ${/:v([\d.]+)-/.exec(IMAGE)?.[1]}, package.json's ${playwright}: move both, and store the screens again`);
+  assert.match(screens, /^ {6}FIELDIA_SCREENS: container$/m, 'the screens job does not say it is the container (the spec refuses to compare elsewhere)');
+  assert.match(screens, /run: npx playwright test --project=screens\n/);
+});

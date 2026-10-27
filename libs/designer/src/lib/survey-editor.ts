@@ -202,8 +202,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     words: designer.words,
     // Picked in the sheet, the sheet goes first: the question added takes the focus.
     onPick: (spec) => sheet.closeFor(() => add(spec.slice(spec.indexOf(':') + 1), target())),
-    // A tile is carried onto the page from beside it; in the sheet over the page it is only picked.
-    onPress: (spec, event, tile) => !sheet.open && drag.press({ tool: spec }, event, tile),
+    // A tile is carried onto the page from beside it, or by a mouse or a pen from the sheet over the page, which steps
+    // aside as the drag begins so the page it covered takes the drop. A finger in the sheet only picks, by a tap:
+    // moving there, it is looking through the tiles, not carrying one off across a phone's whole screen.
+    onPress: (spec, event, tile) => (!sheet.open || event.pointerType !== 'touch') && drag.press({ tool: spec }, event, tile, () => sheet.stepAside()),
   });
   const side = sideRail({
     el,

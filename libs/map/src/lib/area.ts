@@ -1,7 +1,7 @@
 import type * as Leaflet from 'leaflet';
 import type { JsonValue } from '@fieldia/core';
 import type { Widget, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
-import { SHAPE_ICONS, shapeDrawing } from './drawing';
+import { holdBrowserDrag, SHAPE_ICONS, shapeDrawing } from './drawing';
 import { areaBounds, asJson, boxFrom, metresBetween, moveArea, offsetEast, readArea, writeArea, type Area, type CircleArea, type LatLng, type PointsArea, type Shape } from './geo';
 import { fill, mapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
@@ -133,6 +133,7 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
     const drawing = shapeDrawing({
       box,
       labels,
+      locale: context.locale,
       keys: element,
       announce,
       armed: (mode) => {
@@ -341,6 +342,8 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
         const from = area;
         let moved = false;
         map.dragging.disable();
+        // Nothing selected and dragged off by the browser while the shape is carried (drawing.ts).
+        const letGo = holdBrowserDrag(L!);
         const target = box.element;
         target.setPointerCapture?.(event.pointerId);
         const move = (e: PointerEvent) => {
@@ -353,6 +356,7 @@ export function areaWidget(settings: MapSettings): WidgetFactory {
           target.removeEventListener('pointermove', move);
           target.removeEventListener('pointerup', up);
           target.removeEventListener('pointercancel', up);
+          letGo();
           box.setPannable(true);
           if (moved) commit(area);
         };

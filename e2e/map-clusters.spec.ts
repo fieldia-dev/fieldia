@@ -177,6 +177,29 @@ test('a search: the map fits its homes again, every one of them counted, the lis
   expect(await zoomOf(theMap(page))).toBe(16);
 });
 
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test('every bubble tapped comes closer, its homes however widely spread on the phone’s small map: never a tap that does nothing', async ({ page }) => {
+    await openMany(page);
+    // The biggest bubble in view, tapped five times over: by the fourth (zoom 8) 0.35's "12,134 here" spread wider than
+    // the phone's map shows, and a fit to them came no closer — the map panned, the bubble stayed whole.
+    for (let i = 0; i < 5; i++) {
+      await mapSettled(theMap(page));
+      const before = await zoomOf(theMap(page));
+      const asks = (await clusterAsks(page)).length;
+      const map = (await theMap(page).boundingBox())!;
+      const all = await bubbles(page).evaluateAll((list) => list.map((mark) => ({ n: Number(/^[\d,]+/.exec(mark.getAttribute('aria-label') ?? '')?.[0].replace(/,/g, '')), at: mark.getBoundingClientRect().toJSON() as DOMRect })));
+      const inside = all.map((b, at) => ({ ...b, i: at })).filter(({ at }) => at.x > map.x && at.x + at.width < map.x + map.width - 44 && at.y > map.y && at.y + at.height < map.y + map.height - 30);
+      expect(inside.length, `a bubble in view at zoom ${before}`).toBeGreaterThan(0);
+      const biggest = inside.sort((a, b) => b.n - a.n)[0];
+      await bubbles(page).nth(biggest.i).tap();
+      await expect.poll(() => zoomOf(theMap(page)), { message: `tap ${i + 1}, ${biggest.n} here at zoom ${before}` }).toBeGreaterThan(before);
+      await expect.poll(async () => (await clusterAsks(page)).length).toBeGreaterThan(asks);
+    }
+  });
+});
+
 test('a bubble on one spot lists its homes: the first fifty, and how many more', async ({ page }) => {
   await openMany(page);
   await box(page).pressSequentially('Capital Tower');

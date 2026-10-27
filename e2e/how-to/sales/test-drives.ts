@@ -1,0 +1,110 @@
+import { expect } from '../../fixtures';
+import type { DemoReplay } from '../hand';
+import { berlinDay } from './support';
+
+/** A drive's day and times on Berlin's clock, as the calendar names it: "Wednesday 28 October", "09:00", "09:45". */
+function inBerlin(iso: string) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(new Date(iso))
+      .map((p) => [p.type, p.value])
+  );
+  return { day: `${parts.weekday} ${parts.day} ${parts.month}`, time: `${parts.hour}:${parts.minute}` };
+}
+type Drive = { customer: string; start: string; stop: string; car: { label: string } };
+
+/** The test-drives demo's how-to steps, replayed by hand (e2e/how-to.spec.ts). */
+export const replay: DemoReplay = {
+  steps: [
+    {
+      says: 'Look from another time zone (your own, if you are not in Berlin): each drive is at its Berlin time',
+      async run({ page, see, demo }) {
+        // This browser's own zone is not Berlin's: an hour or two apart, as the page's own words say.
+        expect(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).not.toBe('Europe/Berlin');
+        await see(page.locator('.fd-cal-zone')).toHaveText(/^(CEST|CET)$/);
+        await see(page.locator('.fd-cal-zone')).toHaveAttribute('aria-label', 'Central European Time');
+        await see(page.locator('.fd-cal-body, .fd-cal').first()).not.toHaveAttribute('aria-busy', 'true');
+        // The week shown, Monday to Sunday round Berlin's today, and its drives at their times there.
+        const today = berlinDay(0);
+        const monday = (today.weekday + 6) % 7;
+        const week = [0, 1, 2, 3, 4, 5, 6].map((n) => berlinDay(n - monday).label.split(' ').slice(0, 3).join(' '));
+        const drives = Object.values((await demo<Record<string, Record<string, Drive>>>('dataSource.records'))['drive.booking'])
+          .map((drive) => ({ drive, from: inBerlin(drive.start), to: inBerlin(drive.stop) }))
+          .filter(({ from }) => week.includes(from.day))
+          .sort((a, b) => (a.drive.start < b.drive.start ? -1 : 1));
+        expect(drives.length).toBeGreaterThan(3);
+        for (const { drive, from, to } of drives.slice(0, 6)) {
+          await see(page.getByRole('button', { name: `${drive.customer}, ${from.day}, ${from.time} to ${to.time}, with ${drive.car.label}`, exact: true })).toBeVisible();
+        }
+      },
+    },
+    {
+      says: 'Drag a drive to another time or day: it keeps its 45 minutes, and the line under the bar says where it went',
+      notOnPhone: 'a drag: Playwright’s WebKit has no touch drag (the phone’s own way, a drive’s ⋯ Move, sets its time in the phone’s time picker, which Playwright cannot turn)',
+      async run({ page, drag, press, see, demo }) {
+        const body = page.locator('.fd-cal-body');
+        const drives = async () => Object.values((await demo<Record<string, Record<string, Drive>>>('dataSource.records'))['drive.booking']);
+        // The first drive of the week, by its block; moved within its day to the hour nearest it its car has free.
+        const block = page.locator('.fd-cal-event').first();
+        const name = (await block.getAttribute('aria-label'))!;
+        const [, customer, day, from, to] = /^(.+?), (\w+ \d+ \w+), (\d\d:\d\d) to (\d\d:\d\d)/.exec(name)!;
+        const column = block.locator('xpath=ancestor::*[contains(@class,"fd-cal-col")][1]');
+        const free = async (minutes: number) => (await column.locator(`.fd-cal-slot[data-minutes="${minutes}"]`).getAttribute('aria-label'))?.endsWith('free');
+        // The hour nearest the drive's own (in sight with it) with its 45 minutes free.
+        const own = Number(from.slice(0, 2));
+        let target = 0;
+        for (const hour of [own + 1, own - 1, own + 2, own - 2, own + 3, own - 3].filter((h) => h >= 9 && h <= 17 && h !== 13)) {
+          if ((await free(hour * 60)) && (await free(hour * 60 + 15)) && (await free(hour * 60 + 30))) {
+            target = hour * 60;
+            break;
+          }
+        }
+        expect(target, 'an hour free in the drive’s column').toBeGreaterThan(0);
+        const at = `${String(target / 60).padStart(2, '0')}:00`;
+        // Held by its middle, as a hand takes it, and let go with its top on the hour.
+        await block.scrollIntoViewIfNeeded();
+        const box = (await block.boundingBox())!;
+        const there = (await column.locator(`.fd-cal-slot[data-minutes="${target}"]`).boundingBox())!;
+        await drag(block, { x: there.x + there.width / 2, y: there.y + box.height / 2 + 2 });
+        const said = page.locator('.fd-cal-said');
+        await see(said).toContainText(at);
+        await see(said.getByRole('button', { name: 'Undo' })).toBeVisible();
+        const end = new Date(Date.UTC(2000, 0, 1, target / 60, 45)).toISOString().slice(11, 16);
+        await see(page.getByRole('button', { name: new RegExp(`^${customer}, ${day}, ${at} to ${end}, with `) })).toBeVisible();
+        // Booked so: the drive at that time in Berlin, 45 minutes long.
+        const moved = (await drives()).find((drive) => drive.customer === customer && inBerlin(drive.start).day === day && inBerlin(drive.start).time === at)!;
+        expect(new Date(moved.stop).getTime() - new Date(moved.start).getTime()).toBe(45 * 60_000);
+        // Undo: back where it was.
+        await press(said.getByRole('button', { name: 'Undo' }));
+        await see(page.getByRole('button', { name: new RegExp(`^${customer}, ${day}, ${from} to ${to}, with `) })).toBeVisible();
+        await see(body).toBeVisible();
+      },
+    },
+    {
+      says: 'Press a day’s name: that day, a column for each car. Press an empty slot',
+      async run({ page, phone, press, see }) {
+        // A phone opens on the week's agenda, its days' names headings: Week shows them as names to press.
+        if (phone) await press(page.getByRole('button', { name: 'Week', exact: true }));
+        const tomorrow = berlinDay(1);
+        const label = (tomorrow.weekday === 1 ? berlinDay(0) : tomorrow).label.split(' ').slice(0, 3).join(' ');
+        await press(page.getByRole('button', { name: label, exact: true }));
+        await see(page.locator('.fd-cal-title')).toHaveText(`${label} ${berlinDay(0).label.split(' ')[3]}`);
+        await see(page.locator('.fd-cal-col')).toHaveCount(3);
+        for (const car of ['City hatchback, electric', 'Family estate, hybrid', 'Compact SUV']) await see(page.getByRole('group', { name: `${label}, ${car}`, exact: true })).toBeVisible();
+        // An empty slot of the estate's column: its first hour from 09:00 with nothing booked.
+        const estate = page.getByRole('group', { name: `${label}, Family estate, hybrid`, exact: true });
+        const slotAt = (minutes: number) => estate.locator(`.fd-cal-slot[data-minutes="${minutes}"]`);
+        let hour = 9;
+        while (hour < 18 && !(await slotAt(hour * 60).getAttribute('aria-label'))?.endsWith(', free')) hour++;
+        const time = `${String(hour).padStart(2, '0')}:00`;
+        const empty = slotAt(hour * 60);
+        await see(empty).toHaveAttribute('aria-label', `${label}, ${time}, Family estate, hybrid, free`);
+        await press(empty);
+        const dialog = page.getByRole('dialog', { name: 'New' });
+        await see(dialog).toBeVisible();
+        await see(dialog.locator('.fd-slots-chosen')).toHaveText(new RegExp(`^${label} \\d{4}, ${time} to \\d\\d:\\d\\d (CEST|CET)$`));
+        await see(dialog.locator('[data-node="f-car"]').getByRole('combobox')).toHaveValue('Family estate, hybrid');
+      },
+    },
+  ],
+};

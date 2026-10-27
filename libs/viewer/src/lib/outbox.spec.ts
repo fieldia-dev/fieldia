@@ -7,8 +7,9 @@ import { partsFor, undoPart } from './viewer-parts';
 
 /**
  * An offline outbox, as the viewer says it (the outbox part): a response sent without signal ends "Kept on this
- * device", the bar over the form says what waits, the browser's `online` sends it, and a send refused once it went is
- * kept with Try again and Discard.
+ * device", the bar over the form says what waits, the browser's `online` sends it — and so do its own tries, soon at
+ * first and less often while it waits, and the page coming back into view, as the browser may never say `online` —,
+ * and a send refused once it went is kept with Try again and Discard.
  */
 
 const visit: Page = {
@@ -86,6 +87,70 @@ describe('an offline outbox on screen', () => {
     await settled();
     expect(dataSource.responses.map((response) => response.values['unit'])).toEqual(['A-2', 'A-1']);
     expect(store.items).toEqual([]);
+  });
+
+  it('tries what waits again by itself, the browser saying nothing: after 2 seconds, then 4, 8 and 16, then every half a minute', async () => {
+    // WebKit on a Linux whose NetworkManager runs none of its network says offline throughout and never `online`; a
+    // phone behind a captive portal says online throughout: the outbox learns the signal from its own tries alone.
+    jest.useFakeTimers();
+    try {
+      let off = true;
+      const dataSource = createMemoryDataSource({ offline: () => off });
+      const store = memoryOutbox();
+      const host = document.body.appendChild(document.createElement('div'));
+      handle = mountViewer(host, { page: visit, user: BROKER, dataSource, outbox: store, values: { unit: 'B-12' } });
+      await jest.advanceTimersByTimeAsync(0);
+      (host.querySelector('button[type="submit"]') as HTMLButtonElement).click();
+      await jest.advanceTimersByTimeAsync(0);
+      expect(store.items).toHaveLength(1);
+      const tries = () => dataSource.calls.filter((call) => call.method === 'submit').length;
+      // The send itself, then each try at its time, no sooner.
+      expect(tries()).toBe(1);
+      for (const [wait, tried] of [[2_000, 2], [4_000, 3], [8_000, 4], [16_000, 5], [30_000, 6], [30_000, 7]]) {
+        await jest.advanceTimersByTimeAsync(wait - 1);
+        expect(tries()).toBe(tried - 1);
+        await jest.advanceTimersByTimeAsync(1);
+        expect(tries()).toBe(tried);
+      }
+      // The signal back, the browser still saying nothing: sent by the next try, and no try after it.
+      off = false;
+      await jest.advanceTimersByTimeAsync(30_000);
+      expect(dataSource.responses.map((response) => response.values['unit'])).toEqual(['B-12']);
+      expect(store.items).toEqual([]);
+      expect(host.querySelector('.fd-outbox-said')?.textContent).toBe('Everything that waited was sent.');
+      await jest.advanceTimersByTimeAsync(120_000);
+      expect(tries()).toBe(8);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('sends what waited as the page comes back into view: a phone unlocked, its tab gone back to', async () => {
+    let off = true;
+    const dataSource = createMemoryDataSource({ offline: () => off });
+    const store = memoryOutbox();
+    const host = document.body.appendChild(document.createElement('div'));
+    handle = mountViewer(host, { page: visit, user: BROKER, dataSource, outbox: store, values: { unit: 'C-3' } });
+    await settled();
+    await handle.save();
+    expect(store.items).toHaveLength(1);
+    off = false;
+    const seen = (state: DocumentVisibilityState) => {
+      Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    try {
+      // Put out of sight: nothing tried.
+      seen('hidden');
+      await settled();
+      expect(dataSource.responses).toEqual([]);
+      seen('visible');
+      await settled();
+      expect(dataSource.responses.map((response) => response.values['unit'])).toEqual(['C-3']);
+      expect(store.items).toEqual([]);
+    } finally {
+      delete (document as { visibilityState?: unknown }).visibilityState;
+    }
   });
 
   it('keeps a send refused once it went, to try again or discard', async () => {

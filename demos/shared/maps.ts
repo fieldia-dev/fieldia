@@ -28,8 +28,14 @@ export const DEMO_REGION_SETS = [{ name: 'cairo-districts', key: 'code', nameKey
 export const demoListViews = { ...mapListViews(settings), ...demoCalendarViews, ...demoGanttViews };
 
 const parts = mapParts(settings);
-/** The maps whose courier sets off as they are shown: the order's, and the kitchen's. */
-const RIDES = new Set(['order-map', 'kitchen-map']);
+/**
+ * The maps whose courier sets off as they are shown, riding again once at the door, so whatever a person tries on the
+ * way is still there at a person's pace: the order's from the kitchen; the kitchen's, the last stretch into Zamalek.
+ */
+const RIDES = new Map<string, Parameters<typeof rideCourier>[1]>([
+  ['order-map', { loop: true }],
+  ['kitchen-map', { start: 28, loop: true }],
+]);
 /**
  * A form's maps, for the viewer's `maps`. The order's courier (and the
  * kitchen's) sets off along the road as its map is shown, as a courier's app would send their place;
@@ -38,6 +44,6 @@ const RIDES = new Set(['order-map', 'kitchen-map']);
 export const demoMaps: MapPartFactory = (context) => {
   const part = parts(context);
   if (!RIDES.has(context.node.id) || new URLSearchParams(location.search).get('ride') === 'off') return part;
-  const stop = rideCourier(context.form);
+  const stop = rideCourier(context.form, RIDES.get(context.node.id));
   return { ...part, destroy: () => (stop(), part.destroy?.()) };
 };

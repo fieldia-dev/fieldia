@@ -102,6 +102,39 @@ for (const variant of VARIANTS) {
       await expect(names(page)).toHaveCount(0);
     });
 
+    test('the groups opened stay open as a header sorts the list, their customers in its order; another grouping starts closed', async ({ page }) => {
+      // The how-to's replay: grouped by Country and Status, Egypt and Active opened, the Credit limit header pressed —
+      // and every group closed, no customers left to see sorted.
+      await open(page, variant, 'page=customers');
+      await page.getByRole('button', { name: 'Search options' }).click();
+      const grouping = menu(page).locator('[data-group-kind="groupBy"]');
+      await grouping.getByRole('button', { name: 'Country' }).click();
+      await grouping.getByRole('button', { name: 'Status' }).click();
+      await page.keyboard.press('Escape');
+      await group(page, 'Egypt').click();
+      await group(page, 'Active').click();
+      await expect(names(page)).toHaveCount(6);
+      const credit = page.locator('.fd-list-table th', { hasText: 'Credit limit' });
+      const upwards = ['Zamalek Studio', 'Amira Clinics', 'Heliopolis Dental Care', 'Nile Traders', 'Sahel Resorts', 'Delta Foods'];
+      await credit.getByRole('button').click();
+      await expect(credit).toHaveAttribute('aria-sort', 'ascending');
+      await expect(names(page)).toHaveText(upwards);
+      await credit.getByRole('button').click();
+      await expect(credit).toHaveAttribute('aria-sort', 'descending');
+      await expect(names(page)).toHaveText([...upwards].reverse());
+      await expect(group(page, 'Egypt')).toHaveAttribute('aria-expanded', 'true');
+      await expect(group(page, 'Active')).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('.fd-list-group')).toHaveText(['Egypt (10)', 'Active (6)', 'Blocked (2)', 'Draft (2)', 'Jordan (1)', 'Saudi Arabia (1)']);
+      // Status out of the grouping: by Country alone, a new grouping, its groups closed.
+      await page.getByRole('button', { name: 'Search options' }).click();
+      await grouping.getByRole('button', { name: /Status/ }).click();
+      await page.keyboard.press('Escape');
+      await expect(chips(page)).toHaveText(['Country']);
+      await expect(page.locator('.fd-list-group')).toHaveText(['Egypt (10)', 'Jordan (1)', 'Saudi Arabia (1)']);
+      await expect(group(page, 'Egypt')).toHaveAttribute('aria-expanded', 'false');
+      await expect(names(page)).toHaveCount(0);
+    });
+
     test('a group’s heading is a button named with its count in words, worked by keyboard as the rows are', async ({ page }) => {
       await open(page, variant, 'page=customers');
       await page.getByRole('button', { name: 'Search options' }).click();

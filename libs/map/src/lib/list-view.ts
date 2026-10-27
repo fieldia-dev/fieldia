@@ -167,6 +167,7 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
   const drawing = shapeDrawing({
     box,
     labels,
+    locale,
     keys: element,
     announce,
     armed: (mode) => {
@@ -553,7 +554,7 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
       const fromKeys = byKeys(event);
       // Closer, until they part (the person's own move); on one spot (a tower's flats), a list of them.
       moving = true;
-      if (zoomToPart(map, L, spots, ROOM) || theirs?.closer(map, gathered, centre)) {
+      if (zoomToPart(map, L, spots, ROOM, centre) || theirs?.closer(map, gathered, centre)) {
         if (fromKeys) box.element.focus();
         return;
       }
@@ -687,13 +688,10 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
       // The source's bubbles for where it stopped.
       if (served && !fitting) void askView(ASK_AFTER, false);
     });
-    // An open card is what the person is reading: Search this area steps out of its way (on a phone the card
-    // fills the map's height, and the button sat over its picture) and is back when the card closes.
-    map.on('popupopen', () => (box.element.dataset['card'] = ''));
+    // An open card is what the person is reading: Search this area and the words over the map step out of its way
+    // (popCard marks the map while one is open) and are back when it closes.
     map.on('popupclose', (event: Leaflet.PopupEvent) => {
       if (open?.popup === event.popup) open = null;
-      // Leaflet closes the last card before it opens the next, so the next one's open sets this again.
-      delete box.element.dataset['card'];
     });
   });
 

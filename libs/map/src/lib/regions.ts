@@ -117,12 +117,21 @@ path.fd-map-region:focus { outline: none; }
 .fd-map-box[data-measuring] path.fd-map-region, .fd-map-box[data-drawing] path.fd-map-region { pointer-events: none; }
 path.fd-map-region:focus-visible { stroke: var(--fd-focus); stroke-width: 4; stroke-opacity: 1; }
 .fd-map-box[data-plain] path.fd-map-region { cursor: default; }
+/* Clear of the tools' column at the map's right. */
 .fd-map-legend {
-  position: absolute; right: 8px; bottom: 26px; z-index: 1000; display: grid; gap: 3px; max-width: min(240px, 60%); padding: 6px 9px; border-radius: 6px;
+  position: absolute; right: 48px; bottom: 26px; z-index: 1000; display: grid; gap: 3px; max-width: min(240px, 60%); padding: 4px 9px 6px; border-radius: 6px;
   font-size: 12px; line-height: 1.35; background: color-mix(in srgb, var(--fd-surface) 94%, transparent); color: var(--fd-text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 .fd-map-legend[hidden] { display: none; }
-.fd-map-legend-title { font-weight: 700; overflow-wrap: anywhere; }
+.fd-map-legend-title {
+  display: flex; align-items: center; gap: 8px; min-height: 24px; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700;
+  text-align: start; overflow-wrap: anywhere; cursor: pointer;
+}
+.fd-map-legend-title::after { content: ""; flex: none; width: 6px; height: 6px; margin-inline-start: auto; border: solid currentColor; border-width: 0 2px 2px 0; rotate: 45deg; translate: 0 -2px; }
+.fd-map-legend[data-folded] .fd-map-legend-title::after { rotate: -135deg; translate: 0 2px; }
+.fd-map-legend[data-folded] { max-width: calc(100% - 96px); }
+.fd-map-legend[data-folded] ol { display: none; }
+.fd-map-legend-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 3px; }
 .fd-map-legend ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .fd-map-legend li { display: flex; align-items: center; gap: 7px; font-variant-numeric: tabular-nums; }
 .fd-map-legend i { width: 18px; height: 11px; flex: none; border-radius: 2px; background: var(--fd-region, transparent); border: 1px solid color-mix(in srgb, var(--fd-text) 35%, transparent); }
@@ -264,11 +273,24 @@ export function drawRegions(options: {
   box.element.addEventListener('focusout', focused);
 
   // ---- the legend --------------------------------------------------------------------
+  // Its title a button that folds it to the title alone and opens it again; folded at first on a map narrower than a
+  // tablet's (a phone's), where open it would cover most of the map. The person's choice kept as the shades change.
   const legend = doc.createElement('div');
   legend.className = 'fd-map-legend';
   legend.hidden = true;
   box.element.append(legend);
   box.follow(legend);
+  box.shield(legend);
+  const title = doc.createElement('button');
+  title.type = 'button';
+  title.className = 'fd-map-legend-title';
+  let folded: boolean | undefined;
+  const fold = (on: boolean) => {
+    folded = on;
+    legend.toggleAttribute('data-folded', on);
+    title.setAttribute('aria-expanded', String(!on));
+  };
+  title.addEventListener('click', () => fold(!folded));
 
   function drawLegend({ from: start, ends: steps }: { from: number; ends: number[] }, none: boolean) {
     legend.replaceChildren();
@@ -276,9 +298,8 @@ export function drawRegions(options: {
       legend.hidden = true;
       return;
     }
-    const title = doc.createElement('div');
-    title.className = 'fd-map-legend-title';
     title.textContent = options.title;
+    if (folded === undefined) fold((box.element.clientWidth || doc.defaultView?.innerWidth || 0) < 480);
     const list = doc.createElement('ol');
     const whole = steps.every((end) => Number.isInteger(end));
     // Areas with nothing to shade them, when there are some.

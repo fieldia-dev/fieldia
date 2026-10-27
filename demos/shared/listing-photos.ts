@@ -19,9 +19,12 @@ export const LISTING: Values = {
   floor_plan: null,
 };
 
-/** The store: 150 KB a second, as a phone sends on mobile data; the balcony's photo fails once. */
+/**
+ * The store: 50 KB a second, as a phone sends on poor mobile data — slow enough that a person reading the steps still
+ * finds photos on their way when Save is pressed; the balcony's photo fails once.
+ */
 export const LISTING_STORAGE: NonNullable<MemoryDataSourceOptions['storage']> = {
-  bytesPerSecond: 150000,
+  bytesPerSecond: 50000,
   fails: (file, attempt) => /^Balcony/.test(file.name) && attempt === 1,
 };
 
@@ -109,7 +112,7 @@ export function photosBar(): HTMLElement {
   const said = document.createElement('span');
   said.className = 'demo-photos-said';
   said.setAttribute('role', 'status');
-  said.textContent = 'Each is 12 megapixels, as a phone takes it, made smaller to 1600 pixels before it goes to a store that takes 150 KB a second. The balcony’s photo fails once.';
+  said.textContent = 'Each is 12 megapixels, as a phone takes it, made smaller to 1600 pixels before it goes to a store that takes 50 KB a second. The balcony’s photo fails once.';
   bar.append(add, said);
   add.addEventListener('click', async () => {
     // Taken one after another, as a phone would; the button stays, and says it is busy.

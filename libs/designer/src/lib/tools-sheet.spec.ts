@@ -53,6 +53,19 @@ describe('the toolbox’s sheet', () => {
     expect(sheet.open).toBe(false);
   });
 
+  it('steps aside for a drag begun in it: put away at once, its side back in its place, the + saying so', () => {
+    const { root, body, side, canvas, plus, sheet } = setup();
+    sheet.show(plus);
+    sheet.stepAside();
+    expect(sheet.open).toBe(false);
+    expect(root.querySelector('[role="dialog"]')).toBeNull();
+    expect([...body.children]).toEqual([side, canvas]);
+    expect(plus.getAttribute('aria-expanded')).toBe('false');
+    // Put away already, it does nothing.
+    sheet.stepAside();
+    expect([...body.children]).toEqual([side, canvas]);
+  });
+
   it('puts itself away before a pick runs, so what the pick makes takes the focus', () => {
     const { plus, sheet, canvas } = setup();
     const made = el('input', { 'aria-label': 'Question' });

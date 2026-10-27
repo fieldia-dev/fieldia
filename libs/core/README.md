@@ -1265,6 +1265,13 @@ form.undo();        // { field: 'price' }: back to what it held, as the person's
 form.redo();        // { field: 'price' }: 1200 again
 ```
 
+A box's own undo and redo — the browser's, through the typing in the box the
+person is in — are told to the form around the change they write
+(`form.boxHistory('undo' | 'redo')`, then `null`; the viewer does so for its
+boxes): what the box's own undo took back is then a change `redo` makes again,
+the box left or not, its undos since its last typing one change as that typing
+is one, and `undo` passes over it.
+
 What it writes is the person's own change back: the page's `change` steps and
 the source's onchange run as for any, and what is worked out from it follows. A
 step's, a rule's or the app's writes are never a change to take back, and a

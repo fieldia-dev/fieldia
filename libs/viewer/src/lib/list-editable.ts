@@ -586,7 +586,22 @@ export function editableRows(context: EditableContext): EditableRows | null {
   const hideLockNote = (event: Event) => {
     if (!lockNote.hidden && !lockNote.contains(event.target as Node)) lockNote.hidden = true;
   };
-  doc.addEventListener('pointerdown', hideLockNote, true);
+  /**
+   * A press elsewhere takes why away once it is over — its click handled, or the press given up (a finger that
+   * scrolled) — never as it goes down: the note gone then, the rows and buttons under it move up before the press
+   * comes up, and its click lands on what came there, or nowhere (Add a stage, 36 px higher by the mouse's up, missed;
+   * pressed again, it added a stage). A key takes it away at once.
+   */
+  let noteGoes = false;
+  const pressOver = (event: Event) => {
+    if (event.type === 'pointerdown') noteGoes = !lockNote.hidden && !lockNote.contains(event.target as Node);
+    else if (noteGoes) {
+      noteGoes = false;
+      lockNote.hidden = true;
+    }
+  };
+  const PRESS = ['pointerdown', 'click', 'pointercancel'];
+  for (const type of PRESS) doc.addEventListener(type, pressOver, true);
   body.addEventListener('keydown', hideLockNote, true);
 
   // ---- a cell open for typing ----------------------------------------------------------------------------------
@@ -1571,7 +1586,7 @@ export function editableRows(context: EditableContext): EditableRows | null {
       destroyed = true;
       doc.removeEventListener('focusin', onFocusIn, true);
       doc.removeEventListener('focusout', onFocusOut, true);
-      doc.removeEventListener('pointerdown', hideLockNote, true);
+      for (const type of PRESS) doc.removeEventListener(type, pressOver, true);
       context.element.removeEventListener('keydown', onUndoKey);
       endUndo();
       context.element.removeEventListener('input', onTyped, true);

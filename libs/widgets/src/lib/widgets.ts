@@ -88,6 +88,14 @@ export interface WidgetContext {
    */
   fail?: (error: unknown) => void;
   /**
+   * Said by a widget whose part could not come (offline, or not the file its fieldia.js was built with): it stays drawn
+   * plainly, and works so — the field says that part of it could not load (the viewer's words under it). `retry` asks
+   * for the part again where that can bring it (`Part.asksAgain`): it resolves true once the part came and its own
+   * widget took the plain one's place, false where it could not come again — said again then. Left out, the plain
+   * widget is all there is, as before.
+   */
+  unloaded?: (part: Part, retry: () => Promise<boolean>) => void;
+  /**
    * Said by a widget that draws after its update returns — a React or Vue component, drawn as its framework next
    * renders — each time it has drawn: the value it drew. Until a widget first says it, each value its update took
    * without throwing counts as drawn. A widget that fails on a change the person made in it, never having drawn it,

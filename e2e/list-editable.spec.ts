@@ -576,6 +576,26 @@ test.describe('a pipeline’s deal stages', () => {
     expect(problems).toEqual([]);
   });
 
+  test('Add a stage, pressed once while why the won stage is locked is said, adds a stage: nothing moves under the press', async ({ page }) => {
+    // The how-to's replay: the note went as the press went down, Add a stage rose 36 px before the mouse came up, and
+    // the click missed it; a second press added the stage.
+    const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline');
+    await cell(page, 'Won', 'name').click();
+    await expect(note(page, 'Won')).toBeVisible();
+    const add = page.getByRole('button', { name: 'Add a stage' });
+    const was = (await add.boundingBox())!;
+    await page.mouse.move(was.x + was.width / 2, was.y + was.height / 2);
+    await page.mouse.down();
+    // Down: the button where it was, why still said under the won stage.
+    expect(Math.abs((await add.boundingBox())!.y - was.y), 'Add a stage moved under the press').toBeLessThan(1);
+    await expect(note(page, 'Won')).toBeVisible();
+    await page.mouse.up();
+    await expect(page.locator('.fd-list-row[data-new]')).toHaveCount(1);
+    await expect(page.locator('.fd-list-row[data-new] td[data-col="name"] input')).toBeFocused();
+    await expect(page.locator('.fd-list-locked-note')).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+
   test('the won stage in the dark: its lock and why in the dark’s own tones', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=deal-stages&skin=underline&scheme=dark');
     await cell(page, 'Won', 'days').click();

@@ -103,7 +103,8 @@ export function answerBusiness(request: ActionRequest, locale?: string): ActionR
   if (request.action !== 'action_timer_stop') return undefined;
   const started = new Date(String(request.values['timer_start'] ?? '')).getTime();
   const minutes = Number.isNaN(started) ? 0 : Math.max(1, Math.ceil((Date.now() - started) / 60000));
-  const logged = Math.round((Number(request.values['duration'] ?? 0) + minutes / 60) * 100) / 100;
+  // Counted in whole minutes, kept in hours: never rounded to a hundredth of an hour (12:46 is not 12.77 h, 12:46:12).
+  const logged = (Math.round(Number(request.values['duration'] ?? 0) * 60) + minutes) / 60;
   const arabic = locale?.startsWith('ar') ?? false;
   return { values: { timer_start: null, duration: logged }, say: { message: arabic ? `سُجّلت ${minutes} دقيقة.` : `${minutes} min logged.`, tone: 'success' } };
 }

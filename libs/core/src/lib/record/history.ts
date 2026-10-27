@@ -11,8 +11,9 @@ export interface HistoryStep {
 /**
  * A record's changes as the person makes them, kept by the form from the first in the order made (form.ts): each field
  * written, cell typed in, line added, taken away or moved — `[field, line, before, after, joins]`, `joins` typing that
- * goes on in the same box — and a box left, `[field]`. A step's, a rule's or the app's writes are never one; another
- * record shown, or the form started again, starts a list of its own. The undo part takes them as they come
+ * goes on in the same box (true), or the box's own undo or redo going through that typing (`undo`, `redo`: the
+ * browser's, `form.boxHistory`) — and a box left, `[field]`. A step's, a rule's or the app's writes are never one;
+ * another record shown, or the form started again, starts a list of its own. The undo part takes them as they come
  * (history-steps.ts) and walks them for Undo and Redo.
  */
-export type Noted = [field: string, line?: string, before?: Value, after?: Value, joins?: boolean];
+export type Noted = [field: string, line?: string, before?: Value, after?: Value, joins?: boolean | 'undo' | 'redo'];

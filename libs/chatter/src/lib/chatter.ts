@@ -40,8 +40,9 @@ export interface ChatterOptions {
    * New messages and their delivery while the conversation is shown, laid in place — never the conversation fetched
    * again whole: pushed by the source's `subscribe` where it has one; else asked of `messages` again every `every` ms
    * (15 seconds unless said), less often while nothing changes (up to four times), never while the page is out of
-   * sight or offline. On where the chatter has channels or the source subscribes; `false` turns it off, `true` (or
-   * `{ every }`) asks again for a chatter without channels.
+   * sight, four times less often while the browser says it is offline (some say so throughout). On where the chatter
+   * has channels or the source subscribes; `false` turns it off, `true` (or `{ every }`) asks again for a chatter
+   * without channels.
    */
   live?: boolean | { every?: number };
   /** The page's clock, by its IANA zone (`Page.timeZone`): an activity's hour and the messages' times are on it. The browser's own when left out. */

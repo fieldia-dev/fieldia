@@ -634,6 +634,73 @@ test.describe('the demo frame', () => {
     await expect(page.locator('.dh-title')).toHaveText('Customer record');
     await expect(page.locator('#demo-nav, #demo-howto, #demo-code')).toHaveCount(0);
   });
+
+  // The how-to replays (e2e/how-to.spec.ts) found these: a window narrowed left the menu over the demo; a step's link
+  // followed on a phone opened the next page on the panel, not on the demo; the codes to scan were downloaded, not
+  // opened; and at a laptop's width the menu left a designer too narrow for its toolbox and its panel.
+  test('a window narrowed past where the menu and the panel take room of their own folds them; widened, the menu comes back', async ({ page }) => {
+    await asVisitor(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/plain/?page=customer&skin=underline');
+    await expect(menu(page)).toBeInViewport();
+    await page.setViewportSize({ width: 900, height: 900 });
+    await expect(menu(page)).not.toBeInViewport();
+    await expect(page.locator('#demo-head .dh-menu')).toHaveAttribute('aria-expanded', 'false');
+    // Folded off the window, it is out of the keys' way: no Tab stop lands in it unseen.
+    await expect(menu(page)).toHaveJSProperty('inert', true);
+    await page.locator('.dh-title').click();
+    for (let stop = 0; stop < 12; stop++) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => !!document.activeElement?.closest('#demo-nav')), `Tab stop ${stop + 1}`).toBe(false);
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(menu(page)).toBeInViewport();
+    // The panel, opened by a press beside the demo, folds as the window narrows to where it would lie over it.
+    const howTo = page.getByRole('complementary', { name: 'About this demo' });
+    await page.locator('#demo-head').getByRole('button', { name: 'About this demo' }).click();
+    await expect(howTo).toBeVisible();
+    await page.setViewportSize({ width: 1000, height: 900 });
+    await expect(howTo).toBeHidden();
+  });
+
+  test('on a phone the panel opens by a press alone: a step’s link followed from it opens the demo, not the panel', async ({ page }) => {
+    await asVisitor(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/plain/?page=customer&skin=underline');
+    const howTo = page.getByRole('complementary', { name: 'About this demo' });
+    await expect(howTo).toBeHidden();
+    await page.locator('#demo-head').getByRole('button', { name: 'About this demo' }).click();
+    await expect(howTo).toBeVisible();
+    await howTo.getByRole('link', { name: 'Turkish' }).click();
+    await expect(page).toHaveURL(/locale=tr/);
+    await expect(page.locator('#app .fd-form').first()).toBeVisible();
+    await expect(howTo).toBeHidden();
+  });
+
+  test('a step’s page to look at opens in a tab of its own; a file to try the demo with is downloaded', async ({ page }) => {
+    await asVisitor(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/plain/?page=clinic-treatment&record=1&skin=outlined');
+    await page.locator('#demo-head').getByRole('button', { name: 'About this demo' }).click();
+    const codes = page.getByRole('complementary', { name: 'About this demo' }).getByRole('link', { name: 'the codes to scan' });
+    await expect(codes).toHaveAttribute('target', '_blank');
+    await expect(codes).not.toHaveAttribute('download', /.*/);
+    const opened = page.context().waitForEvent('page');
+    await codes.click();
+    await expect(await opened).toHaveURL(/\/samples\/codes-to-scan\.html$/);
+  });
+
+  test('beside a designer the menu opens by itself only where the designer keeps its toolbox and its panel beside the page', async ({ page }) => {
+    await asVisitor(page);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/screen/');
+    await expect(page.locator('#demo-head .dh-menu')).toHaveAttribute('aria-expanded', 'false');
+    await page.goto('/plain/?page=customer&skin=underline');
+    await expect(menu(page)).toBeInViewport();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/screen/');
+    await expect(page.locator('#demo-head .dh-menu')).toHaveAttribute('aria-expanded', 'true');
+  });
 });
 
 test('embed=1: the demo alone, as a feature page frames it — no header, menu, how-to or code drawer', async ({ page }) => {

@@ -18,6 +18,12 @@
     -->
     <p class="note">A demo: the code it sends your mobile is always 246810, and no card is charged.</p>
     <fieldia-form src="unit-enquiry.page.json" frame skin="outlined"></fieldia-form>
+    <!-- The frame's language (?locale=ar): Fieldia's own words in it come in an add-on of their own, written here
+         before fieldia.js, which takes them as it starts. -->
+    <script>
+      const language = new URLSearchParams(location.search).get('locale');
+      if (['ar', 'de', 'fr', 'tr', 'fa', 'ur', 'es'].includes(language)) document.write(`<script src="fieldia.${language}.js"><\/script>`);
+    </script>
     <script src="fieldia.js"></script>
     <script>
       // The app's data source: here, one in memory standing in for the app's server — its codes always 246810, its

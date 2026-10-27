@@ -283,6 +283,20 @@ export function viewFiles(context: ViewFiles): void {
 /** A picture picked, shown from the file itself while it is on its way: an address to let go once it is stored. */
 export const preview = (file: File): string => (/^image\//.test(file.type) && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : '');
 
+/**
+ * A picture's address let go once nothing shows or loads it: `shown`, what showed it as its one picture, has gone — at
+ * once where that picture has loaded or failed (or there is none: the file's icon stood in), else as it does. Its file stored the
+ * moment it was picked, a picture still loads from it: let go then, WebKit says it failed to load ("Failed to load
+ * resource"), and another engine may draw nothing.
+ */
+export function letGoOnceLoaded(url: string, shown: Element): void {
+  const image = shown.querySelector('img');
+  const go = () => URL.revokeObjectURL(url);
+  if (!image || image.complete) return go();
+  image.addEventListener('load', go);
+  image.addEventListener('error', go);
+}
+
 /** What files picked for a field are taken with: the form and the field, its words, the files it holds now, and where it says why. */
 export interface FilesTaking {
   form: Form;
@@ -515,7 +529,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         item.element.remove();
         goingItems.delete(id);
         const preview = previews.get(id);
-        if (preview) URL.revokeObjectURL(preview);
+        if (preview) letGoOnceLoaded(preview, item.element);
         previews.delete(id);
         // Gone because it is stored, not cancelled: the field holds it now.
         if (files.some((file) => file.name === was)) uploadedSince++;

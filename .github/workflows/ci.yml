@@ -78,8 +78,10 @@ jobs:
       # advisory unreviewed, every script tag the docs print names a version and its hash, and the workflows keep their
       # rules. And the demos' size check, which tools/build-demos.mjs runs as it builds them: a page over its budget, a
       # bundle unminified, said (tools/demo-sizes.mjs). And no stylesheet's sibling rule names nothing on its left, which
-      # makes the browser restyle all round each element put in a page (tools/style-siblings.mjs).
-      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/intl-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-train.test.mjs tools/format-since.test.mjs tools/schema-words.test.mjs tools/promises.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs tools/demo-sizes.test.mjs tools/style-siblings.test.mjs
+      # makes the browser restyle all round each element put in a page (tools/style-siblings.mjs). And the flake log's
+      # own tool (tools/flake-log.mjs), and a minor refused until a real iPhone and Android phone were checked for it
+      # (tools/real-devices.mjs).
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/intl-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-train.test.mjs tools/format-since.test.mjs tools/schema-words.test.mjs tools/promises.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs tools/demo-sizes.test.mjs tools/style-siblings.test.mjs tools/flake-log.test.mjs tools/real-devices.test.mjs
       # The tools themselves, linted as the packages are (`nx lint` reads the packages alone): four errors hid there in 0.31.
       - run: npx eslint tools eslint.config.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's
@@ -156,13 +158,29 @@ jobs:
       - run: node tools/build-demos.mjs
       # fieldia.dev, gated like the demos: every page, link and the live form.
       - run: node tools/build-site.mjs
-      - run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4
+      - id: tests
+        run: npx playwright test --project=chromium --shard=${{ matrix.shard }}/4
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log/first.json
+      # The flake log (tools/flake-log.mjs, the audit's R-M14): retries stay 0, so a failure fails the job; what failed is
+      # run once more on the same commit, and what passes then is a flake — said in the summary, kept as an artifact.
+      - if: failure() && steps.tests.outcome == 'failure'
+        run: node tools/flake-log.mjs rerun flake-log --workers=1
+      - if: always()
+        run: node tools/flake-log.mjs log flake-log --job "chromium ${{ matrix.shard }} of 4" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: screens-${{ matrix.shard }}
           path: test-results/
           retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: flake-log-chromium-${{ matrix.shard }}
+          path: flake-log/flakes.json
+          if-no-files-found: ignore
+          retention-days: 90
 
   perf:
     name: Perf gates (an app's first load, counts at scale, leaks, timings alone)
@@ -213,15 +231,30 @@ jobs:
       - run: node tools/build-site.mjs
       # Desktop and a mid-range phone (412 px, 4× slower CPU): the counts at scale (500 fields, 200 lines, 5,000 rows), the
       # leak gate, a long list's layouts, and the timings — one worker.
-      - run: npx playwright test --project=perf --project=perf-phone --workers=1
+      - id: tests
+        run: npx playwright test --project=perf --project=perf-phone --workers=1
         env:
           FIELDIA_PERF_LABEL: ${{ github.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log/first.json
+      # The flake log (tools/flake-log.mjs, the audit's R-M14): retries stay 0, so a failure fails the job; what failed is
+      # run once more on the same commit, and what passes then is a flake — said in the summary, kept as an artifact.
+      - if: failure() && steps.tests.outcome == 'failure'
+        run: node tools/flake-log.mjs rerun flake-log --workers=1
+      - if: always()
+        run: node tools/flake-log.mjs log flake-log --job "perf" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: perf
           path: test-results/
           retention-days: 30
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: flake-log-perf
+          path: flake-log/flakes.json
+          if-no-files-found: ignore
+          retention-days: 90
 
   engines:
     name: Browser smoke in ${{ matrix.engine }} (${{ matrix.shard }} of 2)
@@ -273,13 +306,155 @@ jobs:
           NX_DAEMON: 'false'
       - run: node tools/build-demos.mjs
       - run: node tools/build-site.mjs
-      - run: npx playwright test --project=${{ matrix.engine }} --shard=${{ matrix.shard }}/2
+      - id: tests
+        run: npx playwright test --project=${{ matrix.engine }} --shard=${{ matrix.shard }}/2
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log/first.json
+      # The flake log (tools/flake-log.mjs, the audit's R-M14): retries stay 0, so a failure fails the job; what failed is
+      # run once more on the same commit, and what passes then is a flake — said in the summary, kept as an artifact.
+      - if: failure() && steps.tests.outcome == 'failure'
+        run: node tools/flake-log.mjs rerun flake-log --workers=1
+      - if: always()
+        run: node tools/flake-log.mjs log flake-log --job "${{ matrix.engine }} ${{ matrix.shard }} of 2" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: screens-${{ matrix.engine }}-${{ matrix.shard }}
           path: test-results/
           retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: flake-log-${{ matrix.engine }}-${{ matrix.shard }}
+          path: flake-log/flakes.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+  how-to-phone:
+    name: Every demo's how-to by a finger, in WebKit (${{ matrix.shard }} of 2)
+    needs: scope
+    if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
+    runs-on: ubuntu-latest
+    # The audit's R-M13: each demo's "Try this" steps replayed by a person's hand (e2e/how-to.spec.ts) — the mouse and
+    # the keys in Chromium, with the shards above; here a finger on an iPhone's 390 px in WebKit, Safari's engine (the
+    # `how-to-phone` project). A demo's steps a phone cannot take say why (a key it has none of, a drag Playwright's
+    # WebKit cannot make with a finger). Some 270 replays, about 8 minutes a half.
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    # The demos alone: no replay opens fieldia.dev.
+    env:
+      FIELDIA_SITE: 'off'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-webkit-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # WebKit and the system packages it needs, with the same guard against a stalled apt mirror as Chromium's.
+      - name: Install webkit for Playwright
+        run: |
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fieldia-timeouts > /dev/null
+          for try in 1 2 3; do
+            if [ "$try" -gt 1 ]; then
+              sudo pkill -9 -x apt-get || true
+              sudo pkill -9 -x dpkg || true
+              sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+              sudo dpkg --configure -a || true
+            fi
+            timeout 600 npx playwright install --with-deps webkit && exit 0
+            echo "Install try $try stalled or failed."
+          done
+          exit 1
+      - run: npx nx run-many -t build -p angular viewer designer
+        env:
+          NX_DAEMON: 'false'
+      - run: node tools/build-demos.mjs
+      - id: tests
+        run: npx playwright test --project=how-to-phone --shard=${{ matrix.shard }}/2
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log/first.json
+      # The flake log (tools/flake-log.mjs, the audit's R-M14): retries stay 0, so a failure fails the job; what failed is
+      # run once more on the same commit, and what passes then is a flake — said in the summary, kept as an artifact.
+      - if: failure() && steps.tests.outcome == 'failure'
+        run: node tools/flake-log.mjs rerun flake-log --workers=1
+      - if: always()
+        run: node tools/flake-log.mjs log flake-log --job "how-to on a phone ${{ matrix.shard }} of 2" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: screens-how-to-phone-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: flake-log-how-to-phone-${{ matrix.shard }}
+          path: flake-log/flakes.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+  screens:
+    name: Key screens against their stored images
+    needs: scope
+    if: needs.scope.outputs.tested != 'true' && needs.scope.outputs.site != 'true'
+    runs-on: ubuntu-latest
+    # The audit's R-M13 (no visual check existed): the screens a person meets first — a record light and dark, in each
+    # look, on a phone, right to left, a list, a form in steps (e2e/screens.spec.ts) — compared within a small
+    # tolerance with their images in e2e/screens-baseline/. In the Playwright container, named by its digest — the one
+    # tools/screens.mjs runs locally (tools/workflows.test.mjs holds the two to one image, and its Playwright to the
+    # one package.json installs) — so a difference is Fieldia's, never a runner's fonts. A difference fails the job, its
+    # expected, actual and diff images in the artifact; to store them again: docs/maintainers/screens.md.
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble@sha256:f1e7e01021efd65dd1a2c56064be399f3e4de00fd021ac561325f2bfbb2b837a
+      options: --ipc=host
+    env:
+      FIELDIA_SCREENS: container
+      FIELDIA_SITE: 'off'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The plain demo alone, which every screen is shot from.
+      - run: node tools/build-demos.mjs plain
+      - id: tests
+        run: npx playwright test --project=screens
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log/first.json
+      # The flake log (tools/flake-log.mjs): a screen that differs once and not again is a page that does not settle —
+      # investigated, never tolerated away.
+      - if: failure() && steps.tests.outcome == 'failure'
+        run: node tools/flake-log.mjs rerun flake-log --workers=1
+      - if: always()
+        run: node tools/flake-log.mjs log flake-log --job "key screens" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: screens-compared
+          path: test-results/
+          retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: flake-log-screens
+          path: flake-log/flakes.json
+          if-no-files-found: ignore
+          retention-days: 90
 
   # @fieldia/angular and @fieldia/designer/angular support two Angular majors. The workspace builds them with the oldest,
   # as an Angular library is built (an app's linker refuses a declaration from a compiler newer than itself), and every
@@ -383,11 +558,30 @@ jobs:
           NX_DAEMON: 'false'
       - run: node tools/build-demos.mjs
       - run: node tools/build-site.mjs
-      - run: npx playwright test e2e/site.spec.ts --project=chromium
-      - run: npx playwright test e2e/a11y.spec.ts --project=chromium -g "axe on fieldia.dev"
+      - id: tests
+        run: npx playwright test e2e/site.spec.ts --project=chromium
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log/first.json
+      - id: axe
+        run: npx playwright test e2e/a11y.spec.ts --project=chromium -g "axe on fieldia.dev"
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: flake-log/first-axe.json
+      # The flake log (tools/flake-log.mjs, the audit's R-M14), of both runs: what failed is run once more, on the same
+      # commit; what passes then is a flake, said in the summary and kept as an artifact.
+      - if: failure() && steps.tests.outcome == 'failure' || failure() && steps.axe.outcome == 'failure'
+        run: node tools/flake-log.mjs rerun flake-log --workers=1
+      - if: always()
+        run: node tools/flake-log.mjs log flake-log --job "fieldia.dev" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: screens-site
           path: test-results/
           retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: flake-log-site
+          path: flake-log/flakes.json
+          if-no-files-found: ignore
+          retention-days: 90

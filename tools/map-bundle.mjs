@@ -164,8 +164,27 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // measured before, 19,973 after, to 19.6; a list's map 22,342, 22,351, inside its 21.9.
 // 0.36, a pin's and a bubble's name holding what its face shows (WCAG 2.5.3, `nameShowing`; list-view.ts, form-map.ts):
 // a list's map 22,342 bytes measured before, 22,369 after, inside its 21.9; a form's 19,964, 20,045, to 19.6.
-const BUDGET = { fields: 11.7, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
-const PART_BUDGET = { 'view-part': 21.9, 'form-part': 19.6, 'widgets-part': 18.2 };
+// 0.36 (p3-real-tests, lane F3 — what the demos' how-to replays found on the maps): a box or a circle drawn, and a shape
+// carried, holding off the browser's own selection and drag and drop as Leaflet's drags do (drawing.ts, area.ts); a
+// bubble whose pins spread wider than the map shows pressed one step closer on its spot, never a fit that only pans
+// (marks.ts); the bar over the map letting presses through but on its buttons, in a finger's words on a touch screen
+// (drawPolygonTouch, measureHintTouch) and "1 point" said as one (pointsOne), each in the eight languages; a zoom key
+// pressed while the map still zooms kept as a button's press is (map-core.ts) — with the page, the English words alone:
+// a place and an area 11,929 bytes measured before, 12,017 after, to 11.8; with a list's map 13,584, 13,671, to 13.4;
+// a list's map in a page of its own 10,859, 10,945, inside its 10.7. The parts: a list's map 22,174, 22,483, to 22.0; a
+// form's 19,852, 20,042, to 19.6; the fields' 18,442, 18,726, to 18.3. (The legend folded on a phone is the areas'
+// chunk's, loaded with the first map that has them.) Then every card a map opens kept inside it on a phone (popCard,
+// marks.ts): between the columns of buttons, no taller than the map has room for, its picture shorter and its buttons
+// kept at its foot, the words over the map stepping aside while it is open (styles.ts, in the chunk the parts share) —
+// a list's map 22,483 bytes, 22,752, to 22.3; a form's 20,042, 20,339, to 19.9; the fields' 18,726, 18,892, to 18.5;
+// with the page as it was.
+// 0.36 merged with 0.35.1, from the merged build: both lines' map changes in each part — a list's map 22,914 bytes, to
+// 22.4; a form's 20,446, to 20.0; the fields' 19,004, to 18.6; with the page 12,018, 13,718 and 10,945, inside 11.8, 13.4
+// and 10.7.
+const BUDGET = { fields: 11.8, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
+// 0.36 merged with 0.35.2, and a zoom under way from its press (map-core.ts): a list's map 22,943 bytes, to 22.5; a
+// form's 20,479, to 20.1; the fields' 19,021, inside 18.6.
+const PART_BUDGET = { 'view-part': 22.5, 'form-part': 20.1, 'widgets-part': 18.6 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};

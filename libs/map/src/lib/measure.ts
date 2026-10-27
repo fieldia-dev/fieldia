@@ -2,7 +2,7 @@ import { fieldiaStyle } from '@fieldia/widgets';
 import type * as Leaflet from 'leaflet';
 import type { Locale } from '@fieldia/core';
 import { metresBetween, type LatLng } from './geo';
-import { fill, type MapLabels } from './labels';
+import { fill, forHand, type MapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import type { MapBox } from './map-core';
 import { intlFormat } from '@fieldia/core';
@@ -49,7 +49,7 @@ export function measure(options: { box: MapBox; map: Leaflet.Map; L: LeafletModu
   const hint = doc.createElement('div');
   hint.className = 'fd-map-hint fd-map-measure-hint';
   const words = doc.createElement('p');
-  words.textContent = labels.measureHint;
+  words.textContent = forHand(doc, labels.measureHint, labels.measureHintTouch);
   hint.append(words);
   const live = doc.createElement('div');
   live.className = 'fd-sr-only';

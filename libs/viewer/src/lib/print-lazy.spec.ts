@@ -221,6 +221,32 @@ describe('on paper, the print part on intent', () => {
     await until(() => print.mock.calls.length === 1);
   });
 
+  it('where it cannot come, Ctrl+P and viewer.print() print the page as it is shown, and say so', async () => {
+    let viewer: Fresh | undefined;
+    try {
+      jest.isolateModules(() => {
+        jest.doMock('./print-part', () => {
+          throw new Error('offline');
+        });
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        viewer = { mountViewer: require('./viewer').mountViewer, printPart: require('./print').printPart };
+      });
+      const host = document.createElement('div');
+      document.body.append(host);
+      handle = (viewer as Fresh).mountViewer(host, { page: invoice, dataSource: invoices(), recordId: 1 });
+      await until(() => handle?.form.getState().status === 'ready');
+      const print = jest.spyOn(window, 'print').mockImplementation(() => undefined);
+      expect(ctrlP()).toBe(true);
+      await until(() => print.mock.calls.length === 1);
+      expect(host.querySelector('.fd-says .fd-say')?.textContent).toContain('The print layout could not load, so the page prints as it is shown.');
+      await handle.print();
+      expect(print).toHaveBeenCalledTimes(2);
+      expect((viewer as Fresh).printPart.loaded).toBeUndefined();
+    } finally {
+      jest.dontMock('./print-part');
+    }
+  });
+
   it('viewer.print() before it came waits for it, then prints this form alone, the page round it left out', async () => {
     const { printPart, form } = await mountFresh();
     const seen: boolean[] = [];

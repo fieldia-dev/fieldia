@@ -19,7 +19,8 @@ import { openTag, readReleased } from './script-tags.mjs';
 import { minifiedStyles, STYLED_PACKAGES } from './minified-styles.mjs';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
-const OUT = join(WORKSPACE, 'dist/demos');
+// Another folder where FIELDIA_DEMOS_OUT names one: a lane's own build beside the one the browser gates serve.
+const OUT = process.env['FIELDIA_DEMOS_OUT'] ? resolve(process.env['FIELDIA_DEMOS_OUT']) : join(WORKSPACE, 'dist/demos');
 const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script', 'embed', 'map-embed', 'backlog', 'save-safety', 'loading', 'csp', 'ssr'];
 
 rmSync(OUT, { recursive: true, force: true });

@@ -99,6 +99,7 @@ export const tr: Messages = {
   patternBroken: '{label} alanının deseni geçerli bir desen değil: {problem}',
   stillWorkedOut: '{label} hâlâ hesaplanıyor',
   notWorkedOut: '{label} hesaplanamadı: {problem}',
+  partNotLoaded: 'bu sayfanın bir kısmı yüklenemedi',
   notOfferedNow: '{name} artık sunulmuyor, bu yüzden kaldırıldı',
   notOfferedNowMany: '{name} artık sunulmuyor, bu yüzden kaldırıldı',
   formOpens: 'Bu form şu tarihte açılacak: {when}.',

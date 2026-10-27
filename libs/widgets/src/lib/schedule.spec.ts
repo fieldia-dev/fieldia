@@ -97,6 +97,62 @@ describe('a repeat field', () => {
     expect(value()).toBe('FREQ=MONTHLY;BYMONTHDAY=-1');
   });
 
+  /**
+   * Its boxes emptied key by key, as a person clears one to type another number: an emptied Every was put back to 1 at
+   * once, so the 1 typed after read "11"; an emptied count took the count away, Ends flipped to Never and the box went
+   * from under the caret. Emptied, a box stays empty while it is typed in, and the rule keeps what it held until it is
+   * left; left empty, it means what it always did.
+   */
+  it('an emptied box stays empty while typed in, the rule as it was; what is typed after is taken whole', async () => {
+    const { el, value } = await mount('sessions', { sessions: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;COUNT=12' });
+    const keys = (input: HTMLInputElement, text: string) => {
+      for (const char of text) {
+        input.setRangeText(char, input.selectionStart ?? input.value.length, input.selectionEnd ?? input.value.length, 'end');
+        input.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: char, bubbles: true }));
+      }
+    };
+    const backspaces = (input: HTMLInputElement, n: number) => {
+      for (let i = 0; i < n; i++) {
+        const at = input.selectionStart ?? input.value.length;
+        input.setRangeText('', Math.max(0, at - 1), at, 'end');
+        input.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }));
+      }
+    };
+    const every = el.querySelector('#fd-sessions-interval') as HTMLInputElement;
+    every.focus();
+    every.setSelectionRange(every.value.length, every.value.length);
+    backspaces(every, every.value.length);
+    expect(every.value).toBe('');
+    expect(value()).toBe('FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;COUNT=12');
+    keys(every, '1');
+    expect(every.value).toBe('1');
+    expect(value()).toBe('FREQ=WEEKLY;BYDAY=TU;COUNT=12');
+    every.blur();
+    const times = el.querySelector('#fd-sessions-count') as HTMLInputElement;
+    times.focus();
+    times.setSelectionRange(times.value.length, times.value.length);
+    backspaces(times, times.value.length);
+    // Ends still says after a number of times, its box still there and typed in.
+    expect(times.value).toBe('');
+    expect((el.querySelector('select[aria-label="Ends"]') as HTMLSelectElement).value).toBe('count');
+    expect(times.closest('[hidden]')).toBeNull();
+    expect(document.activeElement).toBe(times);
+    keys(times, '6');
+    times.blur();
+    expect(value()).toBe('FREQ=WEEKLY;BYDAY=TU;COUNT=6');
+    expect(el.querySelector('.fd-repeat-words')?.textContent).toBe('Every week on Tuesday, 6 times');
+    // Left empty, a box means what it always did: every 1, and no count.
+    every.focus();
+    backspaces(every, every.value.length);
+    every.blur();
+    expect(every.value).toBe('1');
+    times.focus();
+    times.setSelectionRange(times.value.length, times.value.length);
+    backspaces(times, times.value.length);
+    times.blur();
+    expect(value()).toBe('FREQ=WEEKLY;BYDAY=TU');
+  });
+
   it('keeps a rule it cannot change as it is, saying so', async () => {
     const { el, value } = await mount('sessions', { sessions: 'FREQ=WEEKLY;BYHOUR=9' });
     expect(el.querySelector('.fd-repeat-words')?.textContent).toBe('Kept as it is, which this box cannot change: FREQ=WEEKLY;BYHOUR=9');

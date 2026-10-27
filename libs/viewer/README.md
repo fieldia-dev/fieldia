@@ -1415,7 +1415,12 @@ answers said in a page's words, a form's limits, a record's approvals, the
 functions beyond the plain ones, a field's code, a payment, `<fieldia-form>`'s
 work… — comes in 52 parts beside it (`fieldia.list.js`, `fieldia.date.js`,
 `fieldia.relations.js`, `fieldia.print.js`, …), each loaded from the same
-folder the first time a page uses it:
+folder the first time a page uses it. A part that cannot come — offline, or not
+the file this `fieldia.js` was built with — leaves the page drawn plainly, and
+says so: under a field whose box it draws ("Part of this field could not load,
+so it is shown plainly.", with Retry), once over the page for anything else (a
+record's head, a list's filter bar, a theme…), as it is pressed for Undo and
+printing; and a send it guards is refused, nothing sent:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.35.2/bundle/fieldia.js"

@@ -220,12 +220,24 @@ function drawChips() {
   );
 }
 
-/** A pin under the pointer: its home lit in the list, scrolled into view. */
+/**
+ * Whether the pointer on the map presses: a finger's, or a mouse's held down. A pin a finger taps is lit by the tap (a
+ * finger has no hover: the browser sends its mouseover with the tap, before its click), and a pin a mouse presses by
+ * its focus; were its home scrolled into view then, the page would move under the press and its click land on what
+ * came there — a home's name, opening that home. So a press's light lights the home where it is.
+ */
+let pressing = false;
+const track = (event: PointerEvent) => {
+  pressing = event.pointerType === 'touch' || event.type === 'pointerdown' || (event.type === 'pointerover' && event.buttons !== 0);
+};
+for (const type of ['pointerover', 'pointerdown', 'pointerup'] as const) holder.addEventListener(type, track);
+
+/** A pin under the pointer: its home lit in the list — scrolled into view by a mouse resting on it, or the keys. */
 function light(id: RecordId | null) {
   for (const home of list.querySelectorAll<HTMLElement>('.hs-home')) {
     const lit = id !== null && home.dataset['id'] === String(id);
     home.classList.toggle('is-lit', lit);
-    if (lit) home.scrollIntoView({ block: 'nearest' });
+    if (lit && !pressing) home.scrollIntoView({ block: 'nearest' });
   }
 }
 

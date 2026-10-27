@@ -292,6 +292,33 @@ test.describe('what the templates’ cards say to try', () => {
     await expect(node(page, 'f-contract-end')).toBeVisible();
   });
 
+  test('employee onboarding and the layout page: a required day says so to a screen reader, as a required word box does', async ({ page }) => {
+    // Their First day, Start date and Contract ends said nothing of it: only the label's mark showed it.
+    for (const [query_, tab, fixed, days] of [
+      [query('employee-onboarding'), /The job/, 'Fixed term', [['f-start', 'First day'], ['f-contract-end', 'Contract ends']]],
+      ['page=layout&skin=outlined', /^Job$/, 'Fixed term', [['f-start-date', 'Start date'], ['f-end-date', 'Contract ends']]],
+    ] as const) {
+      const { problems } = await open(page, 'plain', query_);
+      // The onboarding's job is a step on from its first: its name and email first, as its card says.
+      if (query_ !== 'page=layout&skin=outlined') {
+        await box(page, 'f-name').fill('Omar Khaled');
+        await box(page, 'f-email').fill('omar@example.com');
+      }
+      await page.getByRole('tab', { name: tab }).or(page.getByRole('button', { name: tab })).first().click();
+      await node(page, 'f-contract').getByLabel(fixed).check();
+      for (const [id, name] of days) {
+        // The box a screen reader comes to by its name: a text box, named by the label, required.
+        const day = node(page, id).getByRole('textbox').first();
+        await expect(day, id).toHaveAccessibleName(new RegExp(name));
+        await expect(day, id).toHaveAttribute('aria-required', 'true');
+      }
+      // Permanent: Contract ends hidden and not required; the first day still is.
+      await node(page, 'f-contract').getByLabel('Permanent').check();
+      await expect(box(page, days[0][0])).toHaveAttribute('aria-required', 'true');
+      expect(problems).toEqual([]);
+    }
+  });
+
   test('task: the checklist counts its own progress', async ({ page }) => {
     await open(page, 'plain', query('task'));
     await page.getByRole('tab', { name: 'Checklist' }).click();

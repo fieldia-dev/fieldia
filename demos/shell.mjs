@@ -155,7 +155,11 @@ function stepHtml(step) {
         for (const [key, value] of new URLSearchParams(part.href.slice(1))) next.set(key, value);
         return `<a class="dh-step-link" href="?${esc(next.toString())}">${esc(part.text)}</a>`;
       }
-      return `<a class="dh-step-link" href="${esc(new URL(part.href, new URL('..', location.href)).href)}" download>${esc(part.text)}</a>`;
+      // A page to look at (the codes to scan, on another screen) opens in a tab of its own; a file to try the demo with
+      // is downloaded.
+      const href = esc(new URL(part.href, new URL('..', location.href)).href);
+      if (/\.html$/.test(part.href)) return `<a class="dh-step-link" href="${href}" target="_blank" rel="noopener">${esc(part.text)}</a>`;
+      return `<a class="dh-step-link" href="${href}" download>${esc(part.text)}</a>`;
     })
     .join('');
 }
@@ -188,10 +192,23 @@ function drawMenu() {
   const setOpen = (open, keep = true) => {
     document.body.classList.toggle('dn-open', open);
     toggle?.setAttribute('aria-expanded', String(open));
+    // Folded, it is only slid off the window: out of the keys' way and a screen reader's too, never Tab stops unseen.
+    nav.inert = !open;
     if (keep) remember('fieldia-demos-menu', open ? '1' : '0');
   };
+  // Open by itself only where it takes room of its own beside the demo (1,100 px, shell.css) and leaves the demo the room
+  // its own layout needs (a designer's toolbox and panel beside its page: DEMO_ROOM); a person's choice, either way, is
+  // kept. A window narrowed past where the menu takes room of its own folds it, never leaving it over the demo, and one
+  // widened again gives back what the person chose.
   const kept = remember('fieldia-demos-menu');
-  setOpen(kept === null ? innerWidth >= 1100 : kept === '1', false);
+  const wide = matchMedia('(min-width: 1100px)');
+  const byItself = () => innerWidth >= Math.max(1100, NAV + (DEMO_ROOM[app] ?? 0));
+  const chosen = () => {
+    const now = remember('fieldia-demos-menu');
+    return now === null ? byItself() : now === '1';
+  };
+  setOpen(wide.matches && (kept === null ? byItself() : kept === '1'), false);
+  wide.addEventListener('change', () => setOpen(wide.matches && chosen(), false));
   toggle?.addEventListener('click', () => setOpen(!document.body.classList.contains('dn-open')));
   nav.querySelector('.dn-close').addEventListener('click', () => setOpen(false));
   filter.addEventListener('input', () => {
@@ -222,6 +239,12 @@ const HOWTO = 300;
  * as their ERP does. The menu, the panel and the record all fit side by side from this plus both panels: 1,744px.
  */
 const RECORD_WHOLE = 1180;
+/**
+ * The room a demo's app needs beside the menu for its own layout, by app: the designers keep their toolbox and their
+ * panel beside the page from about 1,100 px (narrower, the toolbox is a sheet and the panel goes under the page), so
+ * the menu opens by itself beside them only where that is left.
+ */
+const DEMO_ROOM = { screen: 1120, designer: 1120, 'designer-react': 1120, 'designer-vue': 1120, 'designer-angular': 1120 };
 
 function drawHowTo() {
   if (!demo) return;
@@ -244,9 +267,16 @@ function drawHowTo() {
   };
   // Open by itself only where it, the menu if open, and the record all fit whole; else folded to its first step, which
   // the header says. A person's own choice, either way, is kept.
+  // Where it would lie over the demo (under 1,280 px, shell.css), only a press opens it: never by itself as a page opens
+  // — a step's link followed from it on a phone opens the next page on the demo, not on the panel — and a window
+  // narrowed past that folds it.
   const kept = remember('fieldia-demos-howto');
   const room = innerWidth - (document.body.classList.contains('dn-open') ? NAV : 0) - HOWTO;
-  setOpen(kept === null ? innerWidth >= 1280 && room >= RECORD_WHOLE : kept === '1', false);
+  const beside = matchMedia('(min-width: 1280px)');
+  setOpen(beside.matches && (kept === null ? room >= RECORD_WHOLE : kept === '1'), false);
+  beside.addEventListener('change', () => {
+    if (!beside.matches) setOpen(false, false);
+  });
   panel.querySelector('.ht-close').addEventListener('click', () => {
     setOpen(false);
     opener?.focus();

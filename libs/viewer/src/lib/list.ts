@@ -43,7 +43,7 @@ import { daysFilter, periodDays } from './list-days';
 import { askBulkValue, bulkOffered, bulkQuestion, lockedOut, writeBulk, type BulkList, type KnownRecord } from './list-bulk';
 import { everyId } from './list-every';
 import { csvOf, csvSeparator, exportList, saveFile, type ExportFormat, type ExportList, type ExportWhich } from './list-export';
-import { groupKey, groupRow, type GroupContext, type GroupKey, type Heading, type Row } from './list-groups';
+import { drawGroups, groupKey, type GroupContext, type GroupKey, type Heading, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
 import { listTotals } from './list-totals';
 import { keepFootRoom, printout, PRINT_MOST } from './list-print';
@@ -100,6 +100,11 @@ export interface ListContext {
   now?: () => Date;
   /** Words said over the page, as a toast: an export done, or why it was not. Unsaid without it. */
   say?: (message: string, tone: Tone) => void;
+  /**
+   * Told when a part the list draws from as it opens could not come (offline, or not the file its fieldia.js was built
+   * with) — its saved views: the list works without it, and the page says part of it could not load.
+   */
+  unloaded?: () => void;
   /**
    * A question answered Yes or No, as a button's confirmation asks it: "Update 24 records?", `how.yes` what Yes does
    * ("Update"). Without it, Edit is not offered.
@@ -1185,6 +1190,12 @@ export function listView(context: ListContext): ListView {
     });
   };
 
+  /**
+   * The groups the person opened, each by its values from the first field's down: kept while the list is grouped the
+   * same way, so a sort, an Archive or a search draws them open again; another grouping starts closed.
+   */
+  const openGroups = { by: '', opened: new Set<string>() };
+
   const grouped = (source: DataSource): GroupContext => ({
     page,
     el,
@@ -1202,6 +1213,7 @@ export function listView(context: ListContext): ListView {
     recordRow: row,
     step: (tr, down) => focusRow(shownBeside(tr, down)),
     changed,
+    opened: openGroups.opened,
   });
 
   async function load(): Promise<void> {
@@ -1222,6 +1234,11 @@ export function listView(context: ListContext): ListView {
     try {
       const filter = currentFilter();
       const grouping = groupByFields(facets).map((text) => groupKey(page, text));
+      const by = JSON.stringify(grouping);
+      if (by !== openGroups.by) {
+        openGroups.by = by;
+        openGroups.opened.clear();
+      }
       const source = context.dataSource;
       // The totals of every record the search finds, asked beside them.
       totals?.refresh(filter);
@@ -1229,11 +1246,14 @@ export function listView(context: ListContext): ListView {
         // Grouped: a row for each value of the first field (or span of a date), each opening into the rest.
         const groups = await headings(source, grouping[0], filter);
         if (stale()) return wait.stop();
+        // Those open when it was drawn last come open, their rows asked for again.
+        const headed = await drawGroups(grouped(source), groups, 0, filter, grouping);
+        if (stale()) return wait.stop();
         rows = [];
         total = 0;
         groupedNow = true;
         matching = groups.reduce((sum, group) => sum + group.count, 0);
-        drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
+        drawn = headed;
       } else {
         // Loaded as it is scrolled: the rows it held, asked again — those in and near the view first, where it holds more
         // than its window draws (`nearView`), else from the first.
@@ -1486,7 +1506,10 @@ export function listView(context: ListContext): ListView {
           part.installViewStyles(doc);
           return part.savedViews({ page, node, model, source: viewSource, el, labels, fill, doc, state: viewState, put: putView, ...(context.icons ? { icons: context.icons } : {}), ...(context.ask ? { ask: context.ask } : {}), ...(context.say ? { say: context.say } : {}) });
         },
-        () => null
+        () => {
+          context.unloaded?.();
+          return null;
+        }
       )
     : null;
   // The search bar, or a keyword and a list of values for each of a few fields.
@@ -1562,6 +1585,18 @@ export function listView(context: ListContext): ListView {
   /** Each view once made: the first time it is shown. */
   const parts = new Map<string, ListViewPart>();
   const holders = new Map(offered.map(([name]) => [name, el('div', { class: name === 'map' ? 'fd-list-addon fd-list-map' : 'fd-list-addon', 'data-addon': name })]));
+  /**
+   * Whether the pointer on a view presses: a finger's, or a mouse's held down. A pin a finger taps lights its row by
+   * the tap — a finger has no hover, the browser sends its mouseover with the tap, before its click — and a pin a mouse
+   * presses by its focus; were the row brought into view then, the page would scroll under the press, and its click
+   * land on what came there (a column's header, sorting the list; another record's link). So a press's light lights
+   * the row where it is; the mouse resting on a pin, or the keys on it, bring its row into view.
+   */
+  let pressing = false;
+  const track = (event: PointerEvent) => {
+    pressing = event.pointerType === 'touch' || event.type === 'pointerdown' || (event.type === 'pointerover' && event.buttons !== 0);
+  };
+  for (const holder of holders.values()) for (const type of ['pointerover', 'pointerdown', 'pointerup'] as const) holder.addEventListener(type, track);
   /** What the table tells a view, it tells each one made. */
   const viewParts = {
     reload: () => Promise.all([...parts.values()].map((part) => part.reload())).then(() => undefined),
@@ -1608,12 +1643,13 @@ export function listView(context: ListContext): ListView {
       ...(context.onOpenRecord ? { open: (id: RecordId) => openRow(id) } : {}),
       highlight(id) {
         litId = id;
-        // Beside the map, its row brought into view: drawn first where the window had left it out.
-        const own = id !== null && view === 'both' && win && windowing() ? win.reveal(String(id)) : null;
+        // Beside the map, its row brought into view — never by a press (`pressing`): drawn first where the window had left it out.
+        const reveal = id !== null && view === 'both' && !pressing;
+        const own = reveal && win && windowing() ? win.reveal(String(id)) : null;
         for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
           const hot = id !== null && tr.dataset['id'] === String(id);
           if (tr.classList.contains('fd-list-hot') !== hot) tr.classList.toggle('fd-list-hot', hot);
-          if (hot && view === 'both' && (!own || tr === own)) tr.scrollIntoView({ block: 'nearest' });
+          if (hot && reveal && (!own || tr === own)) tr.scrollIntoView({ block: 'nearest' });
         }
       },
       addSearch: ({ label, filter }) => search.add({ kind: 'custom', label, filter }),

@@ -19,7 +19,7 @@ function mount(kind: 'date' | 'datetime' = 'date', values: Record<string, unknow
   if (dir) host.dir = dir;
   host.append(widget.element);
   document.body.replaceChildren(host);
-  const refresh = (readonly = false) => widget.update({ value: form.getState().values['request_date_from'], values: form.getState().values, readonly, required: false, invalid: false });
+  const refresh = (readonly = false, required = false) => widget.update({ value: form.getState().values['request_date_from'], values: form.getState().values, readonly, required, invalid: false });
   form.subscribe(() => refresh());
   refresh();
   const [from, to] = [...widget.element.querySelectorAll('input')] as HTMLInputElement[];
@@ -123,15 +123,28 @@ function stay(locale: 'en' | 'ar' = 'en') {
   if (locale === 'ar') host.dir = 'rtl';
   host.append(widget.element);
   document.body.replaceChildren(host);
-  const refresh = () => widget.update({ value: form.getState().values['from_day'], values: form.getState().values, readonly: false, required: false, invalid: false });
-  form.subscribe(refresh);
+  let required = false;
+  const refresh = (now = required) => widget.update({ value: form.getState().values['from_day'], values: form.getState().values, readonly: false, required: (required = now), invalid: false });
+  form.subscribe(() => refresh());
   refresh();
   const [from, to] = [...widget.element.querySelectorAll('input')] as HTMLInputElement[];
   const endError = widget.element.querySelector('.fd-range-error') as HTMLElement;
-  return { form, el: widget.element, from, to, endError, values: () => form.getState().values };
+  return { form, el: widget.element, from, to, endError, refresh, values: () => form.getState().values };
 }
 
 describe('a range’s end, a field of its own', () => {
+  it('says each box is required as a save checks it: the start when the range is, the end when its field is or the range is', () => {
+    const { from, to, refresh } = stay();
+    // The end's field is required (To), the range is not.
+    expect([from.getAttribute('aria-required'), to.getAttribute('aria-required')]).toEqual(['false', 'true']);
+    refresh(true);
+    expect([from.getAttribute('aria-required'), to.getAttribute('aria-required')]).toEqual(['true', 'true']);
+    const { from: start, to: end, refresh: drawLeave } = mount();
+    expect([start.getAttribute('aria-required'), end.getAttribute('aria-required')]).toEqual(['false', 'false']);
+    drawLeave(false, true);
+    expect([start.getAttribute('aria-required'), end.getAttribute('aria-required')]).toEqual(['true', 'true']);
+  });
+
   it('says “To can’t be before From” as either box is left, marks the end’s box and describes it', () => {
     const { from, to, endError, values } = stay();
     retype(from, '11/11/2026');

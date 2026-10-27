@@ -549,6 +549,19 @@ describe('the grid with sections and notes', () => {
     expect(formLines(form)[4].values['name']).toBe('Lighting');
   });
 
+  it('moves a section’s card by its ↑ and ↓ too, as its row moves by its handle', async () => {
+    const ordered = JSON.parse(JSON.stringify(sectioned)) as Page & { fields: Record<string, any>; layout: any };
+    ordered.fields['line_ids'].sequenceField = 'sequence';
+    ordered.fields['line_ids'].fields.sequence = { type: 'integer', label: 'Sequence' };
+    ordered.layout.children[0].children[1].cards = 'always';
+    const { box, form } = await mount(ordered, withKinds.map((line, i) => ({ ...line, values: { ...line.values, sequence: (i + 1) * 10 } })));
+    const section = box.querySelector('.fd-line-card-section') as HTMLElement;
+    const moves = [...section.querySelectorAll<HTMLButtonElement>('.fd-line-move')];
+    expect(moves.map((b) => [b.getAttribute('aria-label'), b.hidden])).toEqual([['Move Workstations up', true], ['Move Workstations down', false]]);
+    moves[1].click();
+    expect(formLines(form).map((l) => l.key)).toEqual(['l1', 's1', 'n1', 'l2']);
+  });
+
   it('holds a line’s handle at its start and its buttons at its end, in sight however far the lines scroll sideways', async () => {
     const ordered = JSON.parse(JSON.stringify(sectioned)) as Page & { fields: Record<string, any> };
     ordered.fields['line_ids'].sequenceField = 'sequence';
@@ -798,5 +811,47 @@ describe('a line being dragged', () => {
     carded.layout.children[0].children[1].cards = 'always';
     const { box } = await mount(carded);
     expect([...box.querySelectorAll('.fd-line-card-title')].map((t) => t.textContent)).toEqual(['Office chair', 'Desk lamp']);
+  });
+
+  it('moves as a card by its ↑ and ↓ — a phone has no handle to drag and no Alt key — the focus kept on it, where it went said', async () => {
+    const carded = JSON.parse(JSON.stringify(ordered));
+    carded.layout.children[0].children[1].cards = 'always';
+    const third: Line = { key: 'l3', id: 13, values: { product_id: { id: 3, label: 'Monitor arm' }, name: '', qty: 1, price: 900, delivery: null, taxed: true } };
+    const { box, form } = await mount(carded, [...lines, third]);
+    const cards = () => [...box.querySelectorAll<HTMLElement>('.fd-line-card')].map((card) => card.dataset['line']);
+    const moves = (key: string) => [...(box.querySelector(`.fd-line-card[data-line="${key}"]`) as HTMLElement).querySelectorAll<HTMLButtonElement>('.fd-line-move')];
+    // Each names its line; the one that would take it past an end is hidden.
+    expect(moves('l1').map((b) => [b.getAttribute('aria-label'), b.hidden])).toEqual([['Move Office chair up', true], ['Move Office chair down', false]]);
+    expect(moves('l2').map((b) => b.hidden)).toEqual([false, false]);
+    expect(moves('l3').map((b) => b.hidden)).toEqual([false, true]);
+    moves('l1')[1].focus();
+    moves('l1')[1].click();
+    expect(formLines(form).map((l) => l.key)).toEqual(['l2', 'l1', 'l3']);
+    expect(cards()).toEqual(['l2', 'l1', 'l3']);
+    // Its card drawn again in its new place, the focus on the same button.
+    expect(document.activeElement).toBe(moves('l1')[1]);
+    expect(box.querySelector('.fd-sr-only[role="status"]')?.textContent).toBe('Office chair moved to place 2 of 3');
+    moves('l1')[1].click();
+    expect(cards()).toEqual(['l2', 'l3', 'l1']);
+    // The last now: its ↓ hidden, its ↑ takes the focus.
+    expect(moves('l1')[1].hidden).toBe(true);
+    expect(document.activeElement).toBe(moves('l1')[0]);
+    // Numbered again in its new order, as a row dragged by its handle is.
+    expect(formLines(form).map((l) => l.values['sequence'])).toEqual([1, 2, 3]);
+  });
+
+  it('has no ↑ or ↓ on its cards where its lines keep no order, or are read-only', async () => {
+    const unordered = JSON.parse(JSON.stringify(order));
+    unordered.layout.children[0].children[1].cards = 'always';
+    const { box } = await mount(unordered);
+    expect(box.querySelectorAll('.fd-line-card')).toHaveLength(2);
+    expect(box.querySelectorAll('.fd-line-move')).toHaveLength(0);
+    handle?.destroy();
+    const locked = JSON.parse(JSON.stringify(ordered));
+    locked.layout.children[0].children[1].cards = 'always';
+    locked.fields['line_ids'].readonly = true;
+    const { box: lockedBox } = await mount(locked);
+    expect(lockedBox.querySelectorAll('.fd-line-card')).toHaveLength(2);
+    expect(lockedBox.querySelectorAll('.fd-line-move')).toHaveLength(0);
   });
 });

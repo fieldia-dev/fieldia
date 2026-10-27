@@ -41,6 +41,11 @@ export interface GroupContext {
   step: (tr: HTMLElement, down: boolean) => void;
   /** Rows came or went. */
   changed: () => void;
+  /**
+   * The groups open, each by its values from the first field's down (`openAt`): drawn open again when the list is
+   * drawn again grouped the same way. The list keeps it, and empties it for another grouping.
+   */
+  opened: Set<string>;
 }
 
 /** A Group By facet's field as a key: `date:month`, a date grouped by month; a field alone as it is. */
@@ -143,16 +148,37 @@ function closeUnder(tr: HTMLElement) {
   }
 }
 
+/** Where a group is among the groups: its values from the first field's down, as `GroupContext.opened` keeps it. */
+const openAt = (path: readonly unknown[]) => JSON.stringify(path);
+
+/** A group closed: forgotten as open, and every group under it. */
+function forget(opened: Set<string>, at: string) {
+  const under = `${at.slice(0, -1)},`;
+  for (const one of [...opened]) if (one === at || one.startsWith(under)) opened.delete(one);
+}
+
+/**
+ * The groups' rows as the list draws them: each group's heading, and under each one that was open when the list was
+ * drawn last (`context.opened`) its rows again, drawn open — a sort, an Archive or a search draws the list again, and
+ * the groups the person opened stay open, their records in the new order, never all closed with nothing in them to see.
+ * A group whose rows cannot come is drawn closed. `path` is the values of the groups these are under.
+ */
+export async function drawGroups(context: GroupContext, groups: Heading[], level: number, within: ResolvedFilter[], grouping: GroupKey[], path: readonly unknown[] = []): Promise<HTMLTableRowElement[]> {
+  return (await Promise.all(groups.map((group) => groupRow(context, group, level, within, grouping, [...path, group.value])))).flat();
+}
+
 /**
  * A group's row: its name, how many records it holds and their sums. Opened,
  * it shows the next field's groups under it, or at the last field its
- * records, a page at a time; closed, everything under it goes.
+ * records, a page at a time; closed, everything under it goes. Open when the
+ * list was drawn last, it comes open, its rows after it.
  */
-export function groupRow(context: GroupContext, group: Heading, level: number, within: ResolvedFilter[], grouping: GroupKey[]): HTMLTableRowElement {
+async function groupRow(context: GroupContext, group: Heading, level: number, within: ResolvedFilter[], grouping: GroupKey[], path: readonly unknown[]): Promise<HTMLTableRowElement[]> {
   const { el, labels } = context;
   const key = grouping[level];
   const filter: ResolvedFilter[] = [...within, ...groupFilter(context, key, group)];
   const name = groupName(context, key, group);
+  const at = openAt(path);
   const toggle = el(
     'button',
     { type: 'button', class: 'fd-group-toggle', 'aria-expanded': 'false', 'aria-label': groupWords(context, name, group) },
@@ -165,13 +191,14 @@ export function groupRow(context: GroupContext, group: Heading, level: number, w
   tr.style.setProperty('--fd-level', String(level));
   let opening = false;
 
+  /** What opens under it: the next field's groups (those open before, open), or at the last field its records. */
+  const under = async () =>
+    level + 1 < grouping.length ? drawGroups(context, await context.groups(grouping[level + 1], filter), level + 1, filter, grouping, path) : recordsFrom(0);
+
   async function open() {
     opening = true;
     try {
-      const rows =
-        level + 1 < grouping.length
-          ? (await context.groups(grouping[level + 1], filter)).map((inner) => groupRow(context, inner, level + 1, filter, grouping))
-          : await recordsFrom(0);
+      const rows = await under();
       // Closed, or the list drawn again, while the answer was on its way.
       if (!tr.isConnected || toggle.getAttribute('aria-expanded') !== 'true') return;
       tr.after(...rows);
@@ -205,10 +232,22 @@ export function groupRow(context: GroupContext, group: Heading, level: number, w
     const opened = toggle.getAttribute('aria-expanded') === 'true';
     toggle.setAttribute('aria-expanded', String(!opened));
     if (opened) {
+      forget(context.opened, at);
       closeUnder(tr);
       context.changed();
-    } else if (!opening) void open();
+    } else {
+      context.opened.add(at);
+      if (!opening) void open();
+    }
   });
   arrows(context, toggle, tr, true);
-  return tr;
+  if (!context.opened.has(at)) return [tr];
+  try {
+    const rows = await under();
+    toggle.setAttribute('aria-expanded', 'true');
+    return [tr, ...rows];
+  } catch {
+    forget(context.opened, at);
+    return [tr];
+  }
 }

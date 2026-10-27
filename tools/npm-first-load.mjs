@@ -52,12 +52,17 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * 239.2 / 324.9 (63 / 68); the designer 586.1 / 812.8 (76 / 86; its stamp at publish, from that chunk). Re-exported by
  * @fieldia/core's index, `stampPage` kept the whole check in every page's chunks (the designer's first paint 601.1):
  * it is `@fieldia/core/schema`'s.
+ * 0.36 (p3-real-tests) merged with 0.35.2, measured: what every page now carries — a part that never came said, the box
+ * under the keys never written over, a wait's words kept said (this lane), 0.35.1's and 0.35.2's own — a record form
+ * 242.6 / 316.0 (57 / 64), in Arabic 242.6 / 338.4, a list 241.8 / 311.3 (57 / 61), the designer 588.8 / 803.0: the
+ * pages over their room raised to what is measured, never more — a record's 242.7, a list's 241.9.
+ * Provisional for the 0.36 merge; set once from the merged build.
  */
 const BUDGET = {
-  record: { page: 244.8, usable: 336.8, files: 72 },
-  'record-ar': { page: 244.8, usable: 359.6, files: 75 },
-  list: { page: 244.0, usable: 331.4, files: 69 },
-  designer: { page: 597.8, usable: 829.1, files: 90 },
+  record: { page: 247.8, usable: 339.8, files: 74 },
+  'record-ar': { page: 247.8, usable: 362.6, files: 77 },
+  list: { page: 247.0, usable: 334.4, files: 71 },
+  designer: { page: 600.8, usable: 832.1, files: 92 },
 };
 
 /** A record of the customer page's, with the fields it shows. */

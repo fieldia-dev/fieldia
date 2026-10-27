@@ -346,25 +346,44 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     element.append(...overlays);
     for (const over of overlays) shield(over);
     // A press while the map still zooms from the last is kept and made when that zoom ends (Leaflet drops it): two quick presses, two steps.
+    // A zoom is under way from the press that asks for it, not from Leaflet's `zoomstart`, which comes a frame later: a
+    // second press in that frame — a busy phone's frame can be long — would ask for the same step again, and be lost.
     let zooming = false;
     let owed = 0;
+    const within = (zoom: number) => Math.min(map!.getMaxZoom(), Math.max(map!.getMinZoom(), zoom));
     map.on('zoomstart', () => (zooming = true));
     map.on('zoomend', () => {
       zooming = false;
       if (!map) return;
       // The step kept, unless the map is already as close (or as far) as it goes: then there is none to come.
-      const to = Math.min(map.getMaxZoom(), Math.max(map.getMinZoom(), map.getZoom() + owed));
+      const to = within(map.getZoom() + owed);
       owed = 0;
       stepping = to !== map.getZoom();
-      if (stepping) map.setZoom(to);
+      if (!stepping) return;
+      zooming = true;
+      map.setZoom(to);
     });
     const step = (by: number) => {
       if (!map) return;
-      if (zooming) owed += by;
-      else map.setZoom(map.getZoom() + by);
+      if (zooming) return void (owed += by);
+      const to = within(map.getZoom() + by);
+      if (to === map.getZoom()) return;
+      zooming = true;
+      map.setZoom(to);
     };
     zoomIn.addEventListener('click', () => step(1));
     zoomOut.addEventListener('click', () => step(-1));
+    // The keys' zoom too (+ and -, three steps with Shift, as Leaflet's keyboard takes them), made as the buttons' are:
+    // a key pressed while the map still zooms is kept, never dropped. Before Leaflet's keyboard, which hears the page.
+    const zoomKey = (event: KeyboardEvent) => {
+      const by = event.key === '+' || event.key === '=' ? 1 : event.key === '-' || event.key === '_' ? -1 : 0;
+      if (!by || event.target !== element || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      step(event.shiftKey ? by * 3 : by);
+    };
+    element.addEventListener('keydown', zoomKey, true);
+    cleanups.push(() => element.removeEventListener('keydown', zoomKey, true));
     // The tools under the zoom, when the page asks for any: their code comes with the first map that has them.
     if (tools.size)
       void import('./tools').then(({ wireTools }) => {

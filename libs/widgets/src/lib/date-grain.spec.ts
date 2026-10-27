@@ -266,6 +266,12 @@ describe('a Hijri date beside its Gregorian day', () => {
     expect(displayValue({ type: 'date', label: 'Start', hijri: true } as LineField, '2026-10-13')).toBe('13 Oct 2026 · 2 Jumada I 1448 AH');
   });
 
+  it('says it is required on both its boxes, the Hijri one too', () => {
+    const { widget, form, box, hijri } = mount({ hijri: true, label: 'Contract start' });
+    widget.update({ value: form.getState().values['x'], values: form.getState().values, readonly: false, required: true, invalid: false });
+    expect([box.getAttribute('aria-required'), hijri?.getAttribute('aria-required')]).toEqual(['true', 'true']);
+  });
+
   it('marks each day of its calendar with its Hijri day', () => {
     const { box } = mount({ hijri: true, label: 'Contract start' });
     enter(box);

@@ -54,7 +54,8 @@
     "order_date": {
       "type": "date",
       "label": "Order date",
-      "required": true
+      "required": true,
+      "default": "today"
     },
     "expected_date": {
       "type": "date",

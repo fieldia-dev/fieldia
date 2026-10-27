@@ -447,7 +447,7 @@ export function formMap(settings: MapSettings, context: MapPartContext, now = fa
    */
   function pressCrowd(map: Leaflet.Map, L: LeafletModule, keys: string[], at: LatLng, height: number, back: HTMLElement | null, event: MouseEvent | KeyboardEvent | undefined) {
     const members = keys.filter((key) => marks.has(key));
-    if (zoomToPart(map, L, members.map((key) => marks.get(key)!.at), ROOM)) return;
+    if (zoomToPart(map, L, members.map((key) => marks.get(key)!.at), ROOM, at)) return;
     const list = drawCrowd({
       document: doc,
       labels,

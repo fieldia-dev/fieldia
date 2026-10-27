@@ -106,6 +106,44 @@ describe('dragging a part on the Advanced canvas', () => {
     expect(kids[1]).toBe('divider-1');
   });
 
+  it('a tile’s press runs what it asks as it becomes a drag, before anything is found under the pointer', () => {
+    const { designer, pointer, chip } = setup();
+    const tile = document.createElement('button');
+    tile.innerHTML = '<span class="fd-tool-name">Divider</span>';
+    document.body.append(tile);
+    // What the toolbox's sheet asks: to be put away, so the part under the pointer is the page's, not the sheet's.
+    const asked: (Element | null)[] = [];
+    const lifted = () => void asked.push(chip());
+    drag?.press({ tool: 'block:divider' }, new MouseEvent('pointerdown', { clientX: 10, clientY: 10, button: 0 }) as unknown as PointerEvent, tile, lifted);
+    pointer('pointermove', document, 11, 11);
+    expect(asked).toEqual([]);
+    for (const [x, y] of [[100, 200], [300, 400], [450, 545]]) pointer('pointermove', document, x, y);
+    expect(asked).toEqual([null]);
+    pointer('pointerup', document, 450, 545);
+    expect(where(designer.getPage(), 'f-ec_name')?.kids?.[1]).toBe('divider-1');
+  });
+
+  it('keeps the browser’s own drag from starting while a press is held, and leaves it alone otherwise', () => {
+    const { pointer } = setup();
+    const tile = document.createElement('button');
+    // What lay under the sheet where the tile was pressed: a link, which the browser drags by itself.
+    const link = document.createElement('a');
+    link.href = '#elsewhere';
+    document.body.append(tile, link);
+    const nativeDrag = () => {
+      const event = new Event('dragstart', { bubbles: true, cancelable: true });
+      link.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    expect(nativeDrag()).toBe(false);
+    drag?.press({ tool: 'block:divider' }, new MouseEvent('pointerdown', { clientX: 10, clientY: 10, button: 0 }) as unknown as PointerEvent, tile);
+    expect(nativeDrag()).toBe(true);
+    pointer('pointermove', document, 300, 400);
+    expect(nativeDrag()).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(nativeDrag()).toBe(false);
+  });
+
   it('Escape puts it back where it was, and a press that does not move is a click', () => {
     const { designer, carry, pointer, chip } = setup();
     const before = designer.getPage();

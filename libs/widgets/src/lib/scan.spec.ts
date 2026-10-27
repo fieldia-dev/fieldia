@@ -68,6 +68,12 @@ function mount(fields: Record<string, Field>, name: string, node: Partial<FieldN
   return { form, widget, page, button, sheet, said, note, values: () => form.getState().values };
 }
 
+/** The text chosen in the box that has the focus, from where to where. */
+const chosen = () => {
+  const box = document.activeElement as HTMLInputElement;
+  return [box.selectionStart, box.selectionEnd];
+};
+
 const LOT: Record<string, Field> = { lot: { type: 'char', label: 'Lot' }, notes: { type: 'text', label: 'Notes' } };
 
 describe('a field scanned into', () => {
@@ -121,6 +127,8 @@ describe('a field scanned into', () => {
     document.querySelector<HTMLButtonElement>('.fd-scan-type')?.click();
     expect(sheet()).toBeNull();
     expect(document.activeElement?.matches('input.fd-input')).toBe(true);
+    // Its text chosen: the code typed replaces it.
+    expect(chosen()).toEqual([0, 'OLD-1'.length]);
     expect(values()['lot']).toBe('OLD-1');
     // A camera that opens after the sheet closed is stopped at once.
     await settle(20);
@@ -135,13 +143,16 @@ describe('a field scanned into', () => {
     ];
     for (const [error, words] of cases) {
       getUserMedia.mockImplementationOnce(async () => Promise.reject(error));
-      const { button, sheet, note } = mount(LOT, 'lot', { options: { scan: true } });
+      const { button, sheet, note } = mount(LOT, 'lot', { options: { scan: true } }, { values: { lot: 'OLD-1' } });
       button()?.click();
       expect(await until(() => !note()?.hidden)).toBe(true);
       expect(note()?.textContent).toBe(words);
       expect(sheet()).toBeNull();
       expect(button()?.getAttribute('aria-describedby')).toBe(note()?.id);
       expect(document.activeElement?.matches('input.fd-input')).toBe(true);
+      // What it held chosen: a scanner gun's code replaces it, never runs on after it (the how-to replay of 0.35:
+      // 'nothing is called "Hana FouadP-1043"').
+      expect(chosen()).toEqual([0, 'OLD-1'.length]);
       // Pressed again, the note goes while the camera is asked again.
       button()?.click();
       expect(note()?.hidden).toBe(true);

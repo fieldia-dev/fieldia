@@ -296,6 +296,42 @@ test('in Arabic, right to left, and dark: the map’s words in Arabic, its zoom 
   expect(problems).toEqual([]);
 });
 
+test.describe('a finger on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('a pin tapped opens its card, its home lit where it is: the page never scrolls under the finger; Open marks it', async ({ page }) => {
+    // The how-to's replay on a phone: the tap's mouseover lit the pin's home and the page scrolled it into view, the
+    // map went up under the finger, and the click landed on a home's name, opening another home.
+    const problems = await openEmbed(page, ZAMALEK);
+    const bubbles = page.locator('.fd-map-embed .fd-map-bubble');
+    for (let i = 0; i < 4 && (await bubbles.count()); i++) {
+      const before = await zoomOf(theMap(page));
+      await bubbles.first().tap();
+      await expect.poll(() => zoomOf(theMap(page))).toBeGreaterThan(before);
+    }
+    const map = (await theMap(page).boundingBox())!;
+    let at = -1;
+    await expect(async () => {
+      const boxes = await pins(page).evaluateAll((all) => all.map((p) => (p.querySelector('.fd-map-face') ?? p).getBoundingClientRect().toJSON() as DOMRect));
+      at = boxes.findIndex((b) => b.x > map.x + 60 && b.x + b.width < map.x + map.width - 60 && b.y > map.y + 60 && b.y + b.height < map.y + map.height - 30);
+      expect(at, 'no pin inside the map').toBeGreaterThanOrEqual(0);
+    }).toPass();
+    const pin = pins(page).nth(at);
+    const id = (await pin.getAttribute('data-id'))!;
+    // Its home is under the map, out of sight: lighting it must not bring it up.
+    await expect(homeOf(page, id)).not.toBeInViewport();
+    const scrolled = await page.evaluate(() => scrollY);
+    await pin.tap();
+    const card = page.locator('.fd-map-embed .fd-map-card');
+    await expect(card).toBeVisible();
+    expect(await page.evaluate(() => scrollY), 'the page moved under the finger').toBe(scrolled);
+    await expect(page.locator('.hs-home[aria-current]')).toHaveCount(0);
+    await card.getByRole('button', { name: 'Open' }).tap();
+    await expect(homeOf(page, id)).toHaveAttribute('aria-current', 'true');
+    expect(problems).toEqual([]);
+  });
+});
+
 test('at a phone’s width: the map over the list, nothing sideways', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openEmbed(page);

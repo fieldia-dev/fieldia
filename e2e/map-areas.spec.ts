@@ -69,6 +69,11 @@ test.describe('orders by district', () => {
     await expect(bubble).toHaveText('12How many are close together: zoom in to part them');
     await expect(bubble.locator('b')).toHaveCSS('border-radius', '50%');
     await expect(legend(page).locator('li').last()).toHaveClass('fd-map-legend-bubble');
+    // Open on a desktop's map, beside the tools under the zoom, never over them; its title folds it.
+    await expect(legend(page).getByRole('button', { name: 'Orders this week, by district' })).toHaveAttribute('aria-expanded', 'true');
+    const tools = (await theMap(page).locator('.fd-map-zoom').boundingBox())!;
+    const key = (await legend(page).boundingBox())!;
+    expect(key.x + key.width).toBeLessThanOrEqual(tools.x);
     await screen(page, 'map-zones-legend-bubble', { viewport: true });
     // Counts step by whole numbers, from 1: "1–5", "6–10"…
     const steps = await legend(page).locator('li:not(.fd-map-legend-bubble)').allTextContents();
@@ -258,6 +263,57 @@ test.describe('orders by district', () => {
     await page.mouse.move(spot.x, spot.y);
     await expect(page.locator('.leaflet-tooltip.fd-map-tip')).toBeVisible();
     expect(await axeFindings(page, 'map-zones, a district lit')).toEqual([]);
+  });
+});
+
+/**
+ * On a phone (390 pixels): the legend folded to its title at first, a button that opens it — open, 0.35's covered most
+ * of the map and two of the tools under the zoom, and could not fold, a tap on Zamalek landing on its title — and the
+ * bar that says how to measure in a finger's words.
+ */
+test.describe('orders by district, on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  /** The tool's own button is what a press at its middle reaches: nothing over it. */
+  async function reachable(page: Page, name: string) {
+    const box = (await tool(page, name).boundingBox())!;
+    const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('button')?.getAttribute('aria-label'), { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    expect(hit, `${name}: what a press at its middle reaches`).toBe(name);
+  }
+
+  test('the legend folded to its title, clear of the tools; a district tapped searches it; the title opens the legend and folds it', async ({ page }) => {
+    await openMap(page, ZONES);
+    const title = legend(page).getByRole('button', { name: 'Orders this week, by district' });
+    await expect(title).toHaveAttribute('aria-expanded', 'false');
+    await expect(legend(page).locator('ol')).toBeHidden();
+    // Folded, a strip at the map's foot: a small part of the map.
+    const map = (await theMap(page).boundingBox())!;
+    const folded = (await legend(page).boundingBox())!;
+    expect(folded.height).toBeLessThan(40);
+    expect((folded.width * folded.height) / (map.width * map.height)).toBeLessThan(0.1);
+    for (const name of ['Full screen', 'Measure a distance']) await reachable(page, name);
+    await screen(page, 'map-zones-phone-folded', { viewport: true });
+    // Zamalek tapped: its orders alone.
+    const spot = await spotOf(page, region(page, 'Zamalek'));
+    await page.touchscreen.tap(spot.x, spot.y);
+    await expect(chips(page)).toHaveText(['In Zamalek']);
+    // The title opens the legend: its steps and its bubble, and the tools still the tools'.
+    await title.tap();
+    await expect(title).toHaveAttribute('aria-expanded', 'true');
+    await expect(legend(page).locator('li').first()).toBeVisible();
+    await expect(legend(page).locator('li.fd-map-legend-bubble')).toBeVisible();
+    for (const name of ['Full screen', 'Measure a distance']) await reachable(page, name);
+    await screen(page, 'map-zones-phone-open', { viewport: true });
+    // And folds it again.
+    await title.tap();
+    await expect(title).toHaveAttribute('aria-expanded', 'false');
+    await expect(legend(page).locator('ol')).toBeHidden();
+  });
+
+  test('measuring a way says what a finger does: taps, a double-tap to finish', async ({ page }) => {
+    await openMap(page, ZONES);
+    await tool(page, 'Measure a distance').tap();
+    await expect(theMap(page).locator('.fd-map-measure-hint')).toHaveText('Tap points along the way; double-tap to finish.');
   });
 });
 

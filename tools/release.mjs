@@ -40,6 +40,7 @@ import { checkFormatShape } from './format-shape.mjs';
 import { withoutAuth } from './release-env.mjs';
 import { gitFacts, machinePathIn, patchProblem, releaseProblems } from './release-guards.mjs';
 import { readDeprecations, trainProblems } from './release-train.mjs';
+import { devicesProblem } from './real-devices.mjs';
 import { publishPacks, readPacks, writePacks } from './release-publish.mjs';
 import { auditProblems } from './release-audit.mjs';
 import { hashesOf, recordReleased, tagProblems, writeReadmes } from './script-tags.mjs';
@@ -87,6 +88,9 @@ const deprecations = await readDeprecations(WORKSPACE);
 if (mode === 'publish') {
   if (!process.env.NPM_TOKEN) fail('publishing needs NPM_TOKEN in the environment');
   const problems = releaseProblems({ version, changelog, facts: gitFacts(WORKSPACE), deprecations });
+  // A minor, once a real iPhone and a real Android phone were checked for it (real-devices.mjs).
+  const devices = devicesProblem(WORKSPACE, version);
+  if (devices) problems.push(devices);
   if (problems.length) fail(`nothing was published:\n  ${problems.join('\n  ')}`);
 } else if (mode === 'check') {
   const patch = patchProblem(version, changelog);

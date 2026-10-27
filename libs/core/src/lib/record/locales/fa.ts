@@ -98,6 +98,7 @@ export const fa: Messages = {
   patternBroken: 'قالب {label} معتبر نیست: {problem}',
   stillWorkedOut: '{label} هنوز در حال محاسبه است',
   notWorkedOut: '{label} محاسبه نشد: {problem}',
+  partNotLoaded: 'بخشی از این صفحه بارگیری نشد',
   notOfferedNow: '{name} دیگر در دسترس نیست و برداشته شد',
   notOfferedNowMany: '{name} دیگر در دسترس نیستند و برداشته شدند',
   formOpens: 'این فرم در {when} باز می‌شود.',

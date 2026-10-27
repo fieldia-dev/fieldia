@@ -87,6 +87,7 @@ export const fr: Messages = {
   patternBroken: 'Le motif de {label} n’est pas valide : {problem}',
   stillWorkedOut: '{label} est encore en cours de calcul',
   notWorkedOut: '{label} n’a pas pu être calculé : {problem}',
+  partNotLoaded: 'une partie de cette page n’a pas pu être chargée',
   notOfferedNow: '{name} n’est plus proposé, il a donc été retiré',
   notOfferedNowMany: '{name} ne sont plus proposés, ils ont donc été retirés',
   formOpens: 'Ce formulaire ouvre le {when}.',

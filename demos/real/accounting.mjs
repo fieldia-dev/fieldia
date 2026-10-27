@@ -11,7 +11,7 @@ export default [
       'Add a line: pick a product and watch its price, taxes, the totals and the Journal Items tab follow.',
       'Press Confirm: the invoice gets its number, INV/2026/00042, and the Register Payment button.',
       'Register Payment opens its dialog: pay part of it and choose to keep the rest open or mark it fully paid.',
-      'Under the gear, Print › This record: the invoice on paper — the firm’s logo and address over it, every tab one after another, the lines whole, no buttons — or press Ctrl+P.',
+      'Under the gear, Print › This invoice: the invoice on paper — the firm’s logo and address over it, every tab one after another, the lines whole, no buttons — or press Ctrl+P.',
       'Print › Invoice: the app’s own PDF of it, shown over the record, with Download.',
       'Open another record: [a USD invoice partly paid](?record=4102), [a vendor bill](?record=4103) (a possible duplicate), [a journal entry](?record=4104), [a paid credit note](?record=4105).',
     ],

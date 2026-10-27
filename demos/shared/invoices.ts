@@ -51,8 +51,10 @@ export function sampleInvoices(now = demoNow()): Record<number, Values> {
       const date = new Date(month.getFullYear(), month.getMonth(), 1 + Math.floor(random() * days));
       const due = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 30);
       const age = Math.round((today.getTime() - date.getTime()) / 86400000);
-      // Paid within two months, mostly; a few left unpaid past their due date; this week's a draft or two.
-      const state = age < 4 && random() < 0.5 ? 'draft' : age > 45 && random() < 0.8 ? 'paid' : 'sent';
+      // Paid within two months, mostly; a few left unpaid past their due date; this week's a draft or two — Nile
+      // Traders' always, the customer whose invoices are listed inside it (customer-account: a draft is in bold). The
+      // numbers drawn stay the same, so every other invoice is as it was.
+      const state = age < 4 && (random() < 0.5 || partner === 1) ? 'draft' : age > 45 && random() < 0.8 ? 'paid' : 'sent';
       records[id] = {
         name: `INV/${date.getFullYear()}/${String(id).padStart(4, '0')}`,
         partner_id: { id: partner, label: name },

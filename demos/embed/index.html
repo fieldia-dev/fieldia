@@ -37,6 +37,12 @@
     <!-- The frame as soon as it comes (async): not after fieldia.js below, which blocks the page as it loads, has drawn
          the form, which the frame would then push down. -->
     <script type="module" async src="../shell.mjs"></script>
+    <!-- The language the address asks for (?locale=ar): Fieldia's own words in it come in an add-on of their own,
+         written here before fieldia.js, which takes them as it starts — a page in one language just writes its tag. -->
+    <script>
+      const language = new URLSearchParams(location.search).get('locale');
+      if (['ar', 'de', 'fr', 'tr', 'fa', 'ur', 'es'].includes(language)) document.write(`<script src="fieldia.${language}.js"><\/script>`);
+    </script>
     <!-- The whole of Fieldia in one file, which defines <fieldia-form>. -->
     <script src="fieldia.js"></script>
     <script>

@@ -20,7 +20,8 @@ import type { createWidget, Widget, WidgetContext, WidgetFactory } from './widge
  * its text.
  *
  * A line moves by the grip at its start, or by Alt+↑/↓ from inside it, said
- * aloud. A block copied from a spreadsheet and pasted in a cell fills across
+ * aloud; drawn as a card, where the grip is not, by its ↑ and ↓ — a phone
+ * has no Alt key. A block copied from a spreadsheet and pasted in a cell fills across
  * and down from it, each cell read as its column reads what is typed, lines
  * added for the rows past the last, as the grid pastes (cell-paste.ts). The node's `options`: `min` lines at least — a new table starts with
  * them — and `max` at most; `addLabel`, the Add button's words (and
@@ -55,6 +56,8 @@ interface Row {
   buttons: Map<string, HTMLButtonElement>;
   remove: HTMLButtonElement;
   grip: HTMLElement;
+  /** Its ↑ and ↓, on its card (a phone has no grip to drag and no Alt key); none where the table is never cards. */
+  moves: { up: HTMLButtonElement; down: HTMLButtonElement; said?: string } | null;
   /** The tick that chooses the line for the table's buttons for chosen lines; none without them, or on a section or note. */
   pick: HTMLInputElement | null;
   /** The button that puts a copy of the line right after it (`options.copy`). */
@@ -332,6 +335,26 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       row.copy.title = row.copy.getAttribute('aria-label') as string;
     }
   }
+  /**
+   * A line's ↑ and ↓ as it stands now: the one that would take it past an end hidden, never disabled, and each named by
+   * the line's words — its first column's, a section's or a note's — else by its number. Every line, every time, as its
+   * place changes with no change in it; each written only where it changed.
+   */
+  function placeMoves(moves: NonNullable<Row['moves']>, line: Line, index: number, count: number, number: number) {
+    const up = readonly || index === 0;
+    const down = readonly || index === count - 1;
+    if (moves.up.hidden !== up) moves.up.hidden = up;
+    if (moves.down.hidden !== down) moves.down.hidden = down;
+    const first = line.values[lineKind(def, line.values) && kinds ? kinds.text : columns[0]];
+    const typed = typeof first === 'string' ? first : first && typeof first === 'object' && 'label' in first ? String(first.label ?? '') : '';
+    const said = typed.trim() || fillIn(labels.lineN, { n: number || index + 1 });
+    if (moves.said === said) return;
+    moves.said = said;
+    for (const [button, pattern] of [[moves.up, labels.moveUp], [moves.down, labels.moveDown]] as const) {
+      button.setAttribute('aria-label', fillIn(pattern, { label: said }));
+      button.title = button.getAttribute('aria-label') as string;
+    }
+  }
   /** The cell being left now, by its path: a problem leaving it finds is said by its message. */
   let leaving: string | null = null;
   let focusNew: string | null = null;
@@ -601,12 +624,24 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       showChosen();
     });
     tr.append(make('td', { class: 'fd-lines-grip' }, ...(pick ? [make('span', { class: 'fd-line-lead' }, pick, grip)] : [grip])));
+    // Its ↑ and ↓, shown on its card only (styles-lines.ts): in a table the grip and Alt+↑/↓ move it. Pressed, the line
+    // moves a place, said aloud; the focus stays on the button pressed — on the other one where the line has reached an
+    // end, as that one is hidden there.
+    const moves = cards === 'never' ? null : { up: make('button', { type: 'button', class: 'fd-line-move', 'data-move': 'up' }, '↑') as HTMLButtonElement, down: make('button', { type: 'button', class: 'fd-line-move', 'data-move': 'down' }, '↓') as HTMLButtonElement };
+    for (const [button, by] of moves ? ([[moves.up, -1], [moves.down, 1]] as const) : []) {
+      button.addEventListener('click', () => {
+        const had = document.activeElement === button;
+        move(line.key, current().findIndex((l) => l.key === line.key) + by);
+        if (had && button.hidden) (button === moves?.up ? moves.down : moves?.up)?.focus();
+      });
+    }
     const cells =
       kind && kinds
         ? [makeCell(tr, line, kinds.text, kindTextField(def.fields[kinds.text], kind), columns.length)]
         : columns.map((column) => makeCell(tr, line, column, def.fields[column]));
     const tools = document.createElement('td');
     tools.className = 'fd-lines-tools';
+    if (moves) tools.append(moves.up, moves.down);
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'fd-line-delete';
@@ -672,7 +707,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     }
     tools.append(remove);
     tr.append(tools);
-    return { element: tr, kind, cells, remove, grip, buttons, pick, copy };
+    return { element: tr, kind, cells, remove, grip, moves, buttons, pick, copy };
   }
 
   return {
@@ -759,13 +794,14 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
           rows.set(line.key, row);
         }
         if (body.children[index] !== row.element) body.insertBefore(row.element, body.children[index] ?? null);
+        const number = numbers.get(line.key) ?? 0;
+        if (row.moves) placeMoves(row.moves, line, index, current.length, number);
         const now = ruled ? form.lineState(node.id, line.key) : null;
         // Drawn again only where something it is drawn from changed: its values, its rules, what the record holds for it,
         // its options where they follow the record — or the table's own state. A key anywhere in the form drew every cell
         // of every line again before (1,000 cells a key at 200 lines).
         const own = perLine.get(line.key);
         const inputs = [now ? JSON.stringify(now) : '', own ? JSON.stringify(own.said) : '', ...(own?.held ?? []), ...offeredOf(line), leaving?.startsWith(`${name}.${line.key}.`) ? leaving : ''];
-        const number = numbers.get(line.key) ?? 0;
         if (!redrawAll && row.values && sameValues(row.values, line.values) && sameInputs(row.inputs, inputs)) {
           // Its cells as they were: only its number, where a line before it came or went, said again.
           if (row.number !== number) named(row, number);

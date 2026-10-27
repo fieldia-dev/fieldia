@@ -8,7 +8,9 @@ import type { DesignerWords } from './designer-words';
  * (the bar beside the card picked in a survey, the bar at the foot of a screen). Pressed, the + brings it up from the
  * foot of the screen in a sheet over the page, a dialog while it is open: Tab goes round inside it, and the + says it
  * is open. A kind picked puts it away, the new part taking the focus; so do its ×, Escape and a press beside it, the
- * focus back on the +. The editor's side is the same element in the sheet as beside the page — moved there while the
+ * focus back on the +. A tile a mouse or a pen carries out of it puts it away as the drag begins (`stepAside`), so the
+ * page it covered takes the drop: a laptop's window beside an app's menu may be too narrow for the toolbox beside the
+ * page too. The editor's side is the same element in the sheet as beside the page — moved there while the
  * sheet is open and back after — so what it holds (the pane open, a search typed, a group folded) stays as it was. A
  * window grown wide enough for the toolbox beside the page while it is open puts it back there.
  */
@@ -21,6 +23,11 @@ export interface ToolsSheet {
   close(giveBack?: boolean): void;
   /** What a pick does, with the sheet put away first: the focus on what it made, else back on the +. */
   closeFor(run: () => void): void;
+  /**
+   * A drag begun in it: the sheet put away at once, the focus on its + — until the part dropped takes it, or kept there
+   * if the drag is called off — without the page moving under the pointer.
+   */
+  stepAside(): void;
   destroy(): void;
 }
 
@@ -91,6 +98,12 @@ export function toolsSheet(options: { el: ElementFactory; doc: Document; root: H
       run();
       const now = doc.activeElement;
       if (was && (!now || now === doc.body || !now.isConnected)) by?.focus();
+    },
+    stepAside() {
+      if (!backdrop.isConnected) return;
+      close(false);
+      // The tile pressed went back with the side, out of sight: the keys stay with the sheet's +.
+      if (narrow()) opener?.focus({ preventScroll: true });
     },
     destroy() {
       watcher?.disconnect();

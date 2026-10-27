@@ -368,6 +368,7 @@ export function plainDateWidget(kind: DateKind): WidgetFactory {
         if (!typing) input.value = atRest();
         input.readOnly = state.readonly;
         setAttr(input, 'aria-invalid', String(state.invalid || (!!unread() && !typing)));
+        setAttr(input, 'aria-required', String(state.required));
         setAttr(input, 'aria-describedby', hint.describedBy(state.describedBy) ?? null);
       },
     };

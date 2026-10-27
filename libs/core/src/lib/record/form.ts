@@ -10,7 +10,7 @@ import type { JsonValue } from '../format/json';
 import { upgradePage } from '../format/upgrade';
 import { zonedPage } from '../format/zoned';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
-import { callsPartFunctions, functionsPart, steadyCalls, type Answered, type ExpressionEnv, type FunctionTable } from '../expression/functions';
+import { callsPartFunctions, functionsPart, PART_ASKED, steadyCalls, type Answered, type ExpressionEnv, type FunctionTable } from '../expression/functions';
 import { functionTable, type AppFunctions } from '../expression/app-functions';
 import { dayIn, ownZone } from './zones';
 import { checkProperties, checkValue } from './check';
@@ -79,6 +79,7 @@ import {
   isEmpty,
   keptSame,
   lineKind,
+  sameValue as sameAsSaved,
   structuredCopy,
   type Line,
   type RecordId,
@@ -991,6 +992,14 @@ export interface Form {
    * A save starts them afresh (not on a page with `autosave`): a change saved is none to take back.
    */
   history(): { undo: HistoryStep | null; redo: HistoryStep | null };
+  /**
+   * The box the person is in is going through its own undo or redo — the browser's, taking back or making again their
+   * typing there (an input's `historyUndo`, `historyRedo`) — until this is called again with null: what it writes
+   * meanwhile is noted as Undo and Redo note theirs, so `redo` makes again what the box's own undo took back, once the
+   * box is left too, as the browser's own redo cannot then: the box has written its text again since (a number grouped
+   * as it is left). The viewer's, around each such input.
+   */
+  boxHistory(how: 'undo' | 'redo' | null): void;
   /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
   /**
@@ -1157,7 +1166,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     };
     const going: Promise<void> = Promise.resolve(asked).then(
       (value) => land({ value: value === undefined ? null : value }),
-      (error: unknown) => land({ value: null, failed: error instanceof Error ? error.message : String(error) })
+      // The functions part that could not come: said in the page's words, never the loader's (a file's address, a hash).
+      (error: unknown) => land({ value: null, failed: key === PART_ASKED ? messages.partNotLoaded : error instanceof Error ? error.message : String(error) })
     );
     asking.add(going);
     track(going);
@@ -1291,6 +1301,51 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   const typings = new Set<() => boolean>();
   /** A box of this form, or of a saved form placed on it, still being typed in. */
   const typingNow = (): boolean => [...typings].some((typing) => typing()) || [...attached.values()].some((part) => part.inner.typing());
+  /**
+   * The field the person's last change from a box wrote, by its path — `field`, or a line's cell `field.lineKey.subfield`
+   * — until a box is left: while a box is still typed in (`typingNow`), the one they are typing in.
+   */
+  let typedPath: string | null = null;
+  /**
+   * What a write that is not the person's made of the field they are typing in, held back from under their keys
+   * (`keepTyped`): what they had typed then, and whether the source has yet to work it out — the app's write, a step's —
+   * or it is the source's own answer.
+   */
+  let held: { path: string; value: Value | undefined; over: Value | undefined; asks: boolean } | null = null;
+  /**
+   * A write that is not the person's — what the source's onchange makes of their change, a step's, the app's own rule's
+   * or a dialog's recalculation — while they are still typing in a box: the field that box writes keeps what they typed.
+   * The box under their keys is never written over: an emptied Quantity put back to the 1.00 an empty one becomes, as
+   * it empties, read "1.002" once "20" was typed after. What the write made of that field waits, and is laid once the box
+   * is left, or read as if it were (`layHeldBack`) — while the field still holds what they typed. Every other field of
+   * the write — the line's subtotal, the order's total — is laid at once.
+   */
+  function keepTyped(values: Values, asks: boolean): Values {
+    const path = typedPath;
+    if (path === null || !typingNow()) return values;
+    const typed = valueAt(state.values, path);
+    const made = valueAt(values, path);
+    if (typed === gone || made === gone || sameAsSaved(typed, made)) return values;
+    held = { path, value: made, over: typed, asks };
+    return withValueAt(values, path, typed);
+  }
+  /**
+   * A box is left, or every box read as if it were (a save, a check, a step on): what was held back from under the
+   * person's keys is laid now — over a field still holding what they typed, never over a change made since — kept in
+   * the draft and autosaved as any change is, and asked of the source's onchange unless it is the source's own answer.
+   * Another record shown lets it go (`newGeneration`).
+   */
+  function layHeldBack() {
+    typedPath = null;
+    const was = held;
+    held = null;
+    const now = was && valueAt(state.values, was.path);
+    if (!was || now === gone || !sameAsSaved(now, was.over)) return;
+    writeValues(withValueAt(state.values as Values, was.path, was.value));
+    scheduleDraft();
+    scheduleAutosave();
+    if (was.asks) runOnchange(was.path.split('.')[0]);
+  }
   /** Readings of typed text still waiting, as readTyped started them. */
   let readingNow = 0;
   /**
@@ -1309,6 +1364,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const wait = inner.settle();
       if (inner.reading()) waits.push(wait);
     }
+    // Read as if left: what was held back from under the person's keys is laid, and saved or checked with the rest.
+    layHeldBack();
     if (!waits.length) return null;
     // Waiting on its own readings, or a saved form's: `reading` says so until they end.
     readingNow++;
@@ -1701,13 +1758,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   /** The person's changes to the record shown, as made (history.ts); and whether one is being taken back or made again now. */
   let noted: Noted[] = [];
   let replaying = false;
+  /** The box the person is in going through its own undo or redo now (`boxHistory`): what it types is noted as that. */
+  let boxOwn: 'undo' | 'redo' | null = null;
   /**
    * A person's change written to `field` (on `line`), noted for Undo with what it held `before`: typing on joins it
    * (`joins`). The undo part takes them as they come, asked for with the first: in by the time the person presses Ctrl+Z.
    */
   const noteChange = (field: string, line: string | undefined, before: Value | undefined, joins: boolean) => {
     if (replaying) return;
-    noted.push([field, line, before ?? null, state.values[field] ?? null, joins]);
+    noted.push([field, line, before ?? null, state.values[field] ?? null, (joins && boxOwn) || joins]);
     const part = pressUndoPart.loaded;
     if (part) part.takeNoted(noted, inner.same);
     // Kept while it comes; where it cannot, the oldest let go.
@@ -1801,6 +1860,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     answers = new Map();
     personal.clear();
     personalLines.clear();
+    held = null;
     filed.clear();
     compared.clear();
     sentAs = null;
@@ -2781,6 +2841,16 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return line ? line.values[sub] : gone;
   }
 
+  /** The values with one written at a path: a field's, or a table line's cell (`field.lineKey.subfield`). */
+  function withValueAt(values: Values, path: string, value: Value | undefined): Values {
+    const parts = path.split('.');
+    if (parts.length < 3) return { ...values, [path]: value as Value };
+    const [field, sub] = [parts[0], parts[parts.length - 1]];
+    const key = parts.slice(1, -1).join('.');
+    const lines = ((values[field] as Line[] | null) ?? []).map((line) => (line.key === key ? { ...line, values: { ...line.values, [sub]: value as Value } } : line));
+    return { ...values, [field]: lines };
+  }
+
   /** A value — a field's, or a table line's by its cell's path — the same in both: a line that is gone, none. */
   function sameAt(a: Readonly<Values>, b: Readonly<Values>, path: string): boolean {
     if (!path.includes('.')) return a[path] === b[path];
@@ -3253,7 +3323,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
         (result) => {
           // A newer change asked since; or the record it was asked for is gone, or its values let go: none of it is laid.
           if (seq !== onchangeSeq || !shown()) return;
-          const values = { ...(state.values as Values), ...(result.values ?? {}) };
+          // What it makes of a field the person is still typing in waits for its box to be left.
+          const values = keepTyped({ ...(state.values as Values), ...(result.values ?? {}) }, false);
           writeValues(values, { warning: result.warning ?? null, warningField: result.warning ? changed : null });
         },
         () => undefined
@@ -3734,7 +3805,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const names = Object.keys(written);
     names.forEach(fieldDef);
     if (!names.length) return;
-    writeValues({ ...(state.values as Values), ...structuredCopy(written) });
+    // Never over the box the person is still typing in: what it makes of that field waits for the box to be left.
+    writeValues(keepTyped({ ...(state.values as Values), ...structuredCopy(written) }, true));
     for (const name of names) afterEdit(name);
     for (const name of names) changed(name, by, { keep });
   }
@@ -4416,6 +4488,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       // A choice whose places are all taken is shown, and refused when the person picks it: said under its field.
       if ((how?.by ?? 'person') === 'person' && refusedFull(name, value)) return;
       const before = state.values[name];
+      if ((how?.by ?? 'person') === 'person') typedPath = name;
       writeValues({ ...(state.values as Values), [name]: structuredCopy(value) });
       if ((how?.by ?? 'person') === 'person') noteChange(name, undefined, before, true);
       afterEdit(name);
@@ -4535,6 +4608,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     },
 
     boxLeft(path) {
+      // What was held back from under the person's keys is laid as they leave the box.
+      layHeldBack();
       noted.push([path.split('.')[0]]);
       const problem = leftProblem(path);
       if (!problem || state.errors[path] === problem) return;
@@ -4690,6 +4765,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       const lines = ((before as Line[] | null) ?? []).map((line) =>
         line.key === key ? { ...line, values: { ...line.values, [name]: structuredCopy(value) } } : line
       );
+      typedPath = `${field}.${key}.${name}`;
       writeValues({ ...(state.values as Values), [field]: lines });
       noteChange(field, key, before, true);
       afterEdit(field);
@@ -5057,6 +5133,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     undo: () => replay(true),
     redo: () => replay(false),
     history: () => pressUndoPart.loaded?.nextSteps(noted, inner.same) ?? { undo: null, redo: null },
+    boxHistory: (how) => void (boxOwn = how),
 
     async settled() {
       while (pending.size) await Promise.allSettled([...pending]);

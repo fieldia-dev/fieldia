@@ -23,8 +23,8 @@ export default [
     blurb:
       'A request for time off as the approver sees it: the type’s own rules decide what shows — a date range, half a day, custom hours — the duration follows the working week, and Approve, Validate and Refuse move it through two approvals.',
     howTo: [
+      'Change the end date: the duration in days follows, counting Sunday to Thursday.',
       'Press Approve: Paid Time Off needs two approvals, so it waits in Second Approval; press Validate to approve it.',
-      'Change the end date: the duration in days and hours follows, counting Sunday to Thursday.',
       '[Open Omar Said’s request](?record=4172) (Compensatory Days, in hours) and tick Half Day: the end date and the day count go, one date and Morning or Afternoon take their place, and the duration reads 4 Hours.',
       'Tick Custom Hours instead and pick From and To: the hours follow.',
       'Pick Sick Time Off: Supporting Document appears, to attach the doctor’s note.',
@@ -41,7 +41,7 @@ export default [
       'Open Private Information and change Marital Status to Single: the spouse’s fields go.',
       'Pick another Department: the Manager follows it.',
       'Change Private Country: a region of another country is cleared, and the region list follows the country.',
-      'In HR Settings, clear the Badge ID: Generate appears; press it for a new one.',
+      'In HR Settings, Salma has no Badge ID yet, so Generate is offered: press it for a new one, and Print Badge takes its place.',
       'Press Launch Plan, pick Onboarding: the plan summary lists who does what.',
     ],
   },

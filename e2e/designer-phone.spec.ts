@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
-import { inBar, watch } from './designer-support';
+import { cardOf, centre, dragToward, dropAt, editing, inAdvanced, inBar, layout, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /** The bar's Find anything, named holding the keys it shows. */
@@ -184,4 +184,112 @@ test('wider than a phone, the bar is as it was: no More, the views on their own 
   await page.goto('/screen/');
   await expect(page.locator('.fd-rail')).toBeVisible();
   await expect(page.locator('.fd-foot-bar')).toBeHidden();
+});
+
+/**
+ * The toolbox's sheet where a mouse is: a laptop's 1280px with an app's menu open beside the designer — the demos' own
+ * frame opens one — leaves the designer under 1,000px, too narrow for the toolbox beside the page, so it waits behind the
+ * + and comes up in a sheet over the page. A tile was only picked there: dragged, it opened no gap and added nothing.
+ * Now the sheet steps aside as the drag begins, and the page it covered takes the drop, as from the toolbox beside it.
+ */
+test.describe('a tile dragged out of the toolbox’s sheet at a laptop’s width', () => {
+  // A designer under 1,000px however it comes to be: here a window of 960px.
+  test.beforeEach(async ({ page }) => page.setViewportSize({ width: 960, height: 720 }));
+  const sheetOf = (page: Page) => page.getByRole('dialog', { name: 'Add, outline and data' });
+
+  test('the screen designer, as a visitor opens its demo at 1280px and opens the menu beside it: the sheet steps aside, a gap opens where it will land, and it lands there', async ({ page }) => {
+    const problems = watch(page);
+    // A person, not a test browser: the demos' frame draws its menu — its links under the sheet, where a tile is pressed.
+    await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto('/screen/');
+    await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
+    // The frame leaves its menu folded beside a designer at 1280px (demos/shell.mjs, DEMO_ROOM): the person opens it.
+    const menu = page.getByRole('button', { name: 'All demos' });
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+    await menu.click();
+    await expect(menu).toHaveAttribute('aria-expanded', 'true');
+    // Under 1,000px beside the menu: the toolbox behind the + at the foot.
+    await expect(page.locator('.fd-screen-body > .fd-rail')).toBeHidden();
+    const plus = page.locator('.fd-foot-bar').getByRole('button', { name: 'Open the toolbox' });
+    await plus.click();
+    const email = sheetOf(page).locator('[data-tool="kind:email"]');
+    await expect(email).toBeVisible();
+    // Pressed on Email in the sheet, carried at a hand's pace to the top of Photos — under Notes — and held there.
+    const photosTop = async () => {
+      const photos = (await (await cardOf(page, 'Photos')).boundingBox())!;
+      return { x: photos.x + photos.width / 2, y: photos.y + 24 };
+    };
+    await dragToward(page, centre((await email.boundingBox())!), photosTop, { release: false });
+    await expect(sheetOf(page)).toBeHidden();
+    // The keys with its +, as when the sheet is put away, until what is dropped takes them.
+    await expect(plus).toBeFocused();
+    await expect(plus).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.fd-drag-chip')).toHaveText('Email');
+    await expect(page.locator('.fd-drop-slot + .fd-canvas-field .fd-label')).toHaveText('Photos');
+    await screen(page, 'designer-sheet-drag-screen', { viewport: true });
+    await page.mouse.up();
+    await expect(editing(page).label).toBeFocused();
+    await page.keyboard.type('Contact email');
+    await expect.poll(async () => (await layout(page))[0].map((one) => one.split(':')[0])).toEqual(['Customer', 'Visit date', 'Notes', 'Contact email', 'Photos']);
+    expect(problems).toEqual([]);
+  });
+
+  test('the screen designer’s Advanced canvas: what is under the pointer is the screen’s once the sheet has stepped aside', async ({ page }) => {
+    const problems = watch(page);
+    await inAdvanced(page);
+    await page.goto('/screen/');
+    await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
+    await page.locator('.fd-foot-bar').getByRole('button', { name: 'Open the toolbox' }).click();
+    const email = sheetOf(page).locator('[data-tool="kind:email"]');
+    await expect(email).toBeVisible();
+    const notes = (await (await cardOf(page, 'Notes')).boundingBox())!;
+    const { words, refused } = await dropAt(page, centre((await email.boundingBox())!), { x: notes.x + notes.width / 2, y: notes.y + notes.height * 0.75 }, { release: false });
+    expect([words, refused]).toEqual(['above “Photos”', false]);
+    await expect(sheetOf(page)).toBeHidden();
+    await page.mouse.up();
+    await expect(editing(page).label).toBeFocused();
+    await page.keyboard.type('Contact email');
+    await expect(editing(page).label).toHaveValue('Contact email');
+    await expect(page.locator('.fd-canvas-field')).toHaveCount(8);
+    // Where the chip said: under Notes, above Photos.
+    const [made, above, below] = [(await editing(page).card.boundingBox())!, (await (await cardOf(page, 'Notes')).boundingBox())!, (await (await cardOf(page, 'Photos')).boundingBox())!];
+    expect(made.y).toBeGreaterThanOrEqual(above.y + above.height - 2);
+    expect(made.y + made.height).toBeLessThanOrEqual(below.y + 2);
+    expect(problems).toEqual([]);
+  });
+
+  test('the survey designer: from the sheet beside the question picked, a question lands where it is let go', async ({ page }) => {
+    const problems = watch(page);
+    await page.setViewportSize({ width: 860, height: 800 });
+    await page.goto('/designer/?start=survey');
+    const card = (id: string) => page.locator(`.fd-q[data-node="${id}"]`);
+    const ids = () =>
+      page.evaluate(() => {
+        type Node = { id: string; children?: Node[] };
+        const built = (window as unknown as { fieldiaDesigner: { designer: { getPage(): { layout: Node } } } }).fieldiaDesigner.designer.getPage();
+        return (built.layout.children?.find((step) => step.id === 'step-experience')?.children ?? []).map((n) => n.id);
+      });
+    expect(await ids()).toEqual(['q-rating', 'q-parts', 'q-liked', 'q-improve']);
+    await card('q-rating').click();
+    const plus = page.locator('.fd-q-rail').getByRole('button', { name: 'Open the toolbox' });
+    await expect(plus).toBeVisible();
+    await plus.click();
+    const dropdown = sheetOf(page).locator('[data-tool="kind:dropdown"]');
+    await expect(dropdown).toBeVisible();
+    // Held over the top of the question picked, under the sheet a moment ago: the gap before it.
+    await dragToward(page, centre((await dropdown.boundingBox())!), async () => {
+      const at = (await card('q-rating').boundingBox())!;
+      return { x: at.x + at.width / 2, y: at.y + 12 };
+    }, { release: false });
+    await expect(sheetOf(page)).toBeHidden();
+    await expect(page.locator('.fd-drop-slot + .fd-q')).toHaveAttribute('data-node', 'q-rating');
+    await page.mouse.up();
+    await expect.poll(async () => (await ids()).length).toBe(5);
+    const now = await ids();
+    expect(now.slice(1)).toEqual(['q-rating', 'q-parts', 'q-liked', 'q-improve']);
+    await expect(page.locator('.fd-q-selected')).toHaveAttribute('data-node', now[0]);
+    await expect(page.locator('.fd-q-selected .fd-q-kind')).toContainText('Dropdown');
+    expect(problems).toEqual([]);
+  });
 });

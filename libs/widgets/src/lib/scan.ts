@@ -24,7 +24,8 @@ import type { TypedText, Widget, WidgetContext } from './widgets';
  *   fills — holds what the code names gets one more; else a line is added with one. The sheet stays open, saying each
  *   count, until Done.
  *
- * Where the camera cannot open, a note beside the button says why and the focus goes to the box, to type the code. A
+ * Where the camera cannot open, a note beside the button says why and the focus goes to the box, to type the code — its
+ * text chosen, as with Type it instead, so the code replaces it. A
  * scanner gun types into the box: what it typed is read as the camera reads a code — a GS1 code's part and the fields it
  * fills, as Enter is pressed or the box is left; a link's record by its code (`typedLink`, which the link's box asks) —
  * and words a person typed stay as typed. A code of a kind the field takes nothing from is said in the sheet. An answer
@@ -312,21 +313,28 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
     return { kept: true, said: fillIn(words.scanCounted, { name: shownOf(got.value), n: formatNumber(n, 0, locale) }) };
   }
 
+  /**
+   * The box takes the focus for the code to be typed — by a scanner gun, or by hand — its text chosen, so what comes
+   * replaces what it held: a card's code never runs on after the patient's name it showed ("Hana FouadP-1043").
+   */
+  function typeInBox() {
+    widget.focus();
+    const box = doc.activeElement as HTMLInputElement | null;
+    if (widget.element.contains(box)) box?.select?.();
+  }
+
   function ended(end: ScanEnd) {
     sheet = null;
     if (end === 'read' || end === 'closed') {
       if (button.isConnected) button.focus();
       return;
     }
-    if (end === 'type') {
-      widget.focus();
-      return;
-    }
+    if (end === 'type') return typeInBox();
     const why = { refused: words.scanRefused, absent: words.scanNoCamera, busy: words.scanCameraBusy, unavailable: words.scanUnavailable, noReader: words.scanNoReader }[end];
     note.textContent = why;
     note.hidden = false;
     setAttr(button, 'aria-describedby', note.id);
-    widget.focus();
+    typeInBox();
   }
 
   button.addEventListener('click', () => {

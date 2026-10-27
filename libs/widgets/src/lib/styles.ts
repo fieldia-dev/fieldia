@@ -192,8 +192,9 @@ const SKINS_CSS = /* css */ `
   padding: 3px 8px; border-radius: var(--fd-control-radius); justify-self: start;
 }
 /* A keystroke or a paste a box refused, said right under it until the next one it takes (input-rules.ts): the
-   warning's colours, never the error's — nothing is wrong yet, the character simply did not land. */
-.fd-refusal-hint {
+   warning's colours, never the error's — nothing is wrong yet, the character simply did not land. And a field whose
+   own box's part could not come, drawn plainly and saying so under it (the viewer's partNote), its Retry beside. */
+.fd-refusal-hint, .fd-part-unloaded {
   color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px; line-height: 1.4;
   padding: 3px 8px; border-radius: var(--fd-control-radius); justify-self: start; width: fit-content; max-width: 100%;
   box-sizing: border-box; margin-block-start: 4px; text-align: start;
@@ -855,13 +856,13 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-announce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* A public page's hidden box (botCheck): drawn for a bot that fills every box, seen, reached and heard by no person. */
 .fd-trap { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; opacity: 0; pointer-events: none; }
-/* The server out of reach: a banner over the page, with Retry. */
-.fd-banner {
+/* The server out of reach: a banner over the page, with Retry. A part of the page that could not come, said over it. */
+.fd-banner, .fd-parts-unloaded {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 14px; margin-block-end: 16px;
   border: 1px solid #f0c47a; border-radius: var(--fd-control-radius); background: var(--fd-warning-soft); color: var(--fd-warning); font-size: 13.5px;
 }
 .fd-banner-text { flex: 1 1 16em; min-width: 0; }
-.fd-content > .fd-banner:has(+ .fd-draft + .fd-sheet-page), .fd-content > .fd-banner:has(+ .fd-sheet-page) { margin: 12px 16px 0; }
+.fd-content > .fd-banner:has(+ .fd-draft + .fd-sheet-page), .fd-content > .fd-banner:has(+ .fd-sheet-page), .fd-content > .fd-parts-unloaded:has(~ .fd-sheet-page) { margin: 12px 16px 0; }
 /* The status as a toast in a corner, or as a bar across the top. */
 .fd-status-box.fd-toast {
   position: fixed; inset-block-end: max(20px, env(safe-area-inset-bottom, 0px)); inset-inline-end: 20px; z-index: 900;

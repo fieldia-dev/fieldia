@@ -250,6 +250,47 @@ describe('dragging on the canvas', () => {
     expect(dropped).toEqual([[{ tool: 'kind:date' }, 'follow', 1]]);
   });
 
+  it('runs what a tile’s press asks as it becomes a drag, before the gap is placed: once, and not for a press that stays', () => {
+    const { drag, pointer, dropped } = canvas();
+    const tile = document.createElement('button');
+    document.body.append(tile);
+    // What the toolbox's sheet asks: to be put away, so the page it covered takes the drop.
+    const asked: (Element | null)[] = [];
+    const lifted = () => void asked.push(document.querySelector('.fd-drop-slot'));
+    drag.press({ tool: 'kind:email' }, new MouseEvent('pointerdown', { clientX: 5, clientY: 5, button: 0 }) as unknown as PointerEvent, tile, lifted);
+    pointer('pointermove', document, 6, 6);
+    pointer('pointerup', document, 6, 6);
+    expect(asked).toEqual([]);
+    drag.press({ tool: 'kind:email' }, new MouseEvent('pointerdown', { clientX: 5, clientY: 5, button: 0 }) as unknown as PointerEvent, tile, lifted);
+    pointer('pointermove', document, 30, 30);
+    pointer('pointermove', document, 300, 470);
+    pointer('pointerup', document, 300, 470);
+    // Once, with nothing drawn yet: the gap is placed by what is under the pointer once the sheet is gone.
+    expect(asked).toEqual([null]);
+    expect(dropped).toEqual([[{ tool: 'kind:email' }, 'follow', 1]]);
+  });
+
+  it('keeps the browser’s own drag from starting while a press is held, and leaves it alone otherwise', () => {
+    const { drag, pointer } = canvas();
+    const tile = document.createElement('button');
+    // What lay under the sheet where the tile was pressed: a link, which the browser drags by itself.
+    const link = document.createElement('a');
+    link.href = '#elsewhere';
+    document.body.append(tile, link);
+    const nativeDrag = () => {
+      const event = new Event('dragstart', { bubbles: true, cancelable: true });
+      link.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    expect(nativeDrag()).toBe(false);
+    drag.press({ tool: 'kind:email' }, new MouseEvent('pointerdown', { clientX: 5, clientY: 5, button: 0 }) as unknown as PointerEvent, tile);
+    expect(nativeDrag()).toBe(true);
+    pointer('pointermove', document, 300, 470);
+    expect(nativeDrag()).toBe(true);
+    pointer('pointerup', document, 300, 470);
+    expect(nativeDrag()).toBe(false);
+  });
+
   it('starts nothing from a box being typed in, but does from the grip of the field being edited', () => {
     const { card, pointer, dropped } = canvas();
     const editing = card('customer');
