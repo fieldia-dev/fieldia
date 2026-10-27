@@ -3,6 +3,9 @@ import { expect, test } from './fixtures';
 import { inBar, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
+/** The bar's Find anything, named holding the keys it shows. */
+const FIND = /^Find anything, (Ctrl K|⌘K)$/;
+
 /**
  * The designers on a phone, as the walk of 0.29 met them (390×844, WebKit): the survey designer's bar was about 210px
  * tall and stayed on screen, the whole toolbox came first — the first question some 2,100px down — and a page's title
@@ -113,7 +116,8 @@ for (const phone of PHONES) {
       const more = bar(page).getByRole('button', { name: 'More', exact: true });
       await more.click();
       await expect(more).toHaveAttribute('aria-expanded', 'true');
-      for (const name of ['Find anything', 'Design', 'Try it', 'JSON', 'Translations', 'Rules', 'Look']) await expect(bar(page).getByRole('button', { name, exact: true })).toBeInViewport();
+      // Find anything named holding the keys it shows (WCAG 2.5.3): "Find anything, Ctrl K".
+      for (const name of [FIND, 'Design', 'Try it', 'JSON', 'Translations', 'Rules', 'Look']) await expect(bar(page).getByRole('button', { name, exact: true })).toBeInViewport();
       await expect(bar(page).locator('[data-checks]')).toBeInViewport();
       await expect(bar(page).locator('.fd-designer-status')).toBeFocused();
       await expectNoSidewaysScroll(page);
@@ -128,10 +132,10 @@ for (const phone of PHONES) {
       await page.mouse.click(6, phone.height - 200);
       await expect(bar(page).getByRole('button', { name: 'Try it' })).toBeHidden();
       // Checks opened from it: its popover over it, the bar's parts kept until it is done.
-      await (await inBar(page, 'Find anything')).click();
+      await (await inBar(page, FIND)).click();
       await expect(page.getByRole('dialog', { name: 'Find anything' })).toBeVisible();
       await page.keyboard.press('Escape');
-      await expect(bar(page).getByRole('button', { name: 'Find anything', exact: true })).toBeFocused();
+      await expect(bar(page).getByRole('button', { name: FIND })).toBeFocused();
     });
 
     test('the screen designer: one row of bar, the screen near the top, the toolbox behind the + at the foot', async ({ page }) => {

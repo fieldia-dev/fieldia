@@ -173,7 +173,8 @@ describe('a list, and thumbnails', () => {
     const rows = [...el.querySelectorAll('.fd-file-item')];
     expect(rows).toHaveLength(6);
     expect((rows[0].querySelector('img') as HTMLImageElement).src).toBe('data:image/png;base64,aGVsbG8=');
-    expect(rows.slice(1).map((r) => [r.querySelector('.fd-file-icon')?.getAttribute('data-kind'), text(r.querySelector('.fd-file-icon'))])).toEqual([
+    // Each icon's extension drawn on it (data-ext): the button's text and its name hold the file's own name and size.
+    expect(rows.slice(1).map((r) => [r.querySelector('.fd-file-icon')?.getAttribute('data-kind'), r.querySelector('.fd-file-icon')?.getAttribute('data-ext')])).toEqual([
       ['pdf', 'PDF'],
       ['sheet', 'XLSX'],
       ['zip', 'ZIP'],
@@ -335,7 +336,9 @@ describe('the viewer', () => {
     form.setValue('x', stored('site.zip', 'application/zip'));
     (el.querySelector('.fd-file-open') as HTMLButtonElement).click();
     const box = dialog() as HTMLElement;
-    expect(text(box.querySelector('.fd-file-none'))).toBe('ZIP site.zip 5 bytes No preview for this kind of file');
+    // Its icon's extension drawn on it, not text: the words are its name, its size and why.
+    expect(box.querySelector('.fd-file-none .fd-file-icon')?.getAttribute('data-ext')).toBe('ZIP');
+    expect(text(box.querySelector('.fd-file-none'))).toBe('site.zip 5 bytes No preview for this kind of file');
     // One file: nothing to go through.
     expect((box.querySelector('[aria-label="Next"]') as HTMLElement).hidden).toBe(true);
     key(box, 'Escape');

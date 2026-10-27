@@ -352,14 +352,17 @@ test('pins that crowd are gathered: the courier at the kitchen is one pin with t
   expect(routes[1]).toContain(`/route/v1/driving/${KITCHEN.lng},${KITCHEN.lat};31.21971,30.06259?`);
 });
 
+/** A crowd's name: what its face shows first — a courier's minutes and the count, "4 min 2" (WCAG 2.5.3) — then who is in it. */
+const CROWD = /^(?:.+ 2, )?2 here: Kitchen, Courier\. Zoom in to see them\.$/;
+
 test('crowded pins part as the map zooms in and gather again as it zooms out; by the keys, Enter zooms in and the courier keeps the focus', async ({ page }) => {
   await openOrder(page);
   // A street from the kitchen, the courier is gathered with it in the order's first view.
   await expect(together(page)).toBeVisible();
   await theMap(page).focus();
   const focused = page.locator(':focus');
-  for (let i = 0; i < 4 && !((await focused.getAttribute('aria-label')) ?? '').startsWith('2 here'); i++) await page.keyboard.press('Tab');
-  await expect(focused).toHaveAttribute('aria-label', '2 here: Kitchen, Courier. Zoom in to see them.');
+  for (let i = 0; i < 4 && !((await focused.getAttribute('aria-label')) ?? '').includes('2 here'); i++) await page.keyboard.press('Tab');
+  await expect(focused).toHaveAttribute('aria-label', CROWD);
   await page.keyboard.press('Enter');
   // Closer, until they part: each its own pin again, and the courier still has the focus.
   await expect(theMap(page).getByRole('button', { name: 'Kitchen, Koshary Tahrir' })).toBeVisible();
@@ -393,7 +396,7 @@ test('pins on one spot that no zoom parts are listed, each opening its own card'
   await expect(page.locator('.fd-map-form .fd-map-card-title')).toHaveText('Koshary Tahrir');
   await page.keyboard.press('Escape');
   await expect(page.locator('.fd-map-form .fd-map-card')).toHaveCount(0);
-  await expect(page.locator(':focus')).toHaveAttribute('aria-label', '2 here: Kitchen, Courier. Zoom in to see them.');
+  await expect(page.locator(':focus')).toHaveAttribute('aria-label', CROWD);
 });
 
 test('a courier gathered with the kitchen still greys when their news is old, and glides out of it on their way', async ({ page }) => {

@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { cardLineFields, recordSentence, type DataSource, type JsonValue, type ListMap, type ListRequest, type ListResult, type MapCluster, type RecordId, type ResolvedFilter, type Values, intlFormat } from '@fieldia/core';
+import { cardLineFields, nameShowing, recordSentence, type DataSource, type JsonValue, type ListMap, type ListRequest, type ListResult, type MapCluster, type RecordId, type ResolvedFilter, type Values, intlFormat } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { startLoading, type Wait } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
@@ -520,7 +520,8 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
     const face = pins.face(record);
     const icon = L.divIcon({ className: `fd-map-mark ${anchor(face)}`, html: face.element, iconSize: SIZED_BY_FACE });
     const marker = L.marker([at.lat, at.lng], { icon, keyboard: true, riseOnHover: true, riseOffset: 500 }).addTo(layer as Leaflet.LayerGroup);
-    const element = mark({ marker, face: face.element, ids: [record.id] }, pins.name(record));
+    // Named as its card says it, holding what its face shows, written short ("19M EGP"): WCAG 2.5.3.
+    const element = mark({ marker, face: face.element, ids: [record.id] }, nameShowing(pins.name(record), face.element.textContent ?? '', locale));
     if (element) element.dataset['id'] = String(record.id);
     const height = face.stands === 'foot' ? face.height : face.height / 2;
     onPress(marker, (event) => {
@@ -543,7 +544,8 @@ export function listMap(settings: MapSettings, context: ListMapContext, now = fa
     const centre: LatLng = { lat: middle('lat'), lng: middle('lng') };
     const icon = L.divIcon({ className: 'fd-map-mark fd-map-middle', html: face, iconSize: SIZED_BY_FACE });
     const marker = L.marker([centre.lat, centre.lng], { icon, keyboard: true, riseOnHover: true }).addTo(layer as Leaflet.LayerGroup);
-    const element = mark({ marker, face, ids: members.map((p) => p.record.id) }, fill(labels.cluster, { n: count(n) }));
+    // Its name holds the count it shows, written short ("15K"), before the words.
+    const element = mark({ marker, face, ids: members.map((p) => p.record.id) }, nameShowing(fill(labels.cluster, { n: count(n) }), face.textContent ?? '', locale, true));
     // Where its records are: each on hand, and where the source's bubbles say theirs are (the chunk is in: they came through it).
     const theirs = gathered.length ? made : null;
     const spots = [...members.map((p) => p.at), ...(theirs?.corners(gathered) ?? [])];

@@ -263,14 +263,14 @@ describe('a picture the browser cannot draw', () => {
     // The browser could not read its bytes as a picture.
     picture.dispatchEvent(new Event('error'));
     expect(card.querySelector('img')).toBeNull();
-    expect(words(card.querySelector('.fd-file-icon'))).toBe('JPG');
+    expect(card.querySelector('.fd-file-icon')?.getAttribute('data-ext')).toBe('JPG');
     store.sent[0].end();
     await until(() => !going(el).length);
     // Stored, it shows from its link: that cannot be drawn either.
     const stored = el.querySelector('.fd-file-item:not(.fd-file-going) img.fd-file-thumb') as HTMLImageElement;
     stored.dispatchEvent(new Event('error'));
     expect(el.querySelector('.fd-file-item:not(.fd-file-going) img')).toBeNull();
-    expect(words(el.querySelector('.fd-file-item:not(.fd-file-going) .fd-file-icon'))).toBe('JPG');
+    expect(el.querySelector('.fd-file-item:not(.fd-file-going) .fd-file-icon')?.getAttribute('data-ext')).toBe('JPG');
     void form;
   });
 });

@@ -1,0 +1,17 @@
+{
+  "name": "fieldia-angular-newest",
+  "version": "0.0.0",
+  "license": "MIT",
+  "private": true,
+  "description": "The newest Angular major @fieldia/angular supports, beside the workspace's own (the oldest it supports): tools/angular-newest.mjs builds and runs the bindings on it.",
+  "devDependencies": {
+    "@angular/common": "22.2.3",
+    "@angular/compiler": "22.2.3",
+    "@angular/compiler-cli": "22.2.3",
+    "@angular/core": "22.2.3",
+    "@angular/platform-browser": "22.2.3",
+    "rxjs": "7.8.2",
+    "tslib": "^2.8.1",
+    "typescript": "~6.0.3"
+  }
+}

@@ -18,13 +18,25 @@ interface Violation {
   source: string;
   line: number;
   target: string;
+  /** The refused element's tag. */
+  tag: string;
 }
+
+/**
+ * WebKit 27.2's own refusal for every <select> made on a page with a style-src policy: its select's inner style refused
+ * as an inline style attribute, as on a page of nothing but a bare <select> ("WebKit refuses its own select's style",
+ * below, which fails once WebKit stops). Reported at the select, or at the document for one made before it is placed,
+ * so told by nothing but its directive. Fieldia writes no style attribute (tools/csp-source.test.mjs), and Chromium and
+ * Firefox hold every page here to it; in WebKit, every other refusal is still a failure.
+ */
+const webKitsOwnSelect = (browserName: string) => (one: Violation) => browserName === 'webkit' && one.directive === 'style-src-attr' && one.blocked === 'inline' && !one.sample;
 
 /**
  * What the policy refused, every one reported: a violation of our own is caused last, once the page is drawn, and
  * waited for — the browser reports them in order, so what came before it has been reported by then.
  */
 async function refused(page: Page): Promise<Violation[]> {
+  const engines = webKitsOwnSelect(page.context().browser()?.browserType().name() ?? '');
   // The page drawn, every part it draws from in (the viewer's `drawn`).
   await page.evaluate(() => (window as unknown as { fieldiaDemo?: { handle?: { drawn?: Promise<void> } } }).fieldiaDemo?.handle?.drawn);
   await page.evaluate(() => {
@@ -34,7 +46,7 @@ async function refused(page: Page): Promise<Violation[]> {
     document.body.append(mark);
   });
   await expect.poll(() => page.evaluate(() => (window as unknown as { cspViolations: Violation[] }).cspViolations.some((one) => one.target === 'csp-sentinel'))).toBe(true);
-  return page.evaluate(() => (window as unknown as { cspViolations: Violation[] }).cspViolations.filter((one) => one.target !== 'csp-sentinel'));
+  return (await page.evaluate(() => (window as unknown as { cspViolations: Violation[] }).cspViolations.filter((one) => one.target !== 'csp-sentinel'))).filter((one) => !engines(one));
 }
 
 /** Fieldia's look is on: its sheet came in (with the nonce), so its tokens are on the form. */
@@ -48,8 +60,10 @@ function problemsOf(page: Page) {
   const problems: string[] = [];
   page.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
   page.on('console', (message) => {
-    // What the policy refused is in the violations, each one, read by `refused` — its own sentinel's among them.
-    if (message.type() === 'error' && !/Refused to |Content-Security-Policy/.test(message.text())) problems.push(`console: ${message.text()}`);
+    // What the policy refused is in the violations, each one, read by `refused` — its own sentinel's among them. Each
+    // engine says it its own way: "Refused to apply inline style…", Chromium 156 "Applying inline style violates the
+    // following Content Security Policy directive…".
+    if (message.type() === 'error' && !/Refused to |Content[- ]Security[- ]Policy/.test(message.text())) problems.push(`console: ${message.text()}`);
   });
   return problems;
 }
@@ -198,3 +212,14 @@ test("a formatted text's tools align its words under a strict policy, in the val
     .poll(() => page.evaluate(() => (window as unknown as { fieldiaDemo: { handle: { form: { getState(): { values: Record<string, unknown> } } } } }).fieldiaDemo.handle.form.getState().values['note']))
     .toContain('text-align: right');
 });
+
+test("WebKit refuses its own select's style under a style-src policy, as the refusals left out above say", async ({ page, browserName }) => {
+  test.skip(browserName !== 'webkit', "WebKit's alone: Chromium and Firefox refuse nothing on this page");
+  await page.setContent(`<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'nonce-n'"><body><script>
+    window.refused = []; document.addEventListener('securitypolicyviolation', (event) => refused.push(event.violatedDirective));
+    const select = document.createElement('select'); select.append(new Option('One')); document.body.append(select);
+  </script></body>`);
+  // Once WebKit refuses nothing here, `webKitsOwnSelect` goes: every refusal is then a failure in WebKit too.
+  await expect.poll(() => page.evaluate(() => (window as unknown as { refused: string[] }).refused)).toEqual(['style-src-attr']);
+});
+

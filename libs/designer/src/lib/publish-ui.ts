@@ -5,7 +5,7 @@ import { openMenu } from './menu';
 import { pageChanges, type PageCheck } from './page-checks';
 import { DATE_TAGS, type DesignerWords } from './designer-words';
 import { speakLike } from './chrome-language';
-import { intlFormat } from '@fieldia/core';
+import { intlFormat, nameShowing } from '@fieldia/core';
 
 /**
  * The bar's part in publishing: Checks, a count of what people would trip
@@ -48,7 +48,7 @@ function checkRow(el: ElementFactory, check: PageCheck, onFix: () => void, words
 export function checksButton(el: ElementFactory, doc: Document, designer: Designer, goTo: GoTo) {
   const w = designer.words.bar;
   const count = el('span', { class: 'fd-checks-count' });
-  const element = el('button', { type: 'button', class: 'fd-button fd-checks-button', 'data-checks': '', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, designerIcon(doc, 'check'), el('span', { class: 'fd-checks-word' }, w.checks), count) as HTMLButtonElement;
+  const element = el('button', { type: 'button', class: 'fd-button fd-checks-button', 'data-checks': '', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, designerIcon(doc, 'check'), el('span', { class: 'fd-checks-word' }, w.checks), ' ', count) as HTMLButtonElement;
   let open: (() => void) | null = null;
 
   function show() {
@@ -111,7 +111,8 @@ export function checksButton(el: ElementFactory, doc: Document, designer: Design
     waiting = undefined;
     const checks = designer.checks();
     count.textContent = checks.length ? String(checks.length) : '✓';
-    element.setAttribute('aria-label', checks.length ? w.checksCount(checks.length) : w.checksClear);
+    // Its name holds what it shows, "Checks 1" — in Arabic "التحقق: أمر واحد للمراجعة، التحقق 1" (WCAG 2.5.3).
+    element.setAttribute('aria-label', nameShowing(checks.length ? w.checksCount(checks.length) : w.checksClear, `${w.checks} ${count.textContent}`, designer.locale ?? 'en'));
     // Red for what must be fixed, amber for what reads wrong; neutral for where a page just begun starts (an empty survey).
     const faults = checks.filter((c) => !c.start);
     element.dataset['state'] = faults.some((c) => c.severity === 'must') ? 'must' : faults.length ? 'should' : checks.length ? 'start' : 'clear';

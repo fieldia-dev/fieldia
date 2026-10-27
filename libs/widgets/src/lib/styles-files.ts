@@ -43,6 +43,7 @@ export const FILES_CSS = /* css */ `
   display: grid; place-items: end center; padding-block-end: 4px; font-size: 9px; font-weight: 700; color: #fff;
   background: var(--fd-kind, #5b6573); clip-path: polygon(0 0, 68% 0, 100% 28%, 100% 100%, 0 100%);
 }
+.fd-file-icon::before { content: attr(data-ext); }
 .fd-file-icon[data-kind="pdf"] { --fd-kind: #c62828; }
 .fd-file-icon[data-kind="doc"] { --fd-kind: #1f5fbf; }
 .fd-file-icon[data-kind="sheet"] { --fd-kind: #1d7a3e; }

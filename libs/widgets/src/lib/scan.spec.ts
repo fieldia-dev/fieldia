@@ -399,7 +399,8 @@ describe('a table of lines counted by scanning', () => {
     const source = createMemoryDataSource({ records: { 'stock.product': PRODUCTS } });
     const { button, said, sheet, values } = mount(fields, 'line_ids', { columns: ['product_id', 'counted'], options: { scan } }, { dataSource: source, values: { line_ids: [{ key: 'k1', id: null, values: { product_id: { id: 2, label: 'Lip balm' }, counted: 4 } }] } });
     expect(document.querySelector('.fd-scan')?.getAttribute('data-scan')).toBe('lines');
-    expect(button()?.getAttribute('aria-label')).toBe('Count Products by scanning');
+    // Named by what it does, holding the word it shows (WCAG 2.5.3).
+    expect(button()?.getAttribute('aria-label')).toBe('Count Products by scanning, Scan');
     expect(button()?.textContent).toBe('Scan');
     button()?.click();
     expect(await until(() => said() === 'Scan each item: every code read counts one.')).toBe(true);

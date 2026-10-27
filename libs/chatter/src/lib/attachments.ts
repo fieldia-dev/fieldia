@@ -128,7 +128,7 @@ export function composerFiles(context: ChatterContext, onProblem: (message: stri
     for (const picked of chosen) {
       const file = options.shrink && shrinkable(picked) ? await shrinkPhoto(picked, options.shrink, doc) : picked;
       const pending = { id: `attachment-${++made}`, name: file.name, size: file.size, type: file.type, status: 'waiting', sent: 0, total: null, file } as Pending;
-      const picture = el('span', { class: 'fd-file-icon', 'aria-hidden': 'true' }, (/\.(\w{1,5})$/.exec(file.name)?.[1] ?? '').toUpperCase());
+      const picture = el('span', { class: 'fd-file-icon', 'data-ext': (/\.(\w{1,5})$/.exec(file.name)?.[1] ?? '').toUpperCase(), 'aria-hidden': 'true' });
       pending.item = goingItem(el, words, picture, (name) => el('span', { class: 'fd-file-name', dir: 'auto', title: name }, name), { cancel: () => cancel(pending), retry: () => void send(pending) });
       going = [...going, pending];
       onTheirWay.append(pending.item.element);

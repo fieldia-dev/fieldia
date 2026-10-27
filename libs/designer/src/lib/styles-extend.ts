@@ -16,15 +16,19 @@ export const DESIGNER_EXTEND_CSS = /* css */ `
 .fd-start-title { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.3; color: var(--fd-text); }
 .fd-start-lead { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--fd-muted); }
 .fd-start-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 12px; }
-.fd-start-item { display: flex; min-width: 0; }
-.fd-start-card {
-  font: inherit; color: var(--fd-text); text-align: start; cursor: pointer; flex: 1; min-width: 0; box-sizing: border-box;
+/* The card: its title's button, what it is for and its first questions; the button's box laid over it all, so a press
+   anywhere on it is the button's, and so is its focus ring. */
+.fd-start-item {
+  position: relative; min-width: 0; box-sizing: border-box; color: var(--fd-text);
   display: grid; align-content: start; gap: 4px; padding: 14px 14px 12px; margin: 0;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
-.fd-start-card:hover { border-color: var(--fd-accent); box-shadow: 0 2px 8px rgba(15, 20, 25, 0.08); }
-.fd-start-card:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-start-item:hover { border-color: var(--fd-accent); box-shadow: 0 2px 8px rgba(15, 20, 25, 0.08); }
+.fd-start-card { font: inherit; color: inherit; text-align: start; cursor: pointer; min-width: 0; padding: 0; margin: 0; border: 0; background: none; }
+.fd-start-card::after { content: ""; position: absolute; inset: -1px; border-radius: 8px; }
+.fd-start-card:focus-visible { outline: none; }
+.fd-start-card:focus-visible::after { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-start-card-title { font-size: 15px; font-weight: 600; line-height: 1.3; }
 .fd-start-card-description { font-size: 13px; line-height: 1.4; color: var(--fd-muted); }
 .fd-start-preview { display: grid; gap: 5px; margin-block-start: 8px; padding-block-start: 10px; border-block-start: 1px dashed var(--fd-border); }

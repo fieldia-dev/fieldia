@@ -1,5 +1,5 @@
 import type * as Leaflet from 'leaflet';
-import { ANY_FUNCTION, compileModifier, expressionContext, type FormState, type Line, type MapLayer, type Page, type Value, type Values, intlFormat } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, expressionContext, nameShowing, type FormState, type Line, type MapLayer, type Page, type Value, type Values, intlFormat } from '@fieldia/core';
 import type { MapPart, MapPartContext } from '@fieldia/viewer';
 import { startLoading, stillShown } from '@fieldia/widgets';
 import { drawCard, drawCrowd, type Card } from './card';
@@ -408,7 +408,8 @@ export function formMap(settings: MapSettings, context: MapPartContext, now = fa
       onPress(made, (event) => pressCrowd(map, L, keys, made.getLatLng(), 20, made.getElement() ?? null, event));
     }
     const element = marker.getElement();
-    element?.setAttribute('aria-label', crowdWords(keys));
+    // Its name holds the count it shows, written short ("1.2K"), before the words.
+    element?.setAttribute('aria-label', nameShowing(crowdWords(keys), element.querySelector('.fd-map-bubble')?.textContent ?? '', locale, true));
     if (element) element.dataset['crowd'] = id;
     return element;
   }
@@ -424,9 +425,12 @@ export function formMap(settings: MapSettings, context: MapPartContext, now = fa
       count.setAttribute('aria-hidden', 'true');
       icon.append(count);
     }
-    if (mark.crowd) count!.textContent = number(mark.crowd.length);
+    // Apart from the face's words in its text too, as on screen ("4 min 2"); a box's first space is never drawn.
+    if (mark.crowd) count!.textContent = ` ${number(mark.crowd.length)}`;
     else count?.remove();
-    icon.setAttribute('aria-label', mark.crowd ? crowdWords(mark.crowd) : said(mark));
+    // Its name holds what it shows, one after another (WCAG 2.5.3): the count of a crowd first, "4 min 2, 2 here: …".
+    const shown = (icon.innerText ?? icon.textContent ?? '').replace(/\s+/g, ' ').trim();
+    icon.setAttribute('aria-label', nameShowing(mark.crowd ? crowdWords(mark.crowd) : said(mark), shown, locale, !!mark.crowd));
   }
 
   /** A pin pressed: its card; or, while others are gathered under it, as a bubble is pressed. */

@@ -50,14 +50,14 @@ describe('a calendar on its page’s time zone', () => {
   it('shows Tokyo’s week, its today and its hours, each record at its time there, the zone named', async () => {
     const host = await mount();
     expect(title(host)).toBe('19–25 Oct 2026');
-    expect([...host.querySelectorAll('.fd-cal-head-day')].map((h) => h.getAttribute('aria-label'))[0]).toBe('Monday 19 October');
+    expect([...host.querySelectorAll('.fd-cal-head-day')].map((h) => h.getAttribute('aria-label'))[0]).toBe('Monday 19 October, Mon 19');
     expect(host.querySelector('.fd-cal-head[aria-current="date"]')?.textContent).toContain('19');
     // The hours stretch to 06:00 for the early call: Mona at 10:00 is four hours under the grid's top.
     expect(host.querySelector('.fd-cal-hour')?.textContent).toBe('06:00');
     const mona = block(host, 'Mona Adel');
     expect(columnOf(mona)?.dataset['day']).toBe('2026-10-19');
     expect(mona.style.top).toBe(`${4 * 48}px`);
-    expect(mona.getAttribute('aria-label')).toBe('Mona Adel, Monday 19 October, 10:00 to 10:30, with Dr Karim');
+    expect(mona.getAttribute('aria-label')).toBe('10:00 Mona Adel Dr Karim, Monday 19 October, 10:00 to 10:30');
     expect(columnOf(block(host, 'Early call'))?.dataset['day']).toBe('2026-10-20');
     // Now, 08:30 in Tokyo, on Monday's column: two and a half hours under 06:00.
     const line = host.querySelector<HTMLElement>('.fd-cal-col[data-today] .fd-cal-now');

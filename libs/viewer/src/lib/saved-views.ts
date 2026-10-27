@@ -113,14 +113,15 @@ export function savedViews(context: SavedViewsContext): SavedViews {
       list.replaceChildren(
         ...views.map((view) => {
           const slot = menu.slot?.();
-          if (slot) slots.push({ slot, name: view.name, facets: view.state.facets });
           // Shared: a mark and its words — the person's own "Shared with the team", another's "Shared by Mona Adel".
           const whose = view.shared ? (view.mine || !view.by ? labels.viewShared : fill(labels.viewSharedBy, { name: view.by })) : null;
+          // Named with whose it is, as it shows it, before its count: "Unassigned, Shared with the team, 3 leads".
+          if (slot) slots.push({ slot, name: whose ? `${view.name}, ${whose}` : view.name, facets: view.state.facets });
           const use = el(
             'button',
             { type: 'button', class: 'fd-search-option', 'data-default': view.isDefault ? 'true' : undefined, 'data-view': view.id },
-            // Its name whole, and under it whose it is, as narrow as the menu's column is.
-            el('span', { class: 'fd-view-words' }, el('span', { class: 'fd-view-name' }, view.name), ...(whose ? [el('span', { class: 'fd-view-shared' }, ...teamIcon(), el('span', { class: 'fd-view-whose' }, whose))] : [])),
+            // Its name whole, and under it whose it is, as narrow as the menu's column is; each apart in its text too.
+            el('span', { class: 'fd-view-words' }, el('span', { class: 'fd-view-name' }, view.name), ...(whose ? [' ', el('span', { class: 'fd-view-shared' }, ...teamIcon(), el('span', { class: 'fd-view-whose' }, whose))] : [])),
             ...(slot ? [slot] : [])
           );
           use.addEventListener('click', () => {

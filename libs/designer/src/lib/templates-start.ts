@@ -132,17 +132,17 @@ export function startHere(options: StartOptions): StartHere {
     list.replaceChildren(
       ...templates.map((template, i) => {
         const described = `${id}-${i}`;
-        // Named by its title, described by what it is for: its first questions are for the eye.
+        // A card a press anywhere on picks, its button its title alone — named by what it shows (WCAG 2.5.3) — and
+        // described by what it is for, beside it; its first questions are for the eye. The button's own box covers the
+        // card (styles-extend.ts), so the card is pressed and focused as one.
         const button = el(
           'button',
-          { type: 'button', class: 'fd-start-card', 'data-template': template.id, 'aria-labelledby': `${described}-title`, 'aria-describedby': described },
+          { type: 'button', class: 'fd-start-card', 'data-template': template.id, 'aria-describedby': described },
           // Each in its own direction, as the app wrote it.
-          el('span', { class: 'fd-start-card-title', id: `${described}-title` }, el('bdi', {}, template.title)),
-          el('span', { class: 'fd-start-card-description', id: described }, el('bdi', {}, template.description)),
-          preview(template)
+          el('span', { class: 'fd-start-card-title' }, el('bdi', {}, template.title))
         );
         button.addEventListener('click', () => pick(template));
-        return el('li', { class: 'fd-start-item' }, button);
+        return el('li', { class: 'fd-start-item' }, button, el('span', { class: 'fd-start-card-description', id: described }, el('bdi', {}, template.description)), preview(template));
       })
     );
   }

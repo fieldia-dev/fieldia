@@ -214,7 +214,8 @@ test('layout: each font, room and corners the look can name reaches the boxes, a
   await look('font', 'serif');
   expect(await input.evaluate((box) => getComputedStyle(box).fontFamily)).toMatch(/^"Source Serif 4", Georgia, serif/);
   await look('font', 'rounded');
-  expect(await input.evaluate((box) => getComputedStyle(box).fontFamily)).toMatch(/^Nunito, "Varela Round", system-ui/);
+  // A name with a space quoted as it was written, or bare as WebKit 27.2 serializes it.
+  expect(await input.evaluate((box) => getComputedStyle(box).fontFamily)).toMatch(/^Nunito, "?Varela Round"?, system-ui/);
   for (const [density, height] of [['compact', '30px'], ['roomy', '42px']]) {
     await look('density', density);
     await expect(input, density).toHaveCSS('min-height', height);

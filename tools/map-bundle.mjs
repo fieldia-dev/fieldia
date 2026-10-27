@@ -162,6 +162,8 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // 18,556, to 18.2.
 // 0.35.2, a brace a page's words quote: a card's labels read by the one reader, once (card.ts) — a form's 19,964 bytes
 // measured before, 19,973 after, to 19.6; a list's map 22,342, 22,351, inside its 21.9.
+// 0.36, a pin's and a bubble's name holding what its face shows (WCAG 2.5.3, `nameShowing`; list-view.ts, form-map.ts):
+// a list's map 22,342 bytes measured before, 22,369 after, inside its 21.9; a form's 19,964, 20,045, to 19.6.
 const BUDGET = { fields: 11.7, all: 13.4, embed: 10.7, leaflet: 47, routes: 2 };
 const PART_BUDGET = { 'view-part': 21.9, 'form-part': 19.6, 'widgets-part': 18.2 };
 

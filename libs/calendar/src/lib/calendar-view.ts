@@ -1,4 +1,4 @@
-import { isOwnZone, recordSentence, saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
+import { isOwnZone, nameShowing, recordSentence, saveProblemOf, type CalendarView, type Fields, type ListCalendar, type ListedRecord, type RecordId, type RecordVersion, type ResolvedFilter, type SaveRequest, type Value, type Values } from '@fieldia/core';
 import type { ListViewContext, ListViewPart } from '@fieldia/viewer';
 import { moneyReads, startLoading, zoneName } from '@fieldia/widgets';
 import { linesIn, maker, type CalendarCore, type CalendarState, type Column } from './calendar-core';
@@ -322,13 +322,17 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       target.setAttribute('role', 'button');
       target.setAttribute('aria-describedby', movable ? keysEvent.id : keysStill.id);
     }
-    target.setAttribute('aria-label', [event.title, event.allDay ? longDay(event.start) : `${longDay(event.start)}${joined}${span}`, who, why].filter(Boolean).join(joined));
     // Its words; in a block, in a box of their own, which the hours keep to whole lines (--fd-cal-lines).
     const words = row ? target : make('span', { class: 'fd-cal-event-text' });
-    if (!event.allDay) words.append(make('span', { class: 'fd-cal-event-time' }, row ? `${time(event.start)} – ${time(event.end)}` : time(event.start)), ' ');
+    const hours = event.allDay ? '' : row ? `${time(event.start)} – ${time(event.end)}` : time(event.start);
+    const whoShown = event.resourceLabel && !compact && !inOwnColumn ? event.resourceLabel : '';
+    if (hours) words.append(make('span', { class: 'fd-cal-event-time' }, hours), ' ');
     // Its own direction: a Latin name on a right-to-left page reads, and is cut short, as Latin.
     words.append(make('span', { class: 'fd-cal-event-title', dir: 'auto' }, event.title));
-    if (event.resourceLabel && !compact && !inOwnColumn) words.append(make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, event.resourceLabel)));
+    if (whoShown) words.append(' ', make('span', { class: 'fd-cal-event-who' }, make('bdi', {}, whoShown)));
+    // Named first by what it shows, in its order (WCAG 2.5.3: "09:30 Sara Lotfy Mona Adel" said reaches it), then its
+    // day and hours whole, who it is with where that is not shown, and why it stays.
+    target.setAttribute('aria-label', [[hours, event.title, whoShown].filter(Boolean).join(' '), event.allDay ? longDay(event.start) : `${longDay(event.start)}${joined}${span}`, whoShown ? '' : who, why].filter(Boolean).join(joined));
     block.append(row ? target : words);
     if (movable) {
       // A button of its own beside the block, or beside an agenda's row: for a pointer and a phone's finger, and named
@@ -388,11 +392,15 @@ export function calendarPart(context: ListViewContext, settings: CalendarSetting
       const head = make('div', { class: 'fd-cal-head', 'aria-current': isToday(column.day) && !column.resource ? 'date' : undefined });
       if (column.resource) head.append(make('span', { class: 'fd-cal-head-who' }, make('bdi', {}, column.resource.label)));
       else {
+        const weekday = format(locale, { weekday: 'short' }).format(column.day);
+        const date = format(locale, { day: 'numeric' }).format(column.day);
+        // Named by the whole day, holding the short one it shows: "Saturday 24 October, Sat 24" (WCAG 2.5.3).
         const button = make(
           'button',
-          { type: 'button', class: 'fd-cal-head-day', 'aria-label': longDay(column.day) },
-          make('span', {}, format(locale, { weekday: 'short' }).format(column.day)),
-          make('span', { class: 'fd-cal-head-num' }, format(locale, { day: 'numeric' }).format(column.day))
+          { type: 'button', class: 'fd-cal-head-day', 'aria-label': nameShowing(longDay(column.day), `${weekday} ${date}`, locale) },
+          make('span', {}, weekday),
+          ' ',
+          make('span', { class: 'fd-cal-head-num' }, date)
         );
         if (state.view === 'week' && views.includes('day')) button.addEventListener('click', () => showView('day', column.day));
         else button.tabIndex = -1;

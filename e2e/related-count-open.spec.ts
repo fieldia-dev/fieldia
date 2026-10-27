@@ -29,8 +29,16 @@ test.describe('a tab that counts the related list in it', () => {
     expect(mine.length, 'the demo’s customer has quotations to count').toBeGreaterThan(0);
     await expect(pill(page)).toHaveText(String(mine.length));
     await expect(page.getByRole('tab', { name: `Quotations, ${mine.length}`, exact: true })).toHaveAttribute('aria-selected', 'false');
-    // A pill after its words, on a page with no record head as on one with it.
-    expect(await pill(page).evaluate((el) => [getComputedStyle(el).height, getComputedStyle(el).borderTopLeftRadius, getComputedStyle(el).marginInlineStart])).toEqual(['19px', '10px', '6px']);
+    // A pill after its words, on a page with no record head as on one with it: about 6px from them, a space in the
+    // tab's text and its own margin together ("Quotations 5" read as two words, WCAG 2.5.3).
+    expect(await pill(page).evaluate((el) => [getComputedStyle(el).height, getComputedStyle(el).borderTopLeftRadius])).toEqual(['19px', '10px']);
+    const gap = await tab(page).evaluate((button) => {
+      const words = button.querySelector('bdi')!.getBoundingClientRect();
+      const count = button.querySelector('.fd-tab-count')!.getBoundingClientRect();
+      return getComputedStyle(button).direction === 'rtl' ? words.left - count.right : count.left - words.right;
+    });
+    expect(gap).toBeGreaterThanOrEqual(5);
+    expect(gap).toBeLessThanOrEqual(7.5);
     // The list itself is not drawn until its tab is opened.
     await expect(rows(page.locator('[data-node="quotations"]'))).toHaveCount(0);
     await screen(page, 'related-tab-count');

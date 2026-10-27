@@ -72,12 +72,13 @@ let faces = 0;
 
 /** A tool's icon: its own drawing, a letter, or one of Fieldia's icons by name (an @, a #, a link to a pull request). */
 export function toolIcon(doc: Document, tool: TextTool, icons?: IconSet, iconName?: string, editor: 'rich' | 'markdown' = 'rich'): Element {
-  // Bold and struck words, as letters.
+  // Bold and struck words, as letters drawn (styles-editor.ts): a picture, as the other tools' are, never words its
+  // button's name must hold.
   if (tool === 'bold' || tool === 'strike') {
     const letters = doc.createElement('span');
     letters.className = `fd-text-glyph fd-text-glyph-${tool}`;
     letters.setAttribute('aria-hidden', 'true');
-    letters.textContent = tool === 'bold' ? 'B' : 'ab';
+    letters.dataset['glyph'] = tool === 'bold' ? 'B' : 'ab';
     return letters;
   }
   const shared: Partial<Record<TextTool, string>> = { mention: 'mention', reference: iconName ?? 'hash', attach: 'attach' };

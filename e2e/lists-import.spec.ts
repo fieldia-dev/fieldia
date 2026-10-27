@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { inflateRawSync } from 'node:zlib';
 import { expect, test } from './fixtures';
-import { expectNoSidewaysScroll, open, screen } from './support';
+import { expectNoSidewaysScroll, offeredName, open, screen } from './support';
 
 /**
  * Getting a customer's data in (the plain demo's Contacts): Import in the
@@ -108,7 +108,7 @@ test.describe('a customer’s contacts brought in from a file', () => {
     const saving = page.waitForEvent('download');
     await dialog(page).getByRole('button', { name: 'Download the rows to fix' }).click();
     const fix = await saving;
-    expect(fix.suggestedFilename()).toBe('contacts-to-import – not imported.xlsx');
+    expect(offeredName(fix)).toBe('contacts-to-import – not imported.xlsx');
     const sheet = unzip(readFileSync(await fix.path())).get('xl/worksheets/sheet1.xml') as string;
     expect(sheet).toContain('Why it was not imported');
     expect(sheet).toContain('Status: nothing is called “Prospect”');

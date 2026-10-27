@@ -670,7 +670,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * name and tooltip), and the pill of its count after them.
    */
   function tabFace(tab: TabNode): (Node | string)[] {
-    const pill = tab.count !== undefined ? [el('span', { class: 'fd-tab-count', 'aria-hidden': 'true' }, '0')] : [];
+    // Apart from the words in the tab's text too, as on screen: "Links 0", which its name holds ("Links, 0").
+    const pill = tab.count !== undefined ? [' ', el('span', { class: 'fd-tab-count', 'aria-hidden': 'true' }, '0')] : [];
     if (!tab.iconOnly) return [...withIcon(tab.icon, plainWords(tab.label)), ...pill];
     const icon = drawIcon(doc, tab.icon, options.icons);
     return [...(icon ? [icon] : []), ...pill];

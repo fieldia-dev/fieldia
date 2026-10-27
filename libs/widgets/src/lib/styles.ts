@@ -604,7 +604,8 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
   display: inline-grid; place-items: center; min-width: 25px; height: 19px; padding: 0 6px; border-radius: 10px;
   background: var(--fd-head-pill, var(--fd-accent-soft)); font-size: 12px; font-weight: 600; line-height: 19px; color: var(--fd-text);
 }
-.fd-tabs:not(.fd-tabs-in-head) .fd-tab-count { margin-inline-start: 6px; }
+/* 6px from its words with the space between them in the tab's text (a record's head lays its tabs out with a gap). */
+.fd-tabs:not(.fd-tabs-in-head) .fd-tab-count { margin-inline-start: 2px; }
 .fd-tab-count[hidden] { display: none; }
 .fd-tabpanel { padding-block: 16px; display: grid; gap: 16px; }
 

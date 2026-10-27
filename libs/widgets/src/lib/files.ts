@@ -64,7 +64,8 @@ function warnInline(form: Form, files: { name: string; size: number }[]) {
       'Give it upload() — uploadTo({ url }) for a plain endpoint — to store each file as it is picked and keep only its link.'
   );
 }
-const icon = (make: Make, file: FileValue) => make('span', { class: 'fd-file-icon', 'data-kind': kindOf(file), 'aria-hidden': 'true' }, extension(file.name) || '?');
+// Its extension drawn on it (styles-files.ts), a picture's: the file's name, beside it and in the button's name, says it.
+const icon = (make: Make, file: FileValue) => make('span', { class: 'fd-file-icon', 'data-kind': kindOf(file), 'data-ext': extension(file.name) || '?', 'aria-hidden': 'true' });
 /**
  * A file's picture, or — where the browser cannot draw it (random bytes
  * named .jpg, a HEIC photo in Chrome) — `instead` in its place: never the
@@ -605,6 +606,8 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
               { type: 'button', class: 'fd-file-open', 'data-at': String(at), 'aria-haspopup': 'dialog', 'aria-label': `${file.name}, ${formatBytes(file.size)}` },
               ...[shownOf(file)].map((shown) => (display === 'cards' ? make('span', { class: 'fd-file-picture' }, shown) : shown)),
               (display === 'cards' ? namedOnCard : named)(make, file.name),
+              // Apart in its text too, as on screen: "plan.pdf 4.3 KB", which its name holds.
+              ' ',
               make('span', { class: 'fd-file-size' }, formatBytes(file.size))
             ),
             ...(readonly ? [] : [make('button', { type: 'button', class: 'fd-file-remove', 'data-at': String(at), 'aria-label': fill(words.remove, { name: file.name }) }, '×')]),

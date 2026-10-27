@@ -39,13 +39,13 @@ test.describe('files as cards', () => {
     await documents.scrollIntoViewIfNeeded();
     await expect(documents.locator('.fd-file')).toHaveClass(/fd-files-cards/);
     await expect(documents.locator('.fd-file-item')).toHaveCount(4);
-    // A large icon by kind where there is no picture; the floor plan's own picture.
-    await expect(documents.locator('.fd-file-icon')).toHaveText(['TXT', 'PDF', 'CSV']);
+    // A large icon by kind where there is no picture, its extension drawn on it; the floor plan's own picture.
+    await expect.poll(() => documents.locator('.fd-file-icon').evaluateAll((icons) => icons.map((icon) => icon.getAttribute('data-ext')))).toEqual(['TXT', 'PDF', 'CSV']);
     await expect(documents.locator('.fd-file-icon').first()).toHaveAttribute('data-kind', 'doc');
     await expect(documents.locator('img.fd-file-thumb')).toHaveCount(1);
     await documents.locator('input[type=file]').setInputFiles([FILES.photo(), FILES.quote(), FILES.archive()]);
     await expect(documents.locator('.fd-file-item')).toHaveCount(7);
-    await expect(documents.locator('.fd-file-icon').last()).toHaveText('ZIP');
+    await expect(documents.locator('.fd-file-icon').last()).toHaveAttribute('data-ext', 'ZIP');
 
     // The picture on top, the name under it in two lines at most, the size under that; every picture the same height.
     const shapes = await cardShapes(documents);

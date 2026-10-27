@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from './page';
-import { pageWords, translatePage } from './translate';
+import { nameShowing, pageWords, translatePage } from './translate';
 import { validatePage } from './validate';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
@@ -115,5 +115,23 @@ describe('translatePage', () => {
     const copy = JSON.stringify(before);
     translatePage(before, marked);
     expect(JSON.stringify(before)).toBe(copy);
+  });
+});
+
+describe('nameShowing: a name holds the words its control shows (WCAG 2.5.3)', () => {
+  it('keeps a name that holds them, one after another, whatever the case and the marks between', () => {
+    expect(nameShowing('Quotations, 5', 'Quotations 5', 'en')).toBe('Quotations, 5');
+    expect(nameShowing('Checks: 1 to look at', 'Checks 1', 'en')).toBe('Checks: 1 to look at');
+    expect(nameShowing('Site plan.pdf, 4.3 KB', 'Site plan.pdf 4.3 KB', 'en')).toBe('Site plan.pdf, 4.3 KB');
+    expect(nameShowing('Country of phone', 'Country', 'en')).toBe('Country of phone');
+    expect(nameShowing('Anything', '', 'en')).toBe('Anything');
+  });
+  it('says what is shown after a name that does not hold it, with the language’s comma', () => {
+    expect(nameShowing('Saturday 24 October', 'Sat 24', 'en')).toBe('Saturday 24 October, Sat 24');
+    expect(nameShowing('Find anything', 'Ctrl K', 'en')).toBe('Find anything, Ctrl K');
+    // Words out of order, or apart, are not held.
+    expect(nameShowing('Sara Lotfy, 10:30', '10:30 Sara Lotfy', 'en')).toBe('Sara Lotfy, 10:30, 10:30 Sara Lotfy');
+    expect(nameShowing('Call 0100', 'اتصال', 'ar')).toBe('Call 0100، اتصال');
+    expect(nameShowing('15,076 here. Zoom in to see them.', '15K', 'en', true)).toBe('15K, 15,076 here. Zoom in to see them.');
   });
 });

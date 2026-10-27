@@ -47,7 +47,8 @@ describe('checks, in Arabic', () => {
     designer.addQuestion('short-answer', { parent: 'section-1' });
     const { host } = mount(designer);
     const button = host.querySelector('[data-checks]') as HTMLButtonElement;
-    expect(button.getAttribute('aria-label')).toBe('التحقق: أمر واحد للمراجعة');
+    // Its count said in words, then as it shows it (WCAG 2.5.3).
+    expect(button.getAttribute('aria-label')).toBe('التحقق: أمر واحد للمراجعة، التحقق 1');
     button.click();
     const panel = host.querySelector('.fd-checks') as HTMLElement;
     expect(panel.getAttribute('aria-label')).toBe('التحقق قبل النشر');

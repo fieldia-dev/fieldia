@@ -376,8 +376,9 @@ test('the gallery knows the new languages and the developer features: each word 
 test('a page under a strict Content-Security-Policy on the site, from the docs: its policy a meta tag, its nonce on every tag, nothing refused, said plainly', async ({ page }) => {
   const problems: string[] = [];
   page.on('pageerror', (error) => problems.push(error.message));
-  // What the policy refuses is counted on the page; this test's own refusal, at its end, is the one it expects.
-  page.on('console', (message) => message.type() === 'error' && !/Refused to |Content-Security-Policy/.test(message.text()) && problems.push(message.text()));
+  // What the policy refuses is counted on the page; this test's own refusal, at its end, is the one it expects (said
+  // "Refused to…", or in Chromium 156 "…violates the following Content Security Policy directive…").
+  page.on('console', (message) => message.type() === 'error' && !/Refused to |Content[- ]Security[- ]Policy/.test(message.text()) && problems.push(message.text()));
   page.on('response', (response) => response.status() >= 400 && problems.push(`${response.status()} ${response.url()}`));
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(SITE + '/start/#csp');

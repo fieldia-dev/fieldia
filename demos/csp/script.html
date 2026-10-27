@@ -12,7 +12,7 @@
     <script nonce="__CSP_NONCE__">
       window.cspViolations = [];
       document.addEventListener('securitypolicyviolation', (event) => {
-        window.cspViolations.push({ directive: event.violatedDirective, blocked: event.blockedURI, sample: event.sample, source: event.sourceFile, line: event.lineNumber, target: (event.target && event.target.id) || '' });
+        window.cspViolations.push({ directive: event.violatedDirective, blocked: event.blockedURI, sample: event.sample, source: event.sourceFile, line: event.lineNumber, target: (event.target && event.target.id) || '', tag: (event.target && event.target.tagName) || '' });
         const said = document.getElementById('csp-refused');
         if (said) said.textContent = window.cspViolations.length === 1 ? '1 thing' : window.cspViolations.length + ' things';
       });

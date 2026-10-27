@@ -1,4 +1,4 @@
-import { labelAt, type Field, type Form, type Line, type LineField, type RelatedRecord, type SearchOptions, type Value, type Values } from '@fieldia/core';
+import { labelAt, nameShowing, type Field, type Form, type Line, type LineField, type RelatedRecord, type SearchOptions, type Value, type Values } from '@fieldia/core';
 import { gs1Day, gs1Number, gs1Parts, isGs1Day, readGs1 } from './gs1';
 import { drawIcon } from './icons';
 import { announcer, fillIn, maker, setAttr, setHidden, wordsFor } from './kind-parts';
@@ -235,7 +235,8 @@ export function scanning(widget: Widget, context: WidgetContext): Widget {
   icon?.setAttribute('aria-hidden', 'true');
   // Named by what it does: a code scanned into the field, or a table counted by scanning.
   const into = named(kind === 'lines' ? words.scanCountInto : words.scanInto);
-  const button = make('button', { type: 'button', class: 'fd-button fd-scan-button', 'aria-haspopup': 'dialog', 'aria-label': into, title: into }, ...(icon ? [icon] : []), ...(inLine ? [] : [words.scanButton]));
+  // Its name holds the word it shows, where it shows one: "Count Products by scanning, Scan" (WCAG 2.5.3).
+  const button = make('button', { type: 'button', class: 'fd-button fd-scan-button', 'aria-haspopup': 'dialog', 'aria-label': inLine ? into : nameShowing(into, words.scanButton, locale ?? 'en'), title: into }, ...(icon ? [icon] : []), ...(inLine ? [] : [words.scanButton]));
   const note = make('p', { class: 'fd-scan-note', id: `${id}-note`, role: 'status', hidden: '' });
   const voice = announcer(make);
   holder.dataset['scan'] = kind;

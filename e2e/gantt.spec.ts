@@ -192,11 +192,15 @@ test.describe("a list's timeline", () => {
     await screen(page, 'gantt-weeks', { viewport: true });
     await page.locator('.fd-gantt-zooms').getByRole('button', { name: 'Months' }).click();
     expect(Math.round(await width())).toBe(20);
-    await page.getByRole('button', { name: 'Hide First fix' }).click();
+    // A group's toggle named by what it shows, its count said whole; what a press does, its description.
+    const firstFix = page.getByRole('button', { name: 'First fix, 3 tasks' });
+    await expect(firstFix).toHaveAccessibleDescription('Hide First fix');
+    await firstFix.click();
     await expect(bar(page, 'Electrical first fix')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Show First fix' })).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.getByRole('button', { name: 'Show First fix' })).toBeFocused();
-    await page.getByRole('button', { name: 'Show First fix' }).click();
+    await expect(firstFix).toHaveAttribute('aria-expanded', 'false');
+    await expect(firstFix).toHaveAccessibleDescription('Show First fix');
+    await expect(firstFix).toBeFocused();
+    await firstFix.click();
     await expect(bar(page, 'Electrical first fix')).toHaveCount(1);
   });
 

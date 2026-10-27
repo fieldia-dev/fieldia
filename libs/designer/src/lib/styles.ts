@@ -140,8 +140,10 @@ export const DESIGNER_CSS = /* css */ `
 .fd-q-help { font-size: 13px; }
 .fd-q-sep { width: 1px; height: 24px; background: var(--fd-border); margin-inline: 6px; }
 .fd-q-required-words { font-size: 13px; }
-/* Material's switch, as Google Forms has it: a 14px track, a 20px thumb that slides over in 90ms. */
-.fd-switch { all: unset; position: relative; flex: none; width: 36px; height: 20px; cursor: pointer; border-radius: 10px; }
+/* Material's switch, as Google Forms has it: a 14px track, a 20px thumb that slides over in 90ms. Its box said, not
+   left to the element: unset, a button is still laid out as a box, and a form's own switch (a tick box, as a card's
+   answer shows it) was too until Chromium 156, which lays it out inline — no width, no height, unseen. */
+.fd-switch { all: unset; display: inline-block; position: relative; flex: none; width: 36px; height: 20px; cursor: pointer; border-radius: 10px; }
 .fd-switch::before { content: ""; position: absolute; inset-inline: 0; top: 3px; height: 14px; border-radius: 7px; background: var(--fd-border-strong); transition: background-color 90ms cubic-bezier(0.4, 0, 0.2, 1); }
 .fd-switch::after {
   content: ""; position: absolute; top: 0; inset-inline-start: 0; width: 20px; height: 20px; border-radius: 50%; background: #ffffff;

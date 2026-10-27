@@ -1,4 +1,4 @@
-import { recordSentence, type ButtonNode, type LineField, type ListNode, type Page } from '@fieldia/core';
+import { nameShowing, recordSentence, type ButtonNode, type LineField, type ListNode, type Page } from '@fieldia/core';
 import { installListStyles, VIEWER_LABELS, type ViewerLabels } from '@fieldia/viewer';
 import { displayValue } from '@fieldia/widgets';
 import { barsPlaced, floatingBar, stopWatchingBars } from './bar-place';
@@ -64,7 +64,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
   const search = el(
     'div',
     { class: 'fd-search fd-canvas-search', role: 'button', tabindex: '0', 'aria-label': w.searchAndFilters, title: w.searchTitle },
-    el('div', { class: 'fd-search-field' }, designerIcon(doc, 'search'), facets, searchWords, filterFields)
+    el('div', { class: 'fd-search-field' }, designerIcon(doc, 'search'), facets, ' ', searchWords, ' ', filterFields)
   );
   const openFilters = () => {
     designer.select(null);
@@ -293,12 +293,14 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       if (page.layout.type !== 'list') return;
       const list = page.layout;
       const on = new Set(list.defaultFilters ?? []);
-      facets.replaceChildren(...(list.filters ?? []).filter((f) => on.has(f.id)).map((f) => el('span', { class: 'fd-facet' }, el('span', { class: 'fd-facet-text' }, f.label))));
+      facets.replaceChildren(...(list.filters ?? []).filter((f) => on.has(f.id)).flatMap((f, i) => [...(i ? [' '] : []), el('span', { class: 'fd-facet' }, el('span', { class: 'fd-facet-text' }, f.label))]));
       const size = list.pageSize ?? 40;
       const said = viewerWords(page);
       const fieldsBar = list.search === 'fields';
       searchWords.textContent = fieldsBar ? said.filterByKeyword : said.search;
-      filterFields.replaceChildren(...(fieldsBar ? (list.filterFields ?? []).map((name) => el('span', { class: 'fd-canvas-filter-field' }, list.filterLabels?.[name] ?? page.fields[name]?.label ?? name, ' ▾')) : []));
+      filterFields.replaceChildren(...(fieldsBar ? (list.filterFields ?? []).flatMap((name, i) => [...(i ? [' '] : []), el('span', { class: 'fd-canvas-filter-field' }, list.filterLabels?.[name] ?? page.fields[name]?.label ?? name, ' ▾')]) : []));
+      // Named by what it does, holding what it shows: "Search and filters, Active Search…" (WCAG 2.5.3).
+      search.setAttribute('aria-label', nameShowing(w.searchAndFilters, (search.textContent ?? '').replace(/\s+/g, ' ').trim(), designer.locale ?? 'en'));
       // No box to choose a row: no buttons for the rows chosen either.
       selection.hidden = list.choose === false;
       chosen.textContent = said.selected.replace('{n}', '2');

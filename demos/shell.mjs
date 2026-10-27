@@ -93,7 +93,7 @@ function drawHeader() {
       <a class="dh-brand" href="../"><span class="dh-mark" aria-hidden="true"></span><span class="dh-word">Fieldia</span></a>
       <span class="dh-crumb">demos</span>
       ${visitor && demo ? '<button type="button" class="dh-help" aria-label="About this demo" aria-controls="demo-howto" aria-expanded="false">?</button>' : ''}
-      <button type="button" class="dh-options" aria-expanded="false" aria-label="Framework, look and links"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 6h8M15 6h2M3 14h2M9 14h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="13" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="14" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Options</span></button>
+      <button type="button" class="dh-options" aria-expanded="false" aria-label="Options: framework, look and links"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 6h8M15 6h2M3 14h2M9 14h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="13" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="14" r="2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Options</span></button>
       ${frameworks}
       <nav class="dh-links" aria-label="Links">
         ${visitor ? '<button type="button" class="dh-code" aria-controls="demo-code" aria-expanded="false">‹/› Code</button>' : ''}

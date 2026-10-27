@@ -83,6 +83,8 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     const parts = [row.label, row.kind];
     if (row.ruled) parts.push(w.ruled(options.survey));
     if (row.required) parts.push(w.required);
+    // Its badge's columns said in words: the badge itself ("3·3·1") is drawn (styles-outline.ts), for the eye.
+    if (row.badgeWords) parts.push(row.badgeWords);
     return w.rowWords(parts);
   }
 
@@ -117,7 +119,7 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
       el('span', { class: 'fd-outline-name', dir: 'auto' }, el('span', { class: 'fd-outline-label' }, row.label), ...(kind ? [kind] : [])),
       ...(row.ruled ? [el('span', { class: 'fd-outline-when', title: w.ruledTitle(options.survey), 'aria-hidden': 'true' }, designerIcon(doc, 'when'))] : []),
       ...(row.required ? [el('span', { class: 'fd-outline-required', title: w.requiredTitle, 'aria-hidden': 'true' }, designerIcon(doc, 'required'))] : []),
-      ...(row.badge ? [el('span', { class: 'fd-outline-badge', title: row.badgeWords, 'aria-hidden': 'true', dir: 'ltr' }, row.badge)] : [])
+      ...(row.badge ? [el('span', { class: 'fd-outline-badge', title: row.badgeWords, 'aria-hidden': 'true', dir: 'ltr', 'data-badge': row.badge })] : [])
     );
     return view;
   }

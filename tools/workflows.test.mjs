@@ -166,12 +166,40 @@ test('Dependabot keeps npm and the actions up to date, weekly, grouped', () => {
   const text = readFileSync(file, 'utf8');
   assert.match(text, /^version: 2$/m);
   const updates = text.split(/^ {2}- package-ecosystem:\s*/m).slice(1);
-  const ecosystems = updates.map((block) => block.split('\n')[0].replace(/['"]/g, '').trim()).sort();
-  assert.deepEqual(ecosystems, ['github-actions', 'npm']);
+  const ecosystems = updates.map((block) => `${block.split('\n')[0].replace(/['"]/g, '').trim()} ${/\n\s+directory:\s*(\S+)/.exec(block)?.[1]}`).sort();
+  assert.deepEqual(ecosystems, ['github-actions /', 'npm /', 'npm /tools/angular-newest']);
   for (const block of updates) {
     assert.match(block, /interval:\s*['"]?weekly/, `${block.split('\n')[0]} is not weekly`);
     assert.match(block, /\n\s+groups:\n/, `${block.split('\n')[0]} is not grouped`);
   }
+});
+
+/** The workspace's npm block in .github/dependabot.yml: what it leaves to a person. */
+const workspaceIgnores = () => {
+  const text = readFileSync(join(WORKSPACE, '.github/dependabot.yml'), 'utf8');
+  const npm = text.split(/^ {2}- package-ecosystem:\s*/m).find((block) => /^npm\n\s+directory: \/\n/.test(block)) ?? '';
+  return [...npm.matchAll(/- dependency-name: '([^']+)'\n\s+update-types: \['version-update:semver-major'\]/g)].map(([, name]) => name);
+};
+
+test('the workspace builds the Angular bindings with the oldest Angular they support; a new major goes to tools/angular-newest', () => {
+  // The bindings are built by the workspace's Angular, and an app's linker refuses a declaration newer than itself.
+  assert.ok(workspaceIgnores().includes('@angular/*'), "Dependabot would move the workspace's Angular to a new major, and the bindings would no longer link on the oldest their peer range names");
+  const root = JSON.parse(readFileSync(join(WORKSPACE, 'package.json'), 'utf8')).devDependencies;
+  const newest = JSON.parse(readFileSync(join(WORKSPACE, 'tools/angular-newest/package.json'), 'utf8')).devDependencies;
+  const major = (version) => Number(/^(\d+)\./.exec(version)?.[1]);
+  for (const manifest of ['libs/angular/package.json', 'libs/designer/package.json']) {
+    const range = JSON.parse(readFileSync(join(WORKSPACE, manifest), 'utf8')).peerDependencies['@angular/core'];
+    assert.match(range, new RegExp(`^\\^${major(root['@angular/core'])}\\.0\\.0 \\|\\| .*\\^${major(newest['@angular/core'])}\\.0\\.0$`), `${manifest}'s peer range ${range} does not run from the workspace's Angular to tools/angular-newest's`);
+  }
+  assert.ok(major(newest['@angular/core']) > major(root['@angular/core']), 'tools/angular-newest is not newer than the workspace');
+  assert.match(readFileSync(join(WORKFLOWS, 'ci.yml'), 'utf8'), /\n {6}- run: node tools\/angular-newest\.mjs\n/, 'CI does not run the bindings on the newest Angular');
+});
+
+test("@types/node is the Node the tools run on: .nvmrc's major", () => {
+  const node = readFileSync(join(WORKSPACE, '.nvmrc'), 'utf8').trim();
+  const types = JSON.parse(readFileSync(join(WORKSPACE, 'package.json'), 'utf8')).devDependencies['@types/node'];
+  assert.equal(/^[~^]?(\d+)\./.exec(types)?.[1], /^v?(\d+)/.exec(node)?.[1], `@types/node ${types} types another Node than .nvmrc's ${node}, which CI and the tools run on`);
+  assert.ok(workspaceIgnores().includes('@types/node'), "Dependabot would move @types/node past .nvmrc's Node");
 });
 
 test('SECURITY.md says how to report privately, the disclosure window and the versions supported', () => {
