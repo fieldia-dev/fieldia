@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
+import { lineCopy, type Field, type FieldNode, type Line, type LineField } from '@fieldia/core';
 import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
 import { moveLineTo } from './line-moves';
 import { lineForm, openLineDialog } from './lines';
@@ -132,9 +132,8 @@ export const cardsWidget =
     const all = lines();
     const at = all.findIndex((l) => l.key === key);
     if (readonly || at < 0 || all.length >= max) return;
-    const values = { ...all[at].values };
-    if (def.sequenceField) delete values[def.sequenceField];
-    const made = form.addLine(name, values);
+    // A line field that says copy: false starts as a new card's does (lineCopy).
+    const made = form.addLine(name, lineCopy(def, all[at].values));
     moveLineTo(form, name, def, made, at + 1);
     cards.get(made)?.fields[0]?.widget.focus();
   }

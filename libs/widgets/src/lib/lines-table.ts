@@ -1,4 +1,4 @@
-import { isEmpty, labelAt, lineKind, recomputeInFull, wordsVersion, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
+import { isEmpty, labelAt, lineCopy, lineKind, recomputeInFull, wordsVersion, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
@@ -689,9 +689,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       const all = current();
       const at = all.findIndex((l) => l.key === line.key);
       if (readonly || at < 0 || all.length >= max) return;
-      const values = { ...all[at].values };
-      if (def.sequenceField) delete values[def.sequenceField];
-      const made = form.addLine(name, values);
+      // A line field that says copy: false starts as a new line's does (lineCopy).
+      const made = form.addLine(name, lineCopy(def, all[at].values));
       moveLineTo(form, name, def, made, at + 1);
       rows.get(made)?.cells[0]?.widget.focus();
     });

@@ -55,11 +55,11 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function mount(state = 'progress') {
+async function mount(state = 'progress', shown = page) {
   const asked: ActionRequest[] = [];
   const host = document.createElement('div');
   document.body.append(host);
-  handle = mountViewer(host, { page, widgets: gridWidgets, values: { state, workorder_ids: lines } as never, onAction: (request) => void asked.push(request) });
+  handle = mountViewer(host, { page: shown, widgets: gridWidgets, values: { state, workorder_ids: lines } as never, onAction: (request) => void asked.push(request) });
   await frames();
   const grid = host.querySelector('[data-node="f-wo"] .fd-grid-lines') as HTMLElement;
   return { grid, asked, form: handle.form };
@@ -118,6 +118,16 @@ describe('the grid’s buttons beside Add a line, and a line copied', () => {
     const now = form.getState().values['workorder_ids'] as Line[];
     expect(now.map((l) => l.values['name'])).toEqual(['Assembly', 'Cut', 'Cut', 'Glue']);
     expect(now[2].id).toBeUndefined();
+  });
+
+  it('starts a line field that says copy: false in the copy as a new line starts it — its default, else empty', async () => {
+    const table = page.fields['workorder_ids'] as { fields: Record<string, unknown> };
+    const own = { ...page, fields: { ...page.fields, workorder_ids: { ...table, fields: { ...table.fields, hours: { type: 'float', label: 'Hours', copy: false, default: 1 } } } } } as unknown as Page;
+    const { grid, form } = await mount('progress', own);
+    (grid.querySelector('.ag-row[row-index="1"] button.fd-line-copy') as HTMLButtonElement).click();
+    await frames();
+    const now = form.getState().values['workorder_ids'] as Line[];
+    expect(now.map((l) => [l.values['name'], l.values['hours']])).toEqual([['Assembly', null], ['Cut', 2], ['Cut', 1], ['Glue', 1]]);
   });
 });
 

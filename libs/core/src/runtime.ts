@@ -179,6 +179,8 @@ export {
   type Value,
   type Values,
 } from './lib/record/values';
+// What a line's own copy is added with: a table's and a card's (lines part), a grid's (`copy: false` on a line field).
+export { lineCopy } from './lib/record/line-copy';
 // The answers a signature kept signed: locked until it is taken away (the evidence's fingerprint is the files part's).
 export { evidenceOf, signedBy, signsAnswers, type SignedBy } from './lib/record/signed';
 export { checkValue, checkProperties, decimalsWords, formatBytes, fileProblem, describeTypes } from './lib/record/check';
