@@ -460,21 +460,22 @@ test.describe('survey designer · a question carried at a hand’s speed', () =>
     let before = await parts(page);
     expect(before[0]).toEqual(['intro', 'q-name', 'q-email']);
     await carry(page, hand, 'q-email', await edge(page, 'q-name', 'top'));
-    expect(await shown(page, 0, 'q-email')).toEqual(['q-email', 'q-name']);
+    // The gap follows the last move once the page has it: a finger's moves reach a page on its next frame (Chromium
+    // 156's touch input is frame-aligned), a mouse's at once.
+    await expect.poll(() => shown(page, 0, 'q-email')).toEqual(['q-email', 'q-name']);
     await hand.up();
     await expect.poll(() => parts(page)).toEqual([['intro', 'q-email', 'q-name'], ...before.slice(1)]);
     // The third page, four questions: the first carried down across the three under it, then the last up across them.
     before = await parts(page);
     expect(before[2]).toEqual(['q-rating', 'q-parts', 'q-liked', 'q-improve']);
     await carry(page, hand, 'q-rating', await edge(page, 'q-improve', 'bottom'), 4);
-    expect(await shown(page, 2, 'q-rating')).toEqual(['q-parts', 'q-liked', 'q-improve', 'q-rating']);
+    await expect.poll(() => shown(page, 2, 'q-rating')).toEqual(['q-parts', 'q-liked', 'q-improve', 'q-rating']);
     await hand.up();
     await expect.poll(async () => (await parts(page))[2]).toEqual(['q-parts', 'q-liked', 'q-improve', 'q-rating']);
     await carry(page, hand, 'q-improve', await edge(page, 'q-parts', 'top'), 4);
-    const gap = await shown(page, 2, 'q-improve');
+    await expect.poll(() => shown(page, 2, 'q-improve')).toEqual(['q-improve', 'q-parts', 'q-liked', 'q-rating']);
     await hand.up();
-    await expect.poll(async () => (await parts(page))[2]).toEqual(gap);
-    expect(gap).toEqual(['q-improve', 'q-parts', 'q-liked', 'q-rating']);
+    await expect.poll(async () => (await parts(page))[2]).toEqual(['q-improve', 'q-parts', 'q-liked', 'q-rating']);
   }
 
   test('with a mouse: it lands where its gap shows, up and down, words opening its page or none', async ({ page }) => {
