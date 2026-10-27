@@ -609,7 +609,7 @@ mountViewer(host, { page, dataSource, widgets: gridWidgets });
   <li><strong>A refused save</strong> marks the wrong cells, lists the problems under the table and opens the first one.</li>
   <li><strong>Long tables</strong> stop growing at 15 lines and scroll inside, drawing only the rows in view.</li>
   <li><strong>A whole line at once.</strong> ${c('"editMode": "row"')} on the node opens every cell of a line together, as an editable list does.</li>
-  <li><strong>A line in a dialog.</strong> ↗ at the end of a line opens all of its fields, the hidden columns too, in a dialog. Its links search the page's data source, and the page's ${c('onchange')} runs as it is edited, so a subtotal follows its quantity there. Save &amp; Close writes the line back; Discard leaves it as it was.</li>
+  <li><strong>A line in a dialog.</strong> ↗ at the end of a line opens its columns in a dialog — those a person hid too, those its rules hide on the record not — or its ${c('lineForm')}, where the page gives one; its other fields are kept as they are. Its links search the page's data source, and the page's ${c('onchange')} runs as it is edited, so a subtotal follows its quantity there. Save &amp; Close writes the line back; Discard leaves it as it was.</li>
 </ul>
 
 <h2 id="table-rules">A table's own rules</h2>

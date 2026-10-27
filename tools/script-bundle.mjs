@@ -1592,7 +1592,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.36 (p3-found): a choice's options that come or change taken by its select in place, its focus and open list kept,
 // and the focus kept in one drawn anew (widgets.ts, choices-from.ts) — 595,807 measured before, 595,988 after (+181),
 // to 582.1.
-const BUDGET_KB = 582.1;
+// A line's dialog without a lineForm shows the table's columns, never every field of the line (lines.ts, related.ts) —
+// 595,988 measured before, 596,079 after (+91), to 582.2.
+const BUDGET_KB = 582.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -1955,7 +1957,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.36 merged with 0.35.1 (listed with the raw budget above): 192.94 at 0.35.1, 194.23 merged (+1.29), to 194.3.
 // 0.36 merged with 0.35.2 (listed with the raw budget above): 194.78 merged, to 194.8.
 // 0.36 (p3-found), a choice's options taken in place (listed with the raw budget above): 194.78 measured before, 194.85
-// after, to 194.9.
+// after, to 194.9; a line's dialog of the table's columns, 194.89, inside it.
 const GZIP_BUDGET_KB = 194.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);

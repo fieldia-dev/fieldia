@@ -51,7 +51,7 @@ function dialogs(opened: { model: string; recordId?: RecordId }[], answer: { val
     canOpen: (model) => model === 'legal.hearing' || model === 'legal.compliance',
     openRecord: async (model, request) => (opened.push({ model, recordId: request.recordId }), answer ? { id: request.recordId ?? 0, label: request.title, ...answer } : null),
     searchMore: async () => found,
-    editValues: async (request) => (opened.push({ model: 'fields:' + Object.keys(request.fields).join(',') }), null),
+    editValues: async (request) => (opened.push({ model: 'fields:' + Object.keys(request.fields).join(',') + (request.shown ? ` shown:${request.shown.join(',')}` : '') }), null),
   };
 }
 
@@ -83,12 +83,26 @@ describe('a plain table’s line opening its own page', () => {
     expect(line.values).toEqual({ date: '2026-10-20', court: 'Giza Court', judge: 'Hany Fawzy' });
   });
 
-  it('opens a line not saved yet in a dialog of its fields', async () => {
+  it('opens a line not saved yet in a dialog of the table’s columns, every field kept as it is', async () => {
     const opened: { model: string }[] = [];
     const { el } = mount(0, hearings as never, dialogs(opened));
     (el.querySelector('tr[data-line="b"] button.fd-line-open') as HTMLButtonElement).click();
     await settle();
-    expect(opened).toEqual([{ model: 'fields:date,court,judge' }]);
+    // The judge, which the table has no column for, is the line's all the same, kept — never shown (0.35 showed it).
+    expect(opened).toEqual([{ model: 'fields:date,court,judge shown:date,court' }]);
+  });
+
+  it('leaves out of a line’s dialog a column its rules hide on the record, as the table does', async () => {
+    const opened: { model: string }[] = [];
+    const page = { ...matter, layout: { ...matter.layout, children: [{ type: 'field', id: 'f-hearings', field: 'hearing_ids', columns: ['date', 'court'], cells: { court: { hidden: true } }, lineOpens: 'fields' }] } } as unknown as Page;
+    const form = createForm({ page, dataSource: createMemoryDataSource({ records }), values: hearings as never });
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'hearing_ids', field: page.fields['hearing_ids'] as Field, node, id: 'fd-x', document, labels: WIDGET_LABELS.en, dialogs: dialogs(opened) });
+    document.body.replaceChildren(widget.element);
+    widget.update({ value: form.getState().values['hearing_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    (widget.element.querySelector('tr[data-line="b"] button.fd-line-open') as HTMLButtonElement).click();
+    await settle();
+    expect(opened).toEqual([{ model: 'fields:date,court,judge shown:date' }]);
   });
 
   it('shows no ↗ without dialogs to open', () => {

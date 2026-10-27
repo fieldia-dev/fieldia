@@ -146,6 +146,8 @@ export interface WidgetDialogs {
     recompute?: (values: Values) => Promise<Values>;
     /** How the form is laid out (a table's `lineForm`): its parts, as a page's; every field in two columns when left out. */
     layout?: LayoutNode[];
+    /** Without a layout, the fields placed, in this order, in two columns — the rest kept as they are; every field when left out. */
+    shown?: string[];
     /** The record the values are a line of, read by the form's conditions and filters as `parent`. */
     parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
     /** Its two buttons' words, where Save & Close and Discard would mislead: Update and Cancel, for values set on many records. */

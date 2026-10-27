@@ -194,10 +194,11 @@ export interface FieldNode {
   /** For one2many: buttons in the table's control row, beside Add a line — Flectra's <control>, such as Catalog. Buttons of the record, as any. */
   controlButtons?: ButtonNode[];
   /**
-   * For one2many: what a line's ↗ opens — a dialog of every one of its fields
-   * (`fields`, the grid's own), or the page of its own record, found by the
-   * table's model (`record`), as Flectra's lists open a line's form. A line
-   * not saved yet has no record: it opens its fields.
+   * For one2many: what a line's ↗ opens — a dialog of its fields as the table
+   * shows them, its columns or its `lineForm` (`fields`, the grid's own), or
+   * the page of its own record, found by the table's model (`record`), as
+   * Flectra's lists open a line's form. A line not saved yet has no record: it
+   * opens its fields.
    */
   lineOpens?: 'fields' | 'record';
   /**
