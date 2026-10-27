@@ -1,4 +1,4 @@
-import type { ActionRequest, ActionResult, FileValue, Page, RecordId, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, FileValue, MemoryDataSource, Page, RecordId, Values } from '@fieldia/core';
 import type { Breadcrumb } from '@fieldia/viewer';
 import bill from '../../examples/pages/vendor-bill.page.json';
 
@@ -95,4 +95,21 @@ export function answerBill(request: ActionRequest): ActionResult | undefined {
   }
   if (request.action === 'print_bill') return { say: `${String(request.values['name'])} sent to the printer` };
   return undefined;
+}
+
+/**
+ * A bill's copy as the accounting server makes it: a draft, whatever the bill it copies. A posted bill's status is the
+ * books', never copied — Odoo's `state` is `copy=False`, its default a draft — so the copy is changed and confirmed on
+ * its own. Everything else is copied as the memory source copies it: its number with " (copy)" after it, its lines new.
+ * What a copy keeps is the data source's to say (its `copy`), as it is the server's in Odoo.
+ */
+export function billCopy(source: MemoryDataSource): void {
+  const copy = source.copy.bind(source);
+  source.copy = async (request) => {
+    const made = await copy(request);
+    if (request.model !== 'account.move') return made;
+    const stored = source.records['account.move']?.[String(made.id)];
+    if (stored) stored['state'] = 'draft';
+    return made.values ? { ...made, values: { ...made.values, state: 'draft' } } : made;
+  };
 }

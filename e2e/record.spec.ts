@@ -64,6 +64,23 @@ for (const variant of VARIANTS) {
       await expect(gear(page)).toBeFocused();
     });
 
+    test('duplicates a posted bill as a draft: its copy says Draft, offers Confirm and Delete, and its fields open', async ({ page }) => {
+      await open(page, variant, 'page=vendor-bill&record=1&skin=underline');
+      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Posted');
+      await gear(page).click();
+      await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+      await expect(title(page)).toHaveValue('BILL/2026/10/0001 (copy)');
+      // A posted bill's status is the books', never copied: the copy starts as a draft, as an accounting server's copy does.
+      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Draft');
+      await expect(page.getByRole('button', { name: 'Confirm' })).toBeVisible();
+      await expect(page.locator('[data-node="f-partner"] input')).toBeEditable();
+      await gear(page).click();
+      await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      const copy = await page.evaluate(() => Object.values((window as any).fieldiaDemo.dataSource.records['account.move'] as Record<string, { name: string; state: string }>).find((bill) => bill.name === 'BILL/2026/10/0001 (copy)'));
+      expect(copy?.state).toBe('draft');
+    });
+
     test('reads right to left in Arabic, and folds onto a phone without scrolling sideways', async ({ page }) => {
       await open(page, variant, 'page=vendor-bill&record=3&skin=underline&locale=ar&dir=rtl');
       await expect(gear(page)).toContainText('إجراءات');

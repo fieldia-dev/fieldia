@@ -55,11 +55,14 @@ export const replay: DemoReplay = {
       },
     },
     {
-      says: 'Press Duplicate: the copy shows as “… (copy)”, and the count',
+      says: 'Press Duplicate: the copy shows as “… (copy)”, a draft',
       async run({ page, press, see }) {
         await press(page.locator('.fd-record-bar .fd-record-gear'));
         await press(page.getByRole('menuitem', { name: 'Duplicate' }));
         await see(page.locator('.fd-title [data-field="name"] textarea')).toHaveValue('BILL/2026/10/0001 (copy)');
+        // A copy of the posted bill is a draft, to change and confirm on its own.
+        await see(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Draft');
+        await see(page.getByRole('button', { name: 'Confirm' })).toBeVisible();
         await see(page.locator('.fd-record-bar .fd-record-pager-text')).toHaveText('2 / 5');
       },
     },
