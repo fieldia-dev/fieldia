@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import type { DemoReplay, Hand } from '../hand';
-import { berlinDay } from './support';
+import { berlinDay, loose, plainDay } from './support';
 
 /** The booking's month and times (the slots field), a day of the month shown, its time chips and what it says. */
 const slots = (page: Page) => page.locator('[data-node="f-start"]');
@@ -36,7 +36,7 @@ export const replay: DemoReplay = {
         if (!(await openDaysAhead(page)).length) await press(slots(page).getByRole('button', { name: 'Next month' }));
         const day = (await openDaysAhead(page))[0];
         await press(days(page).and(page.getByRole('button', { name: day, exact: true })));
-        const [weekday, date, month] = day.split(' ');
+        const [weekday, date, month] = plainDay(day).split(' ');
         await see(slots(page).locator('.fd-slots-heading')).toHaveText(`Free times on ${weekday} ${date} ${month}`);
         await see(chips(page).first()).toBeVisible();
         const hatchback = await chips(page).allTextContents();
@@ -56,10 +56,10 @@ export const replay: DemoReplay = {
         await see(page.locator('[data-node="f-car"]').getByRole('combobox')).toBeFocused();
         await keys('Tab', 'Tab', 'Tab', 'Tab');
         const focused = days(page).and(page.locator(':focus'));
-        await see(focused).toHaveAttribute('aria-label', new RegExp(`^${picked}`));
+        await see(focused).toHaveAttribute('aria-label', new RegExp(`^${loose(picked)}`));
         await keys('ArrowRight');
-        await see(focused).not.toHaveAttribute('aria-label', new RegExp(`^${picked}`));
-        const next = (await focused.getAttribute('aria-label'))!.split(' ').slice(0, 3).join(' ');
+        await see(focused).not.toHaveAttribute('aria-label', new RegExp(`^${loose(picked)}`));
+        const next = plainDay((await focused.getAttribute('aria-label'))!).split(' ').slice(0, 3).join(' ');
         await see(heading).toContainText(next);
         await keys('ArrowLeft');
         await see(heading).toHaveText(`Free times on ${picked}`);
@@ -78,7 +78,7 @@ export const replay: DemoReplay = {
         const time = (await chips(page).nth(1).textContent())!;
         await keys('Enter');
         await see(chips(page).nth(1)).toHaveAttribute('aria-pressed', 'true');
-        await see(slots(page).locator('.fd-slots-chosen')).toHaveText(new RegExp(`^${picked.split(' ')[0]} ${picked.split(' ')[1]} ${picked.split(' ')[2]} \\d{4}, ${time} to \\d\\d:\\d\\d (CEST|CET)$`));
+        await see(slots(page).locator('.fd-slots-chosen')).toHaveText(new RegExp(`^${loose(picked.split(' ').slice(0, 3).join(' '))} \\d{4}, ${time} to \\d\\d:\\d\\d (CEST|CET)$`));
         await see(page.locator('[data-node="f-stop"] input')).not.toHaveValue('');
       },
     },
@@ -89,10 +89,10 @@ export const replay: DemoReplay = {
         await chooseCar(hand, 'hatch', 'City hatchback, electric');
         const wednesday = [1, 2, 3, 4, 5, 6, 7].map(berlinDay).find((day) => day.weekday === 3)!;
         // In the month after, when the next Wednesday is in it.
-        const day = page.getByRole('button', { name: new RegExp(`^${wednesday.label},`) });
+        const day = page.getByRole('button', { name: new RegExp(`^${loose(wednesday.label)},`) });
         if (!(await day.count())) await press(slots(page).getByRole('button', { name: 'Next month' }));
         await see(day).toHaveAttribute('data-state', 'full');
-        await see(day).toHaveAttribute('aria-label', `${wednesday.label}, Fully booked`);
+        await see(day).toHaveAttribute('aria-label', new RegExp(`^${loose(wednesday.label)}, Fully booked$`));
         await see(day).toHaveCSS('background-image', /repeating-linear-gradient/);
         await press(day);
         const [weekday, date, month] = wednesday.label.split(' ');

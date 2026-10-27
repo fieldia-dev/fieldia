@@ -34,7 +34,8 @@ export const replay: DemoReplay = {
         // The first day with free times, and its first time.
         const open = bookingDays(page).and(page.locator('[aria-label$=" free times"]')).first();
         booked.label = (await open.getAttribute('aria-label'))!;
-        const [, d, m, y] = booked.label.match(/^\w+ (\d+) (\w+) (\d{4})/)!;
+        // Its day as each engine's Intl writes it: Chromium 156 with a comma after the weekday.
+        const [, d, m, y] = booked.label.match(/^\w+,? (\d+) (\w+) (\d{4})/)!;
         booked.day = `${d} ${m.slice(0, 3)} ${y}`;
         await press(open);
         await see(bookingTimes(page).first()).toBeVisible();
@@ -80,7 +81,7 @@ export const replay: DemoReplay = {
         await see(page.locator('.fd-done')).toBeHidden();
         await press(page.getByRole('radio', { name: 'First consultation, 30 min' }));
         await bookingSettled(page);
-        const [, d] = booked.label!.match(/^\w+ (\d+) /)!;
+        const [, d] = booked.label!.match(/^\w+,? (\d+) /)!;
         await press(bookingDays(page).filter({ hasText: new RegExp(`^${d}$`) }));
         await see(bookingTimes(page).first()).toBeVisible();
         await see(bookingTimes(page).filter({ hasText: new RegExp(`^${booked.time}$`) })).toHaveCount(0);

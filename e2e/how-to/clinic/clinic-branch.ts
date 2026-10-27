@@ -64,8 +64,9 @@ export const replay: DemoReplay = {
       says: 'Pick a day under Booking: its times follow the hours',
       async run({ page, press, see }) {
         const booking = page.getByRole('group', { name: 'A visit, as patients book it' });
-        // The next Saturday open for booking: its times are Saturday's, the break between 17:00 and 18:00 kept free.
-        const saturday = booking.getByRole('button', { name: /^Saturday \d+ \w+ \d{4}, 16 free times$/ }).first();
+        // The next Saturday open for booking: its times are Saturday's, the break between 17:00 and 18:00 kept free. (A
+        // day with its year as each engine's Intl writes it: Chromium 156 with a comma after the weekday.)
+        const saturday = booking.getByRole('button', { name: /^Saturday,? \d+ \w+ \d{4}, 16 free times$/ }).first();
         await see(saturday).toBeVisible();
         await press(saturday);
         const times = booking.getByRole('group', { name: /^Free times on Saturday/ });

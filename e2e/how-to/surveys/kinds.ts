@@ -2,7 +2,7 @@ import type { Locator } from '@playwright/test';
 import type { DemoReplay, Hand } from '../hand';
 import { node } from './support';
 
-/** A day as a calendar's button names it: "Friday 30 October 2026". */
+/** A day as a calendar's button names it: "Friday 30 October 2026" ("Friday, 30 October 2026" in Chromium 156's Intl). */
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const dayName = (day: Date) => `${DAYS[day.getDay()]} ${day.getDate()} ${MONTHS[day.getMonth()]} ${day.getFullYear()}`;
@@ -16,7 +16,7 @@ function dayAhead(ahead: number, weekdays: number[]): Date {
 }
 /** A day pressed in an open calendar, its months paged forward with › until the day is drawn. */
 async function pickDay({ press, see }: Hand, calendar: Locator, day: Date) {
-  const button = calendar.getByRole('button', { name: dayName(day), exact: true });
+  const button = calendar.getByRole('button', { name: new RegExp(`^${dayName(day).replace(' ', ',? ')}$`) });
   for (let page = 0; page < 6 && !(await button.count()); page++) await press(calendar.getByRole('button', { name: 'Next month' }));
   await see(button).toBeVisible();
   await press(button);

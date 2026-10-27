@@ -17,6 +17,14 @@ export function berlinDay(daysOn: number): { label: string; weekday: number } {
   return { label: new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(day).replace(',', ''), weekday: day.getUTCDay() };
 }
 
+/**
+ * A day's words as a pattern any engine's Intl matches: Chromium 156 writes a comma after the weekday where a date has
+ * its year ("Wednesday, 28 October 2026"), Chromium 141 and WebKit 27.2 do not — and none where it has none.
+ */
+export const loose = (words: string) => words.replace(/^(\w+day) /, '$1,? ');
+/** The same words with any comma after the weekday taken out, as a heading without the year writes them. */
+export const plainDay = (words: string) => words.replace(/^(\w+day),/, '$1');
+
 /** A link's box (a many2one) by its layout id: some of a name typed in it, then its option pressed. */
 export async function pickIn({ page, press, type, see }: Hand, id: string, typed: string, option: string) {
   const box = page.locator(`[data-node="${id}"]`).getByRole('combobox');

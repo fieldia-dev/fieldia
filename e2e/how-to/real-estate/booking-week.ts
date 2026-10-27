@@ -21,7 +21,9 @@ export const replay: DemoReplay = {
         const next = columns.nth(from + 1);
         const booking = columns.nth(from).locator('.fd-cal-event').first();
         const was = (await booking.getAttribute('aria-label'))!;
-        const [, who, , times, agent] = /^(.+), (\w+ \d+ \w+), (\d\d:\d\d to \d\d:\d\d), with (.+)$/.exec(was)!;
+        // Named with the words it shows first (WCAG 2.5.3, 0.36): "10:30 Sara Lotfy Mona Adel, Saturday 24 October, 10:30 to
+        // 12:00" — its hour, who and the agent, then its day and times.
+        const [, hour, who, agent, , times] = /^(\d\d:\d\d(?: – \d\d:\d\d)?) (.+) (Laila Hassan|Omar Fathy|Mona Adel), (\w+ \d+ \w+), (\d\d:\d\d to \d\d:\d\d)$/.exec(was)!;
         const day = (await next.getAttribute('aria-label'))!;
         const box = (await booking.boundingBox())!;
         const to = (await next.boundingBox())!;
@@ -30,7 +32,7 @@ export const replay: DemoReplay = {
         await see(said(page).getByRole('button', { name: 'Undo' })).toBeVisible();
         await settled(page);
         // Its length kept: the same start and end, on the day after.
-        await see(next.locator('.fd-cal-event').filter({ hasText: who }).first()).toHaveAccessibleName(`${who}, ${day}, ${times}, with ${agent}`);
+        await see(next.locator('.fd-cal-event').filter({ hasText: who }).first()).toHaveAccessibleName(`${hour} ${who} ${agent}, ${day}, ${times}`);
       },
     },
     {
@@ -40,8 +42,10 @@ export const replay: DemoReplay = {
         if (phone) await press(page.getByRole('button', { name: 'Week', exact: true }));
         await settled(page);
         const name = (await page.locator('.fd-cal-col').nth(3).getAttribute('aria-label'))!;
-        await press(page.getByRole('button', { name, exact: true }));
-        await see(page.locator('.fd-cal-title')).toHaveText(new RegExp(`^${name} \\d{4}$`));
+        // Its head named with the words it shows too (0.36): "Saturday 24 October, Sat 24"; the title with its year as each
+        // engine's Intl writes it (Chromium 156: a comma after the weekday).
+        await press(page.getByRole('button', { name: new RegExp(`^${name}, \\w+ \\d+$`) }));
+        await see(page.locator('.fd-cal-title')).toHaveText(new RegExp(`^${name.replace(' ', ',? ')} \\d{4}$`));
         await see(page.getByRole('button', { name: 'Day', exact: true })).toHaveAttribute('aria-pressed', 'true');
         await settled(page);
         // A column for each agent.

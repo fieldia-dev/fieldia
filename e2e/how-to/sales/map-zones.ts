@@ -45,8 +45,13 @@ async function groundNear(page: Page, x: number, y: number) {
       for (let a = 0; a < 2 * Math.PI; a += r ? Math.PI / 8 : 7) {
         const px = box.x + box.width * (fx + r * Math.cos(a));
         const py = box.y + box.height * (fy + r * Math.sin(a));
-        const at = document.elementFromPoint(px, py);
-        if (at && map.contains(at) && !at.closest(over)) return { x: px, y: py };
+        // Ground for a finger's breadth round it too: WebKit 27.2 moves a tap onto a control within reach of it (the
+        // legend folded at the map's foot took a tap 2 px above it).
+        const ground = ([dx, dy]: number[]) => {
+          const at = document.elementFromPoint(px + dx, py + dy);
+          return !!at && map.contains(at) && !at.closest(over);
+        };
+        if ([[0, 0], [14, 0], [-14, 0], [0, 14], [0, -14]].every(ground)) return { x: px, y: py };
       }
     return { x: box.x + box.width * fx, y: box.y + box.height * fy };
   }, [x, y] as const);

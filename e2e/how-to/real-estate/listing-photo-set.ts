@@ -91,8 +91,9 @@ export const replay: DemoReplay = {
         await press(dialog.getByRole('button', { name: 'Put back the original' }));
         await see(dialog).toBeHidden();
         await see(announced(page)).toHaveText('The original of The Nile from the balcony is back');
-        // As it was taken: open again, it lies wider than tall, the whole of it kept.
+        // As it was taken: open again, it lies wider than tall, the whole of it kept — once its picture is drawn.
         await press(balcony.getByRole('button', { name: 'Crop and turn The Nile from the balcony' }));
+        await see(picture).toBeVisible();
         await expect.poll(async () => { const now = (await picture.boundingBox())!; return now.width > now.height; }).toBe(true);
         await see(dialog.getByRole('button', { name: 'Put back the original' })).toBeHidden();
         await press(dialog.getByRole('button', { name: 'Cancel' }));

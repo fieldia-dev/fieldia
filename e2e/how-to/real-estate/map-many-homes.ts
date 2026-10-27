@@ -9,10 +9,11 @@ const onTheMapCounted = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll('.fd-map-list .fd-map-mark:not(.fd-map-ghost)')].reduce((sum, mark) => {
       const words = mark.querySelector('.fd-map-bubble') ? (mark.getAttribute('aria-label') ?? '') : null;
-      return sum + (words === null ? 1 : Number(/^[\d,]+/.exec(words)?.[0].replace(/,/g, '')));
+      // Its name holds what its face shows first where the face says it shorter (WCAG 2.5.3, 0.36): "15K, 15,076 here."
+      return sum + (words === null ? 1 : Number(/([\d,]+) here\./.exec(words)?.[1].replace(/,/g, '')));
     }, 0)
   );
-/** A bubble of the source's, its words — "13,620 here." — on the mark itself. */
+/** A bubble of the source's, its words — "14K, 13,620 here." — on the mark itself. */
 const clusters = (page: Page) => page.locator('.fd-map-list .fd-map-mark:not(.fd-map-ghost):has(.fd-map-bubble)');
 const pricedPins = (page: Page) => pins(page).filter({ has: page.locator('.fd-map-face-text') });
 /** The zooms the demo's data source was asked to gather its homes at: what reached the app, beside what is seen. */
@@ -66,7 +67,7 @@ export const replay: DemoReplay = {
           const all = await clusters(page).evaluateAll((list) => list.map((one) => one.getBoundingClientRect().toJSON() as DOMRect));
           return all.filter((b) => b.x > box.x && b.x + b.width < box.x + box.width && b.y > box.y && b.y + b.height < box.y + box.height).length;
         };
-        await see(clusters(page).first()).toHaveAttribute('aria-label', /^[\d,]+ here\. Zoom in to see them\.$/);
+        await see(clusters(page).first()).toHaveAttribute('aria-label', /^(?:[\d.,]+K?, )?[\d,]+ here\. Zoom in to see them\.$/);
         let before = await bubblesInView();
         let parted = false;
         for (let i = 0; i < 14 && !(await pricedPins(page).count()); i++) {

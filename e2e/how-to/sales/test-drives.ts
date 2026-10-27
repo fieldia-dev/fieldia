@@ -12,6 +12,15 @@ function inBerlin(iso: string) {
   return { day: `${parts.weekday} ${parts.day} ${parts.month}`, time: `${parts.hour}:${parts.minute}` };
 }
 type Drive = { customer: string; start: string; stop: string; car: { label: string } };
+/**
+ * A drive's block as the calendar names it, holding the words it shows first (WCAG 2.5.3, 0.36): "11:00 Jonas Becker
+ * Family estate, hybrid, Tuesday 27 October, 11:00 to 11:45" — its time (on a phone's agenda its two, "11:00 – 11:45"),
+ * customer and car, then its day and times.
+ */
+const blockName = (drive: Drive, day: string, from: string, to: string) =>
+  new RegExp(`^${from}(?: – ${to})? ${drive.customer} ${drive.car.label}, ${day}, ${from} to ${to}$`);
+/** A day with its year as this engine's Intl writes it: Chromium 156 puts a comma after the weekday, 141 did not. */
+const withYear = (day: string, year: string) => new RegExp(`^${day.replace(' ', ',? ')} ${year}$`);
 
 /** The test-drives demo's how-to steps, replayed by hand (e2e/how-to.spec.ts). */
 export const replay: DemoReplay = {
@@ -34,7 +43,7 @@ export const replay: DemoReplay = {
           .sort((a, b) => (a.drive.start < b.drive.start ? -1 : 1));
         expect(drives.length).toBeGreaterThan(3);
         for (const { drive, from, to } of drives.slice(0, 6)) {
-          await see(page.getByRole('button', { name: `${drive.customer}, ${from.day}, ${from.time} to ${to.time}, with ${drive.car.label}`, exact: true })).toBeVisible();
+          await see(page.getByRole('button', { name: blockName(drive, from.day, from.time, to.time) })).toBeVisible();
         }
       },
     },
@@ -47,7 +56,11 @@ export const replay: DemoReplay = {
         // The first drive of the week, by its block; moved within its day to the hour nearest it its car has free.
         const block = page.locator('.fd-cal-event').first();
         const name = (await block.getAttribute('aria-label'))!;
-        const [, customer, day, from, to] = /^(.+?), (\w+ \d+ \w+), (\d\d:\d\d) to (\d\d:\d\d)/.exec(name)!;
+        // The drive the block is, found by its name among the source's drives.
+        const shown = (await drives()).map((drive) => ({ drive, from: inBerlin(drive.start), to: inBerlin(drive.stop) })).find(({ drive, from, to }) => blockName(drive, from.day, from.time, to.time).test(name))!;
+        expect(shown, `a drive named ${name}`).toBeTruthy();
+        const { drive: first, from: { day, time: from }, to: { time: to } } = shown;
+        const customer = first.customer;
         const column = block.locator('xpath=ancestor::*[contains(@class,"fd-cal-col")][1]');
         const free = async (minutes: number) => (await column.locator(`.fd-cal-slot[data-minutes="${minutes}"]`).getAttribute('aria-label'))?.endsWith('free');
         // The hour nearest the drive's own (in sight with it) with its 45 minutes free.
@@ -70,13 +83,13 @@ export const replay: DemoReplay = {
         await see(said).toContainText(at);
         await see(said.getByRole('button', { name: 'Undo' })).toBeVisible();
         const end = new Date(Date.UTC(2000, 0, 1, target / 60, 45)).toISOString().slice(11, 16);
-        await see(page.getByRole('button', { name: new RegExp(`^${customer}, ${day}, ${at} to ${end}, with `) })).toBeVisible();
+        await see(page.getByRole('button', { name: blockName(first, day, at, end) })).toBeVisible();
         // Booked so: the drive at that time in Berlin, 45 minutes long.
         const moved = (await drives()).find((drive) => drive.customer === customer && inBerlin(drive.start).day === day && inBerlin(drive.start).time === at)!;
         expect(new Date(moved.stop).getTime() - new Date(moved.start).getTime()).toBe(45 * 60_000);
         // Undo: back where it was.
         await press(said.getByRole('button', { name: 'Undo' }));
-        await see(page.getByRole('button', { name: new RegExp(`^${customer}, ${day}, ${from} to ${to}, with `) })).toBeVisible();
+        await see(page.getByRole('button', { name: blockName(first, day, from, to) })).toBeVisible();
         await see(body).toBeVisible();
       },
     },
@@ -87,8 +100,9 @@ export const replay: DemoReplay = {
         if (phone) await press(page.getByRole('button', { name: 'Week', exact: true }));
         const tomorrow = berlinDay(1);
         const label = (tomorrow.weekday === 1 ? berlinDay(0) : tomorrow).label.split(' ').slice(0, 3).join(' ');
-        await press(page.getByRole('button', { name: label, exact: true }));
-        await see(page.locator('.fd-cal-title')).toHaveText(`${label} ${berlinDay(0).label.split(' ')[3]}`);
+        // A day's head named with the words it shows too (0.36): "Wednesday 28 October, Wed 28".
+        await press(page.getByRole('button', { name: new RegExp(`^${label}, \\w+ \\d+$`) }));
+        await see(page.locator('.fd-cal-title')).toHaveText(withYear(label, berlinDay(0).label.split(' ')[3]));
         await see(page.locator('.fd-cal-col')).toHaveCount(3);
         for (const car of ['City hatchback, electric', 'Family estate, hybrid', 'Compact SUV']) await see(page.getByRole('group', { name: `${label}, ${car}`, exact: true })).toBeVisible();
         // An empty slot of the estate's column: its first hour from 09:00 with nothing booked.
@@ -102,7 +116,7 @@ export const replay: DemoReplay = {
         await press(empty);
         const dialog = page.getByRole('dialog', { name: 'New' });
         await see(dialog).toBeVisible();
-        await see(dialog.locator('.fd-slots-chosen')).toHaveText(new RegExp(`^${label} \\d{4}, ${time} to \\d\\d:\\d\\d (CEST|CET)$`));
+        await see(dialog.locator('.fd-slots-chosen')).toHaveText(new RegExp(`^${label.replace(' ', ',? ')} \\d{4}, ${time} to \\d\\d:\\d\\d (CEST|CET)$`));
         await see(dialog.locator('[data-node="f-car"]').getByRole('combobox')).toHaveValue('Family estate, hybrid');
       },
     },

@@ -79,6 +79,8 @@ export const replay: DemoReplay = {
     {
       says: 'Press List to see the same couriers as a table, and Map to come back',
       async run({ page, press, see }) {
+        // Its couriers drawn first: on a phone this is the first step taken, the map maybe still drawing them.
+        await expect.poll(() => onTheMap(page)).toBeGreaterThan(0);
         const shown = await onTheMap(page);
         const view = (name: string) => page.getByRole('group', { name: 'Show as' }).getByRole('button', { name, exact: true });
         await press(view('List'));

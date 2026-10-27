@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '../../fixtures';
 import type { Hand } from '../hand';
+import { offeredName } from '../../support';
 
 /** What several of the CRM demos’ replays share (e2e/how-to/crm/<demo id>.ts). */
 
@@ -14,7 +15,8 @@ export async function download(page: Page, press: () => Promise<void>): Promise<
   const saved = await saving;
   const path = test.info().outputPath('downloads', `${Date.now()}`, saved.suggestedFilename());
   await saved.saveAs(path);
-  return { name: saved.suggestedFilename(), path };
+  // The name the page gave it: WebKit 27.2 hands it over with each space an underscore (offeredName, e2e/support.ts).
+  return { name: offeredName(saved), path };
 }
 /** A list's header by its words (a chip over the cards on a phone), as the list specs find it. */
 export const header = (page: Page, words: string) => page.locator('.fd-list-table thead th', { has: page.locator('.fd-list-head', { hasText: new RegExp(`^${words}$`) }) });

@@ -124,10 +124,14 @@ export const replay: DemoReplay = {
         await see(timeline).toHaveAttribute('data-zoom', 'month');
         const electrical = page.locator('.fd-gantt-task').filter({ hasText: /^Electrical first fix$/ });
         await see(electrical).toHaveCount(1);
-        await press(page.getByRole('button', { name: 'Hide First fix' }));
+        // A phase's toggle is named with what it shows (WCAG 2.5.3, 0.36): "First fix, 3 tasks", Hide or Show its description.
+        const phase = page.getByRole('button', { name: 'First fix, 3 tasks', exact: true });
+        await see(phase).toHaveAccessibleDescription('Hide First fix');
+        await press(phase);
         await see(electrical).toHaveCount(0);
-        await see(page.getByRole('button', { name: 'Show First fix' })).toHaveAttribute('aria-expanded', 'false');
-        await press(page.getByRole('button', { name: 'Show First fix' }));
+        await see(phase).toHaveAttribute('aria-expanded', 'false');
+        await see(phase).toHaveAccessibleDescription('Show First fix');
+        await press(phase);
         await see(electrical).toHaveCount(1);
       },
     },
