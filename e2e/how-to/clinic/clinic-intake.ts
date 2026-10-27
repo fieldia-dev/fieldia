@@ -9,10 +9,10 @@ export const replay: DemoReplay = {
       async run({ page, press, type, keys, see }) {
         const step = page.locator('.fd-step:not([hidden]) .fd-step-title');
         await see(step).toHaveText('About you');
-        await type(page.getByRole('textbox', { name: '*Full name' }), 'Karim Fathy');
-        await type(page.getByRole('textbox', { name: '*Date of birth' }), '03/02/1990');
+        await type(page.getByRole('textbox', { name: 'Full name', exact: true }), 'Karim Fathy');
+        await type(page.getByRole('textbox', { name: 'Date of birth', exact: true }), '03/02/1990');
         await keys('Tab');
-        await type(page.getByRole('textbox', { name: '*Mobile phone' }), '01001234567');
+        await type(page.getByRole('textbox', { name: 'Mobile phone', exact: true }), '01001234567');
         await type(page.getByRole('textbox', { name: 'Email' }), 'karim@example.com');
         await press(page.getByRole('button', { name: 'Next', exact: true }));
         await see(step).toHaveText('Your visit');
@@ -62,8 +62,8 @@ export const replay: DemoReplay = {
         await see(other.locator('.fd-step:not([hidden]) .fd-step-title')).toHaveText('Your visit');
         await see(other.locator('[data-node="f-reason"] textarea')).toHaveValue('A cough that will not go.');
         await other.getByRole('button', { name: 'Back', exact: true }).click();
-        await see(other.getByRole('textbox', { name: '*Full name' })).toHaveValue('Karim Fathy');
-        await see(other.getByRole('textbox', { name: '*Date of birth' })).toHaveValue('3 Feb 1990');
+        await see(other.getByRole('textbox', { name: 'Full name', exact: true })).toHaveValue('Karim Fathy');
+        await see(other.getByRole('textbox', { name: 'Date of birth', exact: true })).toHaveValue('3 Feb 1990');
         await see(other.getByRole('textbox', { name: 'Email' })).toHaveValue('karim@example.com');
         expect(errors, 'the new tab’s console').toEqual([]);
         await other.close();
@@ -79,7 +79,7 @@ export const replay: DemoReplay = {
         await see(step).toHaveText('Your visit');
         await see(page.locator('[data-node="f-reason"] textarea')).toHaveValue(/A check-up before starting/);
         await press(page.getByRole('button', { name: 'Back', exact: true }));
-        await see(page.getByRole('textbox', { name: '*Full name' })).toHaveValue('Mona Adel');
+        await see(page.getByRole('textbox', { name: 'Full name', exact: true })).toHaveValue('Mona Adel');
       },
     },
     {
@@ -88,7 +88,7 @@ export const replay: DemoReplay = {
         await follow('Open a link to an intake that was sent already');
         await see(page.locator('.fd-resume-missing')).toHaveText('These saved answers could not be found: they may have been sent already. The form starts empty.');
         await see(page.locator('.fd-step:not([hidden]) .fd-step-title')).toHaveText('About you');
-        await see(page.getByRole('textbox', { name: '*Full name' })).toHaveValue('');
+        await see(page.getByRole('textbox', { name: 'Full name', exact: true })).toHaveValue('');
       },
     },
   ],

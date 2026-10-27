@@ -275,7 +275,27 @@
                 "options": { "addLabel": "Add a line" },
                 "rowTones": [{ "tone": "success", "when": "compliant" }, { "tone": "danger", "when": "mandatory and not compliant" }],
                 "cells": { "name": { "width": 40 } },
-                "lineOpens": "fields"
+                "lineOpens": "fields",
+                "lineForm": {
+                  "children": [
+                    {
+                      "type": "section",
+                      "id": "requirement-main",
+                      "style": "plain",
+                      "columns": 2,
+                      "children": [
+                        { "type": "field", "id": "requirement-name", "field": "name" },
+                        { "type": "field", "id": "requirement-type", "field": "requirement_type" },
+                        { "type": "field", "id": "requirement-mandatory", "field": "mandatory" },
+                        { "type": "field", "id": "requirement-compliant", "field": "compliant" },
+                        { "type": "field", "id": "requirement-responsible", "field": "responsible_id" },
+                        { "type": "field", "id": "requirement-evidence-count", "field": "evidence_count" }
+                      ]
+                    },
+                    { "type": "field", "id": "requirement-description", "field": "description" },
+                    { "type": "field", "id": "requirement-evidence", "field": "evidence_ids" }
+                  ]
+                }
               }
             ]
           },

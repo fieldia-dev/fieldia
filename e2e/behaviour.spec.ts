@@ -552,3 +552,144 @@ test.describe('every field', () => {
 });
 });
 }
+
+/**
+ * A required field is named by its label's words in every look — the skins and the themes over them — as a screen
+ * reader says it and a person speaking to their computer says it (WCAG 2.5.3): "Full name", required. Its mark is drawn
+ * beside the words, as decoration, never said: 0.35's outlined and quiet looks named it "*Full name", the underline
+ * "Full name*".
+ */
+test.describe('a required field’s name in every look', () => {
+  const LOOKS = ['skin=underline', 'skin=outlined', 'skin=quiet', ...['material', 'fluent', 'apple', 'bootstrap', 'shadcn', 'ant', 'odoo', 'google-forms'].map((theme) => `theme=${theme}`)];
+  for (const look of LOOKS) {
+    test(`is its label’s words, its mark drawn and unsaid: ${look}`, async ({ page }) => {
+      await open(page, 'plain', `page=signup&${look}`);
+      const name = node(page, 'f-name');
+      await expect(name).toHaveClass(/fd-required/);
+      const words = ((await name.locator('.fd-label').first().textContent()) ?? '').trim();
+      expect(words).toBe('Full name');
+      await expect(field(page, 'f-name')).toHaveAccessibleName(words);
+      await expect(page.getByRole('textbox', { name: words, exact: true })).toBeVisible();
+      // Its mark drawn beside the words all the same.
+      const marks = await name.locator('.fd-label').first().evaluate((label) => [getComputedStyle(label, '::before').content, getComputedStyle(label, '::after').content].join(' '));
+      expect(marks).toContain('*');
+    });
+  }
+  for (const template of ['template-contact-us', 'template-support-request']) {
+    test(`is its label’s words in a template’s own look: ${template}`, async ({ page }) => {
+      await open(page, 'plain', `page=${template}`);
+      const required = page.locator('.fd-field.fd-required:visible');
+      await expect(required.first()).toBeVisible();
+      for (let i = 0; i < Math.min(3, await required.count()); i++) {
+        const words = ((await required.nth(i).locator('.fd-label').first().textContent()) ?? '').trim();
+        const control = required.nth(i).locator('input, textarea, select, [role="combobox"], [role="radiogroup"]').first();
+        await expect(control).toHaveAccessibleName(words);
+      }
+    });
+  }
+});
+
+/**
+ * A page of the one-tag script's own (the /script/ demo), as an app builds one: a template's words in a box that keeps
+ * its ends (`options: { trim: false }`), a plain box, an email; a palette of the host's beside it, whose chips are
+ * dragged into the boxes; and, for one test, the host's own drop on its wrapper, placing its own words.
+ */
+async function boxesPage(page: Page) {
+  await page.goto('/script/');
+  await page.waitForFunction(() => 'Fieldia' in window);
+  await page.evaluate(async () => {
+    const W = window as any;
+    const host = document.createElement('div');
+    host.id = 'host';
+    const palette = document.createElement('p');
+    for (const [id, words] of [['chip-name', '{{ name }}'], ['chip-email', 'sara @example.com']]) {
+      const chip = document.createElement('span');
+      chip.id = id;
+      chip.draggable = true;
+      chip.textContent = words;
+      chip.style.cssText = 'display:inline-block;padding:6px 10px;margin:4px;background:#e5e7eb;border-radius:6px';
+      chip.addEventListener('dragstart', (event) => event.dataTransfer?.setData('text/plain', words));
+      palette.append(chip);
+    }
+    document.body.prepend(palette, host);
+    const handle = W.Fieldia.mountViewer(host, {
+      page: {
+        fieldia: '0.13',
+        id: 'boxes',
+        data: { kind: 'responses' },
+        fields: { template: { type: 'char', label: 'Message' }, company: { type: 'char', label: 'Company' }, email: { type: 'char', label: 'Email' } },
+        layout: {
+          type: 'sections',
+          id: 'r',
+          children: [
+            { type: 'field', id: 'f-template', field: 'template', options: { trim: false } },
+            { type: 'field', id: 'f-company', field: 'company' },
+            { type: 'field', id: 'f-email', field: 'email', widget: 'email' },
+          ],
+        },
+      },
+      dataSource: W.Fieldia.createMemoryDataSource({}),
+    });
+    W.boxesHandle = handle;
+    await handle.drawn;
+  });
+  const valueIn = (name: string) => page.evaluate((field) => (window as any).boxesHandle.form.getState().values[field], name);
+  return { box: (id: string) => page.locator(`#host [data-node="${id}"] input`), valueIn };
+}
+
+test.describe('a one-line box’s ends', () => {
+  test('kept where the box says so (`trim: false`): “New: ” left with its space, and nothing else changed', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    const { box, valueIn } = await boxesPage(page);
+    await box('f-template').click();
+    await page.keyboard.type('New: ');
+    await page.keyboard.press('Tab');
+    await expect(box('f-template')).toHaveValue('New: ');
+    expect(await valueIn('template')).toBe('New: ');
+    // A box without it: its ends trimmed as it is left, as ever.
+    await box('f-company').click();
+    await page.keyboard.type('  Nile Traders  ');
+    await page.keyboard.press('Tab');
+    await expect(box('f-company')).toHaveValue('Nile Traders');
+    expect(await valueIn('company')).toBe('Nile Traders');
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('a drop on a box', () => {
+  test('a host’s own drop on the box’s wrapper, prevented there, is the host’s alone: its words, once', async ({ page }) => {
+    const { box, valueIn } = await boxesPage(page);
+    await page.evaluate(() => {
+      const input = document.querySelector('#host [data-node="f-template"] input') as HTMLInputElement;
+      document.getElementById('host')!.addEventListener('drop', (event) => {
+        event.preventDefault();
+        input.focus();
+        input.setRangeText('{{ item.name }}', input.selectionStart ?? 0, input.selectionEnd ?? 0, 'end');
+        input.dispatchEvent(new InputEvent('input', { inputType: 'insertText', bubbles: true }));
+      });
+    });
+    const at = (await box('f-template').boundingBox())!;
+    await page.locator('#chip-name').dragTo(box('f-template'), { targetPosition: { x: at.width / 2, y: at.height / 2 } });
+    await expect(box('f-template')).toHaveValue('{{ item.name }}');
+    await page.keyboard.press('Tab');
+    expect(await valueIn('template')).toBe('{{ item.name }}');
+  });
+
+  test('a drop lands where it was let go, never at the caret the box had; one the box’s rules refuse is refused, said', async ({ page }) => {
+    const { box, valueIn } = await boxesPage(page);
+    await box('f-template').click();
+    await page.keyboard.type('New: here');
+    await page.keyboard.press('Home');
+    const at = (await box('f-template').boundingBox())!;
+    await page.locator('#chip-name').dragTo(box('f-template'), { targetPosition: { x: at.width - 8, y: at.height / 2 } });
+    await expect(box('f-template')).toHaveValue('New: here{{ name }}');
+    await page.keyboard.press('Tab');
+    expect(await valueIn('template')).toBe('New: here{{ name }}');
+    // An address with a space in it: refused, and the box says why.
+    const email = (await box('f-email').boundingBox())!;
+    await page.locator('#chip-email').dragTo(box('f-email'), { targetPosition: { x: email.width / 2, y: email.height / 2 } });
+    await expect(page.locator('#host [data-node="f-email"] .fd-refusal-hint:not([hidden])')).toHaveText('An email address has no spaces');
+    await expect(box('f-email')).toHaveValue('');
+  });
+});

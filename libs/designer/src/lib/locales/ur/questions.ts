@@ -224,6 +224,7 @@ export const questions: DesignerWords['questions'] = {
   mask: 'ماسک',
   maskHelp: '9 ایک ہندسہ، a ایک حرف، * دونوں میں سے کوئی؛ باقی خود لکھا جاتا ہے: 9999 9999',
   inCapitals: 'حروف بڑے لکھے جائیں',
+  keepEnds: 'شروع اور آخر کی خالی جگہ رہنے دیں',
   codeLength: 'ہندسے',
   codeLetters: 'حروف بھی',
   shorthand: 'مختصر انداز میں لکھا جائے: ⁦3.5m⁩، ⁦500k⁩',

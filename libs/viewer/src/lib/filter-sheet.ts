@@ -67,13 +67,16 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
   const close = el('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close, title: labels.close }, '×');
   const clear = el('button', { type: 'button', class: 'fd-button fd-filter-sheet-clear' }, labels.filtersClearAll);
   const show = el('button', { type: 'button', class: 'fd-button fd-button-primary fd-filter-sheet-show' }, labels.showResultsSome);
+  // Why Show showed nothing, said where it was pressed — a range refused: "Area: From is more than To" — as its box takes
+  // the focus, in sight. 0.35 said it only under the box, where it was said already: a press that seemed to do nothing.
+  const refused = el('p', { class: 'fd-refusal-hint fd-filter-sheet-why', role: 'alert', hidden: '' });
   const body = el('div', { class: 'fd-form-dialog-body fd-filter-sheet-body' });
   const box = el(
     'div',
     { class: 'fd-theme fd-form-dialog fd-filter-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': title.id, tabindex: '-1' },
     el('div', { class: 'fd-form-dialog-head' }, title, close),
     body,
-    el('div', { class: 'fd-actions fd-form-dialog-foot fd-filter-sheet-foot' }, clear, show)
+    el('div', { class: 'fd-actions fd-form-dialog-foot fd-filter-sheet-foot' }, refused, clear, show)
   );
   // The look of the page the list is on, as the sheet sits outside it.
   const root = context.from.closest<HTMLElement>('.fd-form') ?? context.from;
@@ -181,6 +184,7 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
     return one ? recordSentence(page.records, labels.showResultsNounOne, labels.showResultsOne, locale, { n: formatNumber(n, 0, locale) }) : recordSentence(page.records, labels.showResultsNoun, labels.showResults, locale, { n: formatNumber(n, 0, locale) });
   }
   function changed(field?: string) {
+    refused.hidden = true;
     for (const f of lists.keys()) if (f === field) drawValues(f);
     recount(field);
   }
@@ -191,7 +195,12 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
     if (closed) return;
     if (take) {
       // A box's typing is read before anything is shown: text that is no number or no day stays, said, and the sheet open.
-      for (const control of ranges.values()) if (!control.commit(true)) return;
+      for (const [field, control] of ranges) {
+        if (control.commit(true)) continue;
+        refused.textContent = `${context.fields.find((one) => one.field === field)?.def.label}: ${control.why()}`;
+        refused.hidden = false;
+        return;
+      }
       context.apply(state);
     }
     closed = true;

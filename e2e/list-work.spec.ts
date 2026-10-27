@@ -380,6 +380,55 @@ test.describe('a chart of accounts opened a group at a time', () => {
     await expect(page.locator('.fd-list-row').first().locator('.fd-list-tree-in')).toHaveText('in Cash and banks');
     expect(problems).toEqual([]);
   });
+
+  test('Show 20 more from the keys: the keys go on to the first account that came, never to the page', async ({ page }) => {
+    const { problems } = await open(page, 'plain', CHART);
+    await account(page, 'Assets').getByRole('button', { name: 'Assets' }).click();
+    await account(page, 'Cash and banks').getByRole('button', { name: 'Cash and banks' }).click();
+    const shown = page.locator('.fd-list-row[data-depth="2"]:visible');
+    await expect(shown).toHaveCount(20);
+    const more = page.locator('.fd-list-tree-more button');
+    await more.focus();
+    await page.keyboard.press('Enter');
+    await expect(shown).toHaveCount(40);
+    // The twenty-first, the first of those that came: Down goes on from it.
+    await expect(shown.nth(20)).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(shown.nth(21)).toBeFocused();
+    // The last page, its Show more gone after it: on the first of them all the same.
+    await more.focus();
+    await page.keyboard.press(' ');
+    await expect(shown).toHaveCount(60);
+    await expect(more).toHaveCount(0);
+    await expect(shown.nth(40)).toBeFocused();
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('a group’s next records from the keys', () => {
+  test('a group’s Show more: the keys go on to the first record that came, never to the page', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=contacts&skin=underline');
+    await page.getByRole('button', { name: 'Search options' }).click();
+    await page.locator('.fd-search-panel button[data-group="owner_id"]').click();
+    await page.keyboard.press('Escape');
+    const heads = page.locator('tr.fd-list-group');
+    await expect(heads.first()).toBeVisible();
+    // The first owner's contacts, opened: a page of them, and Show more for the rest.
+    await heads.first().locator('button').first().click();
+    const more = page.locator('tr.fd-list-more button').first();
+    await expect(more).toBeVisible();
+    const before = await page.locator('.fd-list-row').count();
+    const last = await page.locator('.fd-list-row').nth(before - 1).getAttribute('data-id');
+    await more.focus();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => page.locator('.fd-list-row').count()).toBeGreaterThan(before);
+    // On the first of those that came: the row after the one that was last.
+    const after = page.locator(`.fd-list-row[data-id="${last}"] + tr`);
+    await expect(after).toBeFocused();
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
+    expect(problems).toEqual([]);
+  });
 });
 
 /**

@@ -190,11 +190,13 @@ function spliced(box: Box, text: string): string {
 }
 
 /**
- * Guard a box by `rules`: on beforeinput (a key), paste and drop the edit is
+ * Guard a box by `rules`: on beforeinput (a key, a drop) and paste the edit is
  * judged before it lands, and refused with `hint`; edits that cannot be
  * stopped (an IME's, a phone keyboard's) are judged on input and put back.
  * Deleting is never refused. The guard listens before the widget does, so
- * the widget never reads a refused text.
+ * the widget never reads a refused text. A drop is judged where it lands, as
+ * the browser asks to insert it: a host's own `drop` on the box or round it,
+ * prevented, wins — the box takes nothing of it.
  */
 export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
   const document = box.ownerDocument;
@@ -339,8 +341,12 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
         else letGoHeld();
       }
     }
-    // Deleting is never refused; a composition is judged once it ends; a paste or a drop has its own listener; a
-    // correction, whose place a box does not say, is judged once it lands (onInput).
+    // A drop, where it lands: the browser asks to insert it only once no one has taken it as their own — a host's
+    // `drop` that prevents it wins, in any phase (0.35 took every drop at the box's `drop`, before the host's, and both
+    // landed). Judged as a paste is, at the place it was dropped.
+    if (type === 'insertFromDrop') return take(event, text);
+    // Deleting is never refused; a composition is judged once it ends; a paste has its own listener; a correction,
+    // whose place a box does not say, is judged once it lands (onInput).
     if (!typing) return;
     const words = rules.judge(spliced(box, text), box.value);
     if (!words) {
@@ -367,7 +373,6 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
       // beside the text typed before the refused key, as though that key had never been typed, nor taking the box's
       // place as a whole value would: "1x" then "5/10/2026" is "1x5/10/2026", never 5 October.
       event.preventDefault();
-      if (event.type === 'drop') box.focus();
       const joined = cleaned.whole ? stripMarks(text).trim() : cleaned.text;
       waiting.typed += oneLine ? joined.replace(/\r\n|[\r\n]/g, ' ') : joined;
       hint.show(waiting.words);
@@ -381,19 +386,16 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
       return;
     }
     held = null;
-    if (cleaned.text === text && event.type === 'paste' && !cleaned.say) return hint.hide();
+    // As it is, it lands as the browser puts it — a drop at the place it was dropped; a whole value's drop is put over
+    // the whole box here, as the browser would put it at that place alone.
+    if (cleaned.text === text && !cleaned.say && !(cleaned.whole && event.type !== 'paste')) return hint.hide();
     event.preventDefault();
-    if (event.type === 'drop') box.focus();
     insert(cleaned.text);
     // What was taken and what was not, said as it lands: the next key taken lets it go.
     if (cleaned.say) hint.show(cleaned.say);
     else hint.hide();
   };
   const onPaste = (event: Event) => take(event, (event as ClipboardEvent).clipboardData?.getData('text/plain') ?? '');
-  const onDrop = (event: Event) => {
-    const text = (event as DragEvent).dataTransfer?.getData('text/plain');
-    if (text !== undefined) take(event, text);
-  };
   const onInput = (event: Event) => {
     const edit = event as InputEvent;
     const unannounced = !announced || written;
@@ -466,7 +468,6 @@ export function guard(box: Box, rules: InputRules, hint: RefusalHint): Guard {
     ['focus', onFocus],
     ['beforeinput', onBeforeInput],
     ['paste', onPaste],
-    ['drop', onDrop],
     ['input', onInput],
     ['compositionstart', onCompositionStart],
     ['compositionend', onCompositionEnd],

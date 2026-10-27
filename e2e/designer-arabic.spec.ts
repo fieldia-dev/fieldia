@@ -272,7 +272,9 @@ const RUNS: Run[] = [
 async function walk(page: Page, run: Run, tag: string, phone: boolean): Promise<string[]> {
   const found: string[] = [];
   const look = async (state: string, shot = false, dialog = false) => {
-    await page.evaluate(() => window.scrollTo(0, 0));
+    // From the page's top — but not under a menu or a sheet open over it: fixed where it opened, it would stay while the
+    // page scrolled from under it, over what came there (its own bar's buttons), as no person leaves it.
+    if (!dialog) await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(150);
     // On a phone the page stacks: the whole of it, but for a dialog, which covers what is in view.
     if (shot) await screen(page, `arabic-${tag}-${state}`.replace(/[^\w-]+/g, '-'), { viewport: !phone || dialog });

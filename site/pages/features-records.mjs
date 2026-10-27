@@ -38,7 +38,7 @@ const PARTS = [
       'A spreadsheet grid, or a plain table where the app has no grid: Enter goes down, Tab goes across',
       'Sections and notes between the lines, and lines dragged into order',
       'Columns shown or hidden from a menu, remembered for the next visit',
-      'Each line opens in a dialog with all of its fields; totals follow every keystroke',
+      'Each line opens in a dialog of its columns; totals follow every keystroke',
     ],
     shot: 'grid.png',
     alt: 'Order lines in a grid: sections Workstations and Lighting, a note, quantities, prices in Egyptian pounds, VAT ticks and a total of 64,656.00',

@@ -108,6 +108,21 @@ describe('an email', () => {
   });
 });
 
+describe('a one-line box’s ends as it is left', () => {
+  it('are trimmed, marks and spaces, unless its box keeps them (`trim: false`): a template’s "New: " keeps its space', () => {
+    expect(settledText('  New: ', {})).toBe('New:');
+    expect(settledText('\u200fNew: \u200f', {})).toBe('New:');
+    expect(settledText('New: ', { trim: false })).toBe('New: ');
+    // The author's own: a mark at an end may keep the words after it on their side.
+    expect(settledText('\u200f«الاسم»: \u200f', { trim: false })).toBe('\u200f«الاسم»: \u200f');
+    expect(settledText('  ', { trim: false })).toBe('  ');
+    // An address or a number is read as it always is: its ends are never part of it.
+    expect(settledText(' sara@example.com ', { widget: 'email', trim: false })).toBe('sara@example.com');
+    expect(settledText(' 0100 ', { widget: 'phone', trim: false })).toBe('0100');
+    expect(settledText(' secret ', { widget: 'password' })).toBe(' secret ');
+  });
+});
+
 describe('a time of day', () => {
   const time = ask({ type: 'char' }, { widget: 'time', options: { min: '09:00', max: '17:30' } });
 

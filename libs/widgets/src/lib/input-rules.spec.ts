@@ -38,6 +38,21 @@ function paste(input: HTMLInputElement, text: string) {
   input.dispatchEvent(new InputEvent('input', { inputType: 'insertFromPaste', bubbles: true }));
 }
 
+/**
+ * Text dropped on the box, as a browser drops it: its `drop` (the box's selection still where it was), then — taken by
+ * no one — the caret at the place it was dropped and a beforeinput the box may refuse, then the text there.
+ */
+function drop(input: HTMLInputElement, text: string, at: number) {
+  const event = new Event('drop', { cancelable: true, bubbles: true });
+  Object.defineProperty(event, 'dataTransfer', { value: { getData: () => text } });
+  if (!input.dispatchEvent(event)) return;
+  input.focus();
+  input.setSelectionRange(at, at);
+  if (!input.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertFromDrop', data: text, cancelable: true, bubbles: true }))) return;
+  input.setRangeText(text, at, at, 'end');
+  input.dispatchEvent(new InputEvent('input', { inputType: 'insertFromDrop', data: text, bubbles: true }));
+}
+
 /** An IME's composition, which cannot be refused before it lands. */
 function compose(input: HTMLInputElement, text: string) {
   input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
@@ -70,6 +85,52 @@ function numberBox(field: Record<string, unknown>, node: Partial<FieldNode> = {}
   enter(input);
   return { ...mounted, input };
 }
+
+describe('a drop on a box, judged where it lands', () => {
+  it('is the host’s where its own drop takes it: prevented there, the box takes nothing of it — the host’s words alone', () => {
+    const { el, value } = mountKind({ type: 'char' });
+    const input = boxOf(el);
+    // A host's palette dropped into the box: its wrapper places its own words, as Flowyard's do.
+    el.closest('div')?.addEventListener('drop', (event) => {
+      event.preventDefault();
+      input.setRangeText('{{ item.name }}', input.selectionStart ?? 0, input.selectionEnd ?? 0, 'end');
+      input.dispatchEvent(new InputEvent('input', { inputType: 'insertText', bubbles: true }));
+    });
+    drop(input, '{{ name }}', 0);
+    expect(input.value).toBe('{{ item.name }}');
+    leave(input);
+    expect(value()).toBe('{{ item.name }}');
+  });
+
+  it('lands where it was dropped, as it is: never at the caret the box had before', () => {
+    const { el, value } = mountKind({ type: 'char' });
+    const input = boxOf(el);
+    enter(input);
+    keys(input, 'New: here');
+    input.setSelectionRange(0, 0);
+    leave(input);
+    drop(input, '{{ name }}', 9);
+    expect(input.value).toBe('New: here{{ name }}');
+    leave(input);
+    expect(value()).toBe('New: here{{ name }}');
+  });
+
+  it('is refused, and said, where the box’s rules refuse it: an address with a space in it', () => {
+    const { el, value } = mountKind({ type: 'char' }, { widget: 'email' });
+    const input = boxOf(el);
+    drop(input, 'sara @example.com', 0);
+    expect(input.value).toBe('');
+    expect(hintSays()).toBe('An email address has no spaces');
+    expect(value() ?? null).toBeNull();
+  });
+
+  it('is cleaned where the rules clean it, at the place it was dropped: a phone number’s marks', () => {
+    const { el } = mountKind({ type: 'char' }, { widget: 'phone' });
+    const input = boxOf(el);
+    drop(input, '\u200f+20 100 123 4567\u200f', 0);
+    expect(input.value).toBe('+20 100 123 4567');
+  });
+});
 
 describe('a number box refuses what can never be part of a number', () => {
   it.each([

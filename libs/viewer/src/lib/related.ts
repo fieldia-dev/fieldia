@@ -12,9 +12,10 @@ export { nameFieldOf };
 
 /**
  * A form made of fields, for values edited in a dialog (a line, for one): laid out as asked (a line's own form), else
- * every field in two columns; its labels small inside sentences where the record's page asks (`lowerLabels`).
+ * the fields `shown` (every one unless said) in two columns; its labels small inside sentences where the record's page
+ * asks (`lowerLabels`).
  */
-function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean, layout?: LayoutNode[], phone?: Page['phone'], lowerLabels?: boolean): Page {
+function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean, layout?: LayoutNode[], phone?: Page['phone'], lowerLabels?: boolean, placed?: string[]): Page {
   const shown = Object.fromEntries(Object.entries(fields).map(([name, def]) => [name, readonly ? { ...def, readonly: true } : def])) as Page['fields'];
   return {
     fieldia: '0.1',
@@ -28,7 +29,7 @@ function valuesPage(fields: Record<string, Field>, title: string, readonly: bool
     layout: {
       type: 'sections',
       id: 'values',
-      children: layout ?? [{ type: 'section', id: 'values-section', columns: 2, children: Object.keys(shown).map((name) => ({ type: 'field' as const, id: `values-${name}`, field: name })) }],
+      children: layout ?? [{ type: 'section', id: 'values-section', columns: 2, children: (placed ?? Object.keys(shown)).map((name) => ({ type: 'field' as const, id: `values-${name}`, field: name })) }],
     },
   };
 }
@@ -130,7 +131,7 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
       const result = await openFormDialog({
         ...shared,
         // Its title as a person reads it, written for the page round its fields; those fields as their page writes them.
-        page: valuesPage(Object.fromEntries(Object.entries(request.fields).map(([name, def]) => [name, writtenPart(def)])), literalWords(request.title), request.readonly === true, request.layout?.map(writtenPart), options.page.phone, request.lowerLabels),
+        page: valuesPage(Object.fromEntries(Object.entries(request.fields).map(([name, def]) => [name, writtenPart(def)])), literalWords(request.title), request.readonly === true, request.layout?.map(writtenPart), options.page.phone, request.lowerLabels, request.shown),
         ...(request.parent ? { parent: request.parent } : {}),
         dataSource: lookupsOf(options.dataSource),
         values: request.values,

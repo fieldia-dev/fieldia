@@ -75,7 +75,7 @@ export const replay: DemoReplay = {
     {
       says: 'Save while the district’s average is still asked: the save waits for it',
       async run({ page, press, type, see, demo }) {
-        await type(page.getByRole('textbox', { name: 'Listing*' }), 'Maadi flat by the club');
+        await type(page.getByRole('textbox', { name: 'Listing', exact: true }), 'Maadi flat by the club');
         await page.getByRole('combobox', { name: 'District' }).selectOption({ label: 'Maadi' });
         const average = part(page, 'f-district-price');
         await see(average.locator('.fd-value-waits')).toBeVisible();

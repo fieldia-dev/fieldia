@@ -216,6 +216,7 @@ export const questions: DesignerWords['questions'] = {
   mask: 'القالب',
   maskHelp: '9 رقم، a حرف، * أيهما؛ والباقي يُكتب تلقائيًا: 9999 9999',
   inCapitals: 'الحروف كبيرة',
+  keepEnds: 'تبقى المسافات في طرفيه',
   codeLength: 'الأرقام',
   codeLetters: 'وحروف أيضًا',
   shorthand: 'يُكتب مختصرًا: 3.5 مليون، 500 ألف',

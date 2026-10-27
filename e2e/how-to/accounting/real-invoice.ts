@@ -149,7 +149,7 @@ export const replay: DemoReplay = {
         const { page, follow, see } = hand;
         await follow('a USD invoice partly paid');
         await see(page.locator('.fd-ribbon', { hasText: 'Partial' })).toBeVisible();
-        await see(page.getByRole('combobox', { name: 'Currency*' })).toHaveValue('USD');
+        await see(page.getByRole('combobox', { name: 'Currency', exact: true })).toHaveValue('USD');
         await see(page.getByRole('tab', { name: 'Currency Details' })).toBeVisible();
         await follow('a vendor bill');
         await see(page.locator('[data-node="f-vendor"]')).toBeVisible();

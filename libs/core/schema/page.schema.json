@@ -8338,7 +8338,7 @@
             "fields",
             "record"
           ],
-          "description": "For one2many: what a line's ↗ opens — a dialog of every one of its fields (`fields`, the grid's own), or the page of its own record, found by the table's model (`record`), as Flectra's lists open a line's form. A line not saved yet has no record: it opens its fields."
+          "description": "For one2many: what a line's ↗ opens — a dialog of its fields as the table shows them, its columns or its `lineForm` (`fields`, the grid's own), or the page of its own record, found by the table's model (`record`), as Flectra's lists open a line's form. A line not saved yet has no record: it opens its fields."
         },
         "lineForm": {
           "$ref": "#/$defs/LineForm",

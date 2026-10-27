@@ -110,7 +110,7 @@ export const replay: DemoReplay = {
         await see(sheet.getByRole('status')).toHaveText('Hold the code inside the frame.');
         await holdUp(page, card);
         await see(sheet).toBeHidden();
-        await see(page.getByRole('combobox', { name: '*Patient' })).toHaveValue('Hana Fouad');
+        await see(page.getByRole('combobox', { name: 'Patient', exact: true })).toHaveValue('Hana Fouad');
         await holdUp(page, null);
       },
     },
@@ -158,7 +158,7 @@ export const replay: DemoReplay = {
         await press(patient.getByRole('button', { name: 'Scan a code into Patient' }));
         await see(patient.locator('.fd-scan-note')).toHaveText('The camera is not allowed here. Allow it in the browser’s settings and press Scan again, or type the code.');
         await see(page.getByRole('dialog')).toHaveCount(0);
-        const box = page.getByRole('combobox', { name: '*Patient' });
+        const box = page.getByRole('combobox', { name: 'Patient', exact: true });
         await see(box).toBeFocused();
         // A barcode scanner plugged in: its keys, then its Enter — Hana's card.
         await page.keyboard.type('P-1043', { delay: 5 });

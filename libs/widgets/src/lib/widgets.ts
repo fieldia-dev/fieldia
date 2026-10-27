@@ -8,6 +8,7 @@ import type {
   Line,
   LineField,
   Locale,
+  Option,
   Page,
   RecordId,
   ReferenceValue,
@@ -145,6 +146,8 @@ export interface WidgetDialogs {
     recompute?: (values: Values) => Promise<Values>;
     /** How the form is laid out (a table's `lineForm`): its parts, as a page's; every field in two columns when left out. */
     layout?: LayoutNode[];
+    /** Without a layout, the fields placed, in this order, in two columns — the rest kept as they are; every field when left out. */
+    shown?: string[];
     /** The record the values are a line of, read by the form's conditions and filters as `parent`. */
     parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
     /** Its two buttons' words, where Save & Close and Discard would mislead: Update and Cancel, for values set on many records. */
@@ -217,6 +220,12 @@ export interface Widget {
    * heading.
    */
   tools?: HTMLElement[];
+  /**
+   * A choice's options come or changed — the app's list answered, a condition offers others: taken in place, the
+   * focus, an open list and what is typed in its search kept, the update that follows bringing its value. False where
+   * it cannot take them as they are (a list long enough to search wants a box): it is drawn anew. Left out, drawn anew.
+   */
+  offer?(options: readonly Option[]): boolean;
 }
 
 export type WidgetFactory = (context: WidgetContext) => Widget;
@@ -711,18 +720,26 @@ const ownList = (node: FieldNode) => node.options?.['list'] === 'own';
 /** A choice in the browser's own list: a long one's too, until the choice part's box that searches it has come. */
 const selectWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document, labels, locale } = context;
-  const choices = shownOptions(options(field), form, name, node);
+  let choices: Option[] = [];
+  let items: HTMLOptionElement[] = [];
   const words = wordsFor(labels, locale);
   const blank = make(document, 'option', { value: '' });
   // A country, a card's month: what the browser fills it in with, when the page says.
   const select = make(document, 'select', { id, class: 'fd-input fd-select', autocomplete: node.autocomplete }, blank);
-  const items = choices.map((option, i) => select.appendChild(make(document, 'option', { value: String(i) }, option.label)));
+  const fill = (given: readonly Option[]) => {
+    items.forEach((item) => item.remove());
+    choices = shownOptions(given, form, name, node);
+    items = choices.map((option, i) => select.appendChild(make(document, 'option', { value: String(i) }, option.label)));
+  };
+  fill(options(field));
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
   return {
     element: select,
     // Its own state, and its options' places left.
     reads: [],
     focus: (options?: FocusOptions) => select.focus(options),
+    // The same select, its list open and its focus kept (0.35 drew it anew: a Tool pressed as its tools came lost both).
+    offer: (given) => !searched(node, { ...field, options: given } as Field) && !optionsLook(given) && (fill(given), true),
     update(state) {
       // An option's words as they read now — one that shows an answer given follows it (the viewer's answers part) — and
       // its places left after them, where the page counts them: "Morning workshop (3 left)", "… (Full)".

@@ -56,9 +56,16 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * under the keys never written over, a wait's words kept said (this lane), 0.35.1's and 0.35.2's own — a record form
  * 242.6 / 316.0 (57 / 64), in Arabic 242.6 / 338.4, a list 241.8 / 311.3 (57 / 61), the designer 588.8 / 803.0: the
  * pages over their room raised to what is measured, never more — a record's 242.7, a list's 241.9.
+ * 0.36 (p3-found), measured: what its fixes put in every page — a choice's options taken in place, a line's dialog of
+ * its table's columns, a required field's star drawn and never said, a drop judged where it lands, a box's ends kept —
+ * and a list's part its "Show more" from the keys: a record form 242.74 / 316.15 (57 / 64), in Arabic 242.75 / 338.55,
+ * a list 241.95 / 311.53 (57 / 61), the designer 588.93 / 803.26 — raised to what is measured, a record's 242.8, a
+ * list's 242.0 and 311.6.
  * 0.36's merge, set once from the merged build, about 2% room as at 0.35's: the four lanes, 0.35.2's literal words and
  * its join, and the plain save that sends nothing — a record form 245.3 / 336.1 (63 / 71), in Arabic 245.3 / 358.7
  * (63 / 74), a list 244.5 / 332.3 (63 / 68), the designer 592.3 / 821.4 (76 / 86).
+ * 0.36 merged with 0.35.3 and p3-found, measured, inside the merge's room: a record form 245.8 / 336.6 (63 / 71), in
+ * Arabic 245.8 / 359.2, a list 245.0 / 332.9 (63 / 68), the designer 592.8 / 822.0 (76 / 86).
  */
 const BUDGET = {
   record: { page: 250.3, usable: 342.9, files: 73 },

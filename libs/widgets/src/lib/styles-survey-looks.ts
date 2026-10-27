@@ -81,7 +81,7 @@ export const SURVEY_LOOKS_CSS = /* css */ `
 .fd-address { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; width: 100%; max-width: 560px; min-width: 0; }
 .fd-address-part { display: grid; gap: 3px; min-width: 0; align-content: start; }
 .fd-address-street, .fd-address-line2 { grid-column: 1 / -1; }
-.fd-address-part.fd-required > .fd-address-label::after { content: "*"; margin-inline-start: 0.25em; color: var(--fd-error); }
+.fd-address-part.fd-required > .fd-address-label::after { content: "*"; content: "*" / ""; margin-inline-start: 0.25em; color: var(--fd-error); }
 .fd-address-label { font-size: 12.5px; color: var(--fd-muted); }
 @container (max-width: 420px) { .fd-address { grid-template-columns: minmax(0, 1fr); } }
 .fd-image-choices[data-size="small"] { --fd-card: 96px; }

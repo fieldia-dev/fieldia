@@ -170,6 +170,41 @@ test.describe('the homes to buy', () => {
   });
 });
 
+test.describe('a phone’s sheet with a range refused', () => {
+  test('Show says why it shows nothing — the range, said where it was pressed — and takes the keys to it', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const { problems } = await open(page, 'plain', HOMES);
+    await page.locator('.fd-filter-sheet-open').click();
+    const sheet = page.getByRole('dialog', { name: 'Filters' });
+    const from = sheet.getByRole('textbox', { name: 'Area: From' });
+    const to = sheet.getByRole('textbox', { name: 'Area: To' });
+    await from.click();
+    await page.keyboard.type('300');
+    await to.click();
+    await page.keyboard.type('100');
+    await page.keyboard.press('Enter');
+    const area = sheet.locator('.fd-filter-sheet-field[data-field="area_m2"]');
+    await expect(area.locator('.fd-refusal-hint:not([hidden])')).toHaveText('From is more than To');
+    // Scrolled on to Show, as a thumb goes: the refused range out of sight, the keys elsewhere.
+    await sheet.locator('.fd-filter-sheet-body').evaluate((body) => (body.scrollTop = body.scrollHeight));
+    const show = sheet.locator('.fd-filter-sheet-show');
+    await show.click();
+    // Nothing shown: the sheet stays, says why where Show was pressed, and the keys are on the range, in sight.
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByRole('alert')).toHaveText('Area: From is more than To');
+    await expect(to).toBeFocused();
+    await expect(to).toBeInViewport();
+    await screen(page, 'list-filters-sheet-refused', { viewport: true });
+    // Mended, its words go, and Show shows.
+    await to.fill('400');
+    await to.press('Enter');
+    await expect(sheet.getByRole('alert')).toBeHidden();
+    await show.click();
+    await expect(sheet).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+});
+
 test.describe('a sales team’s queue', () => {
   const openMenu = async (page: Page) => {
     const panel = page.locator('.fd-search-panel');

@@ -6,8 +6,9 @@ import { startLoading, type Wait } from './loading';
 /**
  * A choice whose options change: one of the app's lists, options shown by a
  * condition on the other answers, or those carried from an earlier question —
- * the widget the field would have anyway, drawn afresh as the options it
- * offers change (`form.offered`). While a list's choices load it says so, as its wait says (`search`, loading.ts:
+ * the widget the field would have anyway, given the options it offers as they
+ * change (`form.offered`): in place where it takes them (`offer`), else drawn
+ * afresh. While a list's choices load it says so, as its wait says (`search`, loading.ts:
  * "Loading choices…" past the delay, never a flash); when
  * they fail it offers to load them again; and a value no longer offered that
  * the record held as it was opened is kept — the person decides — and said.
@@ -41,11 +42,16 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
   /** Its choices' wait, while they load. */
   let wait: Wait | null = null;
   const draw = (options: readonly Option[]) => {
+    // Taken in place where the widget can (`offer`): the focus, an open list and what is typed kept. Else drawn anew,
+    // the focus in the new one where it was in the old.
+    if (inner?.offer?.(options)) return;
+    const focused = !!inner?.element.contains(doc.activeElement);
     inner?.destroy?.();
     inner = factory({ ...context, field: { ...context.field, options } as Field });
     // Named by the field's label, as the viewer names a widget with a role of its own.
     if (inner.element.getAttribute('role')) inner.element.setAttribute('aria-labelledby', `${context.id}-label`);
     box.replaceChildren(inner.element, note, retry);
+    if (focused) inner.focus();
   };
   /**
    * The options offered now: a list's once loaded, else what the form offers — an option's words that show an answer

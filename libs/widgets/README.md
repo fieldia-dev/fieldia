@@ -105,6 +105,15 @@ value the browser fills in is the person's own, read as typed: cleaned as a
 paste is, never put back where nobody may be looking, read at once in a box the
 person is not in, and saved as any change of theirs.
 
+Text dropped into a box is judged where it lands, as a paste is: cleaned, or
+refused and said, at the place it was let go. To place your own drag data in a
+box — a palette's `{{ name }}` — call `preventDefault()` on its `drop`, on the box
+or anything round it: the box then takes nothing of that drop.
+
+A one-line text box trims its ends as it is left (its spaces, and direction
+marks at its ends); `"options": { "trim": false }` keeps them as typed, for words
+whose ends matter — a template's `"New: "` before a field is dragged in.
+
 A value is shown as a code to scan with `"widget": "qrcode"` (a char or text
 field: a QR code, its words as UTF-8, at `options.level` L, M, Q or H) or
 `"widget": "barcode"` (a char or integer field: Code 128), drawn as SVG from the

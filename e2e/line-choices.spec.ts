@@ -85,6 +85,30 @@ test.describe('an AI agent’s tools, each line’s from its connection', () => 
     expect(problems).toEqual([]);
   });
 
+  test('a Tool pressed while its tools are on their way keeps the focus and its list as they come: the same select', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=agent-tools&skin=underline');
+    await expect.poll(() => offered(page, 0)).toEqual(GMAIL);
+    // The app's lists held from here, as a slow server's: Drive's tools asked, not yet answered.
+    await page.evaluate(() => {
+      const at = window as any;
+      const source = at.fieldiaDemo.dataSource;
+      const ask = source.options.bind(source);
+      at.heldLists = [];
+      source.options = (request: unknown) => new Promise((resolve, reject) => at.heldLists.push(() => ask(request).then(resolve, reject)));
+    });
+    await pick(page, connection(page, 0), 'Drive', 'Google Drive — Shared drive');
+    await expect.poll(() => page.evaluate(() => (window as any).heldLists.length)).toBeGreaterThan(0);
+    // Tool pressed while they are on their way, as a person presses it; marked, to know it again.
+    await tool(page, 0).focus();
+    await tool(page, 0).evaluate((select) => (select.dataset['pressed'] = 'before'));
+    await page.evaluate(() => (window as any).heldLists.splice(0).forEach((go: () => void) => go()));
+    await expect.poll(() => offered(page, 0)).toEqual(['Search files', 'Read a file', 'Create a document']);
+    // The same select, the focus on it: 0.35 drew it anew, the focus on the page and its list gone.
+    await expect(tool(page, 0)).toHaveAttribute('data-pressed', 'before');
+    await expect(tool(page, 0)).toBeFocused();
+    expect(problems).toEqual([]);
+  });
+
   test('a new line’s tools wait for its connection, then are its own', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=agent-tools&skin=underline');
     await tools(page).locator('.fd-lines-add').first().click();

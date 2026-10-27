@@ -108,6 +108,9 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
 - CI's `angular-newest` job builds and runs the Angular bindings and the Angular
   demos on Angular's newest major (22), from `tools/angular-newest`'s own install,
   while the workspace builds them with the oldest it supports (21).
+- A one-line text box can keep its ends as typed: `"options": { "trim": false }`
+  on its node (Odoo's `trim=False`), for words whose ends matter — a template's
+  `"New: "`. In the designer, a short answer's "Keep the spaces at its ends".
 
 **Fixes:**
 
@@ -189,6 +192,37 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   27.2), axe 4.14, ESLint 10.13, typescript-eslint 8.71.2, ts-jest 29.4.15,
   jest-preset-angular 17.0.3, React 19.3.1, Vue 3.5.44, @types/node 24 (the Node
   `.nvmrc` runs).
+- A booking whose time comes from outside — a calendar's empty slot, a step, a
+  link — ends as its slot does: a 45-minute test drive made at 10:00 is back by
+  10:45, not the calendar's hour. A stored booking keeps its own end, and the
+  line under its times says it.
+- A choice's options that come or change — the app's list answering, a condition
+  on other answers — are taken by its select in place: its focus, its open list
+  and its typed search are kept (a Tool pressed before its tools came lost
+  both). A searched list's box keeps what is typed and its list open; any other
+  choice drawn anew keeps the focus.
+- A line's ↗ dialog without a `lineForm` shows the table's columns — those a
+  person hid too, those the record's rules hide not — never every field of the
+  line (a parent's key, a state or a flag kept for the rules, a currency).
+- A required field is named by its label's words in every look; its star is
+  drawn and never said (it was "*Full name" in the outlined and quiet looks and
+  every theme over them, "Full name*" in the underline).
+- On a phone's sheet of filters, Show with a range refused says why where it was
+  pressed — "Area: From is more than To" — and takes the keys to that range:
+  never a press that seems to do nothing.
+- The survey designer puts a question where its gap shows, on a page that opens
+  with words of its own too (it landed a place early, above them); a tile
+  dragged from the toolbox alike.
+- "Show 20 more" pressed from the keys takes them to the first row that came — a
+  tree's (a chart of accounts), a group's — never to the page.
+- Text dropped into a box is judged where it lands: a host's own `drop` that
+  calls `preventDefault()` wins, and the box takes nothing of it (a host placing
+  its own drag data got both); a plain drop lands where it was let go, not at
+  the box's old caret.
+- Demos: the vendor bill's copy is a draft, as an accounting server's copy is;
+  real-tender's requirement lines open in a form of their own.
+- Tests: survey-timed holds its fake clock between steps (in WebKit under load
+  25 of 180 failed; 0 of 180 after).
 
 **Deprecated** — each said once in a page's console, refused from 0.37:
 
@@ -208,6 +242,9 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
     refused is refused as before, now with its problems where the form would be.
   - `validatePage` may warn of a required field that no part shows, and of a
     page stamped older than a setting it uses (`format.under-stamped`).
+  - A line dialog without a `lineForm` no longer shows fields the table has no
+    column for: to show one, give the table a `lineForm`. `lineOpens: "fields"`
+    now means "its fields as the table shows them".
   - Nothing else: the format stays 0.13.
 - *App code:*
   - `onError` also hears `{ stage: 'check', part: 'page', warning: true }`, the
@@ -233,6 +270,13 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
     `paperHeld` and `paperHeldPrint`; `WidgetLabels` gains `recordStarting` and
     `recordNothing`; `MapLabels` gains `drawPolygonTouch`,
     `measureHintTouch` and `pointsOne`.
+  - `Widget.offer?(options): boolean` is new and optional: a choice widget of
+    your own can take new options in place. Without it, the widget is drawn anew
+    as before, now with the focus kept.
+  - `WidgetDialogs.editValues` requests may carry `shown`, the fields to place
+    (the rest are kept). Dialogs of your own that ignore it show every field, as
+    before.
+  - `settledText`'s kind takes `trim`.
 - *Tests and CSS:*
   - Every page fetches `fieldia.check.js` (or its chunk) after the draw: leave it
     out where a test counts a page's scripts.
@@ -265,6 +309,16 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
     while a card is open. The recorder says "Starting the recording…" after
     Start until the browser's recorder has begun, its time at 0:00. `.fd-loading-said` keeps its words until the last wait
     ends. Date boxes carry `aria-required`.
+  - A required field's accessible name no longer carries "*": a test that found
+    `'Full name*'` or `'*Full name'` names `'Full name'` (with `exact: true`
+    where another name contains it). The star's CSS is `content: "*" / ""`.
+  - A box no longer handles `drop` itself. A test that inserted text by
+    dispatching a synthetic `drop` event on a box must drag for real, or
+    dispatch the `beforeinput` (`insertFromDrop`) a browser sends.
+  - A choice's `<select>` stays the same element as its options come. A test
+    that waited for it to be replaced no longer sees that.
+  - The filter sheet's foot has `.fd-filter-sheet-why` (`role="alert"`). After
+    "Show N more" from the keys, the focus is on the first new row.
 - *Self-hosters:* serve `fieldia.check.js` beside `fieldia.js`, as every part:
   the viewer asks for it after a page's first draw. Sizes below;
   `page.schema.json` is about 562 KB with its descriptions.
@@ -281,10 +335,11 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   past the tolerance.
 - *Translators:* the new words in the seven add-ons — a part that could not load,
   a refused page, an endless list's rows on paper, the map's touch words, the
-  recorder's start and an empty recording — are machine-made and not yet
-  reviewed by a native speaker.
+  recorder's start and an empty recording — and the designer's "Keep the spaces
+  at its ends" in ar, tr, fa, ur and es are machine-made and not yet reviewed by
+  a native speaker.
 
-**Size:** `fieldia.js` 587.2 KB, 196.9 gzipped (0.35.3: 579.1, 193.9): +2.98 KB
+**Size:** `fieldia.js` 587.5 KB, 197.0 gzipped (0.35.3: 579.1, 193.9): +3.10 KB
 gzipped, under the owner's 200, all of it what every page runs. By lane, each
 measured on its own 0.35.2 base, which 0.35.3's fixes (+0.28) joined as they
 measured alone: deps-maint 0.12 (a control's name holding what it
@@ -295,12 +350,16 @@ for a part that never came, which must live in the main script, 0.81; the box
 under the keys never written over and the alert letting a refusal go, 0.34);
 merged, 0.18 more as their code compresses together; the plain save that sends
 nothing 0.10; the recorder's fix 0.01 (the hashes of the parts it carries; the
-same bytes); another box's late leaving laying nothing of the box typed in 0.02.
+same bytes); another box's late leaving laying nothing of the box typed in 0.02;
+p3-found 0.12 (a choice's options taken in place, a line's dialog of its
+columns, a required field's star never said, a drop judged where it lands).
 The parts, gzipped:
 
 - check 17.27, new: the whole check, fetched after a page's first draw;
-- list 50.50 → 51.96: the reload near the view, open groups kept, a pin's tap,
-  a column twice, the paper's note; lines 16.07 → 16.45 (cards' ↑ and ↓); undo
+- list 50.50 → 52.07: the reload near the view, open groups kept, a pin's tap,
+  a column twice, the paper's note, "Show more" from the keys; filters 7.85 →
+  7.96 (a refused range said where Show was pressed); slots 5.85 → 6.00 (a
+  booking ending as its slot does); rows 7.35 → 7.40; lines 16.07 → 16.45 (cards' ↑ and ↓); undo
   3.01 → 3.16; schedule 7.94 → 8.05; outbox 4.68 → 4.76; files 18.90 → 18.97;
   scan 8.51 → 8.57; editable 12.67 → 12.73; date 9.29 → 9.33; phone 19.25 →
   19.28; record 4.40 → 5.45 (its clock from the browser's start, a WebM's
@@ -310,9 +369,9 @@ The parts, gzipped:
 
 From the npm packages, an app's first load (KB gzipped, with the page / to
 usable, bundled by esbuild; usable now holds the whole check's chunk, fetched
-after the draw): a record form 241.8 → 245.7 / 314.8 → 336.5; in Arabic 241.8 →
-245.7 / 337.1 → 359.1; a list 241.0 → 244.9 / 310.2 → 332.6; the screen
-designer 587.9 → 592.7 / 801.5 → 821.8. `@fieldia/map`'s parts: a list's map
+after the draw): a record form 241.8 → 245.8 / 314.8 → 336.6; in Arabic 241.8 →
+245.8 / 337.1 → 359.2; a list 241.0 → 245.0 / 310.2 → 332.9; the screen
+designer 587.9 → 592.8 / 801.5 → 822.0. `@fieldia/map`'s parts: a list's map
 22,351 → 22,973 bytes, a form's 19,978 → 20,559, its fields 18,556 → 19,022;
 with the page 11,932 → 12,018. `@fieldia/calendar`'s calendar 17,825 → 17,883
 bytes, `@fieldia/gantt`'s timeline 15,338 → 15,383.

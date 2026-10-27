@@ -109,7 +109,24 @@ for (const variant of VARIANTS) {
       expect(await value(page, 'client_id')).toEqual({ id: 30, label: 'Zamalek Studio' });
     });
 
-    test('a line opens in a dialog with all its fields, its subtotal follows there, and Save & Close writes it to the grid', async ({ page }) => {
+    test('a sales order’s line opens in a dialog of its columns: never a field only its rules read, nor one hidden on the order', async ({ page }) => {
+      await open(page, variant, 'page=real-sale-order&record=7101&skin=underline');
+      const grid = node(page, 'f-order-line');
+      await grid.locator('.ag-row[row-index="1"] .ag-cell[col-id="__open"]').getByRole('button', { name: 'Open line' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Order Lines' });
+      await expect(dialog.getByRole('textbox', { name: 'Quantity' })).toBeVisible();
+      // A column a person may show is there; Lead Time starts hidden in the grid.
+      await expect(dialog.getByText('Lead Time', { exact: true })).toBeVisible();
+      // The line's fields no column shows — kept for the grid's rules — and Delivered, hidden while the order is a quotation.
+      const labels = await dialog.locator('.fd-label').allTextContents();
+      for (const technical of ['Total Tax', 'Is a down payment', 'Method to update delivered qty', 'Invoice Status', 'Display Type', 'Sequence', 'Delivered', 'Invoiced']) {
+        expect(labels.map((label) => label.replace(/\*$/, '').trim()), technical).not.toContain(technical);
+      }
+      await dialog.getByRole('button', { name: 'Discard' }).click();
+      await expect(dialog).toBeHidden();
+    });
+
+    test('a line opens in a dialog with all its columns, its subtotal follows there, and Save & Close writes it to the grid', async ({ page }) => {
       await open(page, variant, 'page=order&skin=underline');
       const grid = node(page, 'f-lines');
       const cell = (row: number, col: string) => grid.locator(`.ag-row[row-index="${row}"] .ag-cell[col-id="${col}"]`);
@@ -117,7 +134,7 @@ for (const variant of VARIANTS) {
       await cell(1, '__open').getByRole('button', { name: 'Open line' }).click();
       const dialog = page.getByRole('dialog', { name: 'Order lines' });
       await expect(dialog.getByLabel('Description')).toHaveValue('Black mesh back');
-      // A column the grid hides is in the dialog too.
+      // A column the grid hides is in the dialog too: a person may show it.
       await expect(dialog.getByLabel('Lead time (days)')).toHaveValue('14');
       await expect(dialog.getByLabel('Line type')).toHaveCount(0);
       // Its title once, in its head; its fields on the dialog's own surface, clear of its edges.

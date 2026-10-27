@@ -34,12 +34,12 @@ export const replay: DemoReplay = {
         await press(viewings.getByRole('button', { name: 'New viewing' }));
         const dialog = page.getByRole('dialog', { name: 'New viewing' });
         await see(dialog).toBeVisible();
-        await see(dialog.getByRole('combobox', { name: 'Home*' })).toHaveValue('3-bedroom flat in Maadi');
+        await see(dialog.getByRole('combobox', { name: 'Home', exact: true })).toHaveValue('3-bedroom flat in Maadi');
         // A day after every viewing booked so far: the latest, first in the list.
         const day = new Date(Date.parse(mine[0].starts_at) + 86_400_000);
-        await type(dialog.getByRole('textbox', { name: 'When*' }), `${ddmmyyyy(day)} 11:00`);
+        await type(dialog.getByRole('textbox', { name: 'When', exact: true }), `${ddmmyyyy(day)} 11:00`);
         await keys('Tab');
-        await type(dialog.getByRole('textbox', { name: 'Client*' }), 'Mona Kamal');
+        await type(dialog.getByRole('textbox', { name: 'Client', exact: true }), 'Mona Kamal');
         await press(dialog.getByRole('button', { name: 'Save & Close' }));
         await see(dialog).toBeHidden();
         await see(viewings.locator('.fd-related-count')).toHaveText(String(mine.length + 1));
@@ -55,7 +55,7 @@ export const replay: DemoReplay = {
         await see(row).not.toContainText('Done');
         await press(row);
         const dialog = page.getByRole('dialog');
-        await see(dialog.getByRole('textbox', { name: 'Client*' })).toHaveValue('Mona Kamal');
+        await see(dialog.getByRole('textbox', { name: 'Client', exact: true })).toHaveValue('Mona Kamal');
         await dialog.getByRole('combobox', { name: 'Status' }).selectOption({ label: 'Done' });
         await type(dialog.getByRole('textbox', { name: 'Feedback' }), 'Liked the kitchen');
         await press(dialog.getByRole('button', { name: 'Save & Close' }));

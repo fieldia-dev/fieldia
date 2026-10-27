@@ -137,9 +137,9 @@ export function ownCurrency(sub: LineField, parent: Readonly<Values>): LineField
 /**
  * A line opened in a dialog: with `lineOpens: "record"`, a saved line's own
  * record by the table's model — what its page saved is written back to the
- * line's fields of the same names — else, or for a line not saved yet, every
- * one of its fields, recalculated as they change and written back on Save &
- * Close. Shared with @fieldia/grid.
+ * line's fields of the same names — else, or for a line not saved yet, its
+ * fields as the table shows them, recalculated as they change and written back
+ * on Save & Close. Shared with @fieldia/grid.
  */
 export async function openLineDialog(form: Form, name: string, node: FieldNode, pressed: Line, dialogs: WidgetDialogs, readonly: boolean): Promise<void> {
   const def = form.page.fields[name] as Extract<Field, { type: 'one2many' }>;
@@ -181,7 +181,10 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
     // Worked out on its own line while its record is shown; after, as it is.
     recompute: (edited) => (shown() ? form.previewLine(name, line.key, edited) : Promise.resolve(edited)),
     parent: { values: state.values, fields: form.page.fields, id: state.recordId },
-    ...(node.lineForm ? { layout: node.lineForm.children } : {}),
+    // Without a form of its own, what the table shows: its columns, in its order — those its rules hide on this record
+    // left out, those a person hid kept. A field no column shows (a parent's key, a state or a flag its rules read, a
+    // currency its amounts are in) is the app's, kept as it is, never shown: 0.35 showed every field of the line.
+    ...(node.lineForm ? { layout: node.lineForm.children } : { shown: (node.columns ?? Object.keys(fields)).filter((column) => column in fields && !form.columnHidden(node.id, column)) }),
     ...lowerLabels,
   });
   // Written in one go, so the form recalculates once.

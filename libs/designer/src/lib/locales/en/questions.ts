@@ -225,6 +225,8 @@ export const questions = {
   mask: 'Mask',
   maskHelp: '9 a digit, a a letter, * either; the rest is written in: 9999 9999',
   inCapitals: 'Letters in capitals',
+  // A short answer that keeps the spaces at its ends as it is left (`trim: false`): a template's "New: ".
+  keepEnds: 'Keep the spaces at its ends',
   codeLength: 'Digits',
   codeLetters: 'Letters too',
   shorthand: 'Typed in shorthand: 3.5m, 500k',

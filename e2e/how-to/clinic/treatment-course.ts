@@ -96,7 +96,7 @@ export const replay: DemoReplay = {
         await press(dialog.getByRole('button', { name: 'Save template' }));
         await see(page.locator('.fd-say').filter({ hasText: 'Template “Botox, Thursdays” saved.' })).toBeVisible();
         await follow('Start a new course');
-        await see(page.getByRole('textbox', { name: '*Patient' })).toHaveValue('');
+        await see(page.getByRole('textbox', { name: 'Patient', exact: true })).toHaveValue('');
         await press(page.getByRole('button', { name: 'Templates' }));
         // The one kept by its name is there to start from, beside the clinic's.
         await see(page.getByRole('menuitem', { name: 'Botox, Thursdays' })).toBeVisible();
