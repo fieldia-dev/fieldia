@@ -84,15 +84,22 @@ export function upgradePage<T>(page: T, history: FormatHistory = { versions: FOR
 
 /**
  * A part of a page with each choice in a map of fields by name (`fields`, at any depth) that writes no options read as
- * having none: the part itself where none does. `fields`: the part is such a map, each entry a field.
+ * having none: the part itself where none does. `fields`: the part is such a map, each entry a field, of which only its
+ * own options and its own map of fields (a table's lines', a link's) are read — a page's every word is not walked again.
  */
 function choicesRead(part: unknown, fields = false): unknown {
-  if (part === null || typeof part !== 'object') return part;
   let out: Record<string, unknown> | null = null;
-  for (const [key, inner] of Object.entries(part)) {
-    let read = choicesRead(inner, !fields && key === 'fields' && isObject(inner));
-    if (fields && isObject(read) && read['type'] === 'selection' && !Array.isArray(read['options'])) read = { ...read, options: [] };
-    if (read !== inner) (out ??= (Array.isArray(part) ? [...part] : { ...part }) as Record<string, unknown>)[key] = read;
+  for (const key in part as object) {
+    const inner = (part as Record<string, unknown>)[key];
+    if (inner === null || typeof inner !== 'object') continue;
+    let read: unknown = inner;
+    if (!fields) read = choicesRead(inner, key === 'fields' && isObject(inner));
+    else if (isObject(inner)) {
+      const own = isObject(inner['fields']) ? choicesRead(inner['fields'], true) : inner['fields'];
+      const none = inner['type'] === 'selection' && !Array.isArray(inner['options']);
+      if (own !== inner['fields'] || none) read = { ...inner, ...(own !== inner['fields'] ? { fields: own } : {}), ...(none ? { options: [] } : {}) };
+    }
+    if (read !== inner) (out ??= (Array.isArray(part) ? [...part] : { ...(part as object) }) as Record<string, unknown>)[key] = read;
   }
   return out ?? part;
 }
