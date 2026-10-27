@@ -161,6 +161,16 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   comes back into view, not only on the browser's `online` (WebKit may never
   say it).
 - A tile can be dragged out of the designer's toolbox sheet.
+- **A voice note or a film recorded on the page is never an empty file.** Chrome's
+  recorder (MP4, from Chrome 156) can begin a second and more after Start is
+  pressed; the recorder's clock ran from the press, so a Stop within that time
+  kept an empty file no player could read, and every recording lost its first
+  moments. The clock now runs from when the browser's recorder has begun
+  ("Starting the recording…" until then), and a recording stopped before it
+  began keeps nothing and says so, with Start recording again. A WebM recording
+  (Firefox's, or Chrome's where MP4 is not taken) has its length written into
+  it, which a browser's recorder leaves out: its player shows how long it is,
+  not Infinity, and can be scrubbed, wherever the kept file is played.
 - **Every control's name holds the words it shows** (WCAG 2.5.3, now an axe rule
   of its own): calendar days and bookings, a phone's country and its links,
   repeat days, scan, files, tab counts, list groups, filters and saved views,
@@ -218,7 +228,8 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
     them stand as a gap row with `data-above`, asked for as the view comes.
   - App-supplied label sets gain `pageUnshown`, `pageUnshownWhy`,
     `partPlainField`, `partPlainPage`, `undoNotLoaded`, `printNotLoaded`,
-    `paperHeld` and `paperHeldPrint`; `MapLabels` gains `drawPolygonTouch`,
+    `paperHeld` and `paperHeldPrint`; `WidgetLabels` gains `recordStarting` and
+    `recordNothing`; `MapLabels` gains `drawPolygonTouch`,
     `measureHintTouch` and `pointsOne`.
 - *Tests and CSS:*
   - Every page fetches `fieldia.check.js` (or its chunk) after the draw: leave it
@@ -249,7 +260,8 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   - In the screen editor, `document.activeElement` is the clicked words one frame
     after the click. The locked-row note goes on click, not on press-down.
     `.fd-map-legend-title` is a button; the map's note, legend and Follow hide
-    while a card is open. `.fd-loading-said` keeps its words until the last wait
+    while a card is open. The recorder says "Starting the recording…" after
+    Start until the browser's recorder has begun, its time at 0:00. `.fd-loading-said` keeps its words until the last wait
     ends. Date boxes carry `aria-required`.
 - *Self-hosters:* serve `fieldia.check.js` beside `fieldia.js`, as every part:
   the viewer asks for it after a page's first draw. Sizes below;
@@ -266,10 +278,11 @@ each format were hashed again by the fixed `shapeOf`, each to one new value).
   `node tools/screens.mjs --update` stores every screen again, not only those
   past the tolerance.
 - *Translators:* the new words in the seven add-ons — a part that could not load,
-  a refused page, an endless list's rows on paper, the map's touch words — are
-  machine-made and not yet reviewed by a native speaker.
+  a refused page, an endless list's rows on paper, the map's touch words, the
+  recorder's start and an empty recording — are machine-made and not yet
+  reviewed by a native speaker.
 
-**Size:** `fieldia.js` 586.4 KB, 196.6 gzipped (0.35.2: 578.3, 193.6): +2.96 KB
+**Size:** `fieldia.js` 586.4 KB, 196.6 gzipped (0.35.2: 578.3, 193.6): +2.97 KB
 gzipped, under the owner's 200, all of it what every page runs. By lane, each
 measured on its own base: deps-maint 0.12 (a control's name holding what it
 shows, `nameShowing`); p3-promises 1.40 (the check before the draw as 0.35's, a
@@ -278,16 +291,18 @@ check itself is a part, below); perf-leftovers 0.01; p3-real-tests 1.15 (words
 for a part that never came, which must live in the main script, 0.81; the box
 under the keys never written over and the alert letting a refusal go, 0.34);
 merged, 0.18 more as their code compresses together; the plain save that sends
-nothing 0.10. The parts, gzipped:
+nothing 0.10; the recorder's fix 0.01 (the hashes of the parts it carries; the
+same bytes). The parts, gzipped:
 
 - check 17.27, new: the whole check, fetched after a page's first draw;
 - list 50.50 → 51.96: the reload near the view, open groups kept, a pin's tap,
   a column twice, the paper's note; lines 16.07 → 16.45 (cards' ↑ and ↓); undo
   3.01 → 3.16; schedule 7.94 → 8.05; outbox 4.68 → 4.76; files 18.90 → 18.97;
   scan 8.51 → 8.57; editable 12.67 → 12.73; date 9.29 → 9.33; phone 19.25 →
-  19.28; element 2.59 → 2.56; every other part within 0.02;
-- the language add-ons 0.23–0.32 each (the new words): Arabic 21.59 → 21.88,
-  Persian 23.23 → 23.53, Urdu 23.31 → 23.64.
+  19.28; record 4.40 → 5.45 (its clock from the browser's start, a WebM's
+  length written in); element 2.59 → 2.56; every other part within 0.02;
+- the language add-ons 0.27–0.38 each (the new words): Arabic 21.59 → 21.94,
+  Persian 23.23 → 23.57, Urdu 23.31 → 23.69.
 
 From the npm packages, an app's first load (KB gzipped, with the page / to
 usable, bundled by esbuild; usable now holds the whole check's chunk, fetched
