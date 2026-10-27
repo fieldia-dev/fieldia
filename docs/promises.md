@@ -186,6 +186,11 @@ changed is said no more, and stays here marked changed, as the minor's CHANGELOG
 - A list of 5,000 rows keeps some 1,600 DOM nodes in the page, not 130,343. A tick, a Tab or a fold costs what it
   did at 100 rows.
 - A table of 200 lines draws again only the lines a change touches. A Gantt of 500 tasks moves a bar in place.
+- From 0.37 a page's whole check comes before its first draw (0.36 ran it once the page was drawn). Measured on Slow 4G
+  (1.44 Mbps, 562 ms), 7 runs each against 0.36.0: a valid page that waits for its parts or fetches its page draws
+  0.11–0.20 s later — the check's 17 KB on the line, and its run — and a page of plain fields mounted as soon as
+  `fieldia.js` has run, with no tags for its parts, 0.7–0.8 s later: a round trip for `fieldia.check.js`, which its
+  tag before `fieldia.js` (`partTags`) takes back to 0.11–0.14 s. No gate: measured by hand.
 
 Each release is held to budgets that fail the build. The timings run alone in CI's perf job, one worker, with three
 times the budget's slack for a shared runner; the phone's budgets are four times a desktop's. The counts are counted
