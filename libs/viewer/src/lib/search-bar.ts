@@ -44,10 +44,13 @@ const SPAN_WORDS: Record<DateInterval, WordKey> = { year: 'groupByYear', quarter
 
 type FiltersFacet = Extract<Facet, { kind: 'filters' }>;
 
+/** The named filters on with only these of them, each with its words. */
+const keeping = (facet: FiltersFacet, ids: string[]): FiltersFacet => ({ ...facet, ids, labels: ids.map((id) => facet.labels[facet.ids.indexOf(id)] ?? id) });
+
 /** A facet's chips: one for each, but named filters, one for each of their groups (`ListFilter.group`) — its ids. */
 export function facetChips(facet: Facet, list: ListNode): { facet: Facet; ids?: string[] }[] {
   if (facet.kind !== 'filters') return [{ facet }];
-  return filterGroups(facet.ids, list).map((ids) => ({ facet: { ...facet, ids, labels: ids.map((id) => facet.labels[facet.ids.indexOf(id)] ?? id) }, ids }));
+  return filterGroups(facet.ids, list).map((ids) => ({ facet: keeping(facet, ids), ids }));
 }
 
 /** Each chip's words of a facet (`facetChips`): one for each group of named filters on, each "or" within it. */
@@ -121,9 +124,8 @@ export function searchBar(context: SearchContext) {
       facetChips(facet, node).map((chip) => ({
         ...chip,
         without: (): Facet[] => {
-          const ids = (facet as FiltersFacet).ids?.filter((id) => !chip.ids?.includes(id)) ?? [];
-          if (!chip.ids || !ids.length) return facets.filter((_, i) => i !== index);
-          return facets.map((one, i) => (i === index ? { ...(one as FiltersFacet), ids, labels: ids.map((id) => (one as FiltersFacet).labels[(one as FiltersFacet).ids.indexOf(id)] ?? id) } : one));
+          const ids = chip.ids ? (facet as FiltersFacet).ids.filter((id) => !chip.ids?.includes(id)) : [];
+          return ids.length ? facets.map((one, i) => (i === index ? keeping(one as FiltersFacet, ids) : one)) : facets.filter((_, i) => i !== index);
         },
       }))
     );
