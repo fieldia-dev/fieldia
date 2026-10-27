@@ -70,34 +70,29 @@ const isObject = (value: unknown): value is PageJson => value !== null && typeof
  *
  * It is the door every reader of a page comes through — `checkPage`, `validatePage`, `createForm`, the designer — and so
  * where a choice that writes no `options` is read as having none (`options: []`): one whose options come from the app's
- * list (`optionsFrom`) is drawn, and the list fills them, as 0.13 drew it. Every choice of the page's fields, its lines'
- * and links', and the fields a list or a related list shows. The page given is never changed; where no choice leaves its
- * options out, the page is handed back as said above.
+ * list (`optionsFrom`) is drawn, and the list fills them, as 0.13 drew it. Every choice in a map of fields the page
+ * holds: its own, its lines' and links', the fields a list or a related list shows. The page given is never changed;
+ * where no choice leaves its options out, the page is handed back as said above.
  */
 export function upgradePage<T>(page: T, history: FormatHistory = { versions: FORMAT_VERSIONS, steps: PAGE_UPGRADES }): T {
-  const read = upTo(page, history);
-  if (!isObject(read)) return read;
-  const fields = choicesRead(read['fields'], isObject(read['fields']));
-  const layout = choicesRead(read['layout']);
-  return fields === read['fields'] && layout === read['layout'] ? read : ({ ...read, fields, layout } as T);
+  return choicesRead(upTo(page, history)) as T;
 }
 
 /**
  * A part of a page with each choice in a map of fields by name (`fields`, at any depth) that writes no options read as
  * having none: the part itself where none does. `fields`: the part is such a map, each entry a field, of which only its
- * own options and its own map of fields (a table's lines', a link's) are read — a page's every word is not walked again.
+ * own options and its own map of fields (a table's lines', a link's) are read — its values and words are not walked.
  */
 function choicesRead(part: unknown, fields = false): unknown {
   let out: Record<string, unknown> | null = null;
   for (const key in part as object) {
-    const inner = (part as Record<string, unknown>)[key];
+    const inner = (part as Record<string, PageJson>)[key];
     if (inner === null || typeof inner !== 'object') continue;
-    let read: unknown = inner;
-    if (!fields) read = choicesRead(inner, key === 'fields' && isObject(inner));
-    else if (isObject(inner)) {
-      const own = isObject(inner['fields']) ? choicesRead(inner['fields'], true) : inner['fields'];
-      const none = inner['type'] === 'selection' && !Array.isArray(inner['options']);
-      if (own !== inner['fields'] || none) read = { ...inner, ...(own !== inner['fields'] ? { fields: own } : {}), ...(none ? { options: [] } : {}) };
+    let read = fields ? inner : (choicesRead(inner, key === 'fields' && isObject(inner)) as PageJson);
+    if (fields) {
+      const own = choicesRead(inner['fields'], isObject(inner['fields']));
+      if (own !== inner['fields']) read = { ...read, fields: own };
+      if (inner['type'] === 'selection' && !Array.isArray(inner['options'])) read = { ...read, options: [] };
     }
     if (read !== inner) (out ??= (Array.isArray(part) ? [...part] : { ...(part as object) }) as Record<string, unknown>)[key] = read;
   }
