@@ -26,6 +26,9 @@ export async function followLink(hand: Hand, words: string | RegExp) {
   await expect.poll(() => page.url()).not.toBe(from);
   await page.waitForLoadState();
   await expect(page.locator('.fd-form').first()).toBeVisible();
+  // A followed link's page draws its frame as its scripts run, after its address shows: the header's Options and the
+  // panel, open as it remembers, in one pass (demos/shell.mjs). Looked at sooner, the panel was not there, then opened.
+  await expect(page.locator('#demo-head .dh-options')).toBeAttached();
   if (await howToPanel(page).isVisible()) await press(howToPanel(page).getByRole('button', { name: 'Close the panel' }));
 }
 /** What the app was told with each response, listed under the form, each response an item. */

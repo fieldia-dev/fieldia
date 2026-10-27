@@ -133,6 +133,9 @@ export function handFor(page: Page, phone: boolean): { hand: Hand; seen: () => n
       await target.hover();
     },
     async follow(words) {
+      // On a page its frame has drawn (demos/shell.mjs, in one pass as the page's scripts run): looked at sooner, as a
+      // followed link's page opens, neither the line nor the panel is there yet, and the ? pressed would close it.
+      await expect(page.locator('#demo-head .dh-options')).toBeAttached();
       // The line under the demo's name shows the first step (folded under Options on a phone); the panel shows them all.
       const inLine = page.locator('.dh-try .dh-step-link').filter({ hasText: words }).first();
       if (await inLine.isVisible()) return hand.press(inLine);

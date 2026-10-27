@@ -33,6 +33,9 @@ export async function openMenu({ page, press }: Hand) {
 export const howToPanel = (page: Page) => page.getByRole('complementary', { name: 'About this demo' });
 /** The how-to panel closed again, as a person closes it to have the page back, if it is open. */
 export async function closePanel({ page, press }: Hand) {
+  // A followed link's page draws its frame as its scripts run, after its address shows: the header's Options and the
+  // panel, open as it remembers, in one pass (demos/shell.mjs). Looked at sooner, the panel was not there, then opened.
+  await expect(page.locator('#demo-head .dh-options')).toBeAttached();
   if (await howToPanel(page).isVisible()) await press(howToPanel(page).getByRole('button', { name: 'Close the panel' }));
   await expect(howToPanel(page)).toBeHidden();
 }

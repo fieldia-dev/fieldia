@@ -21,6 +21,9 @@ export async function follow(hand: Hand, words: string | RegExp) {
 /** The how-to panel closed by its ×, as a person closes it to have the page back, if it is open. */
 export async function closePanel({ page, press }: Hand) {
   const panel = page.getByRole('complementary', { name: 'About this demo' });
+  // A followed link's page draws its frame as its scripts run, after its address shows: the header's Options and the
+  // panel, open as it remembers, in one pass (demos/shell.mjs). Looked at sooner, the panel was not there, then opened.
+  await expect(page.locator('#demo-head .dh-options')).toBeAttached();
   if (await panel.isVisible()) await press(panel.getByRole('button', { name: 'Close the panel' }));
   await expect(panel).toBeHidden();
 }
