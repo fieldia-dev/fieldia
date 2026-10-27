@@ -128,6 +128,12 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /** A short answer that keeps the spaces at its ends as it is left (`options.trim: false`): a template's "New: ". */
+  function keepEnds(): Part {
+    const on = toggle(w.keepEnds, (yes) => designer.setWidgetOptions(id, { trim: yes ? false : null }));
+    return { element: on.element, refresh: (_page, node) => on.button.setAttribute('aria-checked', String(node.options?.['trim'] === false)) };
+  }
+
   /** A one-time code's boxes: how many digits, 4 to 8, and whether letters are in it too. */
   function code(): Part {
     const count = select(w.codeLength, ['4', '5', '6', '7', '8'].map((n): [string, string] => [n, n]));
@@ -717,7 +723,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'email' || kind === 'phone') parts.push(verify(kind === 'phone'));
   if (kind === 'phone') parts.push(phone());
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
-  if (kind === 'short-answer') parts.push(mask());
+  if (kind === 'short-answer') parts.push(mask(), keepEnds());
   if (kind === 'one-time-code') parts.push(code());
   if (kind === 'paragraph') parts.push(rows());
   if (kind === 'short-answer' || kind === 'paragraph' || kind === 'rich-text') parts.push(aiTools());

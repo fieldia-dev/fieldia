@@ -69,15 +69,18 @@ export const EMAIL_LOCAL_STRAYS = /[()<>[\]:;\\,"]/g;
  * and no direction marks; an email with no direction marks and no
  * zero-width characters, a web address with no direction marks; any other
  * text with none at its ends — each trimmed, spaces alone being nothing. A
- * password is kept as it is.
+ * password is kept as it is; so is any other text whose box keeps its ends
+ * (`trim: false`, its node's `options.trim`, Odoo's trim=False): a template's
+ * "New: ", its space and any mark at its ends the author's — a direction mark
+ * there may be what keeps the words after it on their side.
  */
-export function settledText(text: string, kind: { widget?: string; pattern?: boolean }): string {
+export function settledText(text: string, kind: { widget?: string; pattern?: boolean; trim?: boolean }): string {
   const { widget, pattern } = kind;
   if (widget === 'password') return text;
   if (widget === 'phone' || pattern) return foldDigits(stripMarks(text)).trim();
   if (widget === 'email') return stripMarks(text).replace(ZERO_WIDTH, '').trim();
   if (widget === 'url') return stripMarks(text).trim();
-  return stripMarks(text, 'ends').trim();
+  return kind.trim === false ? text : stripMarks(text, 'ends').trim();
 }
 
 /** Whether a field's answer is checked against a pattern: the field's own, or an answer rule's on its node. */

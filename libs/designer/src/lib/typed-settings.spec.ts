@@ -61,6 +61,21 @@ describe('masks and one-time codes in the designer', () => {
     expect(validatePage(designer.getPage()).ok).toBe(true);
   });
 
+  it('lets a short answer keep the spaces at its ends (`trim: false`), as a template’s words need, the page still checked', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Template') });
+    const id = designer.addQuestion('short-answer', { parent: 'section-1' }) as string;
+    designer.select(id);
+    const { host } = mount(designer, { mode: 'simple' });
+    const toggle = host.querySelector('.fd-canvas-field.fd-editing [role="switch"][aria-label="Keep the spaces at its ends"]') as HTMLButtonElement;
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    toggle.click();
+    expect(nodeOf(designer, id).options).toEqual({ trim: false });
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    toggle.click();
+    expect(nodeOf(designer, id).options).toBeUndefined();
+  });
+
   it('lets a number or an amount be typed in shorthand', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Listing') });
     const id = designer.addQuestion('amount', { parent: 'section-1' }) as string;

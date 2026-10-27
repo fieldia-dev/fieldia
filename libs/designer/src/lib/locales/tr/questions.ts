@@ -226,6 +226,7 @@ export const questions: DesignerWords['questions'] = {
   mask: 'Maske',
   maskHelp: '9 bir rakam, a bir harf, * ikisinden biri; geri kalanı olduğu gibi yazılır: 9999 9999',
   inCapitals: 'Harfler büyük',
+  keepEnds: 'Baştaki ve sondaki boşluklar kalsın',
   codeLength: 'Hane sayısı',
   codeLetters: 'Harfler de',
   shorthand: 'Kısaltmayla yazılır: 3,5 Mn, 500 B',

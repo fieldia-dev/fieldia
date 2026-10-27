@@ -144,7 +144,7 @@ export function textBox(input: HTMLInputElement | HTMLTextAreaElement, context: 
   const settle = () => {
     if (input.readOnly) return;
     const held = takeHeld();
-    const settled = kind === 'paragraph' || kind === 'password' ? input.value : settledText(input.value, { widget, pattern });
+    const settled = kind === 'paragraph' || kind === 'password' ? input.value : settledText(input.value, { widget, pattern, trim: node.options?.['trim'] !== false });
     if (!held && settled === input.value) return;
     if (settled !== input.value) {
       input.value = settled;

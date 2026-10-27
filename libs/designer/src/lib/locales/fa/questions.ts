@@ -226,6 +226,7 @@ export const questions: DesignerWords['questions'] = {
   mask: 'ماسک ورودی',
   maskHelp: '9 یک رقم، a یک حرف، * هر کدام؛ بقیه خودکار نوشته می‌شود: 9999 9999',
   inCapitals: 'حروف بزرگ',
+  keepEnds: 'فاصله‌های دو سرش بماند',
   codeLength: 'تعداد رقم',
   codeLetters: 'حروف هم',
   shorthand: 'نوشتن کوتاه: 3.5 میلیون، 500 هزار',

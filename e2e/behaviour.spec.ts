@@ -637,6 +637,26 @@ async function boxesPage(page: Page) {
   return { box: (id: string) => page.locator(`#host [data-node="${id}"] input`), valueIn };
 }
 
+test.describe('a one-line box’s ends', () => {
+  test('kept where the box says so (`trim: false`): “New: ” left with its space, and nothing else changed', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    const { box, valueIn } = await boxesPage(page);
+    await box('f-template').click();
+    await page.keyboard.type('New: ');
+    await page.keyboard.press('Tab');
+    await expect(box('f-template')).toHaveValue('New: ');
+    expect(await valueIn('template')).toBe('New: ');
+    // A box without it: its ends trimmed as it is left, as ever.
+    await box('f-company').click();
+    await page.keyboard.type('  Nile Traders  ');
+    await page.keyboard.press('Tab');
+    await expect(box('f-company')).toHaveValue('Nile Traders');
+    expect(await valueIn('company')).toBe('Nile Traders');
+    expect(problems).toEqual([]);
+  });
+});
+
 test.describe('a drop on a box', () => {
   test('a host’s own drop on the box’s wrapper, prevented there, is the host’s alone: its words, once', async ({ page }) => {
     const { box, valueIn } = await boxesPage(page);

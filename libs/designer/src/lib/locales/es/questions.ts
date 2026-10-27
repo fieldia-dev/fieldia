@@ -227,6 +227,7 @@ export const questions: DesignerWords['questions'] = {
   mask: 'Máscara',
   maskHelp: '9 un dígito, a una letra, * cualquiera de los dos; el resto se escribe tal cual: 9999 9999',
   inCapitals: 'Letras en mayúsculas',
+  keepEnds: 'Conservar los espacios de sus extremos',
   codeLength: 'Dígitos',
   codeLetters: 'También letras',
   shorthand: 'Se escribe abreviado: 3,5m o 500k',
