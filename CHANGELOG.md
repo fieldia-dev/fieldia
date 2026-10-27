@@ -87,8 +87,8 @@ Behaviour you may notice in an app's own tests:
 
 **Size:** `fieldia.js` 579.1 KB, 193.9 gzipped (0.35.2: 578.3, 193.6): a key of
 a map by name read as a name +0.21 KB, +0.04 gzipped; a choice's options left
-out read as none at the page's door +0.44, +0.16; every answer of the source
-handled where it is made +0.17, +0.06. Every part is as it was.
+out read as none at the page's door +0.37, +0.15; every answer of the source
+handled where it is made +0.17, +0.09. Every part is as it was.
 
 ## 0.35.2 — 2026-10-26
 
