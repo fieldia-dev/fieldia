@@ -1,6 +1,6 @@
 import type { Page } from './page';
 import type { PageIssue, PageValidation } from './references';
-import { pageOutline, pageReferences, type PageCheckOptions } from './check-page';
+import { pageOutline, pageReferences, type PageCheckOptions } from './check-before';
 import { shapeCheck } from './shape-check';
 import { PAGE_SHAPE } from './page-shape';
 import { needOf, stampProblem } from './stamp';

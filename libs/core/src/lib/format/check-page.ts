@@ -1,67 +1,10 @@
-import { FIELD_TYPES } from './names';
-import type { Page } from './page';
-import type { Field, LineField } from './field';
-import { ReferenceCheck, type CheckOptions, type PageIssue, type PageValidation } from './references';
-import type { FunctionsKnown } from '../expression/app-functions';
-import { formatProblem } from './version';
-import { upgradePage } from './upgrade';
+import type { PageValidation } from './references';
+import { checkPageOwing, type PageCheckOptions } from './check-before';
 import { wholeChecks } from './all-checks';
 
-const isObject = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
-const LAYOUTS = ['sheet', 'sections', 'tabs', 'wizard'];
-
-/** How a page is checked: a line's own form with `parent`, the fields of the record the line is on; the app's `functions`. */
-export interface PageCheckOptions {
-  parent?: Record<string, Field | LineField>;
-  functions?: FunctionsKnown;
-}
-
-/**
- * A page's outline: an object, in a format this Fieldia reads, with an id, its data, its fields each a kind Fieldia
- * knows with a label, and a layout of its kinds — what every check reads first. The page brought up to date
- * (`upgradePage`), or why it cannot be read at all.
- */
-export function pageOutline(given: unknown): { page: Record<string, unknown>; issues: PageIssue[] } | { page: null; issues: PageIssue[] } {
-  // A page in an older format is read as the current one (upgradePage); one newer than this Fieldia is said to be.
-  const input = upgradePage(given);
-  if (!isObject(input)) return { page: null, issues: [{ path: '(page)', message: 'a page is a JSON object' }] };
-  const issues: PageIssue[] = [];
-  const say = (path: string, message: string) => issues.push({ path, message });
-  const format = formatProblem(input['fieldia']);
-  if (format) say('fieldia', format);
-  if (typeof input['id'] !== 'string' || !input['id']) say('id', 'a page needs an id');
-  const data = input['data'];
-  if (!isObject(data) || !(data['kind'] === 'responses' || (data['kind'] === 'record' && typeof data['model'] === 'string' && data['model']))) {
-    say('data', 'data is { "kind": "record", "model": … } or { "kind": "responses" }');
-  }
-  const fields = input['fields'];
-  if (!isObject(fields)) say('fields', 'fields is an object of field definitions, by name');
-  else {
-    for (const [name, def] of Object.entries(fields)) {
-      if (!isObject(def) || !(FIELD_TYPES as readonly unknown[]).includes(def['type']) || typeof def['label'] !== 'string') {
-        say(`fields.${name}`, 'a field needs a type Fieldia knows and a label');
-      }
-    }
-  }
-  const layout = input['layout'];
-  const isList = isObject(layout) && layout['type'] === 'list';
-  if (!isObject(layout) || (isList ? !Array.isArray(layout['columns']) : !LAYOUTS.includes(layout['type'] as string) || !Array.isArray(layout['children']))) {
-    say('layout', 'the layout is a sheet, sections, tabs or wizard, with children, or a list with columns');
-  }
-  return { page: input, issues };
-}
-
-/**
- * Every name and condition in a page whose outline passed, as `validatePage` finds them: `sense`, the whole check's own
- * checks of its settings besides (check-whole.ts). `later`: the one-tag script's checks that come with a part not come
- * yet, which the viewer runs again once it has.
- */
-export function pageReferences(page: Page, options: PageCheckOptions, sense?: CheckOptions['sense']): { issues: PageIssue[]; later?: string[] } {
-  // A line's own form reads the record the line is on as parent.
-  const check = new ReferenceCheck(page, options.parent ? { name: page.id, parent: options.parent } : undefined, { functions: options.functions, sense });
-  const found = check.run();
-  return check.later.size ? { issues: found, later: [...check.later] } : { issues: found };
-}
+// What every check reads first, and the check a viewer runs before the draw: check-before.ts, kept apart from the checks a
+// part carries, which `checkPage` puts in (an app's first paint carries none of them).
+export { checkPageOwing, pageOutline, pageReferences, type PageCheckOptions } from './check-before';
 
 /**
  * The check a page gets before it is drawn, as 0.35's viewer refused a page: its outline, then every name and condition
@@ -79,24 +22,4 @@ export function pageReferences(page: Page, options: PageCheckOptions, sense?: Ch
 export function checkPage(given: unknown, options: PageCheckOptions = {}): PageValidation {
   wholeChecks();
   return checkPageOwing(given, options);
-}
-
-/**
- * `checkPage` as a viewer runs it before the draw: the checks of what a part draws (owed-checks.ts) run where they are in,
- * and are owed where they are not (`later`, the parts whose checks are owed) — in an app's bundle one chunk brings them
- * all (`formatChecksPart`), in the one-tag script each comes with its part. The viewer asks for what is owed with the
- * page's parts, and checks again once it came, before the page is drawn: an app showing a record with no list or map
- * never fetches a list's or a map's checks.
- */
-export function checkPageOwing(given: unknown, options: PageCheckOptions = {}): PageValidation {
-  const outline = pageOutline(given);
-  if (!outline.page || outline.issues.length) return { ok: false, issues: outline.issues };
-  const page = outline.page as unknown as Page;
-  try {
-    const { issues, later } = pageReferences(page, options);
-    const owed = later ? { later } : {};
-    return issues.length ? { ok: false, issues, ...owed } : { ok: true, page, ...owed };
-  } catch (error) {
-    return { ok: false, issues: [{ path: '(page)', message: `a part of this page cannot be read: ${(error as Error).message}` }] };
-  }
 }

@@ -1,7 +1,7 @@
 import { lazyPart, type Part } from '../parts';
 import { deprecated } from '../deprecations';
 import type { PageIssue, PageValidation } from './references';
-import type { PageCheckOptions } from './check-page';
+import type { PageCheckOptions } from './check-before';
 import type * as CheckPart from './check-part';
 
 /** The whole check's part: `wholeCheck` (check-whole.ts). */

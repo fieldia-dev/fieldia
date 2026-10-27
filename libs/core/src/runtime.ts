@@ -147,7 +147,8 @@ export { INPUT_MODES, type InputMode } from './lib/format/autofill-group';
 export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
-export { checkPage, checkPageOwing, type PageCheckOptions } from './lib/format/check-page';
+export { checkPage } from './lib/format/check-page';
+export { checkPageOwing, type PageCheckOptions } from './lib/format/check-before';
 // The whole check — `validatePage`'s verdict without zod — which every viewer runs before a page's first draw (0.37): in
 // an app's bundle with the viewer, in the one-tag script a part of its own asked for as the script starts.
 export { checkPageWhole, pageCheckPart, pageInvalid, type PageCheckPart, type PageInvalid } from './lib/format/page-check';

@@ -66,12 +66,20 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * (63 / 74), a list 244.5 / 332.3 (63 / 68), the designer 592.3 / 821.4 (76 / 86).
  * 0.36 merged with 0.35.3 and p3-found, measured, inside the merge's room: a record form 245.8 / 336.6 (63 / 71), in
  * Arabic 245.8 / 359.2, a list 245.0 / 332.9 (63 / 68), the designer 592.8 / 822.0 (76 / 86).
+ * 0.37 (p37-refuse): the whole check before the first draw, so with the viewer, and the checks of what a part draws out
+ * of the first paint into a chunk of their own (perf-leftovers' item 5) — asked for where a page owes one, as the
+ * customer's page does (its statusbar, its lines), and gated here: no app that shows forms carries them with the page.
+ * Measured: a record form 249.6 / 338.1 (64 / 74; 0.36.0's 245.8 / 336.6: the whole check +17.3 with the page, the
+ * checks a part carries −12.8), in Arabic 249.6 / 360.8 (64 / 77), a list 248.8 / 334.3 (64 / 71), the designer
+ * 610.1 / 823.9 (78 / 87: the viewer it draws with carries the whole check; it fetched it at publish before). Inside
+ * their budgets but the designer's first paint, raised to what is measured, and the scripts to usable, one more (the
+ * checks' chunk): never more.
  */
 const BUDGET = {
-  record: { page: 250.3, usable: 342.9, files: 73 },
-  'record-ar': { page: 250.3, usable: 365.9, files: 76 },
-  list: { page: 249.4, usable: 339.0, files: 70 },
-  designer: { page: 604.2, usable: 837.9, files: 90 },
+  record: { page: 250.3, usable: 342.9, files: 74 },
+  'record-ar': { page: 250.3, usable: 365.9, files: 77 },
+  list: { page: 249.4, usable: 339.0, files: 71 },
+  designer: { page: 610.2, usable: 837.9, files: 90 },
 };
 
 /** A record of the customer page's, with the fields it shows. */
@@ -162,6 +170,8 @@ async function bundle(name, code) {
   return {
     dir,
     metafile: result.metafile,
+    // The modules the first paint is made of, by their file's name.
+    pageModules: new Set(files.flatMap((path) => Object.keys(outputs[path].inputs).map((input) => input.split('/').pop().replace(/\.m?js$/, '')))),
     page: { files: files.length, gzip: files.reduce((sum, path) => sum + gz(join(dir, path.slice(path.indexOf('out/')))), 0) },
     every: { files: all.length, gzip: all.reduce((sum, path) => sum + gz(join(dir, path.slice(path.indexOf('out/')))), 0) },
     inputs: result.metafile.inputs,
@@ -203,6 +213,15 @@ async function usable(browser, port, name) {
 const results = {};
 for (const [name, app] of Object.entries(APPS)) results[name] = await bundle(name, app.code);
 
+/**
+ * The checks of what a part draws — a list's settings, a map's, a page's limits … (libs/core/src/lib/format/all-checks.ts)
+ * — leave an app's first paint (0.37, perf-leftovers' item 5): a viewer asks for them in a chunk of their own where its
+ * page owes one. Read from the file that puts them all in, so a check added there is held here too.
+ */
+const PART_CHECKS = [...readFileSync(join(WORKSPACE, 'libs/core/src/lib/format/all-checks.ts'), 'utf8').matchAll(/^import \* as \w+ from '\.\/([a-z-]+)';$/gm)].map((match) => match[1]);
+if (PART_CHECKS.length < 20) throw new Error(`all-checks.ts names ${PART_CHECKS.length} modules of checks: too few to read`);
+const SHOWS_FORMS = ['record', 'record-ar', 'list'];
+
 if (!staticOnly) {
   const { chromium } = await import('playwright-core');
   const server = await serve();
@@ -227,6 +246,8 @@ for (const [name, result] of Object.entries(results)) {
   if (budget.page && result.page.gzip > budget.page * 1024) failures.push(`${name}: ${kb(result.page.gzip)} KB gzipped with the page, over its ${budget.page} KB budget`);
   if (budget.usable && result.usable && result.usable.gzip > budget.usable * 1024) failures.push(`${name}: ${kb(result.usable.gzip)} KB gzipped to usable, over its ${budget.usable} KB budget`);
   if (budget.files && result.usable && result.usable.files > budget.files) failures.push(`${name}: ${result.usable.files} scripts fetched to usable, over its ${budget.files}`);
+  const carried = SHOWS_FORMS.includes(name) ? PART_CHECKS.filter((module) => result.pageModules.has(module)) : [];
+  if (carried.length) failures.push(`${name}: its first paint carries the checks of what a part draws (${carried.join(', ')}): they come in their own chunk, as a page owes one`);
   const { says, never } = APPS[name];
   if (result.usable && says && !result.usable.words.includes(says)) failures.push(`${name}: its first paint does not say "${says}"`);
   if (result.usable && never?.test(result.usable.words)) failures.push(`${name}: its page showed "${never.exec(result.usable.words)[0]}" before its own language's words`);

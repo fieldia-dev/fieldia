@@ -1,6 +1,6 @@
 import { wholeCheck } from './check-whole';
 import type { PageValidation } from './references';
-import type { PageCheckOptions } from './check-page';
+import type { PageCheckOptions } from './check-before';
 
 /**
  * Whether the whole check comes in a part a viewer waits for (`pageCheckPart`): in the one-tag script, where it is

@@ -1,7 +1,7 @@
 import { wholeCheck as owingCheck } from './check-whole';
 import { wholeChecks } from './all-checks';
 import type { PageValidation } from './references';
-import type { PageCheckOptions } from './check-page';
+import type { PageCheckOptions } from './check-before';
 
 /**
  * The whole check of a page (check-whole.ts) — the format's schema and its rules, read without the validation library,
