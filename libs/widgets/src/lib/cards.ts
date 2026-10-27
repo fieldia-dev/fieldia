@@ -1,6 +1,6 @@
-import { lineCopy, type Field, type FieldNode, type Line, type LineField } from '@fieldia/core';
+import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
 import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
-import { moveLineTo } from './line-moves';
+import { lineCopy, moveLineTo } from './line-moves';
 import { lineForm, openLineDialog } from './lines';
 import { installCardsStyles } from './styles-cards';
 import type { createWidget, Widget, WidgetFactory } from './widgets';

@@ -1,11 +1,11 @@
-import { isEmpty, labelAt, lineCopy, lineKind, recomputeInFull, wordsVersion, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
+import { isEmpty, labelAt, lineKind, recomputeInFull, wordsVersion, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker, setHidden } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
-import { moveLineTo } from './line-moves';
+import { lineCopy, moveLineTo } from './line-moves';
 import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
 import { afterPress } from './press';
 import { installLinesStyles } from './styles-lines';

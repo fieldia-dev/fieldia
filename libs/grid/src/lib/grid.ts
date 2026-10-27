@@ -14,7 +14,7 @@ import {
   type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { fill, isRightToLeft, labelAt, lineCopy, lineKind, optionsList, type ButtonNode, type Choices, type SelectionOption, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
+import { fill, isRightToLeft, labelAt, lineKind, optionsList, type ButtonNode, type Choices, type SelectionOption, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
 import {
   afterPress,
@@ -1479,8 +1479,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const all = lines();
     const at = all.findIndex((l) => l.key === key);
     if (readonly || at < 0 || full()) return;
-    // A line field that says copy: false starts as a new line's does (lineCopy).
-    const made = form.addLine(name, lineCopy(def, all[at].values));
+    // Its order's field numbered as a new line's is, and a line field that says copy: false started as a new line's.
+    const values = { ...all[at].values };
+    for (const [field, own] of Object.entries(def.fields)) if (field === sequence || own.copy === false) delete values[field];
+    const made = form.addLine(name, values);
     if (sequence) form.moveLine(name, made, at + 1);
     else {
       const now = [...lines()];

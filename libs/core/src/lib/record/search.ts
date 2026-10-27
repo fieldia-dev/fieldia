@@ -125,10 +125,9 @@ function valueConditions(field: string, value: FieldFacet['values'][number], day
  * before 0.37. An id the list does not have is with those that name none.
  */
 export function filterGroups(ids: readonly string[], list: ListNode): string[][] {
-  const named = new Map((list.filters ?? []).map((filter) => [filter.id, filter.group ?? '']));
   const groups = new Map<string, string[]>();
   for (const id of ids) {
-    const group = named.get(id) ?? '';
+    const group = list.filters?.find((filter) => filter.id === id)?.group ?? '';
     groups.set(group, [...(groups.get(group) ?? []), id]);
   }
   return [...groups.values()];

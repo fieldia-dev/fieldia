@@ -315,8 +315,8 @@ export function searchBar(context: SearchContext) {
     const groupOf = (id: string) => node.filters?.find((f) => f.id === id)?.group ?? '';
     for (const filter of node.filters ?? []) {
       const others = (on?.ids ?? []).filter((id) => groupOf(id) !== (filter.group ?? ''));
-      const ids = [...others, filter.id];
-      void mark(filterSlots.get(filter.id) as HTMLElement, filter.label, [...rest, { kind: 'filters', ids, labels: ids.map((id) => node.filters?.find((f) => f.id === id)?.label ?? id) }]);
+      // Counted, never shown: its words are not read.
+      void mark(filterSlots.get(filter.id) as HTMLElement, filter.label, [...rest, { kind: 'filters', ids: [...others, filter.id], labels: [] }]);
     }
     for (const { slot, name, facets: kept } of favourites?.slots() ?? []) void mark(slot, name, kept);
   }
