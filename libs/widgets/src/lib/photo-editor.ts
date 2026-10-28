@@ -143,11 +143,11 @@ export interface PhotoEditing {
   /** Reads a picture's pixels: the files part's (`readPicture`). */
   read(blob: Blob, doc: Document): Promise<Picture>;
   /**
-   * Encodes the picture made, at once: the files part's (`encodeNow`), which a photo set passes, so its Apply closes in
-   * the press's own task. Without it, the browser's `toBlob`, which Chromium encodes in idle time and may answer seconds
-   * late on a busy machine.
+   * Encodes the picture made: the files part's (`encodeSoon`), which a photo set passes — the browser's `toBlob`, or at
+   * once where it has not answered within a moment, so Apply never waits seconds. Without it, `toBlob` alone, which
+   * Chromium encodes in idle time and may answer seconds late on a busy machine.
    */
-  encode?(canvas: HTMLCanvasElement, type: string, quality: number): Blob | null;
+  encode?(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null>;
 }
 
 /** What came of it: the new picture and what was done to the original, the original put back, or nothing (Cancel, Escape, ×). */
@@ -307,13 +307,13 @@ export function editPhoto(editing: PhotoEditing): Promise<Edited> {
     if (!picture) return;
     const edit: PhotoEdit = { turn, crop: { ...crop } };
     const made = drawEdited(doc, picture, edit);
-    // A PNG or a WebP stays one, a picture that may be clear in places; the rest are written as a JPEG. Encoded at once
-    // where the set gives its encoder (`encode`): the dialog closes in the press's own task, nothing awaited.
+    // A PNG or a WebP stays one, a picture that may be clear in places; the rest are written as a JPEG. By the set's own
+    // encoder where it gives one (`encode`): never waited for seconds.
     const type = /^image\/(png|webp)$/.test(from.type) ? from.type : 'image/jpeg';
     const blob = !made
       ? null
       : editing.encode
-        ? editing.encode(made, type, 0.92)
+        ? await editing.encode(made, type, 0.92)
         : await new Promise<Blob | null>((resolve) => {
             try {
               made.toBlob(resolve, type, 0.92);

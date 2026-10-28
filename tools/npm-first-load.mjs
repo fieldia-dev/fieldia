@@ -74,6 +74,8 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * 0.37 merged, measured from the merged build, inside 0.36.0's budgets (kept: the coordinator's "back near 0.36's"): a
  * record form 247.6 / 338.5 (64 / 72), in Arabic 247.6 / 361.2 (64 / 75), a list 246.8 / 335.0 (64 / 69), the designer
  * 595.0 / 824.6 (77 / 87) — p37-refuse's +1.4 with the page and p37-format's filter groups and copy, +0.4 to +0.8.
+ * 0.37, a photo's picture never waited for long (the files part's encodeSoon): to usable a record form 338.6, in
+ * Arabic 361.3; the rest as above.
  */
 const BUDGET = {
   record: { page: 250.3, usable: 342.9, files: 73 },

@@ -326,9 +326,10 @@ test.describe('a clinic’s before and after', () => {
     expect(problems).toEqual([]);
   });
 
-  test('Apply closes at once, the photo made, with the browser’s own encoder held: nothing waits on it', async ({ page }) => {
+  test('Apply closes once the cap passed, the photo made, with the browser’s own encoder held: never waits on it', async ({ page }) => {
     // toBlob and convertToBlob never answer here. Chromium encodes them in the page's idle time, and on a busy machine,
-    // which gives it none, answered only after 1 s or 6.7 s, the dialog left open (0.37's CI; 0.36 alike).
+    // which gives it none, answered only after 1 s or 6.7 s, the dialog left open (0.37's CI; 0.36 alike). Past the cap
+    // (200 ms, encode-now.ts) the picture is encoded at once.
     await page.addInitScript(() => {
       HTMLCanvasElement.prototype.toBlob = () => undefined;
       if (typeof OffscreenCanvas !== 'undefined') OffscreenCanvas.prototype.convertToBlob = () => new Promise<Blob>(() => undefined);
