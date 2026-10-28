@@ -79,6 +79,15 @@ describe('a page filled from the link it is opened with (prefill)', () => {
     expect(linkValues(page, undefined)).toEqual({});
   });
 
+  it('holds a day to its field’s limits by the form’s clock (`now`), never the computer’s', () => {
+    // "Moving in" no earlier than today: today the app's (10 March 2025), as the form's own checks count it.
+    const page = enquiry({ fields: { ...enquiry().fields, move: { type: 'date', label: 'Moving in', min: 'today' } } });
+    const form = createForm({ page, now: () => new Date('2025-03-10T09:00:00Z'), url: '?move=2025-03-20&unit=B-12' });
+    expect(form.getState().values).toMatchObject({ move: '2025-03-20', unit: 'B-12' });
+    const earlier = createForm({ page, now: () => new Date('2025-03-10T09:00:00Z'), url: '?move=2025-03-01' });
+    expect(earlier.getState().values['move']).toBeNull();
+  });
+
   it('starts a response with them, over the fields’ defaults, under what the app gives', () => {
     const page = enquiry({ fields: { ...enquiry().fields, utm_source: { type: 'char', label: 'Source', default: 'web' } } });
     const form = createForm({ page, url: 'https://homes.example/enquiry?utm_source=whatsapp&agent=mona&unit=B-12&kind=flat', values: { unit: 'C-3' } });

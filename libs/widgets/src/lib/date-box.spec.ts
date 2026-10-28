@@ -491,6 +491,20 @@ describe('a time of day', () => {
 });
 
 describe('the calendar beside a date', () => {
+  it('counts a limit of "today" by the form’s clock (`now`), as the form’s own check does — never the computer’s', () => {
+    // The 0.36 sweep of the how-to replays on other days: the lease's month said "can't be before" the computer's month
+    // while its form, and its demo, kept the app's.
+    const page = { fieldia: '0.1', id: 't', data: { kind: 'responses' }, fields: { x: { type: 'date', label: 'Start date', min: 'today' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'x' }] } } as unknown as Page;
+    const form = createForm({ page, now: () => new Date('2025-03-10T09:00:00Z') });
+    const widget = createWidget({ form, name: 'x', field: page.fields['x'], node: (page.layout as { children: FieldNode[] }).children[0], id: 'fd-x', document, labels: WIDGET_LABELS.en, locale: 'en' });
+    document.body.replaceChildren(widget.element);
+    form.subscribe(() => widget.update({ value: form.getState().values['x'], values: form.getState().values, readonly: false, required: false, invalid: false }));
+    form.setValue('x', '2025-03-20');
+    (widget.element.querySelector('.fd-calendar-button') as HTMLButtonElement).click();
+    const day = (n: number) => [...widget.element.querySelectorAll<HTMLButtonElement>('.fd-calendar tbody button')].find((b) => b.textContent === String(n) && !b.classList.contains('fd-outside')) as HTMLButtonElement;
+    expect([day(9), day(10), day(11)].map((one) => one.classList.contains('fd-off'))).toEqual([true, false, false]);
+  });
+
   it('is there for every date, its days past the limits faint, and a pick of one says why and picks nothing', () => {
     const { el, value } = mount({ type: 'date', min: '2026-10-13', max: '2026-10-30', days: [1, 2, 3, 4, 7] });
     const button = el.querySelector('.fd-calendar-button') as HTMLButtonElement;

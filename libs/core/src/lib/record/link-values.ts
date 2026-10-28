@@ -84,6 +84,11 @@ export function prefilledFields(page: Page): Map<string, string> {
  * pattern, its least and most, its days) would refuse them: a hidden field no one can put right never stops a send.
  */
 export function linkValues(page: Page, link: PageLink | undefined): Values {
+  return linkValuesOn(page, link);
+}
+
+/** The same, a field's limits of "today" counted from `today` — a form's, by its clock — else the computer's. */
+function linkValuesOn(page: Page, link: PageLink | undefined, today?: string): Values {
   const values: Values = {};
   if (!page.prefill || link === undefined) return values;
   const params = linkParams(link);
@@ -92,7 +97,7 @@ export function linkValues(page: Page, link: PageLink | undefined): Values {
     const text = params.get(param);
     if (!field || text === undefined) continue;
     const value = linkValue(field, text);
-    if (value !== undefined && checkValue(field, value, false) === undefined) values[name] = value;
+    if (value !== undefined && checkValue(field, value, false, undefined, today) === undefined) values[name] = value;
   }
   return values;
 }
@@ -109,7 +114,7 @@ export function join(host: FormInner): FormJoin {
   const lay = () => {
     const state = form.getState();
     if (state.recordId != null) return;
-    const link = linkValues(page, options.url ?? (globalThis as { location?: { href: string } }).location?.href);
+    const link = linkValuesOn(page, options.url ?? (globalThis as { location?: { href: string } }).location?.href, form.today());
     for (const name of Object.keys(link)) if (state.dirty.includes(name) || (options.values && name in options.values)) delete link[name];
     form.setValues(link, { stored: true });
   };
