@@ -182,13 +182,3 @@ export function askFirst(make: Make, answers: { yes: string; no: string }) {
   };
 }
 
-/**
- * What a person moved, kept where their eye is: its top on the screen as the move was asked (`top`); once it is drawn in
- * its new place, the page scrolled by as much as it moved (inside a dialog, which scrolls on its own, it moves as it is
- * drawn). A focus given back after a move takes no scroll of the browser's own (`preventScroll`): WebKit scrolled to a
- * button it had just put back from a layout not yet worked out, and threw the page to its top (0.36's walk, a line
- * card's ↑ on an iPhone).
- */
-export function keepInSight(element: Element | null | undefined, top: number | undefined): void {
-  if (element?.isConnected && top !== undefined) element.ownerDocument.defaultView?.scrollBy(0, element.getBoundingClientRect().top - top);
-}

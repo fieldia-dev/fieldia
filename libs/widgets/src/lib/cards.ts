@@ -1,5 +1,6 @@
 import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
-import { announcer, describeState, fillIn, keepInSight, maker, wordsFor } from './kind-parts';
+import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
+import { keepInSight } from './lines-table';
 import { moveLineTo } from './line-moves';
 import { lineForm, openLineDialog } from './lines';
 import { installCardsStyles } from './styles-cards';

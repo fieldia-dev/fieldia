@@ -3,7 +3,7 @@ import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
 import { drawIcon } from './icons';
-import { askFirst, fillIn, keepInSight, maker, setHidden } from './kind-parts';
+import { askFirst, fillIn, maker, setHidden } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
 import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
@@ -886,4 +886,15 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
 function setData(element: HTMLElement, key: string, value: string | null | undefined) {
   if (value) element.dataset[key] = value;
   else delete element.dataset[key];
+}
+
+/**
+ * What a person moved, kept where their eye is: its top on the screen as the move was asked (`top`); once it is drawn in
+ * its new place, the page scrolled by as much as it moved (inside a dialog, which scrolls on its own, it moves as it is
+ * drawn). A focus given back after a move takes no scroll of the browser's own (`preventScroll`): WebKit scrolled to a
+ * button it had just put back from a layout not yet worked out, and threw the page to its top (0.36's walk, a line
+ * card's ↑ on an iPhone).
+ */
+export function keepInSight(element: Element | null | undefined, top: number | undefined): void {
+  if (element?.isConnected && top !== undefined) element.ownerDocument.defaultView?.scrollBy(0, element.getBoundingClientRect().top - top);
 }
