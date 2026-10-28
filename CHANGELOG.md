@@ -51,14 +51,18 @@ no page draws from comes in a part of its own, asked for right after a page's
 whole check: a page's steps run, its dialogs and a page opened, a link's and a
 line's dialogs, the viewer's own questions, and a save over someone else's
 answered (`fieldia.acts.js`; two chunks in an app's bundle). A press, a question
-or a dialog that comes sooner waits for it, its button busy — on Slow 4G about
-0.7 s for a press in a page's first second — and where it cannot come, nothing is
-done unasked: the press says so, with Retry. The classic formatted text's
-toolbar (`fieldia.html.js`) and a record sheet's furniture — its ribbons, stat
-buttons, badges, alerts, statusbar and attachment (`fieldia.sheet.js`) — are
-parts too, waited for only beside a page's other parts: a page that would wait
-for one alone is drawn at once without it, and it is drawn in place as it comes.
-`fieldia.js` is 184.6 KB gzipped (0.36.1: 197.3). Measured on Slow 4G on a
+or a dialog that comes sooner waits for it, the control pressed busy, its ring
+turning there at once whatever the control — a button, a link's or a line's ↗, a
+line card's head, Search more…'s box — on Slow 4G about 0.7 s for a press in a
+page's first second; and where it cannot come, nothing is done unasked: the press
+says so, with Retry. The classic formatted text's toolbar (`fieldia.html.js`) and
+a record sheet's furniture — its ribbons, stat buttons, badges, alerts, statusbar
+and attachment (`fieldia.sheet.js`) — are parts too, waited for only beside a
+page's other parts: a page that would wait for the toolbar alone is drawn at once,
+the toolbar's room held over its box, and it comes into it; a sheet's furniture
+that takes room is waited for as any part (its ribbons alone, over its card's
+corner, are drawn in place) — nothing a person may press moves as a part comes.
+`fieldia.js` is 185.9 KB gzipped (0.36.1: 197.3). Measured on Slow 4G on a
 desktop and a phone's CPU four times slower, every page timed — a plain form,
 one the app fetched, a record, a record sheet with and without its part tags, a
 list, a page that runs steps as it opens, a sheet that waits for nothing else —
@@ -117,7 +121,8 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   check came, or could not; `askAfterCheck(ask)` (`@fieldia/core`) asks for
   another part at that moment. `loadParts()` loads it with every part.
 - `htmlPart` (`@fieldia/widgets`): the classic formatted text's toolbar and its
-  paste put in plain; `htmlBox` draws its box alone until it comes. `sheetPart`
+  paste put in plain; `htmlBox` draws its box, the toolbar's room held over it,
+  until it comes. `sheetPart`
   and `installSheetStyles(doc)` (`@fieldia/viewer`): a record sheet's furniture
   and its look, which the designer's canvas installs for its sheet's head.
 
@@ -142,8 +147,10 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   tender requirement "Requirements"): a table's or a grid's line by its words —
   its first column holding words, a link by its name ("Office chair,
   ergonomic") — else by its place ("Line 3"), as a grid's card is headed; a
-  card's line by its card's title ("Contact 2", the page's own word for one).
-  The title is read once what was typed in the line is read. A table's line is
+  card's line the same, by its words ("Rania Fawzy"), else by its card's title
+  ("Contact 2", the page's own word for one); a line just added, opened as it is
+  (a grid's card on a phone), by the button that added it ("Add a question")
+  while it holds no words. The title is read once what was typed in the line is read. A table's line is
   named the same on its ↑ and ↓ and as its move is said aloud — by its words,
   never by a number or a day in its first column, and a link by its name.
 - A table line's dialog — a form of values Fieldia makes from a record's fields —
@@ -177,6 +184,57 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   shrunk as it is added is made the same way. On that machine Apply now closes
   within 0.28 s: `toBlob` answered first in 34 of 60 runs (0.04 s at the
   median), the cap in the rest (0.25 s).
+- **A press that waits looks busy where it was pressed, whatever the control**
+  (the 0.37 walk: a link's ↗, a line's ↗, a line card's head and Search more…
+  showed nothing for 0.6–1.7 s on Slow 4G, `aria-busy` alone, while Confirm turned
+  its ring; a link's last second, its record's page fetched, was silent in 0.36.1
+  too). One rule for every control a press waits on, a part on its way or the
+  app's answer after it: `aria-busy`, and a ring turning in its place from the
+  press — over an icon's glyph, at the end of a name (a card's head, a stat
+  button) or of a box, its ↗ and × hidden (Search more…, Create and edit…), a
+  button's own drawn at once where a part is on its way — never a page overlay,
+  until the dialog it asked for shows or its wait ends. The control is the one
+  pressed, in every engine (WebKit focuses no button it clicks); a second press of
+  it meanwhile opens nothing more (two dialogs before).
+- **A press whose part cannot come offers Retry, whatever it opens** (the 0.37
+  walk: a line's ↗ said "This form could not be loaded." with no way on): a link's
+  or a line's ↗, Search more… and Create and edit… say what Confirm says, "This
+  action could not load, so nothing was done. Try again.", with Retry, which opens
+  what was asked for. In an app's bundle, where the acts part is two chunks, Retry
+  after the form's half had failed opened nothing: each half is now asked for
+  again at its own address.
+- **Nothing a person may press moves as a part comes** (the 0.37 walk: the
+  formatted text's toolbar pushed Signed and Submit 37 px down, 67 on a phone; a
+  record's boxes and title moved 3 and 8 px as it came after its skeleton). The
+  classic formatted text's toolbar has its room held from the draw — its bar,
+  its style box, a room for each tool, wrapping on a phone as it does; a sheet
+  whose furniture takes room (a badge and an alert pushed one 102 px down) waits
+  for it as for any part; a record's attachment beside it — the vendor bill's
+  PDF, which took the chatter's place 0.77 s after the bill, in 0.36.1 too — comes
+  with its files part, waited for with the page's parts; and a skeleton's boxes
+  are never shorter than the boxes they stand for.
+- **A page taken down speaks to its visitor, not its developer** (the 0.37 walk: a
+  business's visitor read "Whoever made it can check it with validatePage" and a
+  schema's "Invalid input: expected boolean, received string"). Where the form
+  would be: "This form is not available right now. Please try again later, or
+  contact whoever sent it to you." — for what 0.35 refused and what the whole
+  check refuses alike. What is wrong is the console's, `onError`'s and `refused`'s,
+  and the page's only where the app is being made (`development: true`), under
+  "What is wrong"; the designer's Try it has it.
+- A line opened in a dialog draws each field with the widget its column draws it
+  with (the page's `cells`): a sales order line's Analytic Distribution as its
+  accounts and shares, as the grid shows it, never as JSON (0.36 alike).
+- A recording stopped under half a second after it began says it was too short to
+  keep, never that it had not started yet (the 0.37 walk, Firefox at 0.3 s).
+- The designer names a question whose braces it refuses by its words as they stood
+  before the typing began, never by the words half typed ("Your name (as on the
+  {customer's words name {customer}…").
+- Demos: the vendor bill's copy keeps no number and no dates, as Odoo's draft copy
+  (`"copy": false` on its number, bill date and due date): its title says Draft
+  until Confirm gives it its number. The Customer list, featured, opens a customer
+  with its way back, by the one rule a list opens its records by. The invoices
+  list counts its filters with its filter groups (`filterCounts`), with a how-to
+  step and its replay.
 
 **Deprecated:**
 
@@ -204,6 +262,33 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   - (adds) A status bar's field is still copied unless it says `"copy": false`.
     No default changed.
 - *App code:*
+  - (fix) A page the viewer refuses — before its draw, or taken down by its whole
+    check — says to whoever opened it "This form is not available right now.
+    Please try again later, or contact whoever sent it to you." (the new message
+    `formUnavailable`) and lists nothing; `pageUnshown` is now the line over
+    "What is wrong" for whoever made the page. What is wrong is the console's,
+    `onError`'s and the error's (`issues`), as before.
+  - (adds) `development: true` (`ViewerOptions`; the Vue binding's prop and the
+    Angular binding's input of that name): the page a viewer refuses lists what
+    is wrong under its visitor's words, as before 0.37 it always did.
+  - (adds) A press's control waits visibly (`pressWait`, `pressedControl`,
+    `pressing` and `dialogShown` in `@fieldia/widgets`): `aria-busy` and
+    `data-fd-pressing` on it, a `.fd-pressing` ring in it — in Fieldia's forms
+    alone; an app's own button that opens a dialog is busy as before. The
+    viewer's dialogs (`WidgetDialogs`) take the control a widget pressed
+    (`from`), and a line's dialog the widgets its columns draw with (`cells`);
+    a dialog asked for again by a control already waiting answers null.
+  - (fix) A link's or a line's dialog whose acts part cannot come is said with
+    Retry, and its promise answers once it is opened — or null once the words go
+    unpressed; `pageDialogs`'s `say` is given the Retry (a third argument).
+  - (adds) A sheet with an attachment beside it waits for the files part with its
+    page's parts: `partFiles(page)` names `fieldia.files.js` for it.
+  - (fix) A sheet whose furniture takes room — alerts, badges, a statusbar, stat
+    buttons, an attachment — waits for the sheet part even where it waits for no
+    other part, as before 0.37's parts: drawn once it came, nothing moving after;
+    `partFiles(page)` and `partTags(page)` name `fieldia.sheet.js` for it again,
+    so a page that writes its tags fetches it beside `fieldia.js`. A sheet whose
+    only furniture is its ribbon is drawn at once, the ribbon put in place.
   - `onError` hears a page taken down for what only the whole check finds as
     `{ stage: 'check', part: 'page' }`, its error a `PageRefused` with `issues`,
     and `refused` settles with it; `drawn` has resolved by then, and
@@ -244,13 +329,17 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
     `confirm()` — a frame that may not ask keeps the work; a save over someone
     else's says who changed the record, in plain words, and the page says part
     of it could not load; `openFormDialog` and its two siblings reject, nothing
-    opened, and a link's Open says "This form could not be loaded."
+    opened; a link's or a line's ↗, Search more… and Create and edit… say what a
+    press says, with Retry, which opens what was asked for.
   - (adds) Two new messages, `guardNotDone` and `guardSteps`: an app's own
     `messages` table gives them, or Fieldia's English.
-  - (adds) A page whose only part would be the html part or the sheet part is
-    drawn at once without it, which is drawn in place as it comes: `drawn`
-    resolves before it, and `partFiles(page)` and the one-tag script's
-    `partTags(page)` leave it out for such a page.
+  - (adds) A page whose only part would be the html part, or the sheet part for
+    a sheet whose only furniture is its ribbon, is drawn at once without it,
+    which is drawn in place as it comes, moving nothing: `drawn` resolves before
+    it, and `partFiles(page)` and the one-tag script's `partTags(page)` leave it
+    out for such a page. A sheet's furniture that takes room — its alerts,
+    badges, statusbar, stat buttons, attachment — is waited for as any part, its
+    tag written.
   - (adds) `answerOf(answer)` in `@fieldia/core` and the one-tag script: an
     answer of the app's as one of the browser's own promises, handled as it is
     given — what Fieldia does with every promise an app gives it; one of the
@@ -280,11 +369,12 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
     opens a dialog in a file that has not loaded the parts (`loadParts()`) waits
     for the acts part: it awaits the press's promise (`form.runAction`,
     `handle.run`), or `actsPart.load()` first.
-  - (adds) The classic formatted text's box is drawn alone, with no toolbar,
-    until the html part comes; a sheet's ribbons, stat buttons, badges, alerts,
-    statusbar and attachment come with the sheet part — on a page that waits for
-    no other part, a moment after the page. A test that looks for them at once
-    there waits for them (`htmlPart.load()`, `sheetPart.load()`).
+  - (adds) The classic formatted text's box is drawn with the toolbar's room
+    held over it — a `.fd-richtext-bar` hidden from a screen reader, its style
+    box and a room for each tool, nothing to press — until the html part comes;
+    a test that looks for its tools at once there waits for them
+    (`htmlPart.load()`, `[aria-label="Bold"]`). A sheet's ribbons, stat buttons,
+    badges, alerts, statusbar and attachment come with the sheet part.
   - (adds) A sheet's furniture's rules are in `#fieldia-sheet-styles`, first of
     the parts' sheets (`PART_RANK.sheet` 0; every other rank one more than in
     0.36). An app's CSS that overrides `.fd-stat`, `.fd-ribbon`, `.fd-badges` or
@@ -298,17 +388,31 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
     where Fieldia says it in the page: a test that counted one there sees none.
   - (fix) A line's dialog is named by its line, not its table: a test that finds
     it by the table's label (`{ name: 'Order lines' }`) finds it by the line's
-    words, by "Line 3", or by its card's title. A table line's ↑, ↓ and its move
+    words — a card's line too — by "Line 3", by its card's title where it holds
+    no words, or, just added on a phone, by the add button's words. A table line's ↑, ↓ and its move
     said aloud name it by its first column holding words, where they took its
     first column as it was held: "Move Office chair up", not "Move line 1 up",
     where its quantity comes first, nor "Move 2026-10-20 up" where a day does;
     "Office chair moved to place 2 of 3", not "line 1 moved…", where a link
     does.
+  - (fix) A refused page's words: a test that read "This form cannot be shown"
+    reads "This form is not available right now", and finds "What is wrong" only
+    where it mounts with `development: true`.
+  - (fix) A recording stopped under half a second after it began says "Nothing
+    was kept: the recording was too short." (the new message `recordTooShort`);
+    one stopped before it began says what it said.
+  - (fix) The demos' invoices list counts its filters: a filter's name carries its
+    count ("Overdue, 3 invoices"), found by its words' start, not their end. The
+    vendor bill's copy has no number (its title's placeholder says Draft) and no
+    dates.
 - *Translators:* (adds) the designer's new words in ar, es, fa, tr and ur —
   "Copied with the record" and its hint, a filter's Group and its hint, the
   example word and the refusal — are machine-made and not yet reviewed by a
   native speaker. So are "{part} could not load, so nothing was done." and
-  "This action" in every add-on (`guardNotDone`, `guardSteps`).
+  "This action" in every add-on (`guardNotDone`, `guardSteps`). (fix) So are the
+  words a refused page says in ar, de, es, fa, fr, tr and ur — its visitor's
+  (`formUnavailable`, new) and the line over what is wrong (`pageUnshown`,
+  changed) — and a recording too short to keep (`recordTooShort`, new).
 
 **Size:** `fieldia.js` 588.9 KB, 198.00 gzipped (0.36.1: 588.2, 197.26): +0.74
 KB gzipped, under the owner's 200, all of it what a page must carry from its
@@ -378,6 +482,29 @@ part: its steps ran 0.71 s after it on the desktop, 0.73 s on the phone (0.01
 and 0.04 s before). The acts part lands about 1.3 s after the draw where a page
 was mounted as soon as `fieldia.js` ran (the whole check's round trip, then its
 own), 0.7 s where the app fetched its page.
+
+**Size, the walk's fixes (p37-walk-fix):** `fieldia.js` 546.2 → 550.1 KB
+(559,345 → 563,281 B), 184.64 → 185.93 gzipped (+1.29), all of it what a page
+needs from its draw or its first press: a control a press waits on busy where it
+was pressed, the one rule that finds it in every engine and the ring's look, a
+second press asking nothing more, and Retry where its part cannot come; the
+classic formatted text's toolbar's room, its three text styles' names back from
+the html part; a sheet's furniture that takes room waited for, and a record's
+attachment's files part with the page's; a refused page's words to its visitor.
+Parts: acts 12.41 → 12.46, lines 16.63 → 16.67, record 5.46 → 5.50, loading
+3.06 → 3.08, html 2.73 → 2.72 gzipped; each add-on +0.06 to +0.12 for the new
+words. From the npm packages (with the page / to usable): a record form 236.0 →
+237.3 / 347.2 → 348.7, in Arabic 236.0 → 237.3 / 369.9 → 371.5, a list 235.2 →
+236.5 / 336.3 → 337.7, the designer 584.6 → 586.0 / 821.8 → 823.3. `@fieldia/map`
+1 B smaller; `@fieldia/calendar` and `@fieldia/gantt` the same. A page's first
+draw on Slow 4G (7 runs interleaved with `release-0.37` before these fixes, a
+desktop and a phone's CPU four times slower), medians in ms: a plain form, a
+record, the customer's sheet, the walk's note whose toolbar comes into its room,
+a page pressed as it is drawn — each within 8 ms, its press waiting as before
+(711 and 731); a sheet whose furniture takes room and that waits for no other
+part, now waiting for it: 2231 → 2857 and 2336 → 2967 on the phone without its
+part tags, in use 3152 → 3160 and 3216 → 3256 — nothing in it moving after; with
+its tags, which name the sheet part again, 2288 → 2340 and 2395 → 2479.
 
 ## 0.36.1 — 2026-10-28
 

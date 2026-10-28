@@ -1672,7 +1672,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // each part's own words with it. What stays to say a part could not come — a run that did nothing, a question the
 // browser asks, a conflict in plain words — and to hold a press until it comes: 603,040 measured before, 559,395 after
 // (−43,645), to 546.3.
-const BUDGET_KB = 546.3;
+// 0.37 (p37-walk-fix), the 0.37 walk's fixes, each needed from a page's first press or its draw: a control a press waits
+// on busy where it was pressed, its ring and the one rule that finds it in every engine (press.ts), a second press of it
+// asking nothing more, the dialog that shows ending it, and a press whose part cannot come said with Retry (related.ts,
+// say.ts); the classic formatted text's toolbar's room held over its box (extras.ts, its three text styles' names back
+// from the html part's words); a sheet's furniture that takes room waited for, and a record's attachment's files part
+// with the page's (viewer-parts.ts); a refused page's words to its visitor, what is wrong only in `development`
+// (refused.ts): 559,345 measured before, 563,281 after (+3,936), to 550.1.
+const BUDGET_KB = 550.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2074,7 +2081,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // with them 189.82; the classic formatted text's toolbar in the html part 188.18, and their words with them 187.99; a
 // sheet's furniture and its look in the sheet part 185.72; Reload, Keep mine and Put back with the acts 185.44; a link's
 // and a line's dialogs with them 184.66 — 13.36 less, to 184.7: under the owner's 200.
-const GZIP_BUDGET_KB = 184.7;
+// 0.37 (p37-walk-fix), listed with the raw budget above: 184.64 → 185.93 (+1.29: 189,075 → 190,392 B), to 186.0.
+const GZIP_BUDGET_KB = 186.0;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2476,7 +2484,13 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 61.50 and 18.81, 61.62 and 18.83, to 61.7; French 62.56 and 18.79, 62.67 and 18.81, to 62.7 and 18.9; Turkish 69.65
 // and 19.13, 69.78 and 19.15, to 69.8; Persian 171.14 and 23.57, 171.42 and 23.59, to 171.5; Urdu 174.17 and 23.69,
 // 174.45 and 23.71, to 174.5 and 23.8; Spanish 59.53 and 18.57, 59.64 and 18.59, to 59.7.
-const ADD_ON_BUDGET_KB = { ar: [138.0, 22.0], de: [61.7, 18.9], fr: [62.7, 18.9], tr: [69.8, 19.2], fa: [171.5, 23.6], ur: [174.5, 23.8], es: [59.7, 18.6] };
+// 0.37 (p37-walk-fix), a refused page's words to its visitor (formUnavailable, and pageUnshown said again for whoever
+// made it), a recording too short to keep (recordTooShort), and the text styles' names a formatted text's toolbar room
+// holds — Arabic 137.92 and 21.97 measured before, 138.64 and 22.06 after, to 138.7 and 22.1; German 61.62 and 18.83,
+// 61.92 and 18.91, to 62.0 and 19.0; French 62.67 and 18.81, 62.97 and 18.88, to 63.0; Turkish 69.78 and 19.15, 70.10
+// and 19.22, to 70.2 and 19.3; Persian 171.42 and 23.59, 172.29 and 23.69, to 172.3 and 23.7; Urdu 174.45 and 23.71,
+// 175.45 and 23.83, to 175.5 and 23.9; Spanish 59.64 and 18.59, 59.92 and 18.65, to 60.0 and 18.7.
+const ADD_ON_BUDGET_KB = { ar: [138.7, 22.1], de: [62.0, 19.0], fr: [63.0, 18.9], tr: [70.2, 19.3], fa: [172.3, 23.7], ur: [175.5, 23.9], es: [60.0, 18.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3359,7 +3373,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // choice 12.03 and 4.78, inside 12.1 and 4.8.
 // 0.37 (size-parts, merged with p37-walk-rest): acts 34,906 and 12,706 B, its step engine's open, call, file and print
 // and its question taking the app's answer as it is given (`answerOf`), to 12.5.
-const PART_BUDGET_KB = { acts: [34.1, 12.5], html: [6.5, 2.8], sheet: [11.4, 4.3], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.2, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.3, 16.7], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.3, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+// 0.37 (p37-walk-fix), each measured before and after: acts 34.09 and 12.41 → 34.22 and 12.46 (a dialog that shows ends
+// the press that asked for it; a line's dialog's fields drawn with their columns' widgets), to 34.3; lines 48.20 and
+// 16.63 → 48.31 and 16.67 (a card's dialog named by its words as a table's line is), to 48.4; record 13.34 and 5.46 →
+// 13.46 and 5.50 (a recording too short to keep, said), to 13.5; loading 9.10 and 3.06 → 9.20 and 3.08 (a skeleton's
+// shapes never shorter than their boxes), to 9.3; html 6.49 → 6.47 (its text styles' names in the main script).
+const PART_BUDGET_KB = { acts: [34.3, 12.5], html: [6.5, 2.8], sheet: [11.4, 4.3], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.2, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.4, 16.7], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.5, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.3, 4.8], loading: [9.3, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   acts: ['createRunner', 'reloadTheirs', 'keepMine', 'putBack', 'openFormDialog', 'openFormPanel', 'openSearchDialog', 'openPage', 'linkDialogs', 'askBox', 'conflictBanners'],
@@ -3555,7 +3574,8 @@ for (const part of PARTS) {
   const view = dom.window.Fieldia.mountViewer(host, { page: wrong, dataSource: { list: async () => ({ records: [], total: 0 }) } });
   const said = await view.drawn.then(() => null, (error) => error.message);
   // Refused: nothing of the page drawn, why said where it would be (refused.ts, 0.36), and taken away for the next.
-  const refusedOnly = () => host.childElementCount === 1 && host.firstElementChild?.classList.contains('fd-unshown') && host.querySelector('[role="alert"]')?.textContent.startsWith('This form cannot be shown');
+  // Its visitor's words alone (0.37 walk): what is wrong is the console's and the error's, never the page's.
+  const refusedOnly = () => host.childElementCount === 1 && host.firstElementChild?.classList.contains('fd-unshown') && host.querySelector('[role="alert"]')?.textContent.startsWith('This form is not available right now') && !host.querySelector('details');
   if (!said?.startsWith('This page cannot be shown') || !said.includes('layout.groupBy[0]: no field "nowhere"') || !refusedOnly()) throw new Error(`in a page, a list page whose own checks came with its part is drawn, or not refused in words: ${said}`);
   host.replaceChildren();
   // A list of homes on a map whose pins' photo is words: the list part's checks, in already, owe the map's, asked for
