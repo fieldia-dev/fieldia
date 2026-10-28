@@ -109,6 +109,7 @@ describe('a page 0.35 drew that validatePage refuses: drawn, then taken down as 
       p.fields['pin'] = { type: 'char', label: 'PIN', secret: true };
       p.layout.children.push({ type: 'field', id: 'f-pin', field: 'pin' });
     }), 'fields.pin.secret'],
+    ['a 0.13 page saying what a copy does not keep, which came in 0.14 (format.under-stamped)', made((p) => (p.fields['state']['copy'] = false)), 'fields.state.copy'],
   ])('%s: drawn at once, then taken down — its words in its place, onError told (stage "check"), refused settled', async (_, page, path) => {
     const { host, told, thrown } = mount(page);
     // Never thrown, never waited for: drawn as 0.36 drew it.
@@ -150,6 +151,37 @@ describe('a page 0.35 drew that validatePage refuses: drawn, then taken down as 
     await saved.catch(() => false);
     expect(dataSource.calls.filter((call) => call.method === 'save')).toEqual([]);
     expect(dataSource.records['res.partner'][1]['name']).toBe('Nile Traders');
+  });
+
+  it('makes no copy through it: a record\'s Duplicate (the source\'s copy) asked before its check ran waits, and is refused with the page', async () => {
+    const dataSource = createMemoryDataSource({ records: { 'res.partner': { 1: { name: 'Nile Traders', state: 'active' } } } });
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: made((p) => (p.fields['name']['required'] = 'yes')), dataSource, recordId: 1 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const copied = handle.form.run([{ do: 'duplicate' }]);
+    expect(((await handle.refused) as PageRefused).issues).toEqual([expect.objectContaining({ path: 'fields.name.required' })]);
+    await copied.catch(() => null);
+    expect(dataSource.calls.filter((call) => call.method === 'copy')).toEqual([]);
+    expect(Object.keys(dataSource.records['res.partner'])).toEqual(['1']);
+  });
+
+  it('a page in format 0.14 that passes makes the copy once its check ran, and the copy keeps nothing a field says copy: false', async () => {
+    const dataSource = createMemoryDataSource({ records: { 'res.partner': { 1: { name: 'Nile Traders', state: 'active' } } } });
+    const host = document.createElement('div');
+    document.body.append(host);
+    const page = made((p) => {
+      p['fieldia'] = '0.14';
+      Object.assign(p.fields['state'], { default: 'draft', copy: false });
+    });
+    handle = mountViewer(host, { page, dataSource, recordId: 1 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const copied = handle.form.run([{ do: 'duplicate' }]);
+    expect(await handle.refused).toBeNull();
+    expect((await copied).done).toBe(true);
+    expect(dataSource.calls.filter((call) => call.method === 'copy')).toHaveLength(1);
+    const copy = Object.entries(dataSource.records['res.partner']).find(([id]) => id !== '1')?.[1];
+    expect(copy).toMatchObject({ state: 'draft' });
   });
 
   it('a page that passes sends what was held once its check ran — and refused settles null', async () => {
@@ -233,5 +265,18 @@ describe('a page that passes', () => {
     expect(told).toEqual([]);
     expect(host.querySelector('.fd-unshown')).toBeNull();
     expect(host.querySelector('input')).not.toBeNull();
+  });
+
+  it('a page in format 0.14 that says it — a field a copy does not keep — is drawn at once and stays: refused settles null', async () => {
+    const page = made((p) => {
+      p['fieldia'] = '0.14';
+      p.fields['state']['copy'] = false;
+    });
+    const { host, thrown, told } = mount(page);
+    expect(thrown).toBeNull();
+    expect(host.querySelector('.fd-form select, .fd-form input')).not.toBeNull();
+    expect(await handle?.refused).toBeNull();
+    expect(told).toEqual([]);
+    expect(host.querySelector('.fd-unshown')).toBeNull();
   });
 });

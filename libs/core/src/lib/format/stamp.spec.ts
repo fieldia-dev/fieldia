@@ -80,8 +80,42 @@ describe('a page stamped with the lowest format it needs', () => {
     const grouped = { ...list, layout: { ...list.layout, filters: [{ ...filters[0], group: 'when' }, filters[1]] } } as unknown as Page;
     expect(lowestFormat(grouped)).toBe('0.14');
     expect(read036(stampPage(grouped))).toBe('this page is in format 0.14, newer than this Fieldia reads (0.13): update Fieldia to show it');
-    // Said 0.13, it is under-stamped: warned of now, refused from 0.37 (format.under-stamped, lane p37-refuse).
+    // Said 0.13, it is under-stamped: refused from 0.37 (format.under-stamped), as the next test shows.
     expect(stampProblem({ ...grouped, fieldia: '0.13' }, needOf(upgradePage(grouped)))).toMatchObject({ path: 'layout.filters[0].group' });
+  });
+
+  it('a page saying 0.13 that uses `copy` or a filter’s `group` is under-stamped: refused by validatePage and by the whole check every viewer runs once the page is drawn, at that setting — and passed stamped 0.14 (0.37)', () => {
+    const SAID = Symbol.for('fieldia.deprecations.said');
+    delete (globalThis as { [SAID]?: Set<string> })[SAID];
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const words = 'this came in format 0.14, but the page says it is in format 0.13, which a Fieldia reading 0.13 would read without it: write "fieldia": "0.14" — lowestFormat(page) gives the lowest a page needs';
+    const options = [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }];
+    const bill = page({ state: { type: 'selection', label: 'Status', default: 'draft', copy: false, options } }, { data: { kind: 'record', model: 'account.move' } });
+    const lines = page({ items: { type: 'one2many', label: 'Items', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, lot: { type: 'char', label: 'Lot', copy: false } } } });
+    const filters = [
+      { id: 'late', label: 'Late', group: 'when', filter: [{ field: 'state', op: '=', value: 'posted' }] },
+      { id: 'draft', label: 'Draft', filter: [{ field: 'state', op: '=', value: 'draft' }] },
+    ];
+    const list = { fieldia: FORMAT_VERSION, id: 'bills', data: { kind: 'record', model: 'account.move' }, fields: { state: { type: 'selection', label: 'Status', options } }, layout: { type: 'list', id: 'l', columns: ['state'], filters } } as unknown as Page;
+    for (const [given, path] of [
+      [bill, 'fields.state.copy'],
+      [lines, 'fields.items.fields.lot.copy'],
+      [list, 'layout.filters[0].group'],
+    ] as const) {
+      const said013 = { ...given, fieldia: '0.13' };
+      const refused = { ok: false, issues: [{ path, message: words }] };
+      expect(validatePage(said013)).toEqual(refused);
+      expect(wholeCheck(said013)).toEqual(refused);
+      // The check before the draw reads no setting's format: the page is drawn, then taken down as the whole check runs.
+      expect(checkPage(said013).ok).toBe(true);
+      // Stamped as it needs: passed, by both.
+      expect(stampPage(said013).fieldia).toBe('0.14');
+      expect(validatePage(stampPage(said013))).toMatchObject({ ok: true });
+      expect(wholeCheck(stampPage(said013)).ok).toBe(true);
+    }
+    // Refused, never warned of: format.under-stamped is changed (0.37).
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('relying on a default a later format changed needs that format: its step says so (`uses`), as the train makes a changed default', () => {
