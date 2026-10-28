@@ -1166,12 +1166,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     if (current.some((l) => l.key === key)) form.setValue(name, current.map((l) => (l.key === key ? { ...l, values: before } : l)));
     return true;
   };
-  /** Add a line (or a section or note) at the end and start editing its first cell. */
-  const addAndEdit = (values: Values = {}) => {
+  /** Add a line (or a section or note) at the end and start editing its first cell: `added`, the words of what added it. */
+  const addAndEdit = (values: Values = {}, added?: string) => {
     const key = form.addLine(name, values);
     fresh.add(key);
-    // As cards, the new line opens in its own form, as a card is changed; let go there, it goes again.
-    if (asCards()) return void openCard(key);
+    // As cards, the new line opens in its own form, as a card is changed, titled by what added it; let go there, it goes again.
+    if (asCards()) return void openCard(key, added);
     const index = lines().findIndex((l) => l.key === key);
     const column = kindOf(lines()[index]) ? spanStart(api)?.getColId() : firstEditable();
     if (index < 0 || !column) return;
@@ -1511,30 +1511,32 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // Its own record's page, by the table's model (lineOpens: "record"), or every one of its fields.
   // Titled as its card is headed, by the columns shown now — the line as it reads once what was typed is read, never the
   // row's data as AG Grid last drew it.
-  const openLine = (line: Line) => (dialogs ? openLineDialog(form, name, node, line, dialogs, readonly, (read) => titleOf(read, columns.filter((column) => !ruleHidden.has(column) && api.getColumn(column)?.isVisible() !== false))) : undefined);
+  // A line just added, its dialog opened as it is (as cards): titled by the button that added it ("Add a question") while
+  // it holds no words yet — never "Line 11" (the 0.37 walk).
+  const openLine = (line: Line, added?: string) => (dialogs ? openLineDialog(form, name, node, line, dialogs, readonly, (read) => titleOf(read, columns.filter((column) => !ruleHidden.has(column) && api.getColumn(column)?.isVisible() !== false), added)) : undefined);
   /**
    * A line as its card is headed and its dialog titled, never by the table's plural (the 0.36 walk: one order line
    * titled "Order lines"): a section or a note by its words, else its box's label; an item by its first column of words
    * shown, as its cell reads, else by its place ("Line 3").
    */
-  function titleOf(line: Line, shown: readonly string[]): string {
-    if (kindOf(line) && kinds) return String(line.values[kinds.text] ?? '') || (def.fields[kinds.text]?.label ?? '');
+  function titleOf(line: Line, shown: readonly string[], added?: string): string {
+    if (kindOf(line) && kinds) return String(line.values[kinds.text] ?? '') || added || (def.fields[kinds.text]?.label ?? '');
     const first = titleColumn(shown.filter((column) => !lineStates.get(line.key)?.cells[column]?.invisible));
-    return (first && cellWords(line, first, form.getState().values)) || placeName(numberOf(line));
+    return (first && cellWords(line, first, form.getState().values)) || added || placeName(numberOf(line));
   }
   /**
    * A card's line in its own form: an item's every field, a section's or a note's words alone. A line the grid just
    * added that comes back as it was added — let go, nothing typed — goes again, as Escape takes one from the grid.
    */
-  async function openCard(key: string) {
+  async function openCard(key: string, added?: string) {
     const line = lines().find((one) => one.key === key);
     if (!line || !dialogs) return;
     const before = JSON.stringify(line.values);
     if (kindOf(line) && kinds) {
       const text = def.fields[kinds.text] as Field;
-      const values = await dialogs.editValues({ title: titleOf(line, []), fields: { [kinds.text]: text }, values: { [kinds.text]: line.values[kinds.text] ?? null }, readonly, ...(form.page.lowerLabels === undefined ? {} : { lowerLabels: form.page.lowerLabels }) });
+      const values = await dialogs.editValues({ title: titleOf(line, [], added), fields: { [kinds.text]: text }, values: { [kinds.text]: line.values[kinds.text] ?? null }, readonly, ...(form.page.lowerLabels === undefined ? {} : { lowerLabels: form.page.lowerLabels }) });
       if (values && lines().some((one) => one.key === key)) form.updateLine(name, key, kinds.text, values[kinds.text] ?? null);
-    } else await openLine(line);
+    } else await openLine(line, added);
     const now = lines().find((one) => one.key === key);
     if (fresh.has(key) && now && JSON.stringify(now.values) === before) form.removeLine(name, key);
     fresh.delete(key);
@@ -1923,7 +1925,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     button.className = 'fd-button fd-button-link fd-lines-add';
     button.dataset['add'] = kind;
     button.textContent = `+ ${text}`;
-    button.addEventListener('click', () => addAndEdit(values));
+    button.addEventListener('click', () => addAndEdit(values, text));
     adds.append(button);
   };
   addButton(words('addLabel') ?? labels.addLine, {}, 'line');

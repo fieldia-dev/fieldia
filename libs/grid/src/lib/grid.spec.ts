@@ -830,7 +830,7 @@ describe('a line being dragged', () => {
     expect([...box.querySelectorAll('.fd-line-card-title')].map((t) => t.textContent)).toEqual(['Office chair', 'Desk lamp']);
   });
 
-  it('opens from its card in a dialog titled as the card is: a line just added by its place, a section by its words', async () => {
+  it('opens from its card in a dialog titled as the card is: a section by its words, a line just added by what added it', async () => {
     const carded = JSON.parse(JSON.stringify(ordered));
     carded.layout.children[0].children[1].cards = 'always';
     carded.fields['line_ids'].lineKinds = { field: 'display_type', text: 'name' };
@@ -851,10 +851,15 @@ describe('a line being dragged', () => {
     await frames();
     expect(title()).toBe('Workstations');
     await discard();
-    // Added on a phone, a line opens at once in its own form: as its card is headed, by its place.
+    // Added on a phone, a line opens at once in its own form, titled by the button that added it while it holds no words
+    // yet — never by its place (the 0.37 walk: "Line 11" for Add a question); a section the same.
     (box.querySelector('button[data-add="line"]') as HTMLButtonElement).click();
     await frames();
-    expect(title()).toBe('Line 3');
+    expect(title()).toBe('Add a line');
+    await discard();
+    (box.querySelector('button[data-add="section"]') as HTMLButtonElement).click();
+    await frames();
+    expect(title()).toBe('Add a section');
     await discard();
   });
 

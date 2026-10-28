@@ -8,7 +8,8 @@ import { mountKind, press } from './test-kinds';
 /**
  * A line opened in a dialog is titled as one record — by the words its table names it by, the same its ↑ and ↓ and a
  * move said aloud name it by — never by the table's plural (the 0.36 walk: one sales order line titled "Order lines",
- * one tender requirement "Requirements"). A card is titled as its card is ("Contact 2", the page's own word for one).
+ * one tender requirement "Requirements"). A card is titled by its words as a table's line is ("Omar Said"), else as its card
+ * is ("Contact 2", the page's own word for one).
  */
 
 /** The titles the dialogs were asked for, in order: a record's page or the line's fields. */
@@ -126,6 +127,24 @@ describe('a table’s line in a dialog is titled as one line', () => {
   });
 });
 
+describe('a line’s dialog draws each field as its column does', () => {
+  it('hands the dialog each column’s widget and its settings (the page’s `cells`): a distribution as its shares, never JSON', async () => {
+    const asked: Parameters<WidgetDialogs['editValues']>[0][] = [];
+    const cells = { name: { widget: 'text', options: { rows: 2 } } };
+    const page = { ...ORDER, layout: { type: 'sections', id: 'root', children: [{ ...(ORDER.layout as { children: FieldNode[] }).children[0], cells }] } } as unknown as Page;
+    const form = createForm({ page, values: orderLines });
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: node.field, field: page.fields[node.field] as Field, node, id: 'fd-x', document, dialogs: { ...dialogs([]), editValues: async (request) => (asked.push(request), null) } });
+    document.body.replaceChildren(widget.element);
+    widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly: false, required: false, invalid: false });
+    await settle();
+    (document.querySelector('tbody tr[data-line="a"] button.fd-line-open') as HTMLButtonElement).click();
+    await settle();
+    expect(asked).toHaveLength(1);
+    expect(asked[0].cells).toEqual(cells);
+  });
+});
+
 describe('a card’s line in a dialog is titled as its card is', () => {
   const CONTACTS = {
     type: 'one2many',
@@ -135,12 +154,24 @@ describe('a card’s line in a dialog is titled as its card is', () => {
   };
   const lineForm = { children: [{ type: 'field', id: 'c-name', field: 'name' }] };
 
-  it('by the page’s word for one with its number ("Contact 2"), else "Entry 2"', async () => {
-    for (const [options, title] of [[{ itemLabel: 'Contact' }, 'Contact 2'], [{}, 'Entry 2']] as const) {
+  it('by its own words, as a table’s line is ("Omar Said": the 0.37 walk, "Contact 2" over Rania Fawzy)', async () => {
+    for (const options of [{ itemLabel: 'Contact' }, {}]) {
       const titles: string[] = [];
       const { el, form } = mountKind(CONTACTS, { widget: 'cards', options, lineForm } as Partial<FieldNode>, { dialogs: dialogs(titles) });
       form.addLine('x', { name: 'Mona Adel' });
       form.addLine('x', { name: 'Omar Said' });
+      (el.querySelectorAll('.fd-repeat-card')[1].querySelector('button.fd-line-open') as HTMLButtonElement).click();
+      await settle();
+      expect(titles).toEqual(['Omar Said']);
+    }
+  });
+
+  it('with no words yet, by the page’s word for one with its number ("Contact 2"), else "Entry 2"', async () => {
+    for (const [options, title] of [[{ itemLabel: 'Contact' }, 'Contact 2'], [{}, 'Entry 2']] as const) {
+      const titles: string[] = [];
+      const { el, form } = mountKind(CONTACTS, { widget: 'cards', options, lineForm } as Partial<FieldNode>, { dialogs: dialogs(titles) });
+      form.addLine('x', { name: 'Mona Adel' });
+      form.addLine('x', { name: '' });
       (el.querySelectorAll('.fd-repeat-card')[1].querySelector('button.fd-line-open') as HTMLButtonElement).click();
       await settle();
       expect(titles).toEqual([title]);

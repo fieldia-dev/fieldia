@@ -1,4 +1,4 @@
-import { isEmpty, labelAt, lineKind, recomputeInFull, wordsVersion, type Field, type FieldNode, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
+import { isEmpty, labelAt, lineKind, recomputeInFull, wordsVersion, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Locale, type Value, type Values } from '@fieldia/core';
 import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
@@ -38,6 +38,21 @@ import type { createWidget, Widget, WidgetContext, WidgetFactory } from './widge
 
 /** The kinds of field a line is named by: words, and a link by its name. */
 const NAMING = new Set(['char', 'text', 'html', 'many2one', 'reference']);
+
+/**
+ * The words a line is named by — its ↑ and ↓, its move said aloud, its dialog's title, a table's or a card's: the first of
+ * its `columns` of words (a name, a description, a link: never a number or a day) that holds some, as its cell reads at
+ * rest (a link by its name); none where it has none.
+ */
+export function namingWords(form: Form, name: string, node: FieldNode, line: Line, columns: readonly string[], locale?: Locale): string {
+  const def = form.page.fields[name] as Extract<Field, { type: 'one2many' }>;
+  for (const column of columns) {
+    if (!NAMING.has(def.fields[column]?.type)) continue;
+    const words = cellText(lineColumn(form, name, line.key, column, def.fields[column]), line.values[column], line.values, locale, form.getState().values, node.cells?.[column]).trim();
+    if (words) return words;
+  }
+  return '';
+}
 /** The kinds of field whose column is as wide as its values, so the columns of words and links have the rest. */
 /** Columns of numbers, which grow past their kind's width for a long value. */
 const NUMERIC = new Set(['integer', 'float', 'monetary']);
@@ -134,14 +149,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
    */
   /** A name begun with its capital, as a title begins: "Line 3". */
   const capital = (words: string) => words.charAt(0).toLocaleUpperCase(locale) + words.slice(1);
-  const wordsOf = (line: Line) => {
-    if (!isItem(line) && kinds) return String(line.values[kinds.text] ?? '').trim();
-    for (const column of naming) {
-      const words = cellText(lineColumn(form, name, line.key, column, def.fields[column]), line.values[column], line.values, locale, form.getState().values, node.cells?.[column]).trim();
-      if (words) return words;
-    }
-    return '';
-  };
+  const wordsOf = (line: Line) => (!isItem(line) && kinds ? String(line.values[kinds.text] ?? '').trim() : namingWords(form, name, node, line, naming, locale));
   const element = document.createElement('div');
   element.className = 'fd-lines';
   element.id = id;
