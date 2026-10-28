@@ -4,7 +4,7 @@ import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
 import type { ViewerLabels } from './labels';
 import { prefetchPrint } from './print';
-import { later } from './related';
+import { later } from './later';
 import { barredWords } from './save-safety';
 
 /**

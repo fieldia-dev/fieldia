@@ -3,7 +3,7 @@ import { formatNumber, loadingOver, startLoading, whileShown, type IconSet, type
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 import { listView, type ListContext, type ListView } from './list';
-import { later } from './related';
+import { later } from './later';
 import { installListStyles } from './list-styles';
 
 /** What a related list is drawn with: the viewer's, its dialogs of the app's pages and its host's way to open a page. */

@@ -1,6 +1,7 @@
 import { fill, literalWords, MESSAGES, writtenPart, type CreateRequest, type DataSource, type Field, type LayoutNode, type OptionsRequest, type Page, type SearchRequest, type Tone } from '@fieldia/core';
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
+import { later } from './later';
 import { ownLocale, viewerWords } from './labels';
 import type { ViewerOptions } from './viewer';
 
@@ -48,12 +49,6 @@ export type PageRequest = { model: string } | { id: string; version?: number };
  * may answer at once or with a promise.
  */
 export type PageFinder = Record<string, Page> | ((request: PageRequest) => Page | null | undefined | Promise<Page | null | undefined>);
-
-/**
- * An answer of the app's that comes later, known by its `then`: a zone's promise (an Angular app's) and the engine's own
- * alike, as `instanceof Promise` is true of only one of them in a zone.
- */
-export const later = <T>(answer: T): answer is Extract<T, PromiseLike<unknown>> => typeof (answer as { then?: unknown } | null)?.then === 'function';
 
 /**
  * The page the app gives for a request: from `pages`, and for a model from `relatedPages` after it. A promise when it

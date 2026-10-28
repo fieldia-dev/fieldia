@@ -72,7 +72,8 @@ import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, st
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
-import { findPage, later, pageDialogs, type PageFinder } from './related';
+import { later } from './later';
+import { findPage, pageDialogs, type PageFinder } from './related';
 import { nameFieldOf } from './name-field';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
 import type { RelatedCount, RelatedPart } from './list-related';
