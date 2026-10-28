@@ -1,5 +1,5 @@
 import type { Option } from '@fieldia/core';
-import { announcer, describeState, fillIn, maker, setText, wordsFor } from './kind-parts';
+import { announcer, describeState, fillIn, keepInSight, maker, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
 import { installSurveyStyles } from './styles-survey';
 import type { WidgetFactory } from './widgets';
@@ -114,14 +114,17 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
     const holding = item.element.contains(document.activeElement);
     // At an end, the button that moved it is no use: the cursor goes to the other.
     refocus = holding ? { item, which: (which === 'up' && to === 0) || (which === 'down' && to === next.length - 1) ? (which === 'up' ? 'down' : 'up') : which } : null;
+    // Where the eye is, as it goes (kept-in-sight.ts).
+    const top = item.element.getBoundingClientRect().top;
     keep(next, item);
+    keepInSight(item.element, top);
     giveBackFocus();
   }
   function giveBackFocus() {
     if (!refocus) return;
     const { item, which } = refocus;
     refocus = null;
-    item[which].focus();
+    item[which].focus({ preventScroll: true });
   }
 
   list.addEventListener('keydown', (event) => {

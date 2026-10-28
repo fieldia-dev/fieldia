@@ -3,7 +3,7 @@ import { blockOf, pasteRows, type PasteTable } from './cell-paste';
 import { dateOrderOf, dateShape } from './date-text';
 import { cellText, currencyOf, keepsWhole } from './display';
 import { drawIcon } from './icons';
-import { askFirst, fillIn, maker, setHidden } from './kind-parts';
+import { askFirst, fillIn, keepInSight, maker, setHidden } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
 import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
@@ -372,8 +372,11 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     const focused = document.activeElement as HTMLElement | null;
     // Named by its first column's words, else by where it was.
     const first = current()[from].values[columns[0]];
+    // Where it is on the screen, kept as it goes: a card moved stays where the eye is (kept-in-sight.ts).
+    const top = rows.get(key)?.element.getBoundingClientRect().top;
     moveLineTo(form, name, def, key, to);
-    if (focused && focused !== document.activeElement) focused.focus();
+    keepInSight(rows.get(key)?.element, top);
+    if (focused && focused !== document.activeElement) focused.focus({ preventScroll: true });
     voice.textContent = fillIn(labels.movedTo, { label: typeof first === 'string' && first.trim() ? first : fillIn(labels.lineN, { n: itemNumber(current(), key, isItem) || from + 1 }), n: to + 1, total: current().length });
   }
   /**

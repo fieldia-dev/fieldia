@@ -3,7 +3,7 @@ import { readFile, source } from './file-shown';
 import type { FilesPart } from './widget-parts';
 import { filesPartIn } from './widget-parts';
 import { drawIcon, type IconSet } from './icons';
-import { announcer, askFirst, describeState, maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
+import { announcer, askFirst, describeState, keepInSight, maker, rightToLeft, setAttr, setHidden, setText, wordsFor } from './kind-parts';
 import { inPlural } from './labels';
 import { editPhoto, type Edited } from './photo-editor';
 import { stillShown } from './shown';
@@ -459,8 +459,11 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
     const tool = target.closest<HTMLElement>('[data-tool]')?.dataset['tool'];
     if (readonly || !tool) return;
     if (tool === 'cover') {
+      // Where the eye is, as it goes to the front (kept-in-sight.ts).
+      const top = tile.element.getBoundingClientRect().top;
       moveTo(tile, 0);
-      tile.open.focus();
+      keepInSight(tile.element, top);
+      tile.open.focus({ preventScroll: true });
     } else if (tool === 'edit') void edit(tile);
     else if (tool === 'retry' && tile.upload) form.retryUpload(tile.upload);
     else if (tool === 'remove') askRemove(tile);

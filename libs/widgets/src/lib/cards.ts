@@ -1,5 +1,5 @@
 import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
-import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
+import { announcer, describeState, fillIn, keepInSight, maker, wordsFor } from './kind-parts';
 import { moveLineTo } from './line-moves';
 import { lineForm, openLineDialog } from './lines';
 import { installCardsStyles } from './styles-cards';
@@ -120,10 +120,12 @@ export const cardsWidget =
     const from = lines().findIndex((l) => l.key === key);
     if (readonly || to < 0 || to >= lines().length || to === from) return;
     const gone = cards.get(key)?.title.textContent ?? '';
+    const top = cards.get(key)?.element.getBoundingClientRect().top;
     moveLineTo(form, name, def, key, to);
-    // The focus stays on the button pressed; at an end, the other way takes it.
+    // Where the eye is, and the focus on the button pressed; at an end, the other way takes it.
+    keepInSight(cards.get(key)?.element, top);
     const way = (from > to && to > 0) || to === lines().length - 1 ? 0 : 1;
-    cards.get(key)?.tools[way][0].focus();
+    cards.get(key)?.tools[way][0].focus({ preventScroll: true });
     voice.say(fillIn(words.movedTo, { label: gone, n: to + 1, total: lines().length }));
   }
 

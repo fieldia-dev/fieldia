@@ -50,6 +50,39 @@ test.describe('on a phone', () => {
     expect(problems).toEqual([]);
   });
 
+  test('a card moved by its ↑ stays where the eye is, its ↑ in sight with the focus — twice, as a person moves it', async ({ page }) => {
+    // As the 0.36 walk had it on an iPhone (WebKit): the demo's frame as a person's browser shows it, a question added at
+    // the end, then ↑ — which threw the page to its top, the card 2,400 px under the screen (WebKit scrolled to the button
+    // it focused again from a layout not yet worked out). Chromium kept the page still and let the card go up out of the
+    // eye's place. Now the page goes with the card in every engine.
+    await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }));
+    const { problems } = await open(page, 'plain', 'page=real-survey&record=7&skin=underline');
+    const questions = node(page, 'f-questions');
+    const asked = 'Would you recommend us to a colleague?';
+    await questions.getByRole('button', { name: 'Add a question' }).tap();
+    const dialog = page.getByRole('dialog', { name: 'Sections and Questions' });
+    await expect(dialog.getByRole('textbox', { name: 'Question' })).toBeFocused();
+    await page.keyboard.type(asked);
+    await dialog.getByRole('button', { name: 'Save & Close' }).tap();
+    await expect(dialog).toBeHidden();
+    const count = await questions.locator('.fd-line-card').count();
+    const card = questions.locator('.fd-line-card', { hasText: asked });
+    const up = card.getByRole('button', { name: `Move ${asked} up` });
+    for (const place of [count - 1, count - 2]) {
+      await up.scrollIntoViewIfNeeded();
+      const before = (await card.boundingBox())!.y;
+      await up.tap();
+      await expect(questions.locator('.fd-sr-only[role="status"]')).toHaveText(`${asked} moved to place ${place} of ${count}`);
+      // Where it was on the screen, give or take a pixel, a moment on too; its ↑ there, with the focus.
+      await expect.poll(async () => Math.abs((await card.boundingBox())!.y - before)).toBeLessThanOrEqual(1);
+      await page.evaluate(() => new Promise((done) => setTimeout(done, 300)));
+      expect(Math.abs((await card.boundingBox())!.y - before)).toBeLessThanOrEqual(1);
+      await expect(up).toBeFocused();
+      await expect(up).toBeInViewport();
+    }
+    expect(problems).toEqual([]);
+  });
+
   test('a plain table’s cards: a milestone goes down a place by a tap on its ↓, and back by its ↑', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
     const table = node(page, 'f-milestones');
@@ -65,14 +98,66 @@ test.describe('on a phone', () => {
     await expect(down).toBeVisible();
     const size = (await down.boundingBox())!;
     expect(Math.min(size.width, size.height)).toBeGreaterThanOrEqual(32);
+    const before = (await first.boundingBox())!.y;
     await down.tap();
     await expect.poll(names).toEqual(['Design sign-off', 'Site survey']);
+    // The card went down a place and stayed where the eye is: the page went with it.
+    const moved = table.locator('tbody tr').nth(1);
+    await expect.poll(async () => Math.abs((await moved.boundingBox())!.y - before)).toBeLessThanOrEqual(1);
     await expect(table.locator('.fd-lines > .fd-sr-only[role=status]')).toHaveText('Site survey moved to place 2 of 2');
     await screen(page, 'line-moves-plain-phone', { viewport: true });
     const up = table.locator('tbody tr').nth(1).getByRole('button', { name: 'Move Site survey up' });
     await expect(up).toBeVisible();
     await up.tap();
     await expect.poll(names).toEqual(['Site survey', 'Design sign-off']);
+    expect(problems).toEqual([]);
+  });
+});
+
+test.describe('on a phone, the other things a tap moves', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test('a ranking’s choice and a repeating group’s card, moved by a tap, stay where the eye is', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=kinds&skin=outlined');
+    const ranking = node(page, 'q-priorities');
+    const first = ranking.locator('.fd-rank-item').first();
+    await first.scrollIntoViewIfNeeded();
+    const words = (await first.locator('.fd-rank-words').textContent())!.trim();
+    const before = (await first.boundingBox())!.y;
+    await ranking.getByRole('button', { name: `Move ${words} down` }).tap();
+    await expect(ranking.locator('.fd-rank-item').nth(1)).toContainText(words);
+    await expect.poll(async () => Math.abs((await ranking.locator('.fd-rank-item').nth(1).boundingBox())!.y - before)).toBeLessThanOrEqual(1);
+    const group = node(page, 'q-movers');
+    const add = group.getByRole('button', { name: 'Add a person' });
+    await add.scrollIntoViewIfNeeded();
+    await add.tap();
+    await add.tap();
+    const card = group.locator('.fd-repeat-card').first();
+    const key = (await card.getAttribute('data-line'))!;
+    await card.scrollIntoViewIfNeeded();
+    const top = (await card.boundingBox())!.y;
+    await card.getByRole('button', { name: 'Move Person 1 down' }).tap();
+    const moved = group.locator(`.fd-repeat-card[data-line="${key}"]`);
+    await expect(group.locator('.fd-repeat-card').nth(1)).toHaveAttribute('data-line', key);
+    await expect.poll(async () => Math.abs((await moved.boundingBox())!.y - top)).toBeLessThanOrEqual(1);
+    expect(problems).toEqual([]);
+  });
+
+  test('a photo made the cover by its tap is in sight with the focus, the page gone with it as far as it can go', async ({ page }) => {
+    const { problems } = await open(page, 'plain', 'page=listing-photo-set&skin=outlined');
+    const photos = node(page, 'f-photos').locator('.fd-photo');
+    const count = await photos.count();
+    const last = photos.last();
+    await last.scrollIntoViewIfNeeded();
+    const before = (await last.boundingBox())!.y;
+    await last.locator('[data-tool="cover"]').tap();
+    await expect(photos.first().locator('.fd-photo-cover')).toBeVisible();
+    const cover = photos.first();
+    // Where the eye is, unless the page's top came first: the page went up with it as far as it can.
+    await expect.poll(async () => Math.abs((await cover.boundingBox())!.y - before) <= 1 || (await page.evaluate(() => scrollY)) === 0).toBe(true);
+    await expect(cover).toBeInViewport();
+    await expect(cover.locator('.fd-photo-open')).toBeFocused();
+    expect(count).toBeGreaterThan(2);
     expect(problems).toEqual([]);
   });
 });

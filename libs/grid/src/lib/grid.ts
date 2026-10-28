@@ -2050,12 +2050,19 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       return button;
     });
   }
+  /**
+   * The card moved last and its top on the screen as it was asked: drawn again, it is kept where the eye is — the page,
+   * or the box round it, scrolled by as much as it moved (0.36's walk: on an iPhone the page went to its top).
+   */
+  let sight: { key: string; top: number } | null = null;
   /** A card a place up or down, where it went said aloud; the cards drawn again keep the focus on it (below). */
   function moveCard(key: string, way: 'up' | 'down', named: string) {
     const count = lines().length;
     const from = lines().findIndex((line) => line.key === key);
     const to = from + (way === 'up' ? -1 : 1);
     if (readonly || !sequence || from < 0 || to < 0 || to >= count) return;
+    const card = [...cardList.children].find((one) => (one as HTMLElement).dataset['line'] === key);
+    sight = card ? { key, top: card.getBoundingClientRect().top } : null;
     form.moveLine(name, key, to);
     voice.textContent = fill(labels.movedTo, { label: named, n: to + 1, total: count });
   }
@@ -2100,9 +2107,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const focused = document.activeElement instanceof HTMLElement && cardList.contains(document.activeElement) ? document.activeElement : null;
     const held = focused?.dataset['move'] ? { key: focused.closest<HTMLElement>('.fd-line-card')?.dataset['line'], way: focused.dataset['move'] } : null;
     const focusHeld = () => {
+      if (sight) {
+        const { key, top } = sight;
+        sight = null;
+        keepInSight(cards.find((card) => card.dataset['line'] === key), top);
+      }
       if (!held || document.activeElement === focused) return;
       const moves = [...(cards.find((card) => card.dataset['line'] === held.key)?.querySelectorAll<HTMLElement>('[data-move]') ?? [])].filter((button) => !button.hidden);
-      (moves.find((button) => button.dataset['move'] === held.way) ?? moves[0])?.focus();
+      (moves.find((button) => button.dataset['move'] === held.way) ?? moves[0])?.focus({ preventScroll: true });
     };
     // The same cards in the same order, and the same foot: nothing written; the same lines, each card drawn again put in
     // its own place, the rest left where they are.
@@ -2545,3 +2557,21 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
 /** Pass these to the viewer (`widgets`) to show one2many nodes marked `"widget": "grid"` in the grid. */
 export const gridWidgets: Record<string, WidgetFactory> = { 'one2many.grid': gridWidget };
+
+/**
+ * What a person moved, kept where their eye is: its top on the screen as the move was asked (`top`); once it is drawn in
+ * its new place, the page — or the box that scrolls round it — scrolled by as much as it moved. A focus given back after
+ * a move takes no scroll of the browser's own (`preventScroll`): WebKit scrolled to a button it had just put back from a
+ * layout not yet worked out, and threw the page to its top. (As @fieldia/widgets' kept-in-sight.ts, which it does not export.)
+ */
+function keepInSight(element: Element | null | undefined, top: number | undefined): void {
+  if (!element?.isConnected || top === undefined) return;
+  const by = element.getBoundingClientRect().top - top;
+  if (Math.abs(by) < 1) return;
+  const view = element.ownerDocument.defaultView;
+  for (let at = element.parentElement; at && view; at = at.parentElement) {
+    const y = view.getComputedStyle(at).overflowY;
+    if ((y === 'auto' || y === 'scroll') && at.scrollHeight > at.clientHeight) return void at.scrollBy(0, by);
+  }
+  view?.scrollBy(0, by);
+}
