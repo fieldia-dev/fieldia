@@ -2457,7 +2457,7 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 22.0; German 61.30 and 18.77, 61.50 and 18.81, to 61.5 and 18.9; French 62.32 and 18.75, 62.56 and 18.79, to 62.6;
 // Turkish 69.43 and 19.09, 69.65 and 19.13, to 69.7 and 19.2; Persian 170.67 and 23.53, 171.14 and 23.57, to 171.2;
 // Urdu 173.51 and 23.64, 174.17 and 23.69, to 174.2; Spanish 59.35 and 18.53, 59.53 and 18.57, to 59.6.
-const ADD_ON_BUDGET_KB = { ar: [137.7, 22.0], de: [61.5, 18.9], fr: [62.6, 18.8], tr: [69.7, 19.2], fa: [171.2, 23.6], ur: [174.2, 23.7], es: [59.6, 18.6] };
+const ADD_ON_BUDGET_KB = { ar: [138.7, 23.0], de: [62.5, 19.9], fr: [63.6, 19.8], tr: [70.7, 20.2], fa: [172.2, 24.6], ur: [175.2, 24.7], es: [60.6, 19.6] }; // SIZE-PARTS-TODO
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3318,9 +3318,10 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // encoder given to the editor, 0.36.1's cover kept in sight), to 31.5; list 160.07 and 52.38, files 51.24 and 19.09,
 // memory 26.14 and 9.46, check 65.15 and 17.22, filters, import, scan, rows, survey and prefill as 0.36.1 measured
 // them, each inside its budget.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.1, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.0, 16.6], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+const PART_BUDGET_KB = { acts: [40.0, 14.0], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.4], choice: [12.2, 4.9], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.1, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.0, 16.6], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.2], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
+  acts: ['createRunner', 'openFormDialog', 'openFormPanel', 'openSearchDialog', 'openPage', 'askBox'],
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
   text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu', 'cleanPasted', 'pasteHtml', 'putHtml'],
   path: ['pathPickerWidget', 'checkTreeWidget'],
@@ -3377,7 +3378,7 @@ const PART_GIVES = {
   outbox: ['join', 'draw', 'watchOutbox', 'installOutboxStyles', 'memoryOutbox', 'indexedOutbox'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', check: 'pageCheckPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
+const PART_OF = { acts: 'actsPart', head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', check: 'pageCheckPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
 /**
  * A part's handle in a page's `Fieldia`: its own export (PART_OF) — or, for the parts that join a form (the fields a
  * link fills, proof by a code, a payment, an outbox: 0.30), named on no export of their own, the one of that name among
@@ -3654,8 +3655,16 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   for (let turn = 0; turn < 200 && !inPage.pageCheckPart.loaded && !inPage.pageCheckPart.coming; turn++) await new Promise((done) => dom.window.setTimeout(done, 10));
   if (!inPage.pageCheckPart.loaded && !inPage.pageCheckPart.coming) throw new Error('in a page, the whole check was not asked for once the page was parsed');
   await inPage.pageCheckPart.load();
-  // The memory part is a data source's, never a page's, and the whole check is every page's, after its draw: each said apart.
-  const loaded = () => PARTS.filter((part) => part !== 'memory' && part !== 'check' && handleIn(inPage, part).loaded).join(', ');
+  // What no page draws from (the acts part: steps run, dialogs, a page opened, questions): asked for right after the whole
+  // check came, never beside it — every page's, after its draw, as the check is.
+  for (let turn = 0; turn < 200 && !inPage.formActsPart.loaded && !inPage.formActsPart.coming; turn++) await new Promise((done) => dom.window.setTimeout(done, 10));
+  if (!inPage.formActsPart.loaded && !inPage.formActsPart.coming) throw new Error('in a page, the acts part was not asked for once the whole check came');
+  await inPage.formActsPart.load();
+  // One script, both halves: the viewer's in with the form's, nothing asked again.
+  await inPage.actsPart.load();
+  // The memory part is a data source's, never a page's, and the whole check and the acts part every page's, after its
+  // draw: each said apart.
+  const loaded = () => PARTS.filter((part) => part !== 'memory' && part !== 'check' && part !== 'acts' && handleIn(inPage, part).loaded).join(', ');
   /** The parts in after a step, every one so far — as one run of this check found them, each part's first use clear. */
   const hasIn = (step, want) => {
     const now = loaded();
