@@ -10,9 +10,15 @@ export const replay: DemoReplay = {
         const { page, see } = hand;
         const end = page.getByRole('textbox', { name: 'Request End Date' });
         await see(node(page, 'f-duration-days')).toContainText('3.00 Days');
-        // From Sunday 1 November to Sunday 8 November: Sunday to Thursday, then the Sunday — six days.
+        // The request starts on the Sunday at least five days from today (demos/shared/real/people.ts), Sunday to Tuesday:
+        // to the Sunday a week on, Sunday to Thursday, then the Sunday — six days. Read from the page, never written here:
+        // a day written here ran out on the day after it was (28 Oct, "1.00 Days").
+        // The box writes its day as people read it ("8 Nov 2026"); it is typed as the page orders a date's parts (dmy).
+        const weekOn = new Date(Date.parse(await page.getByRole('textbox', { name: 'Request Start Date' }).inputValue()));
+        weekOn.setDate(weekOn.getDate() + 7);
+        const two = (n: number) => String(n).padStart(2, '0');
         await see(end, 'the end date can be changed').toBeEditable();
-        await date(hand, end, '08/11/2026');
+        await date(hand, end, `${two(weekOn.getDate())}/${two(weekOn.getMonth() + 1)}/${weekOn.getFullYear()}`);
         await hand.keys('Tab');
         await see(node(page, 'f-duration-days')).toContainText('6.00 Days');
       },
