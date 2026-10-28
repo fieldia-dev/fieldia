@@ -33,10 +33,11 @@ import { validatePage } from '../libs/core/src/lib/format/validate';
  * - nowhere, for who else has a record open alone (live): it appears unbidden, as someone else opens the record, and no
  *   one looks for it where it is not; the record works whole without it, as with a source that keeps no one's
  *   presence. The browser's console names the file that could not load.
- * The whole check (check, 0.37) is a PAGE part: asked for as the script starts and waited for before a page's first
- * draw, it refuses what `validatePage` refuses; where it cannot come, the page is drawn on the checks fieldia.js carries
- * (every address, file and bound among them), said over the page with its reload, and once in the console and to
- * onError as a warning (page-check.spec.ts) — an availability failure takes no form down.
+ * The whole check (check, 0.37) is a PAGE part: asked for as the script starts and run once a page is drawn, never
+ * waited for, it takes down what `validatePage` refuses; where it cannot come, the page stays drawn on the checks
+ * fieldia.js carries (every address, file and bound among them), said over the page with its reload, and once in the
+ * console and to onError as a warning (page-check.spec.ts), its held writes let go — an availability failure takes no
+ * form down.
  *
  * Every page here is one `validatePage` passes (the first test): none may be refused as its whole check runs.
  */
@@ -181,8 +182,8 @@ const CASES: Record<string, Case | Case[]> = {
   business: { page: record({}, { priority: { type: 'selection', label: 'Priority', options: [{ value: '0', label: 'Normal' }, { value: '1', label: 'High' }] } }, [{ type: 'field', id: 'f-priority', field: 'priority', widget: 'priority' }]), ...field('f-priority') },
   // On a phone, where the cards are drawn: the list's rows in its table meanwhile.
   cards: { page: list({ card: {} }), source: people, viewport: { width: 390, height: 844 }, box: SEARCH, said: over, place: '#app .fd-list' },
-  // The whole check (0.37): asked for as the script starts, waited for before the draw. Without it the page is drawn on
-  // the checks fieldia.js carries, and said over it, as a part with no place of its own.
+  // The whole check (0.37): asked for as the script starts, run once the page is drawn. Without it the page stays drawn
+  // on the checks fieldia.js carries, and said over it, as a part with no place of its own.
   check: { page: record(), said: over },
   choice: { page: record({}, { kind: { type: 'selection', label: 'Kind', options: [{ value: 'villa', label: 'Villa' }, { value: 'flat', label: 'Flat' }] } }, [{ type: 'field', id: 'f-kind', field: 'kind', options: { search: true } }]), ...field('f-kind') },
   codes: { page: record({}, { link: { type: 'char', label: 'Ticket', default: 'https://fieldia.dev' } }, [{ type: 'field', id: 'f-link', field: 'link', widget: 'qrcode' }]), ...field('f-link') },
@@ -404,7 +405,7 @@ test.describe('each part failing in turn, from the one tag', () => {
     expect(Object.keys(CASES).filter((part) => !parts.includes(part)), 'cases for no part of fieldia.js').toEqual([]);
   });
 
-  test('every page here is one validatePage passes: none is refused as its whole check runs before the draw', () => {
+  test('every page here is one validatePage passes: none is taken down as its whole check runs', () => {
     const refused = Object.entries(CASES).flatMap(([part, cases]) =>
       [cases].flat().flatMap((one) => {
         const checked = validatePage(one.page);
