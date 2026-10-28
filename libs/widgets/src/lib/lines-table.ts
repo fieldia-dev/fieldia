@@ -6,7 +6,7 @@ import { drawIcon } from './icons';
 import { askFirst, fillIn, maker, setHidden } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { lineCopy, moveLineTo } from './line-moves';
-import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
+import { columnTotal, itemNumber, kindTextField, lineColumn, lineForm, openLineDialog, waitingTotal } from './lines';
 import { afterPress } from './press';
 import { installLinesStyles } from './styles-lines';
 import type { createWidget, Widget, WidgetContext, WidgetFactory } from './widgets';
@@ -36,6 +36,8 @@ import type { createWidget, Widget, WidgetContext, WidgetFactory } from './widge
  * (lines.ts), shared with the grid and the cards.
  */
 
+/** The kinds of field a line is named by: words, and a link by its name. */
+const NAMING = new Set(['char', 'text', 'html', 'many2one', 'reference']);
 /** The kinds of field whose column is as wide as its values, so the columns of words and links have the rest. */
 /** Columns of numbers, which grow past their kind's width for a long value. */
 const NUMERIC = new Set(['integer', 'float', 'monetary']);
@@ -123,6 +125,23 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     // Lines a line holds are edited in its form, never drawn in its row.
     (column) => def.fields[column] && def.fields[column].type !== 'one2many' && column !== kinds?.field && column !== def.sequenceField && node.optionalColumns?.[column] !== 'hide'
   );
+  // The columns a line is named by: its columns of words (a name, a description, a link), never a number or a day.
+  const naming = columns.filter((column) => NAMING.has(def.fields[column].type));
+  /**
+   * A line as a person names it — its ↑ and ↓, its move said aloud, its dialog's title: a section's or a note's words,
+   * else the first of its columns of words that holds some, as its cell reads at rest (a link by its name); none where
+   * it has none.
+   */
+  /** A name begun with its capital, as a title begins: "Line 3". */
+  const capital = (words: string) => words.charAt(0).toLocaleUpperCase(locale) + words.slice(1);
+  const wordsOf = (line: Line) => {
+    if (!isItem(line) && kinds) return String(line.values[kinds.text] ?? '').trim();
+    for (const column of naming) {
+      const words = cellText(lineColumn(form, name, line.key, column, def.fields[column]), line.values[column], line.values, locale, form.getState().values, node.cells?.[column]).trim();
+      if (words) return words;
+    }
+    return '';
+  };
   const element = document.createElement('div');
   element.className = 'fd-lines';
   element.id = id;
@@ -345,9 +364,7 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     const down = readonly || index === count - 1;
     if (moves.up.hidden !== up) moves.up.hidden = up;
     if (moves.down.hidden !== down) moves.down.hidden = down;
-    const first = line.values[lineKind(def, line.values) && kinds ? kinds.text : columns[0]];
-    const typed = typeof first === 'string' ? first : first && typeof first === 'object' && 'label' in first ? String(first.label ?? '') : '';
-    const said = typed.trim() || fillIn(labels.lineN, { n: number || index + 1 });
+    const said = wordsOf(line) || fillIn(labels.lineN, { n: number || index + 1 });
     if (moves.said === said) return;
     moves.said = said;
     for (const [button, pattern] of [[moves.up, labels.moveUp], [moves.down, labels.moveDown]] as const) {
@@ -370,14 +387,14 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
     const from = current().findIndex((line) => line.key === key);
     if (readonly || to === from || to < 0 || to >= current().length) return;
     const focused = document.activeElement as HTMLElement | null;
-    // Named by its first column's words, else by where it was.
-    const first = current()[from].values[columns[0]];
+    // Named by its words, else by where it was.
+    const words = wordsOf(current()[from]);
     // Where it is on the screen, kept as it goes: a card moved stays where the eye is (kept-in-sight.ts).
     const top = rows.get(key)?.element.getBoundingClientRect().top;
     moveLineTo(form, name, def, key, to);
     keepInSight(rows.get(key)?.element, top);
     if (focused && focused !== document.activeElement) focused.focus({ preventScroll: true });
-    voice.textContent = fillIn(labels.movedTo, { label: typeof first === 'string' && first.trim() ? first : fillIn(labels.lineN, { n: itemNumber(current(), key, isItem) || from + 1 }), n: to + 1, total: current().length });
+    voice.textContent = fillIn(labels.movedTo, { label: words || fillIn(labels.lineN, { n: itemNumber(current(), key, isItem) || from + 1 }), n: to + 1, total: current().length });
   }
   /**
    * A line lifted by its grip: it follows the pointer, the lines it passes
@@ -703,7 +720,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       const open = make('button', { type: 'button', class: 'fd-line-open', 'aria-label': labels.openLine, title: labels.openLine }, '↗') as HTMLButtonElement;
       open.addEventListener('click', () => {
         const now = current().find((l) => l.key === line.key);
-        if (now) void openLineDialog(form, name, node, now, dialogs, readonly);
+        // Titled as one line, by its words, else by its number ("Line 3"): never by the table's plural.
+        if (now) void openLineDialog(form, name, node, now, dialogs, readonly, (read) => wordsOf(read) || capital(fillIn(labels.lineN, { n: itemNumber(current(), read.key, isItem) })));
       });
       tools.append(open);
     }

@@ -79,11 +79,12 @@ export const cardsWidget =
     };
     const at = () => lines().findIndex((l) => l.key === line.key);
     const tools = [tool('↑', 'moveUp', () => move(line.key, at() - 1)), tool('↓', 'moveDown', () => move(line.key, at() + 1)), tool('⧉', 'copy', () => copy(line.key))];
-    // Its own form (lineForm), its own page or every field (lineOpens), in a dialog — the card is named by its title, so ↗ need not repeat it.
+    // Its own form (lineForm), its own page or every field (lineOpens), in a dialog — the card is named by its title, so ↗ need not repeat it;
+    // the dialog is titled as the card is ("Contact 2"), never by the table's plural.
     const open = dialogs && (node.lineOpens || node.lineForm) ? make('button', { type: 'button', class: 'fd-repeat-tool fd-line-open', 'aria-label': words.openLine, title: words.openLine }, '↗') : null;
     open?.addEventListener('click', () => {
       const now = lines().find((l) => l.key === line.key);
-      if (now && dialogs) void openLineDialog(form, name, node, now, dialogs, readonly);
+      if (now && dialogs) void openLineDialog(form, name, node, now, dialogs, readonly, () => title.textContent ?? '');
     });
     const body = make('div', { class: 'fd-repeat-fields' });
     const cardElement = make('div', { class: 'fd-repeat-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-repeat-head' }, title, ...tools.map(([b]) => b), ...(open ? [open] : []), remove), body);

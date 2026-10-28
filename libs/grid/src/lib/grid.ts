@@ -1509,7 +1509,19 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // AG Grid copies column definitions deeply, so the button calls through, never a copy.
   // With dialogs, a line can be opened to see and edit every one of its fields at once.
   // Its own record's page, by the table's model (lineOpens: "record"), or every one of its fields.
-  const openLine = (line: Line) => (dialogs ? openLineDialog(form, name, node, line, dialogs, readonly) : undefined);
+  // Titled as its card is headed, by the columns shown now — the line as it reads once what was typed is read, never the
+  // row's data as AG Grid last drew it.
+  const openLine = (line: Line) => (dialogs ? openLineDialog(form, name, node, line, dialogs, readonly, (read) => titleOf(read, columns.filter((column) => !ruleHidden.has(column) && api.getColumn(column)?.isVisible() !== false))) : undefined);
+  /**
+   * A line as its card is headed and its dialog titled, never by the table's plural (the 0.36 walk: one order line
+   * titled "Order lines"): a section or a note by its words, else its box's label; an item by its first column of words
+   * shown, as its cell reads, else by its place ("Line 3").
+   */
+  function titleOf(line: Line, shown: readonly string[]): string {
+    if (kindOf(line) && kinds) return String(line.values[kinds.text] ?? '') || (def.fields[kinds.text]?.label ?? '');
+    const first = titleColumn(shown.filter((column) => !lineStates.get(line.key)?.cells[column]?.invisible));
+    return (first && cellWords(line, first, form.getState().values)) || placeName(numberOf(line));
+  }
   /**
    * A card's line in its own form: an item's every field, a section's or a note's words alone. A line the grid just
    * added that comes back as it was added — let go, nothing typed — goes again, as Escape takes one from the grid.
@@ -1520,7 +1532,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const before = JSON.stringify(line.values);
     if (kindOf(line) && kinds) {
       const text = def.fields[kinds.text] as Field;
-      const values = await dialogs.editValues({ title: def.label, fields: { [kinds.text]: text }, values: { [kinds.text]: line.values[kinds.text] ?? null }, readonly, ...(form.page.lowerLabels === undefined ? {} : { lowerLabels: form.page.lowerLabels }) });
+      const values = await dialogs.editValues({ title: titleOf(line, []), fields: { [kinds.text]: text }, values: { [kinds.text]: line.values[kinds.text] ?? null }, readonly, ...(form.page.lowerLabels === undefined ? {} : { lowerLabels: form.page.lowerLabels }) });
       if (values && lines().some((one) => one.key === key)) form.updateLine(name, key, kinds.text, values[kinds.text] ?? null);
     } else await openLine(line);
     const now = lines().find((one) => one.key === key);
@@ -2151,7 +2163,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         const open = document.createElement('button');
         open.type = 'button';
         open.className = 'fd-line-card-title fd-grid-words';
-        open.textContent = words || (def.fields[kinds.text]?.label ?? '');
+        open.textContent = titleOf(line, shownColumns);
         open.addEventListener('click', () => void openCard(line.key));
         card.append(open);
       }
@@ -2176,7 +2188,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     /** Words a person typed, in their own direction (`fd-grid-words`). */
     const typed = (column: string | undefined) => !!column && (def.fields[column]?.type === 'char' || def.fields[column]?.type === 'text');
     title.className = typed(first) ? 'fd-line-card-title fd-grid-words' : 'fd-line-card-title';
-    title.textContent = first ? text(first) || placeName(numberOf(line)) : '';
+    title.textContent = first ? titleOf(line, shownColumns) : '';
     if (dialogs && title instanceof HTMLButtonElement) {
       title.type = 'button';
       title.addEventListener('click', () => void openLine(line));
