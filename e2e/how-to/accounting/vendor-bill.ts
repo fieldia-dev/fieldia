@@ -55,11 +55,15 @@ export const replay: DemoReplay = {
       },
     },
     {
-      says: 'Press Duplicate: the copy shows as “… (copy)”, a draft',
+      says: 'Press Duplicate: the copy is a draft with no number yet',
       async run({ page, press, see }) {
         await press(page.locator('.fd-record-bar .fd-record-gear'));
         await press(page.getByRole('menuitem', { name: 'Duplicate' }));
-        await see(page.locator('.fd-title [data-field="name"] textarea')).toHaveValue('BILL/2026/10/0001 (copy)');
+        // No number and no dates, as Odoo's draft copy: its title says Draft.
+        await see(page.locator('.fd-title [data-field="name"] textarea')).toHaveValue('');
+        await see(page.locator('.fd-title [data-field="name"] textarea')).toHaveAttribute('placeholder', 'Draft');
+        await see(page.locator('[data-node="f-date"] input')).toHaveValue('');
+        await see(page.locator('[data-node="f-due"] input')).toHaveValue('');
         // A copy of the posted bill is a draft, to change and confirm on its own.
         await see(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Draft');
         await see(page.getByRole('button', { name: 'Confirm' })).toBeVisible();

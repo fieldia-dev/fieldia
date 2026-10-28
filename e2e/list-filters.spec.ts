@@ -280,11 +280,12 @@ test.describe('invoices, their filters in two groups', () => {
     await page.getByRole('button', { name: 'Search options' }).click();
     const menu = page.locator('.fd-search-group[data-group-kind="filters"]');
     // Overdue in a group of its own, the periods in another: a line between them.
-    await expect(menu.locator('.fd-search-option[data-filter], [role="separator"]')).toHaveText(['Overdue', '', 'This month', 'Last month', 'This year']);
-    // Pressed, a filter's name starts with its tick (✓): found by its words' end.
-    await menu.getByRole('button', { name: /Overdue$/ }).click();
-    await expect(menu.getByRole('button', { name: /Overdue$/ })).toHaveAttribute('aria-pressed', 'true');
-    await expect(menu.getByRole('button', { name: /This year$/ })).toHaveAttribute('aria-pressed', 'true');
+    // Each with how many it finds (`filterCounts`, 0.37 walk: a gallery list shows counts with groups).
+    await expect(menu.locator('.fd-search-option[data-filter], [role="separator"]')).toHaveText([/^Overdue\s*\d/, '', /^This month\s*\d/, /^Last month\s*\d/, /^This year\s*\d/]);
+    // Pressed, a filter's name starts with its tick (✓), its count after it: found by its words.
+    await menu.getByRole('button', { name: /Overdue, / }).click();
+    await expect(menu.getByRole('button', { name: /Overdue, / })).toHaveAttribute('aria-pressed', 'true');
+    await expect(menu.getByRole('button', { name: /This year, / })).toHaveAttribute('aria-pressed', 'true');
     await expect(chips).toHaveText(['This year', 'Overdue']);
     // Both hold: this year's invoices sent and not paid by their due date — fewer than every overdue one.
     const found = all.filter((invoice) => thisYear(invoice) && overdue(invoice));

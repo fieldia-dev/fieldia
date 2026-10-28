@@ -51,6 +51,7 @@
       { "id": "this_year", "label": "This year", "period": { "field": "invoice_date", "is": "thisYear" }, "group": "invoice_date" }
     ],
     "defaultFilters": ["this_year"],
+    "filterCounts": true,
     "card": { "title": "name", "subtitle": "partner_id", "status": "state", "lead": true, "fields": ["amount", "invoice_date", "due_date"] },
     "groupBy": ["city", "partner_id", "invoice_date", "state", "currency_id"],
     "actions": [{ "type": "button", "id": "send-reminder", "label": "Send a reminder", "action": "send_reminder" }],

@@ -34,8 +34,11 @@ export const replay: DemoReplay = {
         await see(names.last()).toHaveValue('New Capital site office');
         await press(cards.getByRole('button', { name: 'Add', exact: true }));
         await see(names).toHaveCount(5);
-        await press(cards.locator('.fd-repeat-card[data-line="c7002"]').getByRole('button', { name: 'Open line' }));
-        const dialog = page.getByRole('dialog', { name: 'Contact' });
+        const card = cards.locator('.fd-repeat-card[data-line="c7002"]');
+        const name = await card.getByRole('textbox', { name: 'Contact Name' }).inputValue();
+        await press(card.getByRole('button', { name: 'Open line' }));
+        // Titled by the contact's name, as a table's line by its words (the 0.37 walk: "Contact 2" over Rania Fawzy).
+        const dialog = page.getByRole('dialog', { name, exact: true });
         await see(dialog.getByRole('radio', { name: 'Contact', exact: true })).toBeChecked();
         await see(dialog.locator('[data-node="child-function"] input')).toHaveValue('Chief Financial Officer');
         await see(dialog.locator('[data-node="child-address"]')).toBeHidden();

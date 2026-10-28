@@ -16,7 +16,14 @@ const today = () => dayKey(new Date());
 
 /** What the list's filters find, each as the demo's page defines it (examples/pages/invoices.page.json). */
 const thisYear = (invoice: Invoice) => invoice.invoice_date.startsWith(today().slice(0, 4));
+const thisMonth = (invoice: Invoice) => invoice.invoice_date.startsWith(today().slice(0, 7));
+const lastMonth = (invoice: Invoice) => {
+  const now = new Date();
+  return invoice.invoice_date.startsWith(dayKey(new Date(now.getFullYear(), now.getMonth() - 1, 1)).slice(0, 7));
+};
 const overdue = (invoice: Invoice) => invoice.state === 'sent' && invoice.due_date < today();
+/** A filter's name as the menu says it with its count (`filterCounts`): "Overdue, 3 invoices". */
+const counted = (words: string, n: number) => `${words}, ${n.toLocaleString('en')} ${n === 1 ? 'invoice' : 'invoices'}`;
 
 /** An amount as the list writes one: its currency, then the number in full. */
 const money = (amount: number, currency = 'EGP') => `${currency} ${amount.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -92,7 +99,25 @@ export const replay: DemoReplay = {
       },
     },
     {
-      says: 'Open the menu at the end of the search box and turn on Overdue: this year’s invoices sent and not paid',
+      says: 'Open the menu at the end of the search box: each filter says how many invoices it finds, with This year on',
+      async run(hand) {
+        const { page, see } = hand;
+        await searchMenu(hand, true);
+        await see(menuOf(page)).toBeVisible();
+        const filters = menuOf(page).getByRole('group', { name: 'Filters' });
+        // Each counted as if it alone of its group were on, among the rest of the search: Overdue among this year's, each
+        // period in This year's place.
+        const all = await invoicesOf(hand);
+        const year = all.filter(thisYear);
+        await see(filters.getByRole('button', { name: counted('Overdue', year.filter(overdue).length), exact: true })).toBeVisible();
+        await see(filters.getByRole('button', { name: counted('This month', all.filter(thisMonth).length), exact: true })).toBeVisible();
+        await see(filters.getByRole('button', { name: counted('Last month', all.filter(lastMonth).length), exact: true })).toBeVisible();
+        await see(filters.getByRole('button', { name: counted('This year', year.length), exact: true })).toHaveAttribute('aria-pressed', 'true');
+        await searchMenu(hand, false);
+      },
+    },
+    {
+      says: 'Turn on Overdue: this year’s invoices sent and not paid',
       async run(hand) {
         const { page, press, see } = hand;
         await searchMenu(hand, true);
@@ -100,9 +125,12 @@ export const replay: DemoReplay = {
         const filters = menuOf(page).getByRole('group', { name: 'Filters' });
         // Overdue in a group of its own, the periods in another, a line between them.
         await see(filters.locator('.fd-search-option[data-filter], [role="separator"]')).toHaveText([/^Overdue/, '', /^This month/, /^Last month/, /^This year/]);
-        await press(filters.getByRole('button', { name: /Overdue$/ }));
-        await see(filters.getByRole('button', { name: /Overdue$/ })).toHaveAttribute('aria-pressed', 'true');
-        await see(filters.getByRole('button', { name: /This year$/ })).toHaveAttribute('aria-pressed', 'true');
+        await press(filters.getByRole('button', { name: /^Overdue,/ }));
+        await see(filters.getByRole('button', { name: /^Overdue,/ })).toHaveAttribute('aria-pressed', 'true');
+        await see(filters.getByRole('button', { name: /^This year,/ })).toHaveAttribute('aria-pressed', 'true');
+        // The periods counted again, among this year's overdue invoices: This month's among them.
+        const overdueAll = (await invoicesOf(hand)).filter(overdue);
+        await see(filters.getByRole('button', { name: counted('This month', overdueAll.filter(thisMonth).length), exact: true })).toBeVisible();
         await searchMenu(hand, false);
         await see(chips(page)).toHaveText(['This year', 'Overdue']);
         // This year's invoices sent and not paid by their due date, counted from today: both hold, and no other. Early in
@@ -138,9 +166,9 @@ export const replay: DemoReplay = {
       async run(hand) {
         const { page, press, see } = hand;
         await searchMenu(hand, true);
-        await press(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /Overdue$/ }));
-        await press(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /This year$/ }));
-        await see(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /This year$/ })).toHaveAttribute('aria-pressed', 'false');
+        await press(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /^Overdue,/ }));
+        await press(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /^This year,/ }));
+        await see(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /^This year,/ })).toHaveAttribute('aria-pressed', 'false');
         const dates = menuOf(page).getByRole('group', { name: 'Invoice date' });
         await press(dates.getByRole('button', { name: /Month$/ }));
         await see(dates.getByRole('button', { name: /Month$/ })).toHaveAttribute('aria-pressed', 'false');
@@ -221,7 +249,8 @@ export const replay: DemoReplay = {
         await press(panel.getByRole('button', { name: 'Save current search' }));
         await type(panel.getByRole('textbox', { name: 'Name of the search' }), 'Last seven days');
         await press(panel.getByRole('button', { name: 'Save', exact: true }));
-        const favourite = panel.getByRole('group', { name: 'Favourites' }).getByRole('button', { name: 'Last seven days', exact: true });
+        // Named with how many it finds, as the list counts its filters.
+        const favourite = panel.getByRole('group', { name: 'Favourites' }).getByRole('button', { name: /^Last seven days(, \d[\d,]* invoices?)?$/ });
         await see(favourite).toBeVisible();
         // Kept as the period, not the days it is today: taken away and used again, it is the last seven days.
         const kept = await page.evaluate(() => Object.entries({ ...sessionStorage, ...localStorage }).find(([key]) => key.includes('favourites:invoices'))?.[1] ?? '');

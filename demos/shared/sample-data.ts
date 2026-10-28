@@ -315,7 +315,7 @@ export const pages: Record<string, PageSource> = {
 export async function pageFromQuery(params: URLSearchParams): Promise<Page> {
   // A record opened from a list's row: the list's own page too, at once, for its name over the record (`trailFromQuery`).
   const from = listOpening(params);
-  const list = from ? pageOf(pages[from]).then((page) => (listTitles[from] = page.title ?? ''), () => undefined) : undefined;
+  const list = from ? pageOf(pages[from]).then((page) => (listTitles[from] = page.layout.type === 'list' ? (page.title ?? '') : ''), () => undefined) : undefined;
   // The code page in the editor the demo's switch picked.
   const named = params.get('page') === 'code' ? codePageFor(params.get('editor')) : await pageOf(pages[params.get('page') ?? 'signup'] ?? pages['signup']);
   await list;
@@ -411,7 +411,7 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
   if (!opensRows(params)) return;
   // The list it came from first, then the list's own address as it was — its page the record's, the record last.
   const next = new URLSearchParams([['from', params.get('page') ?? ''], ...[...params].filter(([key]) => key !== 'from')]);
-  next.set('page', RECORD_PAGES[params.get('page') ?? ''] ?? 'customer');
+  next.set('page', recordPageOf(params.get('page') ?? ''));
   // What kept the list to one record's records is the list's, not the record's.
   next.delete('filter');
   next.delete('search');
@@ -420,10 +420,16 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
   location.search = next.toString();
 }
 
-/** The list a record's address says it was opened from (`from`): one whose rows open records of this page. */
+/** The page a list's rows open their records on: its own, else the customer's — the Customer list's among them. */
+const recordPageOf = (list: string): string => RECORD_PAGES[list] ?? 'customer';
+
+/**
+ * The list a record's address says it was opened from (`from`): one whose rows open records of this page — by the one
+ * rule `openRecord` opens them by (the 0.37 walk: the Customer list's customer had no way back, its list in no table).
+ */
 function listOpening(params: URLSearchParams): string | null {
   const from = params.get('from');
-  return from && RECORD_PAGES[from] === params.get('page') && pages[from] ? from : null;
+  return from && pages[from] && opensRows(new URLSearchParams({ page: from })) && recordPageOf(from) === params.get('page') ? from : null;
 }
 
 /** The titles of the lists records were opened from, as `pageFromQuery` fetched them with the record's page. */

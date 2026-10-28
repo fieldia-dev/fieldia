@@ -86,9 +86,15 @@ export function billNavigation(): { records: RecordId[]; breadcrumbs: Breadcrumb
 }
 
 let debitNotes = 0;
+/** The bills numbered so far: the four of the demo. */
+let numbered = Object.keys(BILLS).length;
 
-/** The app's answers to the bill's own actions: a debit note made on the server, posted in the conversation; the bill printed. */
+/**
+ * The app's answers to the bill's own actions: a debit note made on the server, posted in the conversation; the bill
+ * printed; a draft confirmed given its number where it has none — a copy, which keeps none, as Odoo's (`copy: false`).
+ */
 export function answerBill(request: ActionRequest): ActionResult | undefined {
+  if (request.action === 'number_bill') return request.values['name'] ? {} : { values: { name: `BILL/2026/10/${String(++numbered).padStart(4, '0')}` } };
   if (request.action === 'action_debit_note') {
     const note = `DN/2026/10/${String(++debitNotes).padStart(4, '0')}`;
     return { say: { message: `Debit note ${note} made`, tone: 'success' }, post: { message: `Debit note ${note} made for ${String(request.values['name'])}`, kind: 'note' } };

@@ -328,7 +328,8 @@ export const DEMOS = [
     howTo: [
       'The list opens on This year: the total of this year’s invoices is under the Amount column.',
       'Tick three invoices: a row over the total says “3 selected” and adds up those three.',
-      'Open the menu at the end of the search box and turn on Overdue: this year’s invoices sent and not paid by their due date, counted from today — Overdue and the periods are filters of two groups, a line between them, and both hold.',
+      'Open the menu at the end of the search box: each filter says how many invoices it finds, with This year on — Overdue this year’s overdue ones, and each period as if it alone of its group were on: This month this month’s, Last month last month’s.',
+      'Turn on Overdue: this year’s invoices sent and not paid by their due date, counted from today — Overdue and the periods are filters of two groups, a line between them, and both hold; the periods are counted again, among this year’s overdue invoices.',
       'Under Group By, press Month beside Invoice date: a heading for each month, its count and its sum.',
       'Turn Overdue, This year and Month off, and group by City: Dubai’s invoices are in dollars, summed in dollars; the list’s total has none, as no honest sum of pounds and dollars exists.',
       'Type “cairo” in the search box and pick City: Cairo, group by Customer in place of City, and press Print: every invoice the search finds — not just this page — under its customer with its sum, the total under them, and over them the filters in words and the day.',
@@ -1445,7 +1446,7 @@ export const DEMOS = [
     howTo: [
       'Press › beside “3 / 4” at the top (or Alt+N): the next bill comes, “4 / 4” after it, and round to the first; the PDF beside it follows.',
       'Open the gear menu with the arrow keys: Print, then Debit Note, Archive and Duplicate. Press Debit Note: the note is said and posted in the conversation.',
-      'Press Duplicate: the copy shows as “… (copy)”, a draft to change and confirm on its own, its bill and payment references empty — a payment quoting it never names the posted bill — and the count beside the arrows is five.',
+      'Press Duplicate: the copy is a draft with no number yet — its title says “Draft” — its dates and its bill and payment references empty, as Odoo’s copy (a payment quoting it never names the posted bill), and the count beside the arrows is five. Confirm gives it its number.',
       'On BILL/2026/10/0002, press Archive and say yes: an Archived banner crosses it and the menu offers Unarchive.',
       'Make the window narrow: BILL/2026/10/0002 has no PDF, and the conversation stays beside it until a phone’s width. Press › for a bill with its PDF: the PDF and the conversation go under the sheet.',
     ],
