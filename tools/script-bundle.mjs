@@ -3318,10 +3318,11 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // encoder given to the editor, 0.36.1's cover kept in sight), to 31.5; list 160.07 and 52.38, files 51.24 and 19.09,
 // memory 26.14 and 9.46, check 65.15 and 17.22, filters, import, scan, rows, survey and prefill as 0.36.1 measured
 // them, each inside its budget.
-const PART_BUDGET_KB = { acts: [40.0, 14.0], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.4], choice: [12.2, 4.9], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.1, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.0, 16.6], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.2], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+const PART_BUDGET_KB = { acts: [40.0, 14.0], html: [12.0, 5.0], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.4], choice: [12.2, 4.9], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.1, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.0, 16.6], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.2], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
-  acts: ['createRunner', 'openFormDialog', 'openFormPanel', 'openSearchDialog', 'openPage', 'askBox'],
+  acts: ['createRunner', 'openFormDialog', 'openFormPanel', 'openSearchDialog', 'openPage', 'askBox', 'conflictBanners'],
+  html: ['classicHtml'],
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
   text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu', 'cleanPasted', 'pasteHtml', 'putHtml'],
   path: ['pathPickerWidget', 'checkTreeWidget'],
@@ -3378,7 +3379,7 @@ const PART_GIVES = {
   outbox: ['join', 'draw', 'watchOutbox', 'installOutboxStyles', 'memoryOutbox', 'indexedOutbox'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { acts: 'actsPart', head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', check: 'pageCheckPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
+const PART_OF = { acts: 'actsPart', html: 'htmlPart', head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', check: 'pageCheckPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
 /**
  * A part's handle in a page's `Fieldia`: its own export (PART_OF) — or, for the parts that join a form (the fields a
  * link fills, proof by a code, a payment, an outbox: 0.30), named on no export of their own, the one of that name among
@@ -3816,10 +3817,11 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   account.destroy();
   gone('account');
   // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
+  // Its formatted text drawn at once too, plainly, its toolbar's part asked for as it is (the html part: drawn in place).
   const themed = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource(), theme: 'material' });
   if (!host.querySelector('.fd-field') || themed.element.hasAttribute('data-fd-theme')) throw new Error('in a page, a theme the app gives held the page back, or was worn before its part came');
   await themed.drawn;
-  hasIn('a theme the app gives', 'cards, columns, import, list, loading, phone, print, relations, themes');
+  hasIn('a theme the app gives', 'cards, columns, html, import, list, loading, phone, print, relations, themes');
   if (themed.element.getAttribute('data-fd-theme') !== 'material' || !doc.getElementById('fieldia-theme-styles')) throw new Error('in a page, a theme the app gives is not worn from its part');
   themed.setTheme('odoo');
   if (themed.element.getAttribute('data-fd-theme') !== 'odoo') throw new Error('in a page, a theme switched to is not worn at once once its part is in');
@@ -3830,7 +3832,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const order = inPage.mountViewer(host, { page: read('rules.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(order, 'a page with a table of lines');
   await order.drawn;
-  hasIn('an order with a table of lines', 'cards, columns, import, lines, list, loading, phone, print, relations, themes');
+  hasIn('an order with a table of lines', 'cards, columns, html, import, lines, list, loading, phone, print, relations, themes');
   if (!host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error('in a page, a table of lines is not drawn from its part');
   order.destroy();
   gone('order');
@@ -3839,7 +3841,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(customer, 'a sheet with a statusbar and a photo');
   await customer.drawn;
-  hasIn("a customer's sheet", 'business, cards, columns, files, import, lines, list, loading, phone, print, relations, themes');
+  hasIn("a customer's sheet", 'business, cards, columns, files, html, import, lines, list, loading, phone, print, relations, themes');
   if (!host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error('in a page, a statusbar is not drawn from its part');
   if (!host.querySelector('.fd-file.fd-file-image .fd-file-pick')) throw new Error('in a page, a customer\'s photo is not drawn from its part');
   customer.destroy();
@@ -3848,7 +3850,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(bug, "a work item's bug");
   await bug.drawn;
-  hasIn("a work item's bug", 'business, cards, choice, columns, files, head, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
+  hasIn("a work item's bug", 'business, cards, choice, columns, files, head, html, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
   if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || !host.querySelector('.fd-field[data-quiet]') || bug.element.getAttribute('data-fd-theme') !== 'fluent' || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
   for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
   bug.destroy();
@@ -3856,7 +3858,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   // Its backlog: the filter bar's part too.
   const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
   await backlog.drawn;
-  hasIn('a backlog', 'business, cards, choice, columns, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
+  hasIn('a backlog', 'business, cards, choice, columns, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
   if (!host.querySelector('.fd-filter-bar')) throw new Error("in a page, a backlog's filter bar is not drawn from its part");
   backlog.destroy();
   gone('backlog');
@@ -3865,7 +3867,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(signup, 'a page with a date');
   await signup.drawn;
-  hasIn('a sign-up with a date and a bot check', 'business, cards, choice, columns, date, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
+  hasIn('a sign-up with a date and a bot check', 'business, cards, choice, columns, date, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
   if (!host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error('in a page, a date is not drawn from its part');
   if (!host.querySelector('.fd-trap[inert] input[name="website"]')) throw new Error("in a page, a public page's bot check has no hidden box");
   signup.destroy();
@@ -3874,7 +3876,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const survey = inPage.mountViewer(host, { page: read('survey.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(survey, 'a survey');
   await survey.drawn;
-  hasIn('a survey with a matrix', 'business, cards, choice, columns, date, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, survey, text, themes');
+  hasIn('a survey with a matrix', 'business, cards, choice, columns, date, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, survey, text, themes');
   if (!host.querySelector('.fd-matrix-table')) throw new Error('in a page, a matrix is not drawn from its part');
   survey.destroy();
   gone('survey');
@@ -3886,7 +3888,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   waits(drive, 'a test drive');
   await drive.drawn;
   await tick(0);
-  hasIn("a test drive's slots", 'business, cards, choice, columns, date, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("a test drive's slots", 'business, cards, choice, columns, date, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes');
   if (!host.querySelector('.fd-slots .fd-slots-days') || !asked.length) throw new Error('in a page, booking slots are not drawn from their part');
   drive.destroy();
   gone('drive');
@@ -3897,7 +3899,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const card = inPage.mountViewer(host, { page: read('customer-card.page.json'), dataSource: inPage.createMemoryDataSource({ duplicates: like }), values: { email: 'orders@niletraders.example' } });
   if (!host.querySelector('.fd-field[data-path="email"]')) throw new Error('in a page, possible duplicates kept the card from being drawn');
   if (!(await until(() => host.querySelector('.fd-field[data-path="email"] .fd-duplicates')))) throw new Error('in a page, a possible duplicate is not said under its field');
-  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
+  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
   if (!doc.getElementById('fieldia-duplicates-styles')) throw new Error("in a page, possible duplicates' sheet was never put in");
   card.destroy();
   gone('card');
@@ -3908,7 +3910,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const kinds = inPage.mountViewer(host, { page: read('kinds.page.json'), dataSource: inPage.createMemoryDataSource() });
   await kinds.drawn;
   await tick(0);
-  hasIn("a survey's plain signature", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
+  hasIn("a survey's plain signature", 'business, cards, choice, columns, date, duplicates, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
   if (!host.querySelector('.fd-signature .fd-signature-pad') || host.querySelector('.fd-signature-evidence')) throw new Error("in a page, a plain signature is not the files part's alone");
   kinds.destroy();
   gone('kinds');
@@ -3921,7 +3923,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const consent = inPage.mountViewer(host, { page: consentPage, recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.consent': { 1: signedRecord } } }) });
   waits(consent, 'a consent whose signature signs its answers');
   await consent.drawn;
-  hasIn('a consent signed, its evidence', 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
+  hasIn('a consent signed, its evidence', 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('.fd-signature-state:not([hidden])')?.textContent === '✓The answers are as they were signed.')) || !host.querySelector('.fd-signature-who')?.textContent.startsWith('Signed by Mona Adel, 14 Oct 2026')) throw new Error(`in a page, a consent's evidence is not said under its signature: ${host.querySelector('.fd-signature-evidence')?.textContent ?? 'none'}`);
   if (!host.querySelector('[data-node="f-treatment"] select')?.disabled) throw new Error("in a page, a consent's signed answer is not locked");
   // Its parts come by script tags of their own, asked for anew once one failed: what offers to try again may.
@@ -3938,12 +3940,12 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   await siteVisit.drawn;
   await tick(0);
   // Its floor plan's snags are pins on a picture: the pins part comes with the page.
-  hasIn("a site visit's Record", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, pins, print, quiet, relations, slots, survey, text, themes, undo');
+  hasIn("a site visit's Record", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, pins, print, quiet, relations, slots, survey, text, themes, undo');
   const recordVoice = [...host.querySelectorAll('[data-node="f-voice"] .fd-file-record')];
   if (recordVoice.map((button) => button.textContent).join() !== 'Record a voice note' || host.querySelector('[data-node="f-clips"] .fd-file-record')?.textContent !== 'Record a video') throw new Error("in a page, a site visit's fields offer no Record");
   recordVoice[0].click();
   if (!(await until(() => host.querySelector('.fd-recorder .fd-recorder-said')?.textContent === 'Ready. Press Start recording.'))) throw new Error(`in a page, Record opens no recorder: ${host.querySelector('.fd-recorder')?.textContent ?? 'none'}`);
-  hasIn("a site visit's Record pressed", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a site visit's Record pressed", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   [...host.querySelectorAll('.fd-recorder button')].find((button) => button.textContent === 'Cancel').click();
   if (host.querySelector('.fd-recorder')) throw new Error('in a page, Cancel leaves the recorder open');
   siteVisit.destroy();
@@ -3953,14 +3955,14 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const ticket = inPage.mountViewer(host, { page: read('event-ticket.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'event.ticket': { 1: { attendee: 'Mona Adel', reference: 'TKT-2026-0042', ticket_link: 'https://tickets.example/t/TKT-2026-0042', badge_number: 20261105 } } } }) });
   waits(ticket, "a ticket's codes");
   await ticket.drawn;
-  hasIn("a ticket's codes", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a ticket's codes", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('[data-node="f-link"] svg[role="img"]')?.getAttribute('aria-label') === 'QR code: https://tickets.example/t/TKT-2026-0042')) || host.querySelector('[data-node="f-reference"] svg')?.getAttribute('aria-label') !== 'Barcode: TKT-2026-0042') throw new Error(`in a page, a ticket's codes are not drawn: ${host.querySelector('.fd-code')?.outerHTML.slice(0, 200) ?? 'none'}`);
   ticket.destroy();
   gone('ticket');
   // A treatment's face chart (0.31): the pins part — in since the site visit's floor plan — draws each pin, named.
   const chart = inPage.mountViewer(host, { page: read('face-chart.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.chart': { 1: { patient: 'Hana Fouad', injections: [{ x: 0.4, y: 0.29, note: 'Botox, 4 units' }] } } } }) });
   await chart.drawn;
-  hasIn("a treatment's face chart", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a treatment's face chart", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('[data-node="f-injections"] .fd-pin')?.getAttribute('aria-label') === 'Pin 1, top, 40% across, 29% down: Botox, 4 units'))) throw new Error(`in a page, a face chart's pins are not drawn: ${host.querySelector('.fd-pins')?.outerHTML.slice(0, 200) ?? 'none'}`);
   chart.destroy();
   gone('face chart');
@@ -3970,8 +3972,8 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const closed = inPage.mountViewer(host, { page: { ...read('event-signup.page.json'), limits: { closes: '2020-01-31' } }, dataSource: inPage.createMemoryDataSource() });
   waits(closed, 'a sign-up that closed');
   await closed.drawn;
-  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
-  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, html, import, limits, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, html, import, limits, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   if (!host.querySelector('.fd-closed:not([hidden]) .fd-closed-title')?.textContent?.startsWith('This form closed on')) throw new Error("in a page, a closed form's words are not said in place of its questions");
   if ([...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]')) || !host.querySelector('.fd-page-title')?.closest('.fd-content:not([hidden])')) throw new Error("in a page, a closed form's questions are shown, or its title is not");
   if (!doc.getElementById('fieldia-limits-styles')) throw new Error("in a page, the limits part's sheet was never put in");
@@ -3983,8 +3985,8 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const visit = inPage.mountViewer(host, { page: read('visit-feedback.page.json'), dataSource: inPage.createMemoryDataSource(), values: { birth_date: '1990-10-20' }, now: () => new dom.window.Date('2026-10-20T12:00:00Z') });
   waits(visit, 'a page whose formula counts an age');
   await visit.drawn;
-  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
-  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, html, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, html, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');
@@ -4002,7 +4004,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   });
   waits(approving, 'a purchase order waiting for approval');
   await approving.drawn;
-  hasIn('a purchase order waiting for approval', 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn('a purchase order waiting for approval', 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, html, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('.fd-approval:not([hidden]) .fd-approval-title')?.textContent === 'Waiting for Finance: Mona Adel'))) throw new Error(`in a page, a purchase order waiting for approval does not say so: ${host.querySelector('.fd-approval')?.textContent ?? 'none'}`);
   if (!host.querySelector('[data-node="f-requested"] input')?.readOnly || host.querySelector('[data-node="f-notes"] textarea')?.readOnly) throw new Error('in a page, a purchase order waiting for approval does not lock its fields but the one it leaves open');
   if (!doc.getElementById('fieldia-approvals-styles')) throw new Error("in a page, the approvals part's sheet was never put in");
@@ -4013,7 +4015,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const prices = inPage.mountViewer(host, { page: read('service-prices.page.json'), dataSource: inPage.createMemoryDataSource({ records: { 'clinic.service': { 1: { name: 'Hydrafacial', category: 'skin', minutes: 60, price: 2800, active: true } } } }) });
   waits(prices, 'a list whose cells change in place');
   await prices.drawn;
-  hasIn("a price list changed in place", 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a price list changed in place", 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('.fd-list-row td[data-edit][data-col="price"]'))) || !host.querySelector('.fd-list-add')) throw new Error("in a page, a list's cells changed in place are not drawn from their part");
   if (doc.getElementById('fd-list-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles' && doc.getElementById('fd-list-columns-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles' && doc.getElementById('fd-list-cards-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles') throw new Error(`in a page, the editable part's sheet is not after the list's own: ${[...doc.head.querySelectorAll('style[id]')].map((style) => style.id).join(', ')}`);
   prices.destroy();
@@ -4024,7 +4026,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const bilingual = inPage.mountViewer(host, { page: read('listing-languages.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(bilingual, 'a listing in Arabic and English');
   await bilingual.drawn;
-  hasIn('a listing in Arabic and English', 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn('a listing in Arabic and English', 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   const switched = [...host.querySelectorAll('[data-node="f-title"] [role="tab"]')].map((tab) => tab.getAttribute('lang')).join();
   if (switched !== 'en,ar' || host.querySelector('[data-node="f-title"] [role="tabpanel"][lang="ar"]')?.getAttribute('dir') !== 'rtl') throw new Error(`in a page, a text in Arabic and English is not a switch between them, the reader's first: ${switched}`);
   bilingual.destroy();
@@ -4036,7 +4038,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const filled = inPage.mountViewer(host, { page: read('customer-from-email.page.json'), dataSource: inPage.createMemoryDataSource({ assist }), values: { comment: 'met them' } });
   waits(filled, 'a customer filled from an e-mail');
   await filled.drawn;
-  hasIn('a customer filled from an e-mail', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn('a customer filled from an e-mail', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   if (!host.querySelector('.fd-assist-fill:not([hidden])') || !host.querySelector('.fd-field[data-path="comment"] .fd-assist-tool:not([hidden])')) throw new Error("in a page, AI help's Fill from an e-mail or a text field's Polish is not drawn with the page");
   if ((await filled.propose({ city: 'Amman' })) !== 1 || !host.querySelector('.fd-field[data-path="city"] .fd-proposal') || filled.form.getState().values.city) throw new Error('in a page, a value proposed is not laid under its field, or is written before it is accepted');
   if (!doc.getElementById('fieldia-assist-styles')) throw new Error("in a page, AI help's sheet was never put in");
@@ -4049,7 +4051,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const listing = inPage.mountViewer(host, { page: read('listing-photo-set.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'agent.listing': { 1: { name: 'Garden flat', photos: [shot('Kitchen.png'), shot('Hall.png')] } } } }) });
   waits(listing, 'a listing whose photos are a set');
   await listing.drawn;
-  hasIn("a listing's photo set", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a listing's photo set", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
   // Each tile kept by its photo's file, named by its place (never its file's name).
   const covers = [...host.querySelectorAll('.fd-photo')].map((tile) => `${tile.getAttribute('data-key')?.split('\u0000')[0]}: ${tile.querySelector('.fd-photo-open')?.getAttribute('aria-label')}${tile.querySelector('.fd-photo-cover')?.hidden ? '' : ' (cover)'}`);
   if (covers.join('; ') !== 'Kitchen.png: The cover, photo 1 of 2 (cover); Hall.png: Photo 2 of 2') throw new Error(`in a page, a listing's photo set is not drawn in its order, its cover first: ${covers.join('; ')}`);
@@ -4066,7 +4068,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const treatment = inPage.mountViewer(host, { page: read('clinic-treatment.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: clinic }) });
   waits(treatment, "a treatment's fields scanned into");
   await treatment.drawn;
-  hasIn("a clinic's treatment scanned into", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, scan, slots, survey, text, themes, undo');
+  hasIn("a clinic's treatment scanned into", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, scan, slots, survey, text, themes, undo');
   const scanButton = host.querySelector('[data-node="f-patient"] .fd-scan > .fd-scan-button');
   if (scanButton?.textContent !== 'Scan' || scanButton.getAttribute('aria-label') !== 'Scan a code into Patient') throw new Error(`in a page, a field scanned into has no Scan button beside its box: ${scanButton?.outerHTML ?? 'none'}`);
   (await inPage.scanPart.load()).useCodeReader({ detect: async () => [{ rawValue: 'P-1043', format: 'qr_code' }] });
@@ -4082,7 +4084,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const queue = inPage.mountViewer(host, { page: read('leads-queue.page.json'), dataSource: inPage.createMemoryDataSource({ records: { lead: { 1: { name: 'Omar Nabil', stage: 'new' } } }, views: { 'leads-queue': [{ id: 't1', name: 'New ones', shared: true, by: 'Mona Adel', state: { facets: [] } }] } }) });
   await queue.drawn;
   if (!(await until(() => host.querySelector('.fd-list-row')))) throw new Error('in a page, a list whose source keeps views draws no row');
-  hasIn('a queue keeping its views on its server', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, scan, slots, survey, text, themes, undo, views');
+  hasIn('a queue keeping its views on its server', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, scan, slots, survey, text, themes, undo, views');
   if (!(await until(() => host.querySelector('.fd-view-whose')))?.textContent.includes('Mona Adel') || !doc.getElementById('fd-list-views-styles')) throw new Error("in a page, a list's views are not drawn from their part");
   queue.destroy();
   gone('queue');
@@ -4091,7 +4093,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const reviewed = inPage.mountViewer(host, { page: read('orders-review.page.json'), dataSource: inPage.createMemoryDataSource({ records: { 'sale.order': { 1: { name: 'S00118', state: 'sent', amount_total: 100, line_ids: [{ key: 'l1', id: 11, values: { sequence: 10, name: 'Oak top', qty: 2, price: 50, subtotal: 100 } }] } } } }) });
   waits(reviewed, 'a list whose rows open in place');
   await reviewed.drawn;
-  hasIn('orders opened in place', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, text, themes, undo, views');
+  hasIn('orders opened in place', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, text, themes, undo, views');
   const opener = await until(() => host.querySelector('.fd-list-row .fd-list-detail-toggle'));
   if (!opener || !doc.getElementById('fd-list-rows-styles')) throw new Error("in a page, a list's rows that open in place are not drawn from their part");
   opener.click();
@@ -4105,7 +4107,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const lease = inPage.mountViewer(host, { page: read('lease.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { lease: { 1: { name: 'Olaya Tower', tenant: 'Faisal Al-Harbi', starts_on: '2026-10-13' } } } }) });
   waits(lease, 'a lease of Hijri days and a month alone');
   await lease.drawn;
-  hasIn('a lease, its Hijri days, a month alone, masks and a code', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, text, themes, typed, undo, views');
+  hasIn('a lease, its Hijri days, a month alone, masks and a code', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, text, themes, typed, undo, views');
   if (!(await until(() => host.querySelector('[data-node="f-starts"] input[data-kind="hijri"]')?.value === '2 Jumada I 1448 AH'))) throw new Error(`in a page, a Hijri date is not shown beside its day: ${host.querySelector('[data-node="f-starts"] input[data-kind="hijri"]')?.value ?? 'no box'}`);
   if (host.querySelector('[data-node="f-first-rent"] input')?.placeholder !== 'mm/yyyy') throw new Error("in a page, a month alone is not typed as one");
   if (host.querySelector('[data-node="f-national-id"] input')?.placeholder !== '_ ___ ___ ___' || host.querySelectorAll('[data-node="f-code"] .fd-code-cell').length !== 6) throw new Error('in a page, a mask or a one-time code is not drawn from its part');
@@ -4127,7 +4129,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const timed = inPage.mountViewer(host, { page: read('training-check.page.json'), dataSource: inPage.createMemoryDataSource(), seed: 'candidate-17' });
   waits(timed, 'a timed training check');
   await timed.drawn;
-  hasIn('a timed training check', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, views');
+  hasIn('a timed training check', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, views');
   if (!host.querySelector('.fd-time-start:not([hidden])') || [...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]'))) throw new Error("in a page, a timed form's Start is not said in place of its questions");
   if (JSON.stringify(timed.form.getState().order) !== JSON.stringify(inPage.formSurveyPart.loaded.drawOrder(read('training-check.page.json'), 'candidate-17'))) throw new Error("in a page, a training check's bank is not drawn for its respondent's seed");
   if (!doc.getElementById('fieldia-surveyflow-styles')) throw new Error("in a page, the survey flow's sheet was never put in");
@@ -4138,7 +4140,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const enquiry = inPage.mountViewer(host, { page: read('unit-enquiry.page.json'), dataSource: inPage.createMemoryDataSource(), url: '?unit=B-12&agent=mona&utm_source=whatsapp' });
   waits(enquiry, 'a page filled from its link');
   await enquiry.drawn;
-  hasIn("an enquiry from a broker's link", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
+  hasIn("an enquiry from a broker's link", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
   const linked = enquiry.form.getState().values;
   if (linked.unit !== 'B-12' || linked.agent_code !== 'mona' || linked.utm_source !== 'whatsapp' || enquiry.form.getState().dirty.length) throw new Error(`in a page, the fields a link fills are not where the form starts once the prefill part came: ${JSON.stringify(linked)}`);
   if (host.querySelector('[data-field="agent_code"]')) throw new Error('in a page, a hidden field the link fills is drawn');
@@ -4163,7 +4165,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const ready = new Promise((done) => element.addEventListener('fieldia-ready', done));
   host.append(element);
   await ready;
-  hasIn('a <fieldia-form> put on a page', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
+  hasIn('a <fieldia-form> put on a page', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
   if (!element.querySelector('.fd-form [data-node="f-name"]') || element.handle?.form.page.id !== 'unit-enquiry') throw new Error('in a page, a <fieldia-form> draws no form');
   element.remove();
   if (element.handle || element.querySelector('.fd-form')?.isConnected === false) throw new Error('in a page, a <fieldia-form> taken off the page keeps its form');
@@ -4174,7 +4176,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const viewing = inPage.mountViewer(host, { page: read('viewing-report.page.json'), dataSource: inPage.createMemoryDataSource({ offline: () => off }), values: { unit: 'B-12', condition: 'ready' } });
   waits(viewing, 'a page with an offline outbox');
   await viewing.drawn;
-  hasIn('a viewing report with an outbox', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
+  hasIn('a viewing report with an outbox', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
   if (!host.querySelector('.fd-outbox[hidden]') || !doc.getElementById('fieldia-outbox-styles')) throw new Error("in a page, a page with an outbox draws no bar over its questions, or its sheet was never put in");
   if (!(await viewing.save()) || !viewing.form.getState().outbox?.kept || viewing.form.getState().outbox?.waiting !== 1) throw new Error(`in a page, a send without signal is not kept on the device: ${JSON.stringify(viewing.form.getState().outbox)}`);
   off = false;
@@ -4188,7 +4190,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   const course = inPage.mountViewer(host, { page: read('treatment-course.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.course': { 1: { patient: 'Mona Adel', state: 'running', first_session: '2026-11-03', sessions: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;COUNT=3' } } } }) });
   waits(course, "a treatment course's repeat rule and templates");
   await course.drawn;
-  hasIn("a treatment course's repeat rule and templates", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, schedule, slots, survey, surveyflow, templates, text, themes, typed, undo, verify, views');
+  hasIn("a treatment course's repeat rule and templates", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, schedule, slots, survey, surveyflow, templates, text, themes, typed, undo, verify, views');
   if (!(await until(() => host.querySelector('.fd-repeat-words')?.textContent === 'Every 2 weeks on Tuesday, 3 times')) || !host.querySelector('.fd-templates-button')) throw new Error(`in a page, a course's repeat rule or its templates are not drawn from their parts: ${host.querySelector('.fd-repeat-words')?.textContent ?? 'none'}`);
   course.destroy();
   gone('course');
@@ -4205,7 +4207,7 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   await watched.drawn;
   liveSource.arrive('clinic.course', 1, { id: 9, name: 'Mona Adel' });
   if (!(await until(() => host.querySelector('.fd-presence-words')?.textContent === 'Also here: Mona Adel'))) throw new Error(`in a page, who else has a record open is not said: ${host.querySelector('.fd-presence')?.textContent ?? 'none'}`);
-  hasIn('a course someone else has open', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, import, languages, limits, lines, list, live, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, schedule, slots, survey, surveyflow, templates, text, themes, typed, undo, verify, views');
+  hasIn('a course someone else has open', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, live, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, schedule, slots, survey, surveyflow, templates, text, themes, typed, undo, verify, views');
   liveSource.changeElsewhere('clinic.course', 1, { price: 10000 }, { by: 'Mona Adel' });
   if (!(await until(() => watched.form.getState().values.price === 10000))) throw new Error('in a page, a change made elsewhere is not laid on the record');
   watched.destroy();

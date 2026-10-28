@@ -26,8 +26,13 @@ export const WORD_TABLES = {
 
 /** By part, the keys of each table only that part's modules (and the other parts named with a key) read. */
 export const PART_WORDS = {
-  // A step's web address refused, and Search more…'s empty list (with the other lists that say so).
-  acts: { messages: ['addressRefused'], widgets: ['noResults'] },
+  // A step's web address refused, Search more…'s empty list (with the other lists that say so), and a save over someone
+  // else's: who and when, what each changed, Reload's words, the changes set aside to put back.
+  acts: {
+    messages: ['addressRefused'],
+    widgets: ['noResults'],
+    viewer: ['conflictAt', 'conflictAtNoun', 'conflictChanged', 'conflictBoth', 'conflictChoice', 'reloaded', 'reloadedNoun', 'putBackField', 'putAllBack', 'nowIs'],
+  },
   approvals: {
     messages: ['approvalLocked', 'approvalReasonNeeded', 'approvalNotYours'],
     viewer: [
@@ -128,6 +133,8 @@ export const PART_WORDS = {
       'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun', 'groupCountNoun', 'groupCountNounOne',
     ],
   },
+  // The classic formatted text's toolbar (with the work item's editor, which reads some of them too).
+  html: { widgets: ['formatting', 'textStyle', 'subheading', 'alignLeft', 'alignCenter', 'alignRight', 'applyLink', 'removeLink'] },
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds', 'treeSearch', 'treeChosen', 'treeChosenOne', 'noResults'] },
   photos: {
     widgets: [
@@ -168,7 +175,7 @@ export const PART_WORDS = {
   },
   text: {
     widgets: ['textColour', 'linkRecordNamed', 'moreTools', 'switchToMarkdown', 'switchToRich', 'markdownSupported', 'pasteOrSelect', 'editNamed', 'doneEditing', 'addLink', 'existingItem', 'newItem', 'formattingLost', 'cursorInLink', 'attachFile', 'switchAnyway', 'headingLevel',
-      'noResults', 'tableTool', 'tableInsert', 'tableSize', 'tableRows', 'tableRowsOne', 'tableColumns', 'tableColumnsOne', 'tableColumn', 'tableRowAbove', 'tableRowBelow', 'tableColumnLeft', 'tableColumnRight', 'tableDeleteRow', 'tableDeleteColumn', 'tableHeaderRow', 'tableDelete', 'tableKeys', 'tableRowAdded', 'tableColumnAdded', 'tableRowDeleted', 'tableColumnDeleted', 'tableDeleted',
+      'noResults', 'formatting', 'applyLink', 'removeLink', 'tableTool', 'tableInsert', 'tableSize', 'tableRows', 'tableRowsOne', 'tableColumns', 'tableColumnsOne', 'tableColumn', 'tableRowAbove', 'tableRowBelow', 'tableColumnLeft', 'tableColumnRight', 'tableDeleteRow', 'tableDeleteColumn', 'tableHeaderRow', 'tableDelete', 'tableKeys', 'tableRowAdded', 'tableColumnAdded', 'tableRowDeleted', 'tableColumnDeleted', 'tableDeleted',
     ],
   },
 };
