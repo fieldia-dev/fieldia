@@ -22,6 +22,194 @@ under **Deprecated** in the minor that first warns of it, and cited where it
 changes; each Upgrading item says whether it adds, fixes or changes what was
 deprecated ([the release train](docs/maintainers/release-train.md)).
 
+## 0.37.0 — 2026-10-28
+
+**A page its checks refuse is taken down, and nothing is written through it;
+and page format 0.14.** Every viewer runs the whole check — `validatePage`'s
+verdict — as soon as a page is drawn, and takes down a page it refuses: its
+words replace the form, as for what 0.35 refused, `onError` is told, and the
+handle's new `refused` settles with the `PageRefused` (0.36 left such a page
+drawn and said its mistakes: `page.invalid`). A page stamped older than a
+setting it uses is taken down too (`format.under-stamped`). Nothing waits for
+the check: a valid page draws as fast as on 0.36.0, measured on Slow 4G on a
+desktop and a phone. Until the check has run, every write through the page waits
+for it — a save, a send, a step's save, a copy, an upload, the outbox's send, a
+draft kept on the server — and is refused with the page where the page is
+refused. What 0.35's viewer refused is still refused before the draw,
+`mountViewer` throwing. The whole check stays a part of its own:
+`fieldia.check.js` in the one-tag script, asked for once the page is parsed and
+nothing it is drawn from is still on its way; a chunk of its own in an app's
+bundle, asked for as the page is mounted, or once the parts it waits for came.
+Where it cannot come, the page stays drawn, that is said, and its held writes go
+on — an availability failure takes no form down. Page format 0.14 adds two keys
+from Odoo: a field a copy of the record does not keep (`"copy": false`), and a
+list's named filters in groups (`"group"`). A page is stamped 0.14 only where it
+uses one; every 0.13 page reads as it did.
+
+**New:**
+
+- `ViewerHandle.refused`: settled once the whole check has run — `null` where the
+  page passed, or its check could not come; the `PageRefused` where the page was
+  taken down (its form replaced by why, `onError` told
+  `{ stage: 'check', part: 'page' }`). React, Vue and Angular apps stay up, the
+  words in the form's place.
+- Every write a page makes through its data source waits for the page's whole
+  check: `save`, `submit`, `create`, `copy`, `delete`, `archive`, `upload`,
+  `saveDraft`, `decide`, `pay`, `sendCode`, the bulk and import writes, the
+  outbox's sends. On a valid page it goes in the same turn once the check has
+  passed; one asked for sooner goes as it passes. Reads go at once. A line's own
+  copy changes the form's values, which its record's `save` writes, held alike.
+- `askForCheck(until?)` (`@fieldia/core`): asks for the whole check's part once
+  no page waits for the parts it is drawn from, whose bytes it would share a slow
+  line with. `loadParts(page)` leaves it out, so an app that loads a page's parts
+  before it mounts never waits for it; `loadParts()` loads it with every part.
+- **A field a copy does not keep**: `"copy": false` on a field, as Odoo's
+  `copy=False`. Duplicate's copy starts it as a new record does — its `default`
+  (or `defaultFrom`), else empty — so a posted bill's copy is a draft. On a
+  table's line field, a line's own copy (⧉, a card's Copy, the grid's) starts it
+  as a new line does. The data source applies it as it copies; the memory source
+  does, and leaves " (copy)" off a name it does not keep. In the designer,
+  "Copied with the record" on a field's Data tab; a status it adds starts
+  unticked.
+- **Named filters in groups**: a list filter's `"group": "when"`. Filters of a
+  group find any of them; groups find each, as Odoo's filters between
+  separators. A chip for each group (its × takes that group off), a line between
+  groups in the menu, each filter counted as if it alone of its group were on,
+  the printout's words by group. Filters that name no group are one group, as
+  before. In the designer, a filter's Group box. The invoices demo shows it:
+  Overdue and the periods are groups of their own, so Overdue with This year on
+  is this year's overdue invoices.
+- `searchViewFilters(arch)` (npm only, `@fieldia/core`; not in the one-tag
+  script): an Odoo or Flectra search view's filters, each separator a group, its
+  Group By and search fields, and what it leaves out, said — a domain read at
+  run time, a `!`, an operator Fieldia lacks, a `date=` filter, an invisible
+  one. `filterGroups(ids, list)` in `@fieldia/core` too.
+- Page format **0.14**: both keys, only added (no upgrade step). A page is
+  stamped 0.14 only where it uses one; a 0.13 page is read as it is.
+- A deprecation its minor has changed is marked `changed: true` in
+  `DEPRECATIONS`: said no more, kept for the citation (`tools/release-train.mjs`,
+  `tools/promises.mjs` hold the console, the list and the promises' table to it).
+
+**Fixes:**
+
+- A table line's dialog — a form of values Fieldia makes from a record's fields —
+  and the designer's trial of a formula are written in the format Fieldia writes:
+  stamped "0.1", their fields' newer settings (a `secret`, a page's `phone` or
+  `lowerLabels`) made them read as stamped older than they use (a console warning
+  in 0.36, a dialog taken down by 0.37's check).
+- A linked record's page that the app's `pages` could not give — a network's
+  failure, or the page left while it was still coming — was left failing
+  unhandled as its link was drawn (asked for to know the link opens): a page
+  error in every browser, WebKit's "Importing a module script failed". It is
+  handled there, and asked for anew as the link is opened.
+- Demos: the vendor bill's copy is a draft by its page alone — its status says
+  `"copy": false` with a first value of `draft` — not by a demo server rule; and
+  its bill reference and payment reference start empty (`"copy": false`, as
+  Odoo's `ref` and `payment_reference`), so a payment quoting the copy never
+  names the posted bill. A new bill starts as Draft.
+- Tests: the time-off how-to replay types its request's end from the start the
+  demo shows; it had typed a fixed date, and failed from 28 October.
+
+**Deprecated:**
+
+- `core.page-invalid` (app code): `pageInvalid()` and `PageInvalid`, 0.36's
+  warning to `onError`, are made by nothing in Fieldia from 0.37 and go in 0.38.
+  Use `PageRefused` from `@fieldia/viewer`.
+
+**Upgrading** — grouped by who it touches:
+
+- *Page authors:*
+  - A page `validatePage` refuses is taken down by every viewer as soon as its
+    whole check runs, once it is drawn: it may show its form for a moment, then
+    its words replace it, and nothing is written through it (deprecated in 0.36:
+    `page.invalid`). Check pages with `validatePage` or `npx fieldia-check`
+    before they are stored.
+  - A page stamped older than a setting it uses is refused by `validatePage`, and
+    taken down the same way by every viewer — a page that uses `copy` or a
+    filter's `group` and says `"fieldia": "0.13"` among them: stamp it with
+    `stampPage(page)` (deprecated in 0.36: `format.under-stamped`).
+  - (adds) Page format 0.14: `copy` on a field, `group` on a list's named
+    filter. A page that uses either says `"fieldia": "0.14"` (`stampPage` writes
+    it), and a Fieldia before 0.37 refuses it with "this page is in format 0.14,
+    newer than this Fieldia reads (0.13)". A page that uses neither is stamped as
+    before.
+  - (adds) A status bar's field is still copied unless it says `"copy": false`.
+    No default changed.
+- *App code:*
+  - `onError` hears a page taken down for what only the whole check finds as
+    `{ stage: 'check', part: 'page' }`, its error a `PageRefused` with `issues`,
+    and `refused` settles with it; `drawn` has resolved by then, and
+    `mountViewer` throws only for what 0.35 refused, as before. It no longer
+    hears 0.36's warning of such a page drawn (deprecated in 0.36:
+    `page.invalid`).
+  - A write asked for through a page before its whole check has run reaches the
+    data source once the check has passed — a frame or two after the draw where
+    the check is in; on Slow 4G about 0.7 s after it where a one-tag page is
+    mounted as soon as `fieldia.js` has run — and never where the page is taken
+    down: its promise rejects with the `PageRefused` (deprecated in 0.36:
+    `page.invalid`).
+  - `{ stage: 'check', part: 'page', warning: true }` now says the page stayed
+    drawn without its whole check, which could not come, and its held writes
+    went on (deprecated in 0.36: `page.invalid`).
+  - `validatePage` gives a page stamped older than a setting it uses among its
+    `issues`, no longer its `warnings` (deprecated in 0.36:
+    `format.under-stamped`).
+  - (adds) `DataSource.copy` is given the page's `fields` as before. A backend
+    that copies in its own code applies `copy: false` itself (Odoo's server
+    already does). The memory source applies it, and leaves " (copy)" off a name
+    it does not keep.
+  - New: `ViewerHandle.refused`, `askForCheck`, `Deprecation.changed`, and in
+    `@fieldia/core` `searchViewFilters` and `filterGroups` (adds).
+- *Tests and CSS:*
+  - A unit test that mounts a page and at once expects a write to reach its data
+    source awaits the handle's `refused` first, or `loadParts()` before the mount,
+    so the whole check is in (deprecated in 0.36: `page.invalid`).
+  - A one-tag page asks for `fieldia.check.js` once it is parsed and the parts it
+    is drawn from came (0.36: once idle after its first draw): a test that holds
+    a page's parts sees it asked for after them (deprecated in 0.36:
+    `page.invalid`).
+  - A one-tag page whose `fieldia.check.js` could not come shows
+    `.fd-parts-unloaded` over it, with its reload (adds).
+  - (adds) Named filters of two groups show a chip each, and the menu has a
+    `.fd-search-separator` (`role="separator"`) between groups. Lists whose
+    filters name no group draw as before.
+  - (adds) The designer's field panel has "Copied with the record" on its Data
+    tab, and a list filter row has a Group box ("Filter group").
+- *Translators:* (adds) the designer's new words in ar, es, fa, tr and ur —
+  "Copied with the record" and its hint, a filter's Group and its hint, the
+  example word and the refusal — are machine-made and not yet reviewed by a
+  native speaker.
+
+**Size:** `fieldia.js` 588.3 KB, 197.76 gzipped (0.36.0: 587.5, 197.02): +0.74
+KB gzipped, under the owner's 200, all of it what a page must carry from its
+mount. By lane, each measured on 0.36.0 and joined to the byte (601,597 + 607 +
+209 = 602,413): p37-refuse +0.66 — the handle's `refused` and the take-down of a
+refused page, every write held until the check ran (0.20 of it, the writes'
+names most) and let go in the same turn once it passed, the words where the
+check cannot come, the check asked for once nothing is waited for, a linked
+record's page that cannot come handled where it is asked for — less 0.36's check
+at idle and its warning, and the 28 checks a part carries called through one
+table of stand-ins, not 28 generated copies (−0.15); p37-format +0.08 — format
+0.14 among the formats every page's check reads before its first draw, and a
+list's named filters in their groups (`facetsToFilter`, the one-tag script's
+own, and `filterGroups` beside it). The parts, gzipped: check 17.27 → 17.22 (the
+shape with `copy` and `group`, the under-stamped warning's words gone); list
+52.07 → 52.36 (a chip per group, the menu's line, the counts, the printout);
+memory 9.12 → 9.46 (its copy applying `copy: false`); lines 16.45 → 16.47 (a
+line's own copy); every other part and add-on within 0.01. From the npm
+packages, an app's first load (KB gzipped, with the page / to usable): a record
+form 245.8 → 247.6 / 336.6 → 338.5; in Arabic 245.8 → 247.6 / 359.2 → 361.2; a
+list 245.0 → 246.8 / 332.9 → 335.0; the screen designer 592.8 → 595.0 / 822.0 →
+824.6 — the first paint +1.4 each for `refused`, the take-down and the held
+writes, +0.4 to +0.8 for the filter groups and the copy; the whole check in its
+chunk as in 0.36. `@fieldia/map`, `@fieldia/calendar` and `@fieldia/gantt`
+within 4 bytes of 0.36.0. A valid page's first draw on Slow 4G (1.44 Mbps,
+562 ms; 7 runs interleaved with 0.36.0, a desktop and a phone's CPU four times
+slower), for a plain form, a fetched page, a record and a list drawn from
+parts, with and without their part tags: within 10 ms of 0.36.0's on a desktop
+— about what the 0.74 KB more takes on that line — and inside the runs' own
+spread on the phone.
+
 ## 0.36.0 — 2026-10-27
 
 **Stability adopters can plan on.** Fieldia now writes down what it promises
