@@ -463,6 +463,7 @@ export function waitsDrawnFromLoading(page: Page, waitsForRecord: boolean, appLo
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
   // With the parts that join a form, asked for as they are loaded: their module may come after this one's.
   // A page's own with the loading part where the viewer would wait for it with them: its first wait drawn as it says.
-  // The whole check's part too, which the viewer runs as soon as the page is drawn: in already, it runs at once.
-  await Promise.all((page ? [...withLoadingPart(page, partsFor(page, widgets, slots)), pageCheckPart] : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));
+  // Never the whole check's for a page (0.37): an app that waits for these before it mounts would wait for it too, and
+  // its page draw later — the viewer asks for it once the page is drawn. `loadParts()`, every part, loads it.
+  await Promise.all((page ? withLoadingPart(page, partsFor(page, widgets, slots)) : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));
 }
