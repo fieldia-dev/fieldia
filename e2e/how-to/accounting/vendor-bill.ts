@@ -63,6 +63,9 @@ export const replay: DemoReplay = {
         // A copy of the posted bill is a draft, to change and confirm on its own.
         await see(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Draft');
         await see(page.getByRole('button', { name: 'Confirm' })).toBeVisible();
+        // Its bill and payment references start empty: a payment quoting the copy never names the posted bill.
+        await see(page.locator('[data-node="f-ref"] input')).toHaveValue('');
+        await see(page.locator('[data-node="f-payment-ref"] input')).toHaveValue('');
         await see(page.locator('.fd-record-bar .fd-record-pager-text')).toHaveText('2 / 5');
       },
     },

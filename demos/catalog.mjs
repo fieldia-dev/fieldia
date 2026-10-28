@@ -1443,7 +1443,7 @@ export const DEMOS = [
     howTo: [
       'Press › beside “3 / 4” at the top (or Alt+N): the next bill comes, “4 / 4” after it, and round to the first; the PDF beside it follows.',
       'Open the gear menu with the arrow keys: Print, then Debit Note, Archive and Duplicate. Press Debit Note: the note is said and posted in the conversation.',
-      'Press Duplicate: the copy shows as “… (copy)”, a draft to change and confirm on its own, and the count beside the arrows is five.',
+      'Press Duplicate: the copy shows as “… (copy)”, a draft to change and confirm on its own, its bill and payment references empty — a payment quoting it never names the posted bill — and the count beside the arrows is five.',
       'On BILL/2026/10/0002, press Archive and say yes: an Archived banner crosses it and the menu offers Unarchive.',
       'Make the window narrow: BILL/2026/10/0002 has no PDF, and the conversation stays beside it until a phone’s width. Press › for a bill with its PDF: the PDF and the conversation go under the sheet.',
     ],

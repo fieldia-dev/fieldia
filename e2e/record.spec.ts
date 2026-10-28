@@ -74,11 +74,15 @@ for (const variant of VARIANTS) {
       await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Draft');
       await expect(page.getByRole('button', { name: 'Confirm' })).toBeVisible();
       await expect(page.locator('[data-node="f-partner"] input')).toBeEditable();
+      // Its bill and payment references start empty (copy: false, as Odoo's): a payment quoting the copy never names the
+      // posted bill.
+      await expect(page.locator('[data-node="f-ref"] input')).toHaveValue('');
+      await expect(page.locator('[data-node="f-payment-ref"] input')).toHaveValue('');
       await gear(page).click();
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
       await page.keyboard.press('Escape');
-      const copy = await page.evaluate(() => Object.values((window as any).fieldiaDemo.dataSource.records['account.move'] as Record<string, { name: string; state: string }>).find((bill) => bill.name === 'BILL/2026/10/0001 (copy)'));
-      expect(copy?.state).toBe('draft');
+      const copy = await page.evaluate(() => Object.values((window as any).fieldiaDemo.dataSource.records['account.move'] as Record<string, { name: string; state: string; ref: unknown; payment_reference: unknown }>).find((bill) => bill.name === 'BILL/2026/10/0001 (copy)'));
+      expect(copy).toMatchObject({ state: 'draft', ref: null, payment_reference: null });
     });
 
     test('reads right to left in Arabic, and folds onto a phone without scrolling sideways', async ({ page }) => {

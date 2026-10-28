@@ -115,13 +115,19 @@ describe('a field a copy does not keep: the memory source’s copy', () => {
     expect(none.values?.['lines']).toEqual([]);
   });
 
-  it('copies the vendor-bill demo’s posted bill as a draft by its page alone: its status says copy: false, its first value a draft', async () => {
+  it('copies the vendor-bill demo’s posted bill as a draft by its page alone: its status says copy: false, its first value a draft — and its bill and payment references start empty', async () => {
     const page = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages', 'vendor-bill.page.json'), 'utf8')) as Page;
     expect(page.fields['state']).toMatchObject({ default: 'draft', copy: false });
+    // As Odoo's `ref` and `payment_reference` (copy=False): a payment quoting the copy never names the posted bill.
+    expect(page.fields['ref']).toMatchObject({ copy: false });
+    expect(page.fields['payment_reference']).toMatchObject({ copy: false });
     expect(page.fieldia).toBe('0.14');
-    const source = createMemoryDataSource({ records: { 'account.move': { 1: { name: 'BILL/2026/10/0001', state: 'posted', ref: 'INV-778' } } } });
-    const made = await source.copy({ model: 'account.move', id: 1, fields: page.fields });
-    expect(made.values).toMatchObject({ name: 'BILL/2026/10/0001 (copy)', state: 'draft', ref: 'INV-778' });
+    const source = createMemoryDataSource({ records: { 'account.move': { 3: { name: 'BILL/2026/10/0003', state: 'posted', ref: 'NT-8907', payment_reference: 'BILL/2026/10/0003', invoice_date_due: '2026-11-04' } } } });
+    const made = await source.copy({ model: 'account.move', id: 3, fields: page.fields });
+    expect(made.values).toMatchObject({ name: 'BILL/2026/10/0003 (copy)', state: 'draft', ref: null, payment_reference: null, invoice_date_due: '2026-11-04' });
+    expect(source.records['account.move'][String(made.id)]).toMatchObject({ state: 'draft', ref: null, payment_reference: null });
+    // The posted bill keeps its own.
+    expect(source.records['account.move'][3]).toMatchObject({ state: 'posted', ref: 'NT-8907', payment_reference: 'BILL/2026/10/0003' });
   });
 
   it('is one act: Duplicate shows the copy as its source made it, and Fieldia writes nothing to it after', async () => {
