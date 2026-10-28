@@ -34,12 +34,9 @@ them); `checkPage`, which every viewer draws a page with, carries none, and an
 app that only shows forms never bundles zod. `checkPage` is the check a viewer
 runs before it draws a page, refusing what 0.35's viewer refused. `checkPageWhole`
 gives `validatePage`'s verdict without zod — the format's schema made from the same
-definitions, the same rules — and a viewer runs it before the first draw too,
-refusing what it finds (0.37; said and drawn in 0.36, `page.invalid`): in an app's
-bundle it comes with the viewer, in the one-tag script as `fieldia.check.js`. The
-checks of what a part draws (a list's settings, a map's) come to a viewer in a
-chunk of their own, as a page owes one (`checkPageOwing`, `formatChecksPart`);
-`checkPage`, `validatePage` and `checkPageWhole` run them all at once. A guide for AI agents writing pages:
+definitions, the same rules — in a part of its own, which every viewer runs as
+soon as a page is drawn, taking down a page it refuses and holding every write
+through the page until it has run (0.37; said and drawn in 0.36, `page.invalid`). A guide for AI agents writing pages:
 [docs/agents.md](../../docs/agents.md). Where pages are made, they come on
 their own too — `@fieldia/core/schema` (`validatePage`, `PageSchema`,
 `FieldSchema`), one file with zod inside, which a bundler gives a chunk of its

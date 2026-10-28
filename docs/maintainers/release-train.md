@@ -99,27 +99,29 @@ train's own rule applies to it, the deprecation `page.invalid`:
   its words were where the form would be. The whole check was a part of its own, asked for once the page was drawn
   and the browser idle; what only it found was said once in the console and to `onError` (`stage: "check"`,
   `warning: true`), and the page stayed drawn. `fieldia.js` was 197.0 KB gzipped at 0.36.0, under the owner's 200.
-- **0.37, built.** Before a page's first draw every viewer runs the whole check as well, and refuses what it finds
-  as it refuses what the check before the draw refuses: the words, `onError` (`stage: "check"`; what 0.35 refused
-  stays `"draw"`), `PageRefused`. In an app's bundle the whole check comes with the viewer (check-now.ts), and the
-  checks of what a part draws — a list's settings, a map's, a page's limits — leave the first paint for a chunk of
-  their own (`formatChecksPart`, perf-leftovers' item 5), asked for with the page's parts where a page owes one:
-  `checkPage`, `validatePage` and `checkPageWhole` stay whole, putting them all in first (all-checks.ts). In the
-  one-tag script the whole check is `fieldia.check.js`, asked for as the script starts — beside the page's own data,
-  never after it — listed by `partFiles` and `partTags` so a page's part tags and preload links carry it, and waited
-  for as a page's parts are: a page mounted once it came is checked and drawn at once; one mounted before waits, and
-  is drawn — or refused, `drawn` rejecting with the `PageRefused` — once it came. `fieldia.js` carries none of it.
-  0.37's Upgrading part cites `page.invalid` and `format.under-stamped`, now marked changed.
-  *Gates:* `refused.spec.ts`, the bindings' specs, `e2e/page-check.spec.ts` (three engines, four frameworks), the
-  script bundle's in-page checks (the part asked for as the script starts, a page waiting for it, refused once it came).
+- **0.37, built** (the coordinator's decision of 28 Oct, after measuring the check before the draw on Slow 4G: every
+  valid page drew 0.1–0.8 s later, paying for authors' mistakes that `validatePage` finds where pages are made). The
+  whole check is a part of its own in an app's bundle too (in the one-tag script `fieldia.check.js`), asked for once
+  nothing a page is drawn from is still on its way (`askForCheck`: the one-tag script once the page is parsed, a viewer
+  waiting for its parts once it is drawn) — beside the app's own data, never beside a page's parts, whose bytes it would
+  share a slow line with — and run as soon as the page is drawn and painted: no page waits for it, and a valid page draws
+  as 0.36 drew it. It is no part a page is drawn from, so `partFiles` and `partTags` name it no more: a tag for it would
+  share the line with `fieldia.js` itself. A page it refuses is taken down: its form
+  replaced by why, `onError` told (`stage: "check"`; what 0.35 refused stays `"draw"`, thrown at the mount), the
+  viewer's `refused` settled with the `PageRefused`. And nothing is written through a page before it ran: every write
+  the page makes through its data source — a save, a send, a step's save, an upload, the outbox's send, a draft on the
+  server, a payment, a code sent — waits for it (held-writes.ts), and is refused with the page. 0.37's Upgrading part
+  cites `page.invalid` and `format.under-stamped`, marked changed.
+  *Gates:* `refused.spec.ts`, the bindings' specs, `e2e/page-check.spec.ts` (three engines, four frameworks: a send
+  held, then sent or refused), the script bundle's in-page checks, and the Slow 4G table against 0.36.0
+  (docs/promises.md, measured by hand).
 - **When the whole check's part cannot come** (the network refuses it, or its bytes are not those it was built with),
-  0.37 draws the page, the checks the main script carries having passed — the outline, every name, condition and
-  expression, and every safety check: addresses through `safeUrl`, files shown by their bytes, the bounds of what a page
-  or a person can make Fieldia do — and says once in the console and to `onError` (a warning) that the page could not
-  be fully checked, and over the page as any part that could not load, with its reload. Why: what only the whole check
-  finds is an author's mistake, which `validatePage`, `npx fieldia-check` and the designer find where pages are made;
-  an availability failure — a CDN's bad minute — must not take every form down. A send a part must check is refused
-  without its part, as before: that check guards what a person sends, not how a page was written.
+  the page stays drawn — the checks the main script carries passed: the outline, every name, condition and
+  expression, and every safety check (addresses through `safeUrl`, files shown by their bytes, the bounds of what a page
+  or a person can make Fieldia do) — and it is said once in the console and to `onError` (a warning) that the page could
+  not be fully checked, and over the page as any part that could not load, with its reload; the writes held for it go
+  on. Why: what only the whole check finds is an author's mistake, which `validatePage`, `npx fieldia-check` and the
+  designer find where pages are made; an availability failure — a CDN's bad minute — must not take every form down.
   *Gates:* `e2e/part-failures.spec.ts` (the `check` part, both ways it fails, three engines), `e2e/page-check.spec.ts`
   ("its check could not come"), docs/promises.md.
 

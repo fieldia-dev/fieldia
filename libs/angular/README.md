@@ -77,6 +77,6 @@ A part that throws as it is drawn or brought up to date — a field's component,
 slot's content, the app's widget, a map — shows a small box that names it, and
 the rest of the form goes on; `(partError)` hears `{ error, where }` (not
 `(error)`, the DOM's own event). A page the viewer refuses says why in the form's
-place, `(partError)` hears it with `{ stage: 'draw', part: 'page' }` — `{ stage:
-'check', part: 'page' }` for what only the whole check finds (refused since 0.37,
-`page.invalid`) — and the app goes on. MIT licensed.
+place, `(partError)` hears it with `{ stage: 'draw', part: 'page' }`, and the app
+goes on; one whose whole check refuses it once it is drawn is taken down the same
+way, with `{ stage: 'check', part: 'page' }` (0.37, `page.invalid`). MIT licensed.

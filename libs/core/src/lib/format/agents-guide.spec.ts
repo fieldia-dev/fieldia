@@ -8,7 +8,8 @@ import { stampPage } from './stamp';
 /**
  * docs/agents.md, the guide for AI agents writing pages, says what the checks say: each mistake of its table refused
  * by `validatePage` and the whole check alike, in the very words the guide quotes; what a 0.37 viewer does with it —
- * refuses it as 0.35's did (`checkPage`), or as only the whole check finds it, which 0.36 drew — as its table says; and
+ * refuses it before the draw as 0.35's did (`checkPage`), or takes it down as its whole check runs (0.36 drew it) — as
+ * its table says; and
  * its worked example answered as it shows: the first page's four problems, the one the check before the draw refuses it
  * for, the second page passing, stamped "0.3".
  */
@@ -77,10 +78,10 @@ describe('docs/agents.md says what the checks say', () => {
     // The guide may end a long one with "…": what it quotes is the start of what the check says.
     expect(said).toContain(words.replace(/, …$/, ''));
     expect(wholeCheck(page).ok).toBe(false);
-    // Its row says what a 0.37 viewer does: refuses it as 0.35's did, or as only the whole check finds it (0.36 drew it).
+    // Its row says what a 0.37 viewer does: refuses it as 0.35's did, or takes it down as its whole check runs.
     const row = GUIDE.split('\n').find((line) => line.startsWith('| ') && line.includes(`\`${words}\``)) ?? '';
     const viewer = row.split(/(?<!\\)\|/)[3]?.trim();
-    expect(viewer).toBe(checkPage(page).ok ? 'refuses it (0.36 drew it)' : 'refuses it, as 0.35 did');
+    expect(viewer).toBe(checkPage(page).ok ? 'takes it down (0.36 drew it)' : 'refuses it, as 0.35 did');
   });
 
   it('every row of its table is one of these', () => {

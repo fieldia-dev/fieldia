@@ -98,18 +98,18 @@ try {
 The React, Vue and Angular bindings catch it: the words stay in the form's place,
 `onError` (`(partError)` in Angular) is told, and the app around it stays mounted.
 
-Before the first draw the viewer runs the whole check too (`checkPageWhole`,
-`validatePage`'s verdict), and refuses what it finds the same way — `onError`
-hears `{ stage: 'check', part: 'page' }` (0.37; 0.36 drew such a page and said it,
-`page.invalid`). Check pages with `validatePage` or `npx fieldia-check` before
-they are stored. In an app's bundle the whole check comes with the viewer, and
-the checks of what a part draws (a list's settings, a map's) in a chunk of their
-own, asked for with the page's parts: a page with a mistake there is refused once
-they came, `drawn` rejecting with the `PageRefused`. In the one-tag script the
-whole check is `fieldia.check.js`, asked for as the script starts and waited for
-as a page's parts are (`partFiles` names it); where it cannot come, the page is
-drawn on the checks `fieldia.js` carries, and `onError` hears `{ stage: 'check',
-part: 'page', warning: true }`: the page could not be fully checked.
+As soon as the page is drawn, the viewer runs the whole check (`checkPageWhole`,
+`validatePage`'s verdict, a part of its own — `fieldia.check.js` in the one-tag
+script — asked for once nothing the page is drawn from is still on its way),
+never making the draw wait for it. A page it refuses is taken down (0.37; 0.36 left it drawn
+and said it, `page.invalid`): its form replaced by why, `onError` told `{ stage:
+'check', part: 'page' }`, and the handle's `refused` settled with the
+`PageRefused` (null where the page passed). Until it has run, nothing is written
+through the page: a save, a send, an upload, a server draft asked for meanwhile
+waits for it, and is refused with the page. Check pages with `validatePage` or
+`npx fieldia-check` before they are stored. Where its part cannot come, the page
+stays drawn, `onError` hears `{ stage: 'check', part: 'page', warning: true }`
+(not fully checked), and what was held goes on.
 
 ## While it waits: skeletons, spinners, bars — as you like
 
