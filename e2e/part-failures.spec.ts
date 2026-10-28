@@ -298,7 +298,8 @@ const CASES: Record<string, Case | Case[]> = {
     source: { records: { 'work.area': { 1: { name: 'Portal' } } }, shows: { 'work.area': { path: 'name' } } },
     ...field('f-area'),
   },
-  pay: { page: responses({ payment: { label: 'Reservation fee', amount: 500, currency: 'EGP' } }), said: over, guards: { press: 'Submit', words: 'The payment step could not load, so nothing was sent. Try again.' } },
+  // Said by the send it stops, with its Retry — never over the page too, whose words would say otherwise (0.36.1).
+  pay: { page: responses({ payment: { label: 'Reservation fee', amount: 500, currency: 'EGP' } }), guards: { press: 'Submit', words: 'The payment step could not load, so nothing was sent. Try again.' } },
   phone: { page: record({ phone: { country: 'EG' } }, { mobile: { type: 'char', label: 'Mobile' } }, [{ type: 'field', id: 'f-mobile', field: 'mobile', widget: 'phone' }]), ...field('f-mobile') },
   photos: { page: record({}, { photos: { type: 'image', label: 'Photos', multiple: true } }, [{ type: 'field', id: 'f-photos', field: 'photos', widget: 'photos' }]), ...field('f-photos') },
   pins: { page: record({}, { pins: { type: 'json', label: 'Injections' } }, [{ type: 'field', id: 'f-pins', field: 'pins', widget: 'pins', options: { image: '../samples/face.svg', alt: 'Face' } }]), ...field('f-pins') },
@@ -345,9 +346,10 @@ const CASES: Record<string, Case | Case[]> = {
     },
     said: { at: '#app .fd-says', words: 'Undo could not load. Try again.' },
   },
+  // Said at once under the mobile that asks for a code, with its Retry — never over the page too (0.36.1).
   verify: {
     page: responses({}, { phone: { type: 'char', label: 'Mobile' } }, [{ type: 'field', id: 'f-phone', field: 'phone', widget: 'phone', options: { verify: true } }]),
-    said: over,
+    said: { at: '#app [data-node="f-phone"] .fd-join-missing', words: 'The code check could not load, so nothing was sent. Try again.', retry: true },
     guards: { press: 'Submit', words: 'The code check could not load, so nothing was sent. Try again.' },
   },
   // Asked for as the list opens, where its source keeps views: the list works without its saved views, said over it.
