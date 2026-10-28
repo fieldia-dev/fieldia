@@ -150,7 +150,8 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   card's line the same, by its words ("Rania Fawzy"), else by its card's title
   ("Contact 2", the page's own word for one); a line just added, opened as it is
   (a grid's card on a phone), by the button that added it ("Add a question")
-  while it holds no words. The title is read once what was typed in the line is read. A table's line is
+  while it holds no words. The title is read once what was typed in the line is
+  read. A table's line is
   named the same on its ↑ and ↓ and as its move is said aloud — by its words,
   never by a number or a day in its first column, and a link by its name.
 - A table line's dialog — a form of values Fieldia makes from a record's fields —
@@ -190,9 +191,10 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   its ring; a link's last second, its record's page fetched, was silent in 0.36.1
   too). One rule for every control a press waits on, a part on its way or the
   app's answer after it: `aria-busy`, and a ring turning in its place from the
-  press — over an icon's glyph, at the end of a name (a card's head, a stat
-  button) or of a box, its ↗ and × hidden (Search more…, Create and edit…), a
-  button's own drawn at once where a part is on its way — never a page overlay,
+  press — over an icon's glyph, at the end of a box, its ↗ and × hidden (Search
+  more…, Create and edit…), a button's own drawn at once where a part is on its
+  way; under a name (a card's head, a stat button) a bar along its foot — never a
+  page overlay,
   until the dialog it asked for shows or its wait ends. The control is the one
   pressed, in every engine (WebKit focuses no button it clicks); a second press of
   it meanwhile opens nothing more (two dialogs before).
@@ -231,8 +233,9 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   {customer's words name {customer}…").
 - Demos: the vendor bill's copy keeps no number and no dates, as Odoo's draft copy
   (`"copy": false` on its number, bill date and due date): its number is a
-  draft's, "Draft", until Confirm gives it its number, as a new bill's is. The Customer list, featured, opens a customer
-  with its way back, by the one rule a list opens its records by. The invoices
+  draft's, "Draft", until Confirm gives it its number, as a new bill's is. The
+  Customer list, featured, opens a customer with its way back, by the one rule a
+  list opens its records by. The invoices
   list counts its filters with its filter groups (`filterCounts`), with a how-to
   step and its replay.
 
@@ -389,7 +392,8 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   - (fix) A line's dialog is named by its line, not its table: a test that finds
     it by the table's label (`{ name: 'Order lines' }`) finds it by the line's
     words — a card's line too — by "Line 3", by its card's title where it holds
-    no words, or, just added on a phone, by the add button's words. A table line's ↑, ↓ and its move
+    no words, or, just added on a phone, by the add button's words. A table
+    line's ↑, ↓ and its move
     said aloud name it by its first column holding words, where they took its
     first column as it was held: "Move Office chair up", not "Move line 1 up",
     where its quantity comes first, nor "Move 2026-10-20 up" where a day does;
@@ -488,9 +492,8 @@ own), 0.7 s where the app fetched its page.
 needs from its draw or its first press: a control a press waits on busy where it
 was pressed, the one rule that finds it in every engine and the ring's look (a
 bar under a name), a second press asking nothing more, and Retry where its part
-cannot come; the
-classic formatted text's toolbar's room, its three text styles' names back from
-the html part; a sheet's furniture that takes room waited for, and a record's
+cannot come; the classic formatted text's toolbar's room, its three text styles'
+names back from the html part; a sheet's furniture that takes room waited for, and a record's
 attachment's files part with the page's; a refused page's words to its visitor.
 Parts: acts 12.41 → 12.46, lines 16.63 → 16.67, record 5.46 → 5.50, loading
 3.06 → 3.08, html 2.73 → 2.72 gzipped; each add-on +0.06 to +0.12 for the new
