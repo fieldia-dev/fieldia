@@ -107,12 +107,15 @@ uses one; every 0.13 page reads as it did.
   its bill reference and payment reference start empty (`"copy": false`, as
   Odoo's `ref` and `payment_reference`), so a payment quoting the copy never
   names the posted bill. A new bill starts as Draft.
-- A photo's Apply in its Crop and turn dialog closes at once. The cropped
-  picture was encoded with `toBlob`, which Chromium encodes in the page's idle
+- A photo's Apply in its Crop and turn dialog never waits seconds. The cropped
+  picture is encoded with `toBlob`, which Chromium encodes in the page's idle
   time and, on a busy machine that gives it none, answers only after its own
   timers: the dialog stayed open 1 s, or 6.7 s (21 and 10 of 120 runs at six at
-  once on four cores; 0.36 alike). It is encoded at once now, as a photo shrunk
-  as it is added is: on that machine Apply closes in 0.05 s, 0.12 s at most.
+  once on four cores; 0.36 alike). Where `toBlob` has not answered within
+  0.2 s, the picture is now encoded at once and its late answer dropped; a photo
+  shrunk as it is added is made the same way. On that machine Apply now closes
+  within 0.28 s: `toBlob` answered first in 34 of 60 runs (0.04 s at the
+  median), the cap in the rest (0.25 s).
 - Tests: the time-off how-to replay types its request's end from the start the
   demo shows; it had typed a fixed date, and failed from 28 October.
 
@@ -167,8 +170,8 @@ uses one; every 0.13 page reads as it did.
   - New: `ViewerHandle.refused`, `askForCheck`, `Deprecation.changed`, and in
     `@fieldia/core` `searchViewFilters` and `filterGroups` (adds).
   - (adds) `PhotoEditing.encode`, optional: an app that calls the photos part's
-    `editPhoto` itself may pass the files part's new `encodeNow`, as a photo set
-    does, so Apply closes at once; without it, `toBlob` as before.
+    `editPhoto` itself may pass the files part's new `encodeSoon`, as a photo
+    set does, so Apply never waits seconds; without it, `toBlob` as before.
 - *Tests and CSS:*
   - A unit test that mounts a page and at once expects a write to reach its data
     source awaits the handle's `refused` first, or `loadParts()` before the mount,
@@ -205,20 +208,20 @@ own, and `filterGroups` beside it). The parts, gzipped: check 17.27 → 17.22 (t
 shape with `copy` and `group`, the under-stamped warning's words gone); list
 52.07 → 52.36 (a chip per group, the menu's line, the counts, the printout);
 memory 9.12 → 9.46 (its copy applying `copy: false`); lines 16.45 → 16.47 (a
-line's own copy); files 18.97 → 19.03 and photos 11.61 → 11.63 (a picture
-encoded at once); every other part and add-on within 0.01. From the npm
-packages, an app's first load (KB gzipped, with the page / to usable): a record
-form 245.8 → 247.6 / 336.6 → 338.5; in Arabic 245.8 → 247.6 / 359.2 → 361.2; a
-list 245.0 → 246.8 / 332.9 → 335.0; the screen designer 592.8 → 595.0 / 822.0 →
-824.6 — the first paint +1.4 each for `refused`, the take-down and the held
-writes, +0.4 to +0.8 for the filter groups and the copy; the whole check in its
-chunk as in 0.36. `@fieldia/map`, `@fieldia/calendar` and `@fieldia/gantt`
-within 4 bytes of 0.36.0. A valid page's first draw on Slow 4G (1.44 Mbps,
-562 ms; 7 runs interleaved with 0.36.0, a desktop and a phone's CPU four times
-slower), for a plain form, a fetched page, a record and a list drawn from
-parts, with and without their part tags: within 10 ms of 0.36.0's on a desktop
-— about what the 0.74 KB more takes on that line — and inside the runs' own
-spread on the phone.
+line's own copy); files 18.97 → 19.09 and photos 11.61 → 11.64 (a picture's
+encode never waited on for long); every other part and add-on within 0.01. From
+the npm packages, an app's first load (KB gzipped, with the page / to usable): a
+record form 245.8 → 247.6 / 336.6 → 338.6; in Arabic 245.8 → 247.6 / 359.2 →
+361.3; a list 245.0 → 246.8 / 332.9 → 335.0; the screen designer 592.8 → 595.0 /
+822.0 → 824.6 — the first paint +1.4 each for `refused`, the take-down and the
+held writes, +0.4 to +0.8 for the filter groups and the copy; the whole check in
+its chunk as in 0.36. `@fieldia/map`, `@fieldia/calendar` and `@fieldia/gantt`
+within 4 bytes of 0.36.0. A valid page's first draw on Slow 4G (1.44 Mbps, 562
+ms; 7 runs interleaved with 0.36.0, a desktop and a phone's CPU four times
+slower), for a plain form, a fetched page, a record and a list drawn from parts,
+with and without their part tags: within 10 ms of 0.36.0's on a desktop — about
+what the 0.74 KB more takes on that line — and inside the runs' own spread on
+the phone.
 
 ## 0.36.0 — 2026-10-27
 
