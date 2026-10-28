@@ -1617,7 +1617,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // choice's options in place, a line's dialog of its columns, a required field's star, a drop judged where it lands, a
 // box's ends kept) — 601,581; a tab asked for again after another in one frame brought into sight (tab-strip.ts) +16:
 // 601,597, to 587.5.
-const BUDGET_KB = 587.5;
+// 0.36.1 (patch-0361), set from its build: 0.36.0's 601,597 bytes; a link's page asked for as the link is drawn, its
+// failure handled where it is asked (related.ts) +55; a page or a record the app cannot give said in the viewer's words,
+// never left failing unhandled — a link's Open, a related list's rows and New, the app's own way to open one, a saved
+// form, the pager's next record — each answer known by its `then` (related.ts, viewer.ts, record-bar.ts) +331; a part
+// said where its send is never said over the page too (viewer.ts) +33 — 602,016, to 588.0.
+const BUDGET_KB = 588.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2000,7 +2005,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // +0.28 — 196.89, to 196.9: under the owner's 200 (+2.98 on 0.35.3's 193.91).
 // 0.36 merged with p3-found, set once from the merged build (listed with the raw budget above): 196.89 and p3-found's
 // +0.12 — 197.01; the tab strip's +0.01 — 197.02, to 197.1: under the owner's 200 (+3.11 on 0.35.3's 193.91).
-const GZIP_BUDGET_KB = 197.1;
+// 0.36.1 (patch-0361), set from its build (listed with the raw budget above): 197.02 to 197.29 (+0.27), to 197.3: under
+// the owner's 200 (+3.38 on 0.35.3's 193.91).
+const GZIP_BUDGET_KB = 197.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -3234,7 +3241,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // to the byte (586.45 KB); gzipped 196.59 to 196.60, only the record part's and the add-ons' hashes it carries changed.
 // 0.36 merged with p3-found, from the merged build: its slots, choice, filters and rows as it measured them; the list
 // part with both lines in it 159.13 and 52.07, to 159.2 and 52.1; survey 36.44 and 12.51, to 12.6, as p3-found had it.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.1, 4.8], filters: [23.2, 8.0], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [159.2, 52.1], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.6, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+// 0.36.1 (patch-0361), from its build: filters 23.39 and 8.04 (a sheet's look through its style object; Show counting
+// nothing while a range is refused), to 23.4 and 8.1; import 38.96 and 15.31 (its look through its style object), to
+// 15.4; scan 20.62 and 8.58 (the same), to 20.7; lines 47.88 and 16.53 (a card moved by a tap kept in sight), to 47.9 and
+// 16.6; photos 31.36 and 11.67 and survey 36.63 and 12.58 (the same), to 31.4 and 36.7; list 159.20 and 52.08 (the
+// arrows reach a tree's Show more), to 159.3; rows 19.71 and 7.43 (a Show more's arrows), to 19.8 and 7.5; prefill 4.12
+// and 2.00 (a link's day held to the form's clock), to 4.2. Every other part within its budget.
+const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [159.3, 52.1], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.9, 16.6], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.4, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
