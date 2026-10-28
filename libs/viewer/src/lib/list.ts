@@ -613,7 +613,8 @@ export function listView(context: ListContext): ListView {
   const shownBeside = (tr: Element, down: boolean) => {
     if (win && windowing() && tr.classList.contains('fd-list-row')) return win.beside(tr as HTMLTableRowElement, down);
     let next = down ? tr.nextElementSibling : tr.previousElementSibling;
-    while (next && ((next as HTMLElement).hidden || next.classList.contains('fd-list-note') || next.hasAttribute('data-aside'))) next = down ? next.nextElementSibling : next.previousElementSibling;
+    // A tree's Show more is a row the keys reach, as Tab does (0.36's walk); its wait's row is not.
+    while (next && ((next as HTMLElement).hidden || next.classList.contains('fd-list-note') || (next.hasAttribute('data-aside') && !next.querySelector(':scope > td > button')))) next = down ? next.nextElementSibling : next.previousElementSibling;
     return next as HTMLElement | null;
   };
 
@@ -738,6 +739,7 @@ export function listView(context: ListContext): ListView {
           span,
           searching: () => facets.some((facet) => facet.kind !== 'groupBy'),
           changed: () => changed(),
+          step: (tr, down) => focusRow(shownBeside(tr, down)),
           loading: waiting,
         }) ?? null)
       : null;
