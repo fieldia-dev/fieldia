@@ -25,6 +25,7 @@ export const checks: DesignerWords['checks'] = {
   twoFields: (label) => `İki alanın metni “${label}”: kişiler bunları ayırt edemeyebilir.`,
   renameSecond: 'İkincisini yeniden adlandır',
   invalid: (path, message) => (path ? `${path}: ${message}` : message),
+  showBracesAsWritten: 'Süslü ayraçları yazıldığı gibi göster',
   readsGone: (name, sentence, gone) =>
     `“${name}”: “${sentence}” ${gone.length === 1 ? 'şunu' : 'şunları'} okuyor: ${listOf('tr', gone, 'and')} — ${gone.length === 1 ? 'bu' : 'bunlar'} artık sayfada değil.`,
   formulaBroken: (name, problem) => `“${name}”: formülü artık okunamıyor — ${problem}.`,

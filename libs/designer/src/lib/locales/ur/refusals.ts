@@ -30,6 +30,8 @@ export const refusals: DesignerWords['refusals'] = {
   notAColumn: (name) => `${q(name)} کوئی کالم نہیں`,
   // The page's own check speaks English: said here without its words, as Arabic's table does.
   invalid: (path, _message) => `یہ ترمیم نہیں ہو سکی: ${q(path)} پر صفحہ درست نہیں رہے گا`,
+  braceNoField: (label, name) => `${label} کے الفاظ ${ltr(`{${name}}`)} کا نام لیتے ہیں، جو کوئی فیلڈ نہیں`,
+  braceNoFieldHere: (name) => `یہ الفاظ ${ltr(`{${name}}`)} کا نام لیتے ہیں، جو کوئی فیلڈ نہیں`,
   cannotPublish: 'اس صفحے میں مسائل ہیں، اس لیے اسے شائع نہیں کیا جا سکتا',
   surveyHasNoRecords: 'سروے میں لنک کرنے یا فہرست میں دکھانے کے لیے کوئی ریکارڈ نہیں: یہ قسم ایپ کی اسکرینوں کے لیے ہے',
   logoAddress: 'لوگو کسی تصویر کا پتہ ہوتا ہے: ⁦https://…⁩، آپ کی ایپ میں کوئی راستہ، یا ⁦data:image/…⁩',

@@ -23,6 +23,9 @@ export const refusals: DesignerWords['refusals'] = {
   noButton: (id) => `لا يوجد زر ${q(id)}`,
   notAColumn: (name) => `${q(name)} ليس عمودًا`,
   invalid: (path, _message) => `تعذّر هذا التعديل: لن تبقى الصفحة صالحة عند ${q(path)}`,
+  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (0.36.1).
+  braceNoField: (label, name) => `كلمات ${label} تذكر ${q(`{${name}}`)}، وليس هذا حقلًا`,
+  braceNoFieldHere: (name) => `هذه الكلمات تذكر ${q(`{${name}}`)}، وليس هذا حقلًا`,
   cannotPublish: 'في هذه الصفحة مشكلات تمنع نشرها',
   surveyHasNoRecords: 'لا سجلات في الاستبيان للربط بها أو عرضها: هذا النوع لشاشات التطبيق',
   logoAddress: 'الشعار عنوانُ صورة: عنوانها على الويب، أو مسار في تطبيقك، أو الصورة نفسها مضمّنة',

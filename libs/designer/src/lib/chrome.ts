@@ -176,6 +176,13 @@ export function designerBar(
   const sized = view && 'ResizeObserver' in view ? new view.ResizeObserver(roomSoon) : null;
   sized?.observe(element);
   const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
+  // A refusal of words whose braces name no field: its fix beside it, as in Checks — the braces shown as written.
+  const bracesFix = () => designer.checks().find((check) => check.fix?.action.kind === 'braces');
+  const showBraces = el('button', { type: 'button', class: 'fd-button fd-designer-issues-fix' }, designer.words.checks.showBracesAsWritten);
+  showBraces.addEventListener('click', () => {
+    const check = bracesFix();
+    if (check) designer.fixCheck(check);
+  });
 
   // On the document: clicking an area that cannot take focus leaves focus on
   // the body, and keys pressed then never reach the editor's own element.
@@ -224,6 +231,7 @@ export function designerBar(
       checks.update();
       setHidden(issues, state.issues.length === 0);
       setText(issues, state.issues.join('\n'));
+      if (state.issues.length && bracesFix()) issues.append(' ', showBraces);
     },
     destroy() {
       stopReading();

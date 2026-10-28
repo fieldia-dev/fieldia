@@ -31,6 +31,7 @@ export const checks: DesignerWords['checks'] = {
   twoFields: (label) => `متن دو فیلد ${q(label)} است: ممکن است کاربران آن‌ها را از هم تشخیص ندهند.`,
   renameSecond: 'تغییر نام دومی',
   invalid: (path, _message) => (path ? `این قسمت از صفحه نامعتبر است: ${ltr(path)}` : 'صفحه چیزی دارد که با فرمت آن سازگار نیست.'),
+  showBracesAsWritten: 'آکولادها را همان‌طور که نوشته شده‌اند نشان بده',
   readsGone: (name, sentence, gone) =>
     `${q(name)}: ${q(sentence)} ${listOf('fa', gone, 'and')} را می‌خواند، که دیگر در صفحه ${gone.length === 1 ? 'نیست' : 'نیستند'}.`,
   formulaBroken: (name, problem) => `${q(name)}: فرمول آن دیگر خوانده نمی‌شود — ${problem}.`,

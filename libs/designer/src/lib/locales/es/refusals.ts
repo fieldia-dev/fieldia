@@ -30,6 +30,8 @@ export const refusals: DesignerWords['refusals'] = {
   notAColumn: (name) => `${q(name)} no es una columna`,
   // The page's own check speaks English: said here without its words, as Arabic's table does.
   invalid: (path, _message) => `No se pudo hacer este cambio: la página dejaría de ser válida en ${q(path)}`,
+  braceNoField: (label, name) => `Las palabras de ${label} nombran {${name}}, que no es ningún campo`,
+  braceNoFieldHere: (name) => `Estas palabras nombran {${name}}, que no es ningún campo`,
   cannotPublish: 'Esta página tiene problemas y no se puede publicar',
   // ---- the page and its parts
   surveyHasNoRecords: 'Una encuesta no tiene registros que enlazar ni listar: este tipo es para pantallas de aplicación',

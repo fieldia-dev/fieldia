@@ -25,6 +25,9 @@ export const refusals = {
   notAColumn: (name: string) => `"${name}" is not a column`,
   /** An edit that would leave the page broken: where, and what is wrong there. */
   invalid: (path: string, message: string) => `${path}: ${message}`,
+  /** Words whose braces name no field (`{customer}`): whose words, and the name; the fix shows the braces as written. */
+  braceNoField: (label: string, name: string) => `${label}’s words name {${name}}, which is no field`,
+  braceNoFieldHere: (name: string) => `These words name {${name}}, which is no field`,
   cannotPublish: 'This page has problems and cannot be published',
   // ---- the page and its parts
   surveyHasNoRecords: 'A survey has no records to link to or list: this kind is for app screens',

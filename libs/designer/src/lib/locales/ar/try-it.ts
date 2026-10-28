@@ -8,6 +8,8 @@ export const tryIt: DesignerWords['tryIt'] = {
   width: 'العرض',
   sizes: { desktop: 'سطح المكتب', tablet: 'جهاز لوحي', phone: 'هاتف' },
   note: 'تعمل الصفحة هنا كما سيستخدمها الناس. لا يُحفظ شيء مما يُكتب هنا.',
+  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (0.36.1).
+  lastPassed: (why) => `تعرض «تجربة» الصفحة كما كانت قبل تعديلك الأخير، الذي لا تقبله الصفحة: ${why}`,
   language: 'اللغة',
   wordsIn: 'النص بلغة',
   backToDesigning: 'العودة إلى التصميم',

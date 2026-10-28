@@ -171,6 +171,10 @@ export function tryIt(options: TryItOptions): TryIt {
     frame.replaceChildren();
     if (!trying) return;
     frame.dataset['width'] = width;
+    // The last change refused (words whose braces name no field, say): the page tried is the one before it — said so,
+    // never shown as if it held what the card shows (0.36's walk).
+    const refused = designer.getState().issues;
+    if (refused.length) frame.append(el('p', { class: 'fd-alert fd-tone-warning fd-try-refused', role: 'status' }, w.lastPassed(refused.join(' '))));
     const page = designer.getPage();
     const dataSource = createMemoryDataSource({ records: madeUp(page, options.sampleCentre) });
     const app = options.dataSource;

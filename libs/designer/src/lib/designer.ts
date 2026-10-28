@@ -86,6 +86,7 @@ import { pageSchemaPart } from './schema-part';
 import { designerLocale, designerWordsReady, isDefaultOption, wordsIn, type DesignerLocale, type DesignerWords } from './designer-words';
 import { answersName, formParts, freeFieldName, refuseCycle, savedFormsCache, updateFormPart, type FormPartPatch, type SavedFormRef } from './saved-forms';
 import { settingRefusal } from './setting-refusals';
+import { braceRefused, bracesShown, braceWords, type BraceRefused } from './brace-refusals';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -845,6 +846,11 @@ export function createDesigner(options: {
   let selected: string | null = null;
   let picked: string[] = [];
   let issues: string[] = [];
+  /**
+   * The last edit the page's check refused, while it is the last: its words — Checks lists them, never "All clear" over
+   * a page that refused what was typed (0.36's walk) — and its braces naming no field, which its fix shows as written.
+   */
+  let refusedEdit: { texts: string[]; draft: Page; braces: BraceRefused[] } | null = null;
   /** The edits Undo takes back, the last UNDO_STEPS of them: a long session kept every page it ever had (0.32). */
   let past: Page[] = [];
   let future: Page[] = [];
@@ -981,11 +987,16 @@ export function createDesigner(options: {
     });
     const checked = checkEdit(page, draft);
     if (!checked.ok) {
-      // A number setting the format refuses is said in its own words, in the designer's language: never a raw path.
-      issues = checked.issues.map((issue) => settingRefusal(issue.path, words) ?? words.refusals.invalid(issue.path, issue.message));
+      // A number setting the format refuses is said in its own words, in the designer's language: never a raw path; nor
+      // a brace that names no field, said as whose words name what (brace-refusals.ts).
+      const refused = draft;
+      const braces = checked.issues.map((issue) => braceRefused(refused, issue));
+      issues = checked.issues.map((issue, i) => settingRefusal(issue.path, words) ?? (braces[i] ? braceWords(page, braces[i] as BraceRefused, words) : words.refusals.invalid(issue.path, issue.message)));
+      refusedEdit = { texts: issues, draft: refused, braces: braces.filter((one): one is BraceRefused => one !== null) };
       notify();
       return false;
     }
+    refusedEdit = null;
     if (!(merge && merge === mergeKey)) past = kept([...past, page]);
     mergeKey = merge;
     future = [];
@@ -997,6 +1008,14 @@ export function createDesigner(options: {
     notify();
     saveDraft();
     return true;
+  }
+
+  /** The edit the page's check refused for a brace naming no field, made again with its braces shown as written. */
+  function showBraces(): boolean {
+    const held = refusedEdit;
+    if (!held?.braces.length) return false;
+    const shown = bracesShown(held.draft, held.braces);
+    return apply((draft) => replaceWith(draft, shown));
   }
 
   /** A new part after another, or in a container at a place: in a group in twelfths, a row of its own. */
@@ -2207,9 +2226,12 @@ export function createDesigner(options: {
 
     checks() {
       if (checksOf?.page !== page || checksOf.forms !== formsCame) checksOf = { page, forms: formsCame, checks: pageChecks(page, { valid: checkEdit.passed(page), forms, words, functions }) };
-      return [...checksOf.checks];
+      // What the page's check refused of the last edit, first: what was typed is not on the page, and must be put right.
+      const held = refusedEdit && issues === refusedEdit.texts ? refusedEdit : null;
+      const fix = held?.braces.length ? { fix: { label: words.checks.showBracesAsWritten, action: { kind: 'braces' as const } } } : {};
+      return [...(held?.texts.map((text) => ({ at: null, severity: 'must' as const, text, ...fix })) ?? []), ...checksOf.checks];
     },
-    fixCheck: (check) => fixCheck(designer, check),
+    fixCheck: (check) => (check.fix?.action.kind === 'braces' ? showBraces() : fixCheck(designer, check)),
 
     revertTo(version) {
       const found = versions.find((v) => v.version === version);

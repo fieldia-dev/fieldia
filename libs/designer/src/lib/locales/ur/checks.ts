@@ -31,6 +31,7 @@ export const checks: DesignerWords['checks'] = {
   twoFields: (label) => `دو فیلڈز کا متن ${q(label)} ہے: لوگ شاید ان میں فرق نہ کر سکیں۔`,
   renameSecond: 'دوسرے کا نام بدلیں',
   invalid: (path, _message) => (path ? `صفحے کا یہ حصہ درست نہیں: ${ltr(path)}` : 'صفحے میں کچھ ایسا ہے جو اس کے فارمیٹ کے مطابق نہیں۔'),
+  showBracesAsWritten: 'قوسین ویسے ہی دکھائیں جیسے لکھے گئے',
   readsGone: (name, sentence, gone) =>
     `${q(name)}: ${q(sentence)} ${listOf('ur', gone, 'and')} کو پڑھتا ہے، جو اب صفحے پر ${gone.length === 1 ? 'نہیں ہے' : 'نہیں ہیں'}۔`,
   formulaBroken: (name, problem) => `${q(name)}: اس کا فارمولا اب پڑھا نہیں جا سکتا — ${problem}۔`,

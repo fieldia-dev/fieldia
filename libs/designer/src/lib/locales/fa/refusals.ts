@@ -28,6 +28,8 @@ export const refusals: DesignerWords['refusals'] = {
   notAColumn: (name) => `${q(name)} ستون نیست`,
   // The editing model's message is in English: said here without its words, as Arabic's is.
   invalid: (path, _message) => `این تغییر انجام نشد: صفحه در ${q(path)} معتبر نمی‌ماند`,
+  braceNoField: (label, name) => `واژه‌های ${label} از ${ltr(`{${name}}`)} نام می‌برند که هیچ فیلدی نیست`,
+  braceNoFieldHere: (name) => `این واژه‌ها از ${ltr(`{${name}}`)} نام می‌برند که هیچ فیلدی نیست`,
   cannotPublish: 'این صفحه مشکلاتی دارد و نمی‌توان آن را منتشر کرد',
   surveyHasNoRecords: 'نظرسنجی رکوردی برای پیوند دادن یا فهرست کردن ندارد: این نوع برای نماهای برنامه است',
   logoAddress: `لوگو نشانی یک تصویر است: ${ltr('https://…')}، مسیری در برنامهٔ شما، یا ${ltr('data:image/…')}`,
