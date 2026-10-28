@@ -4,6 +4,7 @@ import {
   safeUrl,
   createForm,
   callsPartFunctions,
+  askAfterCheck,
   askForCheck,
   checkPage,
   pageCheckPart,
@@ -72,7 +73,7 @@ import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue
 import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
+import { formActsPart, onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
 import { later } from './later';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { nameFieldOf } from './name-field';
@@ -83,7 +84,6 @@ import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
-import { openPage } from './open';
 import { sayer } from './say';
 import { earlyList, type EarlyList } from './list-early';
 import { tabStrip } from './tab-strip';
@@ -95,7 +95,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, withActs, actsPart, askActs, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import { missingJoin } from './join-missing';
@@ -115,7 +115,6 @@ import { ownLocale, VIEWER_LABELS, viewerWords, type ViewerLabels } from './labe
 import { inOwnWords } from './in-own-words';
 import { showRefused, type PageRefused } from './refused';
 import { heldWrites } from './held-writes';
-import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 export type { PageFinder, PageRequest } from './related';
 
@@ -580,8 +579,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * made elsewhere (`form`) keeps the host it was made with.
    */
   const actionHost: ActionHost = {
+    // A page opened in a dialog, a panel or this form's place: the acts part's (open.ts), as the run that asks is.
     open: (request) =>
-      openPage(
+      withActs((part) => part.openPage(
         {
           options,
           place: host,
@@ -595,9 +595,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           leave: () => form.leave(),
           leaveNow: () => form.leaveNow(),
           signal: owned.signal,
+          mount: mountViewer,
         },
         request
-      ),
+      ), doc),
     say: (message, tone, undo) => say(message, tone, undo),
     // A question that lets the person's work go is the viewer's own, worded Discard, the focus on Cancel.
     ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message, how)),
@@ -760,7 +761,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, { yes: labels.discard, ended: () => (discarding = null) }));
+  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, { yes: labels.discard, discard: true, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -773,11 +774,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * A press runs its steps one run at a time: the button busy meanwhile, and
    * not pressed again. What earlier presses said goes as it starts: its own
    * words speak for what is done now. A check or a save that stops it takes
-   * the focus to the first problem, and says which fields, as Save does.
+   * the focus to the first problem, and says which fields, as Save does. Steps
+   * whose engine could not come (the acts part) did nothing: said with Retry,
+   * which presses it again.
    */
   async function press(button: HTMLElement, run: () => Promise<RunResult>) {
     if (button.hasAttribute('aria-busy')) return;
     say.clear();
+    pressing++;
     // Its wait (`action`): the button busy, its ring drawn after the delay and kept its minimum — or over the form, as
     // the page says, the button busy all the same.
     const wait = startAction(button);
@@ -785,12 +789,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     if (ownBusy) button.setAttribute('aria-busy', 'true');
     button.setAttribute('aria-disabled', 'true');
     try {
-      const { reason } = await run();
+      const { reason, message } = await run();
       if (reason === 'check' || reason === 'save') {
         if (!form.getState().saveProblem) announce(checkText(form.getState()), true);
         focusFirstProblem();
       }
+      if (reason === 'cannot' && !formActsPart.loaded) say(message ?? '', 'warning', undefined, { label: labels.retry, run: () => void press(button, run) });
     } finally {
+      pressing--;
       if (ownBusy) button.removeAttribute('aria-busy');
       button.removeAttribute('aria-disabled');
       endAction(wait);
@@ -798,6 +804,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   }
   /** The wait of a save or of a button's steps going on: one at a time. */
   let actionWait: Wait | null = null;
+  /** The presses going: a run of theirs that could not get its engine is said by the press, with Retry. */
+  let pressing = 0;
   /** The wait for the page and its record, then for each load of it (`first`, `refresh`): made as the viewer goes. */
   let recordWait: Wait | null = null;
   /** A save's or a button's steps' wait: on the button pressed, or over the form where the page draws it there. */
@@ -2285,7 +2293,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   });
 
   // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
-  const safety = saveSafety({ doc, el, form, page, labels, locale, tag, icons: options.icons, fill, announce, root: () => root, discard: () => letGoAsked() });
+  const safety = saveSafety({ doc, el, form, page, labels, locale, tag, icons: options.icons, fill, announce, root: () => root, discard: () => letGoAsked(), unloaded: partUnloaded });
   updaters.push(safety.update);
   // Possible duplicates (`duplicates`): records like this one, asked of the source as it is typed and saved, said under
   // the fields they matched on — in a part of their own, asked for where the page names fields and its source can
@@ -3215,6 +3223,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // for it (held-writes.ts).
   if (awaited.length) askForCheck(drawn);
   else queueMicrotask(() => askForCheck());
+  // And right after it, what no page draws from: its dialogs, a page opened, its questions (the acts part).
+  askAfterCheck(askActs);
   void drawn
     .then(() => afterPaint(doc))
     .then(() => wholeChecked())
@@ -3475,47 +3485,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // ---- confirmation dialog -----------------------------------------------------
 
   /**
-   * A question with Cancel and its Yes, or with `how.alone` a notice with OK
-   * alone. A question opens with the focus on Cancel — a button's `confirm`,
-   * an `ask` step, Archive, Delete and "Discard your changes?" alike — so an
-   * Enter meant for the form, or a second press of the key that asked, never
-   * answers Yes by itself; a notice, on OK. `how.yes` words Yes as what it
-   * does (the button's own words, Archive, Discard), OK without it;
-   * `how.ended` is told the moment it is answered, before the promise settles.
+   * A question with Cancel and its Yes, or with `how.alone` a notice with OK alone: the viewer's own box (ask-box.ts), the
+   * acts part's — asked at once once it has come, else once it does (`withActs`). Where it cannot come, nothing is done
+   * unasked: "Discard your changes?" is asked by the browser's own question, the one thing left that can ask (a frame
+   * that may not ask answers Cancel: the work is kept); any other question is answered No, the press said not done; a
+   * notice is said in words.
    */
   function dialogConfirm(message: string, how: AskHow & { alone?: boolean; ended?: () => void } = {}): Promise<boolean> {
-    const withCancel = !how.alone;
-    return new Promise((resolve) => {
-      const text = el('p', { id: `${prefix}-confirm` }, message);
-      const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
-      const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, how.yes || labels.ok);
-      const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
-      const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
-      const doc = root.ownerDocument;
-      const opener = doc.activeElement as HTMLElement | null;
-      const close = (answer: boolean) => {
-        backdrop.remove();
-        // Back to what had focus when it asked; or, when that let go of it — Save hides while it saves — to Save, shown again.
-        const shown = (e: HTMLElement | null) => !!e && e !== doc.body && e.isConnected && !e.closest('[hidden]');
-        const back = shown(opener) ? opener : root.querySelector<HTMLElement>('button[type="submit"]:not([hidden])');
-        back?.focus();
-        how.ended?.();
-        resolve(answer);
-      };
-      cancel.addEventListener('click', () => close(false));
-      ok.addEventListener('click', () => close(true));
-      // Its keys are its own: Escape answers No here, and closes no dialog or panel under it.
-      backdrop.addEventListener('keydown', (event) => {
-        event.stopPropagation();
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          close(false);
-        } else keepTabIn(dialog, event);
-      });
-      // Asked where it is seen: over a page opened in this one's place (its breadcrumb leaving this record), in that one.
-      const over = root.hidden ? [...(root.parentElement?.children ?? [])].reverse().find((child): child is HTMLElement => child !== root && child.matches('form.fd-form') && !(child as HTMLElement).hidden) : undefined;
-      (over ?? root).append(backdrop);
-      (withCancel ? cancel : ok).focus();
+    const asking = { root, el, labels, prefix };
+    // Come: asked in this turn, answered as it is.
+    if (actsPart.loaded) return actsPart.loaded.askBox(asking, message, how);
+    return withActs((part) => part.askBox(asking, message, how), doc).catch(() => {
+      const words = options.messages ?? MESSAGES[locale] ?? MESSAGES.en;
+      how.ended?.();
+      if (how.alone) say(message, 'danger');
+      else if (!how.discard) say(fill(words.guardNotDone, { part: words.guardSteps, again: againWords(formActsPart) }), 'warning');
+      return how.discard ? doc.defaultView?.confirm(message) === true : !!how.alone;
     });
   }
 
@@ -3630,6 +3615,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   cleanups.push(
     form.on('run', ({ result }) => {
       if (result.reason === 'cannot' && result.message !== undefined && result.message === form.getState().loadProblem?.message) return;
+      if (result.reason === 'cannot' && !formActsPart.loaded && pressing) return;
       if (result.reason === 'cannot' || (result.reason === 'app' && result.error !== undefined)) actionHost.say(result.message ?? '', result.reason === 'app' ? 'danger' : 'warning');
     })
   );

@@ -2,6 +2,7 @@ import { fill, FORMAT_VERSION, literalWords, MESSAGES, writtenPart, type CreateR
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
 import { later } from './later';
+import { findPage } from './find-page';
 import { ownLocale, viewerWords } from './labels';
 import type { ViewerOptions } from './viewer';
 
@@ -9,6 +10,8 @@ import type { ViewerOptions } from './viewer';
 // dialogs (and the viewer they import) coming with it.
 import { nameFieldOf } from './name-field';
 export { nameFieldOf };
+// The app's page for a request: a module of its own, which the acts part takes too (open.ts) without this one's dialogs.
+export { findPage, type PageFinder, type PageRequest } from './find-page';
 
 
 
@@ -38,32 +41,6 @@ function valuesPage(fields: Record<string, Field>, title: string, readonly: bool
   };
 }
 
-/**
- * What a part asks the app's pages for: the page for a model, to show a
- * linked record in a dialog; or a saved page by its id — and the version it
- * keeps to, when it keeps to one — to draw a saved form placed in another.
- */
-export type PageRequest = { model: string } | { id: string; version?: number };
-
-/**
- * The app's pages: a record of them by key — a model, a page's id, or
- * `id@version` for a version kept to — or a function asked for each, which
- * may answer at once or with a promise.
- */
-export type PageFinder = Record<string, Page> | ((request: PageRequest) => Page | null | undefined | Promise<Page | null | undefined>);
-
-/**
- * The page the app gives for a request: from `pages`, and for a model from `relatedPages` after it. A promise when it
- * answers later, the app's handled as it is made; whoever asks handles a page that cannot come.
- */
-export function findPage(options: Pick<ViewerOptions, 'pages' | 'relatedPages'>, request: PageRequest): Page | null | Promise<Page | null> {
-  const { pages, relatedPages } = options;
-  const key = 'model' in request ? request.model : request.version === undefined ? request.id : `${request.id}@${request.version}`;
-  const found = typeof pages === 'function' ? pages(request) : pages && Object.prototype.hasOwnProperty.call(pages, key) ? pages[key] : null;
-  if (later(found)) return found.then((page) => page ?? null) as Promise<Page | null>;
-  if (found || !('model' in request)) return found ?? null;
-  return (typeof relatedPages === 'function' ? relatedPages(request.model) : relatedPages?.[request.model]) ?? null;
-}
 
 /** Only finding and making linked records, and the app's lists of choices: values edited in a dialog are no record of the source's to load, save or recalculate. */
 function lookupsOf(source: DataSource | undefined): DataSource | undefined {
@@ -109,6 +86,14 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     // Closed with the viewer that opened them.
     signal,
   };
+  /**
+   * A dialog that could not open — its code could not come (the acts part: dialog.ts): said as a form that could not be
+   * loaded is, nothing picked, made or saved; asked for anew at the next press.
+   */
+  const unopened = (): null => {
+    say?.(viewerWords(ownLocale(options.locale ?? options.page.language), options.labels).formNotLoaded, 'danger');
+    return null;
+  };
   return {
     // Whether the app has a page for the model: one it is still fetching counts. Asked as a link is drawn, where nothing
     // waits for it — its failure (a network's, or the page left as it came) is the opening's, asked anew then: never left
@@ -145,14 +130,14 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
         title: request.title,
         size: 'large',
         ...(say ? { host: { say } } : {}),
-      });
-      if (!result.saved || result.recordId === null) return null;
+      }).catch(unopened);
+      if (!result?.saved || result.recordId === null) return null;
       const name = nameField ? result.values[nameField] : null;
       const label = typeof name === 'string' && name ? name : request.name ?? request.title;
       // Its values as its page saved them, for a line of a table that opened it to take back.
       return request.withValues ? { id: result.recordId, label, values: result.values } : { id: result.recordId, label };
     },
-    searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, theme: options.theme, tokens: options.tokens, dir: options.dir, look: options.page.look, signal }),
+    searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, theme: options.theme, tokens: options.tokens, dir: options.dir, look: options.page.look, signal }).catch(unopened),
     async editValues(request) {
       const result = await openFormDialog({
         ...shared,
@@ -168,8 +153,8 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
         ...(request.buttons ? { labels: { ...options.labels, ...(request.buttons.done ? { saveClose: request.buttons.done } : {}), ...(request.buttons.cancel ? { discard: request.buttons.cancel } : {}) } } : {}),
         ...(request.recompute ? { recompute: request.recompute } : {}),
         ...(say ? { host: { say } } : {}),
-      });
-      return result.saved ? result.values : null;
+      }).catch(unopened);
+      return result?.saved ? result.values : null;
     },
   };
 }

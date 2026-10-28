@@ -489,6 +489,8 @@ describe('the looks in parts of their own: the themes and the quiet look', () =>
     document.head.replaceChildren();
     const { mountViewer: mountFresh } = await import('./viewer');
     const { openFormDialog: openFresh } = await import('./dialog');
+    // A dialog's own code (the acts part) in, as on a page once it is drawn: what comes later here is the look's.
+    await (await import('./viewer-parts')).actsPart.load();
     const widgets = await import('@fieldia/widgets');
     const mountIn = (shown: Page, more: Partial<Parameters<typeof mountViewer>[1]> = {}) => {
       const host = document.createElement('div');

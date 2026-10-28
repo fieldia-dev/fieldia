@@ -1,9 +1,10 @@
-import { callsPartFunctions, formJoins, formApprovalsPart, pageCheckPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formActsPart, formJoins, formApprovalsPart, pageCheckPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { asksLoadingPart, loadingPart, loadingSettings, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as ElementModule from './element-part';
 import type { JoinDrawing } from './joins';
+import type * as ActsModule from './acts-part';
 import type * as AnswersModule from './answers-part';
 import type * as ApprovalsModule from './approvals-part';
 import type * as AssistModule from './assist-part';
@@ -24,6 +25,8 @@ import type * as LiveModule from './live-part';
 import type * as UndoModule from './undo-part';
 import { workHeading } from './section-head';
 
+/** The acts part's viewer half: a page in a dialog or a panel, a page opened by a step, a question asked, a save over someone else's. */
+export type ActsPart = typeof ActsModule;
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
 export type HeadPart = typeof HeadModule;
 /** The filters part: a list's filter bar. */
@@ -62,6 +65,36 @@ export type TemplatesPart = typeof TemplatesModule;
 export type LivePart = typeof LiveModule;
 /** The undo part's viewer half: Ctrl+Z through a record's changes, and a press's words with Undo. */
 export type UndoPart = typeof UndoModule;
+
+/**
+ * What no page draws from — a page in a dialog or a panel, a page opened by a step, a question asked, a save over someone
+ * else's and the changes Reload set aside — with the form's half (`formActsPart`, the engine that runs steps): asked for
+ * right after the whole check (page-check.ts), never with a page's parts; sooner by whatever needs it, which waits for
+ * it (`withActs`). In the one-tag script, one script with the form's half (fieldia.acts.js).
+ */
+export const actsPart: Part<ActsPart> = lazyPart('acts', () => Promise.all([import('./acts-part'), formActsPart.load()]).then(([module]) => module));
+/** The viewer's half asked for as the form's is, right after the whole check (`askAfterCheck`): by each viewer as it mounts. */
+export const askActs = (): unknown => actsPart.load();
+
+/**
+ * THE rule for what the acts part draws: at once where it has come, in the same turn; until then the control that asked
+ * (a button pressed, a link's Open) busy, and drawn as the part lands; rejected where it cannot come — each caller says so
+ * in its own words, nothing done. A press's steps wait the same way in the form (`runTop`, @fieldia/core), its button busy.
+ */
+export function withActs<T>(run: (part: ActsPart) => T | Promise<T>, doc?: Document): Promise<T> {
+  const part = actsPart.loaded;
+  if (part) {
+    try {
+      return Promise.resolve(run(part));
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+  const asked = (doc ?? (typeof document === 'undefined' ? undefined : document))?.activeElement?.closest('button, [role="button"], a[href]');
+  const busy = asked && !asked.hasAttribute('aria-busy') ? asked : null;
+  busy?.setAttribute('aria-busy', 'true');
+  return actsPart.load().then(run).finally(() => busy?.removeAttribute('aria-busy'));
+}
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
@@ -182,7 +215,7 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
  * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
  */
-const EVERY_PART: readonly Part[] = [loadingPart, headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart, pageCheckPart];
+const EVERY_PART: readonly Part[] = [loadingPart, actsPart, headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart, pageCheckPart];
 
 /**
  * The parts a page draws from that say in their own place that they could not come: those that draw a field's own box
