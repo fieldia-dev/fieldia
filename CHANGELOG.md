@@ -92,6 +92,15 @@ uses one; every 0.13 page reads as it did.
 
 **Fixes:**
 
+- A line opened in a dialog is titled as the one line it is, never by its
+  table's plural (the 0.36 walk: one sales order line titled "Order lines", one
+  tender requirement "Requirements"): a table's or a grid's line by its words —
+  its first column holding words, a link by its name ("Office chair,
+  ergonomic") — else by its place ("Line 3"), as a grid's card is headed; a
+  card's line by its card's title ("Contact 2", the page's own word for one).
+  The title is read once what was typed in the line is read. A table's line is
+  named the same on its ↑ and ↓ and as its move is said aloud — by its words,
+  never by a number or a day in its first column, and a link by its name.
 - A table line's dialog — a form of values Fieldia makes from a record's fields —
   and the designer's trial of a formula are written in the format Fieldia writes:
   stamped "0.1", their fields' newer settings (a `secret`, a page's `phone` or
@@ -102,6 +111,18 @@ uses one; every 0.13 page reads as it did.
   its bill reference and payment reference start empty (`"copy": false`, as
   Odoo's `ref` and `payment_reference`), so a payment quoting the copy never
   names the posted bill. A new bill starts as Draft.
+- Demos: a record opened from a list's row — an activity log's entry, a
+  contact, an account, a lead, an order, a home from its map — shows the list's
+  name over it as its way back, Fieldia's breadcrumbs as the vendor bill and the
+  real pages have them (the 0.36 walk: an entry had only the browser's Back).
+  Pressed, it goes back to the list where it was left; a record opened from a
+  link of its own goes to the list's address.
+- Demos: the gallery shows the two features 0.35.2 and 0.36 added to a page's
+  words and boxes. The enquiry answered with a drafted reply has a Greeting,
+  "Dear ", which keeps the space at its end (`"options": { "trim": false }`) and
+  opens the drafted reply ("Hello Hana,", never "HelloHana,"), and its help
+  quotes the agency's template's `{customer}` as written (`\{customer}`), each
+  with a how-to step and its replay.
 - A photo's Apply in its Crop and turn dialog never waits seconds. The cropped
   picture is encoded with `toBlob`, which Chromium encodes in the page's idle
   time and, on a busy machine that gives it none, answers only after its own
@@ -162,6 +183,9 @@ uses one; every 0.13 page reads as it did.
     it does not keep.
   - New: `ViewerHandle.refused`, `askForCheck`, `Deprecation.changed`, and in
     `@fieldia/core` `searchViewFilters` and `filterGroups` (adds).
+  - (adds) `openLineDialog` takes the dialog's title as its last argument, a
+    function given the line as it reads; the lines part and `@fieldia/grid`
+    pass it. Left out, the dialog is titled by its table's label, as before.
   - (adds) `PhotoEditing.encode`, optional: an app that calls the photos part's
     `editPhoto` itself may pass the files part's new `encodeSoon`, as a photo
     set does, so Apply never waits seconds; without it, `toBlob` as before.
@@ -180,12 +204,20 @@ uses one; every 0.13 page reads as it did.
     filters name no group draw as before.
   - (adds) The designer's field panel has "Copied with the record" on its Data
     tab, and a list filter row has a Group box ("Filter group").
+  - (fix) A line's dialog is named by its line, not its table: a test that finds
+    it by the table's label (`{ name: 'Order lines' }`) finds it by the line's
+    words, by "Line 3", or by its card's title. A table line's ↑, ↓ and its move
+    said aloud name it by its first column holding words, where they took its
+    first column as it was held: "Move Office chair up", not "Move line 1 up",
+    where its quantity comes first, nor "Move 2026-10-20 up" where a day does;
+    "Office chair moved to place 2 of 3", not "line 1 moved…", where a link
+    does.
 - *Translators:* (adds) the designer's new words in ar, es, fa, tr and ur —
   "Copied with the record" and its hint, a filter's Group and its hint, the
   example word and the refusal — are machine-made and not yet reviewed by a
   native speaker.
 
-**Size:** `fieldia.js` 588.9 KB, 198.03 gzipped (0.36.1: 588.2, 197.26): +0.77
+**Size:** `fieldia.js` 588.9 KB, 198.01 gzipped (0.36.1: 588.2, 197.26): +0.75
 KB gzipped, under the owner's 200, all of it what a page must carry from its
 mount. By lane, each measured on 0.36.0: p37-refuse +0.66 — the handle's
 `refused` and the take-down of a refused page, every write held until the check
@@ -197,11 +229,14 @@ part carries called through one table of stand-ins, not 28 generated copies
 reads before its first draw, and a list's named filters in their groups
 (`facetsToFilter`, the one-tag script's own, and `filterGroups` beside it);
 joined with 0.36.1's +0.24, whose `later()` takes the place of 0.37's own
-handling of a link's page that cannot come. The parts, gzipped (0.36.1 →
-0.37.0): check 17.26 → 17.22 (the shape with `copy` and `group`, the
+handling of a link's page that cannot come; then p37-walk-rest, measured on
+the merged branch, −0.02 (16 B: a line's dialog titled by the widget that opens
+it, the record's state and whether it is shown read once). The parts, gzipped
+(0.36.1 → 0.37.0): check 17.26 → 17.22 (the shape with `copy` and `group`, the
 under-stamped warning's words gone); list 52.08 → 52.38 (a chip per group, the
 menu's line, the counts, the printout); memory 9.12 → 9.46 (its copy applying
-`copy: false`); lines 16.53 → 16.54 (a line's own copy); files 18.97 → 19.09 and
+`copy: false`); lines 16.53 → 16.63 (a line's own copy; a line's dialog, its ↑ and ↓ titled as
+one line, its main-script half 12 B smaller); files 18.97 → 19.09 and
 photos 11.67 → 11.69 (a picture's encode never waited on for long); every other
 part and add-on within 0.01. From the npm packages, an app's first load (KB
 gzipped, with the page / to usable): a record form 246.2 → 248.0 / 337.0 →
