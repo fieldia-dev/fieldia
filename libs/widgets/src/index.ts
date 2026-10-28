@@ -55,7 +55,7 @@ export * from './lib/focus-trap';
 // part of its own, float with it — for an app's own widget too.
 export { floatUnder, type FloatPlace } from './lib/float';
 export { openToRoom, roomFor } from './lib/room';
-export { afterPress, watchPresses } from './lib/press';
+export { afterPress, dialogShown, pressedControl, pressing, pressWait, watchPresses } from './lib/press';
 export { countriesIn } from './lib/countries';
 export * from './lib/read-text';
 export { distributionIds, distributionModel, distributionWords } from './lib/distribution';

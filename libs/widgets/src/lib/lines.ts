@@ -1,5 +1,6 @@
 import { optionsList, plainPart, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type RecordId, type Value, type Values } from '@fieldia/core';
 import { currencyOf } from './display';
+import { pressedControl } from './press';
 import { stillShown, whileShown } from './shown';
 import type { WidgetDialogs } from './widgets';
 
@@ -148,6 +149,8 @@ export function ownCurrency(sub: LineField, parent: Readonly<Values>): LineField
 export async function openLineDialog(form: Form, name: string, node: FieldNode, pressed: Line, dialogs: WidgetDialogs, readonly: boolean, title?: (line: Line) => string): Promise<void> {
   const def = form.page.fields[name] as Extract<Field, { type: 'one2many' }>;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
+  // Its ↗, a card's head: what was pressed, before the cell's words are read — busy till the dialog shows (`pressWait`).
+  const from = pressedControl(typeof document === 'undefined' ? undefined : document);
   // What is still typed in a cell is read first — a name looked up (the cell left as the line was opened) waited for —
   // so the dialog shows the line as it reads, and its Save & Close never writes back what the typing replaced.
   const asked = stillShown(form);
@@ -164,7 +167,7 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
   const write = whileShown(form, (values: Values) => form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l))));
   if (node.lineOpens === 'record' && line.id !== undefined && dialogs.canOpen(def.relation)) {
     // A line is part of its record: its labels said as the record's page asks, unless its own page says otherwise.
-    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: heading, withValues: true, ...lowerLabels });
+    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: heading, withValues: true, from, ...lowerLabels });
     const back = Object.fromEntries(Object.entries(saved?.values ?? {}).filter(([key]) => key in def.fields && key !== def.sequenceField));
     if (Object.keys(back).length) write(back as Values);
     return;
@@ -189,7 +192,9 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
     // Without a form of its own, what the table shows: its columns, in its order — those its rules hide on this record
     // left out, those a person hid kept. A field no column shows (a parent's key, a state or a flag its rules read, a
     // currency its amounts are in) is the app's, kept as it is, never shown: 0.35 showed every field of the line.
-    ...(node.lineForm ? { layout: node.lineForm.children } : { shown: (node.columns ?? Object.keys(fields)).filter((column) => column in fields && !form.columnHidden(node.id, column)) }),
+    // Each with its column's widget, as the table's cells draw it (an analytic distribution's shares, never their JSON).
+    ...(node.lineForm ? { layout: node.lineForm.children } : { shown: (node.columns ?? Object.keys(fields)).filter((column) => column in fields && !form.columnHidden(node.id, column)), ...(node.cells ? { cells: node.cells } : {}) }),
+    from,
     ...lowerLabels,
   });
   // Written in one go, so the form recalculates once.

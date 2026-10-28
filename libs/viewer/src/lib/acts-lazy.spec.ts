@@ -233,7 +233,7 @@ describe('the acts part: what no page draws from', () => {
     expect(handle.form.getState().values['phone']).toBe('+201009998887');
   });
 
-  it("a link's dialog before it came: opens as it lands; where it cannot come, says so and opens nothing", async () => {
+  it("a link's dialog before it came: opens as it lands; where it cannot come, says so with Retry, which opens it", async () => {
     const { openFormDialog } = await import('./dialog');
     const opened = openFormDialog({ page: companyPage, title: 'Company', mode: 'values', values: { name: 'Nile' } });
     await settle();
@@ -242,17 +242,34 @@ describe('the acts part: what no page draws from', () => {
     await until(() => document.querySelector('.fd-form-dialog'));
     (document.querySelector('.fd-dialog-close') as HTMLElement).click();
     expect(await opened).toMatchObject({ saved: false });
-    // And through a page's own link (its Search more…'s dialog's twin): said in the viewer's words, nothing opened.
+    // And through a page's own link (its Search more…'s dialog's twin): said as a press's steps that could not come are,
+    // nothing opened — with Retry, which asks again and opens it, its answer the first ask's (Confirm's rule).
     jest.resetModules();
     mockHeld.failing = 1;
     const { pageDialogs } = await import('./related');
-    const said: string[] = [];
-    const dialogs = pageDialogs({ page: lead(), relatedPages: { company: companyPage } } as never, (message) => said.push(message));
+    const said: { message: string; act?: { label: string; run(): void; gone?(): void } }[] = [];
+    const dialogs = pageDialogs({ page: lead(), relatedPages: { company: companyPage } } as never, (message, _tone, act) => said.push({ message, act }));
     const record = dialogs.openRecord?.('company', { recordId: 3, title: 'Nile Traders' });
     await settle();
     mockHeld.release?.();
+    await until(() => said.length);
+    expect(said.map((one) => one.message)).toEqual(['This action could not load, so nothing was done. Try again.']);
+    expect(said[0].act?.label).toBe('Retry');
+    expect(document.querySelector('.fd-form-dialog')).toBeNull();
+    said[0].act?.run();
+    await settle();
+    mockHeld.release?.();
+    await until(() => document.querySelector('.fd-form-dialog'));
+    (document.querySelector('.fd-dialog-close') as HTMLElement).click();
     expect(await record).toBeNull();
-    expect(said).toEqual(['This form could not be loaded.']);
+    // Its words let go unpressed: nothing opened, the ask answered.
+    mockHeld.failing = 1;
+    const second = dialogs.openRecord?.('company', { recordId: 3, title: 'Nile Traders' });
+    await settle();
+    mockHeld.release?.();
+    await until(() => said.length === 2);
+    said[1].act?.gone?.();
+    expect(await second).toBeNull();
     expect(document.querySelector('.fd-form-dialog')).toBeNull();
   });
 });

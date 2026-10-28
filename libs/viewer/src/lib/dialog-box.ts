@@ -1,5 +1,5 @@
 import { wordsComing, wordsReady, type LeaveHow, type PanelSide, type RelatedRecord, type Values } from '@fieldia/core';
-import { drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
+import { dialogShown, drawIcon, settleParts, WIDGET_LABELS } from '@fieldia/widgets';
 import type { FormDialogOptions, FormDialogResult, FormPanelOptions, SearchDialogOptions } from './dialog';
 import { FIRST_FIELD, focusField } from './focus-field';
 import { ownLocale, VIEWER_LABELS, viewerWords } from './labels';
@@ -133,6 +133,8 @@ function openNow(options: FormDialogOptions, mount: Mount, shape: string, side: 
   const under = panel ? [...doc.querySelectorAll('.fd-form-panel')].pop() : undefined;
   under?.setAttribute('data-behind', '');
   container.append(backdrop);
+  // Shown: the press that asked for it waits no more (press.ts).
+  dialogShown(doc);
   // Its own buttons — Save & Close, Discard, × — take only presses aimed at them, as the form's do.
   const steady = steadyPresses(box);
 
@@ -380,6 +382,7 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
   const backdrop = make('div', { class: 'fd-dialog-backdrop fd-form-dialog-backdrop' });
   backdrop.append(box);
   container.append(backdrop);
+  dialogShown(doc);
   query.focus();
 
   return new Promise((resolve) => {

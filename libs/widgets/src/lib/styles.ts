@@ -892,6 +892,18 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
    form, or not at all (its action), no ring. */
 @keyframes fd-unseen { from { visibility: hidden; } }
 .fd-form[data-fd-action] .fd-button:is([aria-busy="true"], [data-fd-wait])::after { display: none; }
+/* A control a press waits on, a part on its way or the app's answer (press.ts): a ring turning in its place from the
+   press — over an icon's glyph, at the end of a name or of a box, its buttons hidden — a button's own at once. Nothing moves. */
+:where(.fd-form [data-fd-pressing]) { position: relative; }
+.fd-form [data-fd-pressing] { cursor: progress; }
+.fd-form [data-fd-pressing="icon"] { color: transparent !important; }
+[data-fd-pressing="box"] > :is(.fd-combo-open, .fd-combo-clear) { visibility: hidden; }
+.fd-button[data-fd-pressing]::after { animation: fd-spin 0.8s linear infinite; }
+.fd-pressing {
+  position: absolute; inset-block: 0; inset-inline-end: 8px; margin-block: auto; inline-size: 14px; block-size: 14px; box-sizing: border-box;
+  border: 2px solid var(--fd-accent, currentColor); border-inline-end-color: transparent; border-radius: 50%; animation: fd-spin 0.8s linear infinite; pointer-events: none;
+}
+[data-fd-pressing="icon"] > .fd-pressing { inset-inline-start: 0; margin: auto; }
 /* A page opened in a form's place: Back over it, the way the page reads. */
 .fd-back { margin: 8px 12px; }
 .fd-back::before { content: "←"; }
@@ -957,7 +969,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 @media (max-width: 600px) { .fd-form-dialog.fd-form-panel[data-side] { max-width: none; height: 100%; margin: 0; --fd-from: 0 100%; } .fd-form-dialog.fd-form-panel[data-side="top"] { --fd-from: 0 -100%; } }
 @media (prefers-reduced-motion: no-preference) { .fd-form-panel { animation: fd-slide 0.25s ease-out; transition: margin 0.2s; } }
 @keyframes fd-slide { from { translate: var(--fd-from, 100% 0); } }
-@media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } .fd-button:is([aria-busy="true"], [data-fd-wait])::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } .fd-button:is([aria-busy="true"], [data-fd-wait])::after, .fd-pressing { animation: none; } }
 `;
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details, the question kinds and the choices' details. */
