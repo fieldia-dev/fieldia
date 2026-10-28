@@ -667,18 +667,6 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
   /* The card's own width decides its columns, not the page's: beside a side panel it has less. */
   container-type: inline-size;
 }
-.fd-ribbon-frame { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
-.fd-ribbon {
-  position: absolute; inset-block-start: 18px; inset-inline-end: -42px; transform: rotate(45deg); width: 160px;
-  text-align: center; font-size: 12px; font-weight: 700; padding: 4px 0; color: #fff; background: #5f6670;
-  text-transform: uppercase; letter-spacing: 0.06em; pointer-events: none;
-}
-[dir="rtl"] .fd-ribbon { transform: rotate(-45deg); }
-/* White words on a ribbon in either scheme: fixed, deep colours, each at least 5:1 against white. */
-.fd-ribbon.fd-tone-danger { background: #c63c3d; }
-.fd-ribbon.fd-tone-success { background: #2e7d32; }
-.fd-ribbon.fd-tone-warning { background: #a14f00; }
-.fd-ribbon.fd-tone-info { background: #1365d9; }
 .fd-alert { padding: 10px 14px; border-radius: var(--fd-control-radius); border: 1px solid; font-size: 13.5px; display: flex; align-items: flex-start; gap: 10px; }
 .fd-alert-message { flex: 1 1 auto; min-width: 0; }
 .fd-alert-close { border: none; background: none; color: inherit; cursor: pointer; font: inherit; font-size: 18px; line-height: 1; padding: 0 4px; border-radius: 4px; opacity: 0.75; }
@@ -688,20 +676,6 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-alert.fd-tone-danger { background: var(--fd-error-soft); border-color: #f1a7a7; color: var(--fd-error); }
 .fd-alert.fd-tone-success { background: var(--fd-success-soft); border-color: #a7d7ab; color: var(--fd-success); }
 .fd-alert.fd-tone-info, .fd-alert:not([class*="fd-tone-"]) { background: var(--fd-info-soft); border-color: #a9c8ef; color: var(--fd-info); }
-.fd-stats { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0; margin: -24px -28px 0; border-block-end: 1px solid var(--fd-border); }
-.fd-stats:empty { display: none; }
-/* A visible ribbon owns the corner: stat buttons keep clear of it. */
-.fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) .fd-stats { padding-inline-end: 104px; }
-.fd-stat {
-  font: inherit; background: none; border: none; border-inline-start: 1px solid var(--fd-border); cursor: pointer;
-  padding: 8px 18px; display: grid; justify-items: start; line-height: 1.2; color: var(--fd-text); min-width: 120px;
-}
-.fd-stat:hover { background: var(--fd-page); }
-.fd-stat:has(> .fd-icon) { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; }
-.fd-stat > .fd-icon { width: 22px; height: 22px; color: var(--fd-muted); }
-.fd-stat-words { display: grid; justify-items: start; }
-.fd-stat-value { font-weight: 700; font-size: 15px; color: var(--fd-accent); font-variant-numeric: tabular-nums; }
-.fd-stat-label { font-size: 12.5px; color: var(--fd-muted); }
 /* The title keeps room for its words (12em): where the avatar beside it would leave less — a phone, a theme's wider
    Replace — the avatar goes under it, and the name is never broken mid-word ("Salm / a Adel"). */
 .fd-title-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between; }
@@ -725,9 +699,7 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 .fd-title-above .fd-label:empty, .fd-title-below .fd-label:empty { display: none; }
 /* A choice over the title, such as Individual or Company, speaks for itself: its label is for screen readers. */
 .fd-title-above > .fd-field > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.fd-title-statusbar { display: flex; }
-/* Badges over the title. */
-.fd-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Badges over the title (their row: the sheet part's sheet). */
 .fd-badge {
   display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; line-height: 1; padding: 5px 10px;
   border-radius: 999px; border: 1px solid var(--fd-border); background: var(--fd-page); color: var(--fd-muted);
@@ -1182,8 +1154,13 @@ export function installStyles(document: Document): void {
  * only its own elements — a ring, three dots, a bar's track, a veil — which no theme, no quiet look and no other part
  * reshapes (a theme speaks to them through the tokens, `--fd-spinner` and `--fd-bar`, alone). So it takes the last rank,
  * after the scan's, moving none: rank 33.
+ *
+ * A record sheet's furniture (0.37, the sheet part: @fieldia/viewer's sheet-styles.ts) — its ribbons, stat buttons,
+ * badges' row, statusbar under the title, the attachment beside it — cut from this sheet's rules and the viewer's: it
+ * goes first, rank 0, right after Fieldia's own sheet where its rules stood, so every part's sheet after it reshapes it
+ * as before (on paper, the print part's). Every other rank one more than 0.36's.
  */
-export const PART_RANK = { print: 0, lines: 1, business: 2, survey: 3, files: 4, evidence: 5, phone: 6, slots: 7, import: 8, duplicates: 9, limits: 10, approvals: 11, assist: 12, photos: 13, languages: 14, months: 15, typed: 16, record: 17, codes: 18, pins: 19, verify: 20, pay: 21, outbox: 22, schedule: 23, themes: 24, quiet: 25, picker: 26, head: 27, groups: 28, text: 29, surveyLooks: 30, cards: 31, scan: 32, loading: 33 } as const;
+export const PART_RANK = { sheet: 0, print: 1, lines: 2, business: 3, survey: 4, files: 5, evidence: 6, phone: 7, slots: 8, import: 9, duplicates: 10, limits: 11, approvals: 12, assist: 13, photos: 14, languages: 15, months: 16, typed: 17, record: 18, codes: 19, pins: 20, verify: 21, pay: 22, outbox: 23, schedule: 24, themes: 25, quiet: 26, picker: 27, head: 28, groups: 29, text: 30, surveyLooks: 31, cards: 32, scan: 33, loading: 34 } as const;
 
 /** A part's stylesheet in a document, once (by its id), in its place among Fieldia's (`PART_RANK`). */
 export function installPartStyles(document: Document, id: string, css: string, rank: number): void {
