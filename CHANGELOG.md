@@ -22,6 +22,125 @@ under **Deprecated** in the minor that first warns of it, and cited where it
 changes; each Upgrading item says whether it adds, fixes or changes what was
 deprecated ([the release train](docs/maintainers/release-train.md)).
 
+## 0.36.1 — 2026-10-28
+
+**A page or a record the app cannot give no longer fails unhandled.** A link's
+page that could not come — a network's failure, or the page left while it
+came — left a promise rejection unhandled as the link was drawn, and pressing
+its Open did nothing visible while it failed unhandled again: in an Angular app
+both reach `NgZone.onError`. Now each is handled where it is asked, and the
+person is told why. With them, the findings of the owner's walk of 0.36: a
+strict Content-Security-Policy on an iPhone, a line card's ↑ that threw the
+page to its top, a brace the survey designer refused in a path's words, and
+how-to replays that counted on a calendar day.
+
+**Fixes:**
+
+- **A page or a record the app cannot give is said, never left unhandled.** A
+  link asks the app for its record's page as it is drawn, to know it opens; a
+  page that cannot come no longer leaves its failure unhandled, and the link is
+  drawn with its Open. Pressed, Open says "Couldn’t open record Nile Traders:
+  part of this page could not load" — a new record, its name typed, by that
+  name; one with none, "This form could not be loaded." — opens nothing, and
+  asks again at the next press. So do a tag's Open, a linked record opened from
+  a table's line, a related list's rows and New, and every widget that opens a
+  record in a dialog. A related list that opens its records the app's own way
+  (`open: "app"`) asks the app all the same, with the model's name for the
+  page. The pager's next record, which the app could not give, is said in the
+  app's words, the record shown staying, and Next asks again. A page the app
+  answers with later — as a zone's promise or as the browser's own — is known
+  by its `then`, so a saved form placed in another, and a related list's words
+  for its records, come in an Angular app whatever kind of promise its pages
+  give.
+- **Nothing is refused under a strict Content-Security-Policy that Fieldia
+  writes.** A sheet over the page — a phone's country list, a list's Filters
+  and Import, a scanner's sheet — wears the form's tokens and accent through
+  its style object; a style attribute copied from the form was refused, and the
+  sheet lost them. A formatted text's table keeps its cells' alignment as its
+  header row is turned off and on, and as any table edit puts it back, with
+  nothing refused. WebKit refuses the style inside each `<select>` it draws on
+  any page under such a policy, with Fieldia or without: the strict-policy
+  demo's note now says that apart, and the browser gate tells it by its words
+  and fails on every other refusal, at a desktop's size and a phone's.
+- **A card moved by a tap stays where the eye is.** On an iPhone, a line card's
+  ↑ or ↓ threw the page to its top, the card 2,400 pixels below the screen; the
+  page now goes with the card, and the focus stays on its button, in every
+  engine. A repeating group's cards, a ranking's choices and a photo made the
+  cover move the same way.
+- **A day's limits count from the form's clock.** A date box's calendar, a
+  month's or a year's, faded and refused days by the computer's own today
+  where the app gave the form a clock of its own (`now`); a link's day filling
+  a field (`prefill`) was held to the computer's today too. Both now read the
+  form's, as its own check always did.
+- **The survey designer says a brace that names no field in its words.** Words
+  typed with `{customer}` where no field is called so were refused with
+  `fields.name.label: no field "customer"`, Checks said "All clear" at the same
+  time, and Try it showed the words that last passed, half typed. Now: "Your
+  name’s words name {customer}, which is no field", with Show the braces as
+  written, which keeps the words with the braces as words (`\{customer}`);
+  Checks lists it until it is put right; Try it says it shows the page as it
+  was before the change, and why.
+- **A part's notice over the page no longer contradicts its own Retry.** A
+  payment step or a code check that could not come says so where it is sent or
+  typed in, with its Retry; the page no longer says "Part of this page could not
+  load, so it is shown plainly. Reload the page and try again." over it too.
+- **A recording under half a second is nothing recorded**, as one stopped before
+  the recorder began; and the words say the time its clock says: Firefox kept
+  a recording of 0.05 s and called it "Recorded 0:01".
+- **Smaller ones:** a phone's filter sheet counts nothing while a range is
+  refused ("Show results", not the count for the half of it that was
+  accepted); the arrow keys reach a tree's "Show 20 more" and go on past it; the
+  designer's "In a new tab" box no longer covers its first letter with its
+  focus ring; the embed demo opened alone names its unit, B-12, as the
+  gallery's link does.
+- **The promises page** starts in plain words — what you can count on, what
+  your server must still do, which browsers are checked and how — says its
+  how-to runs are automated runs that act as a person would, is linked from the
+  home page, Features and every page's footer, and reads row by row on a phone.
+- The how-to replays that count from today read the page's day: the time-off
+  request's end, a quote's "Needed by", a listing's handover 18 months on (on
+  the 31st, the month's last day, as `addMonths` counts), the showroom's week on
+  a Saturday, a free day at a month's end, tomorrow in the next year. They are
+  run on three other days too: a Saturday that ends a month, a year's last
+  evening and February's last day.
+
+Behaviour you may notice in an app's own tests:
+
+- No stray rejection after a link's page that cannot come, drawn or opened, nor
+  after the pager's next record the app could not give: an Angular spec that
+  recorded one records none. The dialogs' `openRecord` resolves null where the
+  page cannot come, as where the app has none, and says why.
+- A page the app gives later as a promise of another kind than the global
+  `Promise` (in a zone, the browser's own) is waited for as a page, where 0.36.0
+  took it for one.
+- In a strict Content-Security-Policy, a sheet over the page carries the form's
+  tokens on its style object rather than as a copied `style` attribute; its
+  `style` attribute reads the same.
+- After a line card's ↑ or ↓, a repeating card's, a ranking's or a photo made
+  the cover, the page is scrolled by as much as the card moved (in Chromium it
+  stayed still before), and the button is focused without a scroll of its own.
+- A date box's calendar fades the days by the form's `now` where the app gives
+  one; a link's day filling a field is accepted or left out by it.
+- The designer: a refused edit's words for a brace naming no field are the
+  designer's ("Your name’s words name {customer}, which is no field") in its
+  six languages; `designer.checks()` lists the refusal first while it stands,
+  its fix's action `{ kind: "braces" }`; Try it shows a note over the page as
+  it was. The new words in Arabic, Persian, Urdu, Turkish and Spanish are
+  machine-assisted, not yet reviewed by a native speaker.
+- The page's notice of a part that could not come is not drawn for a code
+  check or a payment step that says so at its send.
+- A recording stopped within half a second of its start is not kept; "Recorded
+  {time}" says the time as the clock beside it does (0.36.0 said at least 0:01).
+- A phone's filter sheet's Show says "Show results" while a range is refused.
+- A tree's Show more is reached by the arrow keys; a doc's table on fieldia.dev
+  is drawn row by row under 640 pixels.
+
+**Size:** `fieldia.js` 587.9 KB, 197.3 gzipped (0.36.0: 587.5, 197.0): a link's
+page that cannot come handled where it is asked +0.05 KB; every page or record
+the app cannot give said, never unhandled, +0.32; a part said at its send never
+said over the page +0.03 — +0.27 gzipped in all. Nine parts grow by 0.1 KB or
+less (filters, import, scan, lines, photos, survey, list, rows, prefill).
+
 ## 0.36.0 — 2026-10-27
 
 **Stability adopters can plan on.** Fieldia now writes down what it promises
