@@ -71,11 +71,12 @@ against budgets that fail the build.
   5,000 rows as at 100. A table of 200 lines draws again only the lines a change
   touches.
 - **Small from npm.** An app's first load from the packages, bundled by esbuild:
-  a record form 248.0 KB gzipped with the page and 339 KB to usable, a list
-  247.2 and 335, the screen designer 596 and 826 (`tools/npm-first-load.mjs`,
-  a CI budget). The one-tag `fieldia.js` is 198.0 KB gzipped; its larger parts
-  come as a page first uses them, and the whole check of a page (17.2 KB) once
-  the page is parsed, never waited for.
+  a record form 235.9 KB gzipped with the page and 347 KB to usable, a list
+  235.1 and 336, the screen designer 585 and 822 (`tools/npm-first-load.mjs`,
+  a CI budget). The one-tag `fieldia.js` is 184.7 KB gzipped; its larger parts
+  come as a page first uses them, the whole check of a page (17.2 KB) once the
+  page is parsed, and what no page draws from — its steps, dialogs and
+  questions (12.4 KB) — right after it, neither waited for.
 
 ## Four rules
 

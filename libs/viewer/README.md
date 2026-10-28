@@ -342,6 +342,14 @@ if (call.saved) console.log(call.recordId, call.values);
 await openFormPanel({ page: callPage, dataSource, title: 'Log a call', side: 'top', height: 'short' });
 ```
 
+Their code — with a page's steps, the viewer's own questions and a save over
+someone else's — is the acts part's (`actsPart`, `fieldia.acts.js` in the
+one-tag script, two chunks in an app's bundle), which no page draws from: a
+viewer asks for it right after a page's whole check, and a dialog asked for
+sooner opens as it comes (0.37). An app that opens a dialog as it starts and
+wants it at once awaits `actsPart.load()` (or `loadParts()`) first. Where the
+part cannot come, `openFormDialog` rejects: nothing is opened.
+
 A record opened over its list, as a work tracker opens a bug over its backlog:
 
 ```ts

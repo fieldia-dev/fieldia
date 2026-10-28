@@ -113,6 +113,18 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
   and the designer find where pages are made: a network's failure takes no form down. **Gates:**
   `e2e/page-check.spec.ts` ("its check could not come"), `e2e/part-failures.spec.ts` (the `check` part, both ways it
   fails) in Chromium, Firefox and WebKit.
+- **What no page draws from comes after it, and nothing is done unasked meanwhile.** A page's steps run, its dialogs, a
+  page opened, its questions and a save over someone else's are a part of their own (`fieldia.acts.js` in the one-tag
+  script, two chunks in an app's bundle), asked for right after the whole check — never beside it or a page's parts —
+  so no page waits for it to be drawn (0.37). A press, a question or a dialog that comes before it is held: the button
+  that asked busy, and done as the part lands. Where it cannot come, nothing is done: a press says so, with Retry, which
+  presses it again; "Discard your changes?" is asked by the browser's own question, the one thing left that can ask,
+  and a frame that may not ask keeps the work; a save over someone else's says who changed the record, in plain words.
+  **Gates:** `libs/viewer/src/lib/acts-lazy.spec.ts` ("a press before it came", "\"Discard your changes?\" where it cannot
+  come", "a conflict where it cannot come"), `libs/core/src/lib/record/acts-lazy.spec.ts` ("a press that comes first
+  waits for it", "where it cannot come, a run does nothing and says so"), `e2e/acts-part.spec.ts` ("asked for right
+  after the whole check came") and `e2e/part-failures.spec.ts` (the `acts` part, both ways it fails) in Chromium,
+  Firefox and WebKit.
 
 ### Bounded work
 
@@ -240,13 +252,15 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 
 | App | First paint | Usable | Gate |
 | --- | --- | --- | --- |
-| A record form | 250.3 KB | 342.9 KB | `tools/npm-first-load.mjs` |
-| A list | 249.4 KB | 339.0 KB | `tools/npm-first-load.mjs` |
-| The screen designer | 604.2 KB | 837.9 KB | `tools/npm-first-load.mjs` |
+| A record form | 240.6 KB | 354.1 KB | `tools/npm-first-load.mjs` |
+| A list | 239.8 KB | 343.0 KB | `tools/npm-first-load.mjs` |
+| The screen designer | 596.3 KB | 838.1 KB | `tools/npm-first-load.mjs` |
 
-Usable counts the whole check, which a page asks for as it is mounted and runs once it is drawn. The one-tag script,
-`fieldia.js`, is held to 198.1 KB gzipped, the whole check it asks for once the page is parsed (`fieldia.check.js`)
-to 17.3 KB, and each other part it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
+Usable counts the whole check, which a page asks for as it is mounted and runs once it is drawn, and what no page draws
+from, asked for right after it (from 0.37: a page's steps run, its dialogs, its questions, a save over someone else's).
+The one-tag script, `fieldia.js`, is held to 184.7 KB gzipped, the whole check it asks for once the page is parsed
+(`fieldia.check.js`) to 17.3 KB, what it asks for right after (`fieldia.acts.js`) to 12.4 KB, and each other part it
+loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
 
 These are budgets, not measurements. A count's budget is what the release counted, with a little room; a timing's is
 a frame for a key and a tenth of a second for a click. Each run's measurements are kept with CI's perf job.
@@ -259,8 +273,8 @@ an iPhone runs Safari's engine); and Chrome on Android. The npm packages are ES2
 | Browser | Checked in CI | Not checked in CI |
 | --- | --- | --- |
 | Chrome, Edge | Chromium 156, Playwright's build: every browser spec, in every framework's demo, every demo's how-to taken step by step by an automated run that uses the mouse and the keys as a person would, and the perf gates; the key screens compared with their stored images in Playwright's own container | Chrome's and Edge's own builds; the major before |
-| Firefox | Firefox 157, Playwright's build: the smoke set (115 specs) in the plain demo | The rest of the specs; the major before |
-| Safari | WebKit 27.2, Safari's engine as Playwright builds it: the smoke set (115 specs) in the plain demo | Safari itself; the major before |
+| Firefox | Firefox 157, Playwright's build: the smoke set (116 specs) in the plain demo | The rest of the specs; the major before |
+| Safari | WebKit 27.2, Safari's engine as Playwright builds it: the smoke set (116 specs) in the plain demo | Safari itself; the major before |
 | Safari on iOS | WebKit at an iPhone 14's size with touch: every demo's how-to taken step by step by an automated run that taps as a finger would (`how-to-phone`), and the smoke set's phone specs | A real iPhone |
 | Chrome on Android | Chromium at a phone's size with touch; the perf gates on a phone's CPU | A real Android phone |
 
