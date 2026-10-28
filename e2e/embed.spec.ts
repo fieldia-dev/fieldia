@@ -47,6 +47,16 @@ test('<fieldia-form> draws its page on a partner’s page and tells what happens
   await screen(page, 'embed-element');
 });
 
+test('opened with no unit in its address, the page names its own, B-12, as the gallery’s link does: its title, Try this and Unit', async ({ page }) => {
+  // The 0.36 walk: /demos/embed/ alone had no title and no Try this (the frame finds a demo by its address) and its Unit
+  // was empty under "Palm Valley, unit B-12".
+  await page.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
+  await page.goto('/embed/');
+  await expect(page.locator('.dh-title')).toHaveText('A form on another site: one tag');
+  await expect(page.locator('fieldia-form [data-node="f-unit"] input')).toHaveValue('B-12');
+  expect(new URL(page.url()).searchParams.get('unit')).toBe('B-12');
+});
+
 test('<fieldia-form> speaks its locale attribute’s language, right to left', async ({ page }) => {
   await page.goto('/embed/?locale=ar');
   await expect(page.locator('fieldia-form .fd-form')).toHaveAttribute('dir', 'rtl');
