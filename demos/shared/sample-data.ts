@@ -409,13 +409,12 @@ export const opensRows = (params: URLSearchParams): boolean => !CHANGED_IN_PLACE
  */
 export function openRecord(params: URLSearchParams, id: string | number): void {
   if (!opensRows(params)) return;
-  const next = new URLSearchParams(params);
+  // The list it came from first, then the list's own address as it was — its page the record's, the record last.
+  const next = new URLSearchParams([['from', params.get('page') ?? ''], ...[...params].filter(([key]) => key !== 'from')]);
   next.set('page', RECORD_PAGES[params.get('page') ?? ''] ?? 'customer');
   // What kept the list to one record's records is the list's, not the record's.
   next.delete('filter');
   next.delete('search');
-  next.set('from', params.get('page') ?? '');
-  // The record last, as an address names it.
   next.delete('record');
   next.set('record', String(id));
   location.search = next.toString();
