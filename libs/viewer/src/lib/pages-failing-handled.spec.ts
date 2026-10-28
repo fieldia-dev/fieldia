@@ -148,6 +148,24 @@ describe('a link whose record’s page cannot come', () => {
     expect(said()).toEqual([]);
   });
 
+  it('a page the viewer refuses opens a box with its words, which × and Escape close; nothing left unhandled', async () => {
+    // The record's page has a mistake the check before the draw refuses (0.35's): its words where the form would be.
+    const broken = { ...partner, layout: { type: 'sections', id: 's', children: [{ type: 'field', id: 'p-x', field: 'nowhere' }] } } as unknown as Page;
+    const dialogs = pageDialogs({ page: order, pages: () => broken });
+    for (const key of ['×', 'Escape']) {
+      const opened = dialogs.openRecord('partner', { recordId: 1, title: 'Nile Traders' });
+      await settle();
+      const box = dialog() as HTMLElement;
+      expect(box.textContent).toContain('This form cannot be shown: its page has mistakes.');
+      if (key === '×') (box.querySelector('.fd-dialog-close') as HTMLButtonElement).click();
+      else box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await expect(opened).resolves.toBeNull();
+      expect(dialog()).toBeNull();
+    }
+    await settle();
+    expect(said()).toEqual([]);
+  });
+
   it('a page that comes later as the zone’s promise or the engine’s own opens alike', async () => {
     for (const later of [() => Promise.resolve(partner), async () => partner]) {
       const { pages } = pagesOf(later);
