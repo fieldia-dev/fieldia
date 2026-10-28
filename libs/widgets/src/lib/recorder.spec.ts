@@ -315,6 +315,8 @@ describe('Record beside a file field’s picker', () => {
       await until(() => shown('Start recording'));
       button(recorder() as HTMLElement, 'Start recording')?.click();
       await until(() => said() === 'Recording…');
+      // A second of it: under half a second is nothing recorded (0.36.1).
+      await new Promise((resolve) => setTimeout(resolve, 1100));
       button(recorder() as HTMLElement, 'Stop')?.click();
       await until(() => release);
       key(recorder() as HTMLElement, 'Escape');
