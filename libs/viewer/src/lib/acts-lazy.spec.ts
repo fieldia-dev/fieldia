@@ -207,9 +207,11 @@ describe('the acts part: what no page draws from', () => {
     source.changeElsewhere('lead', 1, { name: 'Villa (sold)' }, { by: 'Mona' });
     expect(await handle.save()).toBe(false);
     await settle();
-    expect(host.querySelector('.fd-conflict:not([hidden])')).toBeNull();
+    // Nothing of it yet: no box of its kind at all, shown or hidden, for a page's own tests to find twice.
+    expect(host.querySelectorAll('.fd-conflict')).toHaveLength(0);
     mockHeld.release?.();
     await until(() => host.querySelector('.fd-conflict:not([hidden]) [role="alert"]'));
+    expect(host.querySelectorAll('.fd-conflict')).toHaveLength(1);
     expect(host.querySelector('.fd-conflict')?.textContent).toMatch(/^Mona changed this record at .* They changed: Name\./);
     expect(button(host.querySelector('.fd-conflict') as HTMLElement, 'Keep mine')).toBeDefined();
   });

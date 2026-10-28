@@ -46,9 +46,8 @@ export function saveSafety(context: SaveSafetyContext): { readonly elements: HTM
   // ---- someone else saved first, and the changes Reload set aside: the acts part's, asked for as they first are --------
   let banners: { elements: HTMLElement[]; update(state: FormState): void } | null = null;
   let asked = false;
-  /** Where the acts part could not come: the conflict in plain words. */
-  const plain = el('div', { class: 'fd-conflict', role: 'alert', hidden: '' });
-  let failed = false;
+  /** Where the acts part could not come, and only then: the conflict in plain words. */
+  let plain: HTMLElement | null = null;
 
   // ---- who else has it open (the data source's `presence`): drawn by the live part, once someone else is ------
   // Hidden while nobody else is: an empty band is no part of the form.
@@ -71,15 +70,18 @@ export function saveSafety(context: SaveSafetyContext): { readonly elements: HTM
           made.update(form.getState());
         },
         () => {
-          failed = true;
+          plain = el('div', { class: 'fd-conflict', role: 'alert', hidden: '' });
+          presence.after(plain);
           context.unloaded?.();
           update(form.getState());
         }
       );
     }
-    const found = failed ? state.conflict : null;
-    setHidden(plain, !found);
-    setText(plain, found ? recordSentence(context.page.records, labels.conflictSinceNoun, labels.conflictSince, context.locale, { name: found.version.by || labels.someoneElse }) : '');
+    if (plain) {
+      const found = state.conflict;
+      setHidden(plain, !found);
+      setText(plain, found ? recordSentence(context.page.records, labels.conflictSinceNoun, labels.conflictSince, context.locale, { name: found.version.by || labels.someoneElse }) : '');
+    }
 
     // Others with the record open: the live part's strip, asked for the first time someone else is.
     setHidden(presence, !state.present?.length);
@@ -96,7 +98,7 @@ export function saveSafety(context: SaveSafetyContext): { readonly elements: HTM
 
   return {
     get elements() {
-      return [presence, ...(banners?.elements ?? [plain]), note];
+      return [presence, ...(banners?.elements ?? (plain ? [plain] : [])), note];
     },
     update,
   };
