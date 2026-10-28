@@ -242,21 +242,16 @@ const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks
 }
 
 /**
- * The whole check (check-whole.ts: `validatePage`'s verdict without zod) is the check part's, fieldia.check.js, asked for
- * as the script starts (script-entry.ts) and waited for by a viewer as for a page's parts — never the main script's,
- * where an app's bundle carries it with the viewer (check-now.ts). And the checks a part carries come each with its part
- * here: none put in by a whole check's call (all-checks.ts, empty here — the runtime's `checkPage` owes them, as it did),
- * and no chunk of them all (format-checks.ts, the packages' alone).
+ * The checks a part carries come each with its part here: none put in by a reference check as it is made (all-checks.ts
+ * stood in by an empty table — the runtime's `checkPage` owes them until each part came, as it did). The whole check
+ * (check-whole.ts) is the check part's, fieldia.check.js, which the script asks for as it starts (script-entry.ts) and a
+ * viewer runs once a page is drawn.
  */
-const WHOLE_CHECK_APART = {
-  'libs/core/src/lib/format/check-now.ts': `import { pageCheckPart } from ${from(join(WORKSPACE, 'libs/core/src/lib/format/page-check.ts'))};\nexport const WHOLE_CHECK_APART = true;\nexport const wholeCheckNow = (given, options) => (pageCheckPart.loaded ? pageCheckPart.loaded.wholeCheck(given, options) : null);`,
-  'libs/core/src/lib/format/all-checks.ts': 'export const ALL_CHECKS = {};\nexport const wholeChecks = () => undefined;',
-  'libs/core/src/lib/format/format-checks.ts': 'export const formatChecksPart = null;',
-};
+const ALL_CHECKS_APART = { 'libs/core/src/lib/format/all-checks.ts': 'export const ALL_CHECKS = {};\nexport const wholeChecks = () => undefined;' };
 const wholeCheckApart = {
-  name: 'whole-check-apart',
+  name: 'all-checks-apart',
   setup(builder) {
-    for (const [file, contents] of Object.entries(WHOLE_CHECK_APART)) {
+    for (const [file, contents] of Object.entries(ALL_CHECKS_APART)) {
       builder.onLoad({ filter: new RegExp(`${file.replace(/[./]/g, (c) => `\\${c}`)}$`) }, () => ({ contents, resolveDir: WORKSPACE, loader: 'js' }));
     }
   },
@@ -1645,7 +1640,14 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // choice's options in place, a line's dialog of its columns, a required field's star, a drop judged where it lands, a
 // box's ends kept) — 601,581; a tab asked for again after another in one frame brought into sight (tab-strip.ts) +16:
 // 601,597, to 587.5.
-const BUDGET_KB = 587.5;
+// 0.37 (p37-refuse), the whole check run as soon as a page is drawn, never before (the coordinator's 28 Oct): a page it
+// refuses taken down, `refused` settled; every write through the page held until it ran (held-writes.ts, its members'
+// names 0.48 KB of it); the words and onError's warning where its part cannot come; the part asked for as the script
+// starts — less 0.36's check at idle and its warning; the checks a part carries called through one table of stand-ins
+// (owed-checks.ts) where 28 copies of one were made; a write on a page whose check passed (or whose part is in) going in
+// the same turn, as ever, and the app's answer to a held one handled as it is made: 601,597 measured before, 601,892
+// after (+295), to 588.0.
+const BUDGET_KB = 588.0;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2028,15 +2030,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // +0.28 — 196.89, to 196.9: under the owner's 200 (+2.98 on 0.35.3's 193.91).
 // 0.36 merged with p3-found, set once from the merged build (listed with the raw budget above): 196.89 and p3-found's
 // +0.12 — 197.01; the tab strip's +0.01 — 197.02, to 197.1: under the owner's 200 (+3.11 on 0.35.3's 193.91).
-// 0.37 (p37-refuse), a page its whole check refuses never drawn — what every page does before its first draw: the whole
-// check's handle where it came and its part waited for as a page's parts are (check-now.ts here, viewer.ts), a page
-// refused once it came, the words and onError's warning where it cannot come, the part asked for as the script starts
-// (script-entry.ts) — less 0.36's check after the draw and its warning (whenIdle, pageInvalid's console words); the 28
-// checks a part carries called through one table of stand-ins (owed-checks.ts), not 28 generated copies: 197.38 with
-// those copies, 197.23 without (−0.15); the first wait drawn for no wait of the whole check's alone, and checkPage kept
-// apart from the owing check, +0.04. 197.02 measured before, 197.27 after (+0.25; raw 601,597 → 600,942, −655), to
-// 197.3: under the owner's 200.
-const GZIP_BUDGET_KB = 197.3;
+// 0.37 (p37-refuse), listed with the raw budget above: the whole check run as soon as a page is drawn, a page it refuses
+// taken down, every write held until it ran (0.20 of it, the writes' names most), a write going at once once it passed,
+// the words where its part cannot come, the part asked for as the script starts, less 0.36's check at idle; the 28
+// checks a part carries through one table of stand-ins, not 28 copies (−0.15): 197.02 measured before, 197.57 after
+// (+0.55), to 197.6 — under the owner's 200.
+const GZIP_BUDGET_KB = 197.6;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -3478,11 +3477,13 @@ console.log(`parts: ${partSizes.join('; ')}`);
 console.log("a part's checks: a list page's own owed to the list part until it came, a list's cells changed in place to the editable part, a map's to theirs, then run as the packages' check runs them — in a page, one that finds a mistake draws nothing, and its drawn rejects with the mount's words");
 
 /**
- * In a page, the whole check's part (0.37): asked for as the script starts; a page mounted before it came waits for it,
- * drawn once it came — or refused then, nothing of it drawn, `drawn` rejecting with the mount's words. And where it
- * cannot come (refused by the network here), the page is drawn on the checks fieldia.js carries, and said: over the
- * page as a part that could not load, once in the console and to onError as a warning. The browsers' own runs of it:
- * e2e/page-check.spec.ts and the part-failure matrix.
+ * In a page, the whole check's part (0.37): asked for as the script starts; a page mounted before it came is drawn at
+ * once all the same — the page that passes and the one it will refuse alike — and a write through either waits for it.
+ * Once it came, the page that passes sends what was held; the one it refuses is taken down, its words in its place,
+ * onError told (`stage: "check"`), `refused` settled, its held send refused and nothing sent. And where it cannot come
+ * (refused by the network here), the page stays drawn, said over it as a part that could not load, once in the console
+ * and to onError as a warning, and its sends go on. The browsers' own runs of it: e2e/page-check.spec.ts and the
+ * part-failure matrix.
  */
 {
   const { JSDOM, VirtualConsole } = await import('jsdom');
@@ -3518,21 +3519,31 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const page = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/delivery.page.json'), 'utf8'));
   const [name] = Object.keys(page.fields);
   const invalid = { ...page, fields: { ...page.fields, [name]: { ...page.fields[name], required: 'yes' } } };
+  const filled = (view) => view.form.setValue(name, 'Hana Fouad');
   {
     const { dom, release, loaded } = pageWith(false);
     await loaded;
     const { Fieldia: inPage, document: doc } = dom.window;
     if (!inPage.pageCheckPart.coming) throw new Error('in a page, the whole check is not on its way as the script started');
     const told = [];
-    const good = inPage.mountViewer(doc.getElementById('a'), { page, dataSource: inPage.createMemoryDataSource() });
-    const bad = inPage.mountViewer(doc.getElementById('b'), { page: invalid, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push(where) });
-    // Before it came: nothing of either drawn, each busy — the page that passes and the one it will refuse alike.
-    if (doc.querySelector('.fd-field, .fd-unshown') || good.element.getAttribute('aria-busy') !== 'true' || told.length) throw new Error('in a page, a page mounted before its whole check came was drawn, or refused, before it came');
+    const goodSource = inPage.createMemoryDataSource();
+    const badSource = inPage.createMemoryDataSource();
+    const good = inPage.mountViewer(doc.getElementById('a'), { page, dataSource: goodSource });
+    const bad = inPage.mountViewer(doc.getElementById('b'), { page: invalid, dataSource: badSource, onError: (error, where) => told.push(where) });
+    // Before it came: both drawn at once, never waiting for it.
+    if (!doc.querySelector('#a .fd-field') || !doc.querySelector('#b .fd-field') || good.element.hasAttribute('aria-busy') || told.length) throw new Error('in a page, a page mounted before its whole check came waited for it to be drawn');
+    filled(good);
+    filled(bad);
+    const sentGood = good.form.save();
+    const sentBad = bad.form.save();
+    await new Promise((done) => dom.window.setTimeout(done, 200));
+    // Held: nothing sent through either while the check is on its way.
+    if (goodSource.responses.length || badSource.responses.length) throw new Error('in a page, a send went through a page before its whole check came');
     release();
-    await good.drawn;
-    const said = await bad.drawn.then(() => null, (error) => error.message);
-    if (!doc.querySelector('#a .fd-field') || good.element.hasAttribute('aria-busy')) throw new Error('in a page, a page that passes is not drawn once its whole check came');
-    if (!said?.includes(`fields.${name}.required`) || doc.querySelector('#b .fd-field') || !doc.querySelector('#b > .fd-unshown [role="alert"]') || told.length !== 1 || told[0].stage !== 'check' || told[0].warning) throw new Error(`in a page, a page its whole check refuses once it came is drawn, or not refused in words: ${said} ${JSON.stringify(told)}`);
+    const [refusedGood, refusedBad] = await Promise.all([good.refused, bad.refused]);
+    await Promise.all([sentGood, sentBad].map((sent) => sent.catch(() => false)));
+    if (refusedGood !== null || goodSource.responses.length !== 1 || !doc.querySelector('#a .fd-field')) throw new Error('in a page, a page its whole check passes did not send what was held');
+    if (!refusedBad?.message?.includes(`fields.${name}.required`) || badSource.responses.length || doc.querySelector('#b .fd-field') || !doc.querySelector('#b > .fd-unshown [role="alert"]') || told.length !== 1 || told[0].stage !== 'check' || told[0].warning) throw new Error(`in a page, a page its whole check refuses was not taken down, or sent what was held: ${refusedBad?.message} ${badSource.responses.length} ${JSON.stringify(told)}`);
     dom.window.close();
   }
   {
@@ -3540,12 +3551,16 @@ console.log("a part's checks: a list page's own owed to the list part until it c
     await loaded;
     const { Fieldia: inPage, document: doc } = dom.window;
     const told = [];
-    const shown = inPage.mountViewer(doc.getElementById('a'), { page: invalid, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ message: error.message, where }) });
-    await shown.drawn;
+    const source = inPage.createMemoryDataSource();
+    const shown = inPage.mountViewer(doc.getElementById('a'), { page: invalid, dataSource: source, onError: (error, where) => told.push({ message: error.message, where }) });
     const again = inPage.mountViewer(doc.getElementById('b'), { page, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ message: error.message, where }) });
-    await again.drawn;
-    // Drawn on the checks fieldia.js carries — a mistake only the whole check finds not looked for — and said.
+    filled(shown);
+    const sent = shown.form.save();
+    if ((await shown.refused) !== null || (await again.refused) !== null) throw new Error('in a page, a page whose whole check could not come was refused');
+    await sent.catch(() => false);
+    // Drawn on the checks fieldia.js carries — a mistake only the whole check finds not looked for — said, and sent.
     if (!doc.querySelector('#a .fd-field') || !doc.querySelector('#b .fd-field') || doc.querySelector('.fd-unshown')) throw new Error('in a page, a page whose whole check could not come is not drawn');
+    if (source.responses.length !== 1) throw new Error('in a page, a send through a page whose whole check could not come was held for ever');
     if (told.length !== 2 || told.some((one) => one.where.stage !== 'check' || one.where.warning !== true || !one.message.startsWith('This page could not be fully checked'))) throw new Error(`in a page, a page whose whole check could not come does not tell onError so, as a warning: ${JSON.stringify(told)}`);
     if (warned.filter((words) => words.includes('could not be fully checked')).length !== 1) throw new Error(`in a page, a page whose whole check could not come is not said once in the console: ${JSON.stringify(warned)}`);
     if (!doc.querySelector('#a .fd-parts-unloaded:not([hidden])')?.textContent.startsWith('Part of this page could not load')) throw new Error('in a page, a page whose whole check could not come does not say so over it');
@@ -3553,7 +3568,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   await new Promise((done) => server.close(done));
 }
-console.log('the whole check in a page: asked for as the script starts, a page mounted before it came drawn or refused once it came, one it could not come for drawn and said');
+console.log('the whole check in a page: asked for as the script starts, a page mounted before it came drawn at once, its sends held — sent once it passed, taken down and nothing sent where it refused — and one it could not come for drawn, said and sending');
 
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
@@ -3633,20 +3648,18 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   if (!host.querySelector('.fd-form .fd-print-head[aria-hidden="true"]')) throw new Error("in a page, a form carries no printout's head");
   plain.destroy();
   gone('plain');
-  // A page 0.35 drew whose whole check finds a mistake validatePage refuses (`page.invalid`, 0.37): refused before the
-  // draw — its check in, at once: its words where the form would be, onError told (stage "check"), the mount thrown.
+  // A page 0.35 drew whose whole check finds a mistake validatePage refuses (`page.invalid`, 0.37): drawn at once, its
+  // check in — then, the page painted, taken down: its words in its place, onError told (`stage: "check"`), `refused`
+  // settled, the mount never thrown.
   {
     const page = read('delivery.page.json');
     const [name] = Object.keys(page.fields);
     const told = [];
-    let thrown = null;
     const before = problems.length;
-    try {
-      inPage.mountViewer(host, { page: { ...page, fields: { ...page.fields, [name]: { ...page.fields[name], required: 'yes' } } }, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ error, where }) });
-    } catch (error) {
-      thrown = error;
-    }
-    if (thrown?.issues?.[0]?.path !== `fields.${name}.required` || told.length !== 1 || told[0].where.stage !== 'check' || told[0].where.warning || host.querySelector('.fd-field') || !host.querySelector('.fd-unshown [role="alert"]')) throw new Error(`in a page, a page only the whole check refuses is drawn, or not refused in words before it: ${JSON.stringify(told.map((one) => one.where))}`);
+    const shown = inPage.mountViewer(host, { page: { ...page, fields: { ...page.fields, [name]: { ...page.fields[name], required: 'yes' } } }, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ error, where }) });
+    if (!host.querySelector('.fd-field')) throw new Error('in a page, a page only the whole check refuses is not drawn at once');
+    const error = await shown.refused;
+    if (error?.issues?.[0]?.path !== `fields.${name}.required` || told.length !== 1 || told[0].where.stage !== 'check' || told[0].where.warning || host.querySelector('.fd-field') || !host.querySelector('.fd-unshown [role="alert"]')) throw new Error(`in a page, a page only the whole check refuses is not taken down in words: ${JSON.stringify(told.map((one) => one.where))}`);
     // The console told why, once, as a refused page says it (refused.ts): the one line this page logs.
     const said = problems.splice(before);
     if (said.length !== 1 || !said[0].startsWith('[Fieldia] This page cannot be shown:')) throw new Error(`in a page, a refused page's console said ${JSON.stringify(said)}`);
