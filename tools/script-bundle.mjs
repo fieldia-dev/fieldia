@@ -2006,9 +2006,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // +0.28 — 196.89, to 196.9: under the owner's 200 (+2.98 on 0.35.3's 193.91).
 // 0.36 merged with p3-found, set once from the merged build (listed with the raw budget above): 196.89 and p3-found's
 // +0.12 — 197.01; the tab strip's +0.01 — 197.02, to 197.1: under the owner's 200 (+3.11 on 0.35.3's 193.91).
-// 0.36.1 (patch-0361), set from its build (listed with the raw budget above): 197.02 to 197.29 (+0.27); the refused
-// page's box +0.06 — 197.34 (+0.33), to 197.4: under the owner's 200 (+3.43 on 0.35.3's 193.91).
-const GZIP_BUDGET_KB = 197.4;
+// 0.36.1 (patch-0361), set from its build (listed with the raw budget above): 197.02 to 197.26 (+0.24), to 197.3: under
+// the owner's 200 (+3.35 on 0.35.3's 193.91).
+const GZIP_BUDGET_KB = 197.3;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

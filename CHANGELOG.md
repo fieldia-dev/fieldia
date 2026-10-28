@@ -142,7 +142,7 @@ Behaviour you may notice in an app's own tests:
 **Size:** `fieldia.js` 588.2 KB, 197.3 gzipped (0.36.0: 587.5, 197.0): a link's
 page that cannot come handled where it is asked +0.05 KB; every page or record
 the app cannot give said, never unhandled, +0.32; a part said at its send never
-said over the page +0.03; a refused page's box that closes +0.24 — +0.33
+said over the page +0.03; a refused page's box that closes +0.24 — +0.24
 gzipped in all. Nine parts grow by 0.1 KB or less (filters, import, scan,
 lines, photos, survey, list, rows, prefill).
 
