@@ -129,6 +129,26 @@ test.describe('a press that waits looks busy where it was pressed', () => {
     });
   }
 
+  test('the acts part in, its dialog’s own parts still on their way: the ↗ busy and turning until the dialog shows', async ({ page }) => {
+    // What follows the part is waited on too (the 0.37 walk: a link's last second, in 0.36.1 too, was silent).
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(/\/chunks\/phone-part-[^/?]*\.js(\?.*)?$/, async (route: Route) => {
+      await held;
+      await route.continue();
+    });
+    await open(page, 'plain', ORDER);
+    await page.waitForFunction(() => performance.getEntriesByType('resource').some((entry) => /\/acts-part-/.test(entry.name)));
+    const open1 = node(page, 'f-partner').getByRole('button', { name: 'Open Dar El Shifa Hospital' });
+    expectBusy(await pressAndLook(page, open1), 'the customer’s ↗, its dialog’s parts on their way');
+    await page.waitForTimeout(300);
+    await expect(dialogs(page)).toHaveCount(0);
+    await expect(open1).toHaveAttribute('aria-busy', 'true');
+    release();
+    await expect(page.getByRole('dialog', { name: 'Dar El Shifa Hospital' })).toBeVisible();
+    await expect(page.locator('.fd-pressing, [data-fd-pressing]')).toHaveCount(0);
+  });
+
   test('pressed twice while it waits, the ↗ opens one dialog', async ({ page }) => {
     const acts = await hold(page);
     await open(page, 'plain', ORDER);
