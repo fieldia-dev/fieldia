@@ -26,12 +26,13 @@ export const WORD_TABLES = {
 
 /** By part, the keys of each table only that part's modules (and the other parts named with a key) read. */
 export const PART_WORDS = {
-  // A step's web address refused, Search more…'s empty list (with the other lists that say so), and a save over someone
-  // else's: who and when, what each changed, Reload's words, the changes set aside to put back, their version unread.
+  // A step's web address refused, a dialog's Save & Close, Search more…'s empty list (with the other lists that say so),
+  // and a save over someone else's: who and when, what each changed, Reload's words, the changes set aside to put back,
+  // their version unread.
   acts: {
     messages: ['addressRefused', 'theirsUnread'],
     widgets: ['noResults'],
-    viewer: ['conflictAt', 'conflictAtNoun', 'conflictChanged', 'conflictBoth', 'conflictChoice', 'reloaded', 'reloadedNoun', 'putBackField', 'putAllBack', 'nowIs'],
+    viewer: ['saveClose', 'conflictAt', 'conflictAtNoun', 'conflictChanged', 'conflictBoth', 'conflictChoice', 'reloaded', 'reloadedNoun', 'putBackField', 'putAllBack', 'nowIs'],
   },
   approvals: {
     messages: ['approvalLocked', 'approvalReasonNeeded', 'approvalNotYours'],
