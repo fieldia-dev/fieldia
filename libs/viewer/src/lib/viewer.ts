@@ -72,7 +72,7 @@ import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue
 import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
+import { answerOf, onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
 import { later } from './later';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { nameFieldOf } from './name-field';
@@ -600,7 +600,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       ),
     say: (message, tone, undo) => say(message, tone, undo),
     // A question that lets the person's work go is the viewer's own, worded Discard, the focus on Cancel.
-    ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message, how)),
+    // The app's confirm answered as it is given (`answerOf`): every question the viewer asks goes through here.
+    ask: (message, how) => (how?.discard ? letGoAsked(message) : answerOf(confirm(message, how))),
     show: (target) => {
       const show = tabs.get(target);
       if (!show?.()) throw new Error(`No tab "${target}" can be shown here`);
@@ -1908,7 +1909,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
               ? async (model, request) => {
                   // The page's id, else the model's name — as where the app gives none, so where its page cannot come.
                   const asked = { ...request, page: (await Promise.resolve(findPage(options, { model })).catch(() => null))?.id ?? model };
-                  return (options.host?.open ? options.host.open(asked) : options.onOpen?.(asked)) ?? null;
+                  return answerOf((options.host?.open ? options.host.open(asked) : options.onOpen?.(asked)) ?? null);
                 }
               : undefined,
           recordsOf: modelRecords,

@@ -1,4 +1,4 @@
-import { fill, FORMAT_VERSION, literalWords, MESSAGES, writtenPart, type CreateRequest, type DataSource, type Field, type LayoutNode, type OptionsRequest, type Page, type SearchRequest, type Tone } from '@fieldia/core';
+import { answerOf, fill, FORMAT_VERSION, literalWords, MESSAGES, writtenPart, type CreateRequest, type DataSource, type Field, type LayoutNode, type OptionsRequest, type Page, type SearchRequest, type Tone } from '@fieldia/core';
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
 import { later } from './later';
@@ -60,7 +60,9 @@ export function findPage(options: Pick<ViewerOptions, 'pages' | 'relatedPages'>,
   const { pages, relatedPages } = options;
   const key = 'model' in request ? request.model : request.version === undefined ? request.id : `${request.id}@${request.version}`;
   const found = typeof pages === 'function' ? pages(request) : pages && Object.prototype.hasOwnProperty.call(pages, key) ? pages[key] : null;
-  if (later(found)) return found.then((page) => page ?? null) as Promise<Page | null>;
+  // Handled as it is given, the engine's own (`answerOf`): one refused at once, or before it was asked, is never said
+  // unhandled by an Angular zone while an `await` of Fieldia's comes to what its own `then` made a microtask late (FU2).
+  if (later(found)) return answerOf(found).then((page) => page ?? null) as Promise<Page | null>;
   if (found || !('model' in request)) return found ?? null;
   return (typeof relatedPages === 'function' ? relatedPages(request.model) : relatedPages?.[request.model]) ?? null;
 }
