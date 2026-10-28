@@ -103,7 +103,14 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     signal,
   };
   return {
-    canOpen: (model) => pageFor(model) !== null,
+    // Whether the app has a page for the model: one it is still fetching counts. Asked as a link is drawn, where nothing
+    // waits for it — its failure (a network's, or the page left as it came) is the opening's, asked anew then: never left
+    // unhandled here.
+    canOpen: (model) => {
+      const found = pageFor(model);
+      if (found instanceof Promise) found.catch(() => undefined);
+      return found !== null;
+    },
     async openRecord(model, request) {
       const found = await pageFor(model);
       if (!found) return null;

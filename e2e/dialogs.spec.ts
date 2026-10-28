@@ -157,6 +157,18 @@ for (const variant of VARIANTS) {
       await expect(cell(1, 'subtotal')).toHaveText('E£ 26,932.50');
       await expect.poll(() => value(page, 'amount_untaxed')).toBe(70042.5);
     });
+
+    test('a linked record’s page that cannot come: the link still drawn, and no failure left unhandled in the page', async ({ page }) => {
+      // Asked for as the link is drawn, to know it opens (`canOpen`): its fetch failed — a network's failure, or the
+      // page left as it came (WebKit's "Importing a module script failed" in approvals.spec, 28 Oct) — and nothing caught it.
+      await page.route(/\/chunks\/customer\.page-[A-Z0-9]+\.js$/, (route) => route.abort());
+      const failed = page.waitForEvent('requestfailed', (request) => /customer\.page-/.test(request.url()));
+      const { problems } = await open(page, variant, 'page=fields&skin=outlined');
+      await failed;
+      await page.evaluate(() => new Promise((done) => setTimeout(done, 100)));
+      await expect(node(page, 'f-client').getByRole('combobox')).toHaveValue('Nile Traders');
+      expect(problems.filter((problem) => problem.startsWith('page error'))).toEqual([]);
+    });
   });
 }
 
