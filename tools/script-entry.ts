@@ -8,7 +8,7 @@
  * date's box, a theme, the quiet look, a memory source's members — comes in
  * parts loaded the first time a page uses them (tools/script-parts.ts).
  */
-import { pageCheckPart, type Page, type PageLoading } from '@fieldia/core';
+import { askForCheck, type Page, type PageLoading } from '@fieldia/core';
 import { addLanguage, defineFieldiaForm, partFiles } from '@fieldia/viewer';
 import { partsComeByScriptTag } from '@fieldia/widgets';
 import { partWords } from '../libs/viewer/src/lib/add-language';
@@ -43,11 +43,18 @@ startParts(partWords);
 // Each part a script tag of its own, asked for anew after a failure: what offers to try again may (`Part.asksAgain`).
 partsComeByScriptTag();
 
-// The whole check every page is checked with before it is drawn (0.37), asked for now — beside the page's own data and
-// parts, never after them — so a page mounted once its data came finds it in. One that could not come is asked for anew
-// as a page is mounted (parts.ts); the page's own tag for it (`partTags`) is taken, never asked for twice. Nowhere to
-// ask (no page, or this script came from no address of its own): left to the mount, which says so.
-if (partsCanCome()) void pageCheckPart.load().catch(() => undefined);
+// The whole check every page is checked with once it is drawn (0.37), asked for as the script starts — beside the app's
+// fetch of its page and data, but after the parts a page mounted at once waits for (`askForCheck`), whose bytes it would
+// share a slow line with — so it is in, or nearly, by the time a page is drawn; no page waits for it. One that could not
+// come is asked for anew as a page is mounted (parts.ts); a tag a server wrote for it anyway is taken, never asked for
+// twice. Nowhere to ask (no page, or this script came from no address of its own): left to the mount, which says so.
+// Once the page is parsed — a page mounted by its own scripts meanwhile has said what it waits for — and never while this
+// script runs: a script tag added during it held the page's parser back for 135 ms on a phone's CPU (4× slower).
+if (partsCanCome()) {
+  const ask = () => setTimeout(() => askForCheck(), 0);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ask, { once: true });
+  else ask();
+}
 
 // `<fieldia-form>` defined as the script starts: a page needs no code of its own to show a form (its work in
 // fieldia.element.js, loaded the first time one is put on a page).

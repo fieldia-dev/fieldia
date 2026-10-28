@@ -1645,9 +1645,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // names 0.48 KB of it); the words and onError's warning where its part cannot come; the part asked for as the script
 // starts — less 0.36's check at idle and its warning; the checks a part carries called through one table of stand-ins
 // (owed-checks.ts) where 28 copies of one were made; a write on a page whose check passed (or whose part is in) going in
-// the same turn, as ever, and the app's answer to a held one handled as it is made: 601,597 measured before, 601,892
-// after (+295), to 588.0.
-const BUDGET_KB = 588.0;
+// the same turn, as ever, and the app's answer to a held one handled as it is made; the whole check asked for once the
+// page is parsed and no page waits for its parts (askForCheck): 601,597 measured before, 602,157 after (+560), to 588.1.
+const BUDGET_KB = 588.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2034,8 +2034,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // taken down, every write held until it ran (0.20 of it, the writes' names most), a write going at once once it passed,
 // the words where its part cannot come, the part asked for as the script starts, less 0.36's check at idle; the 28
 // checks a part carries through one table of stand-ins, not 28 copies (−0.15): 197.02 measured before, 197.57 after
-// (+0.55), to 197.6 — under the owner's 200.
-const GZIP_BUDGET_KB = 197.6;
+// (+0.55), to 197.6; the whole check asked for once no page waits for its parts (page-check.ts `askForCheck`, +0.09) —
+// 197.66, to 197.7: under the owner's 200.
+const GZIP_BUDGET_KB = 197.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -3524,7 +3525,9 @@ console.log("a part's checks: a list page's own owed to the list part until it c
     const { dom, release, loaded } = pageWith(false);
     await loaded;
     const { Fieldia: inPage, document: doc } = dom.window;
-    if (!inPage.pageCheckPart.coming) throw new Error('in a page, the whole check is not on its way as the script started');
+    // Asked for once the page was parsed, a task on, no page waiting for its parts.
+    for (let turn = 0; turn < 200 && !inPage.pageCheckPart.coming; turn++) await new Promise((done) => setTimeout(done, 10));
+    if (!inPage.pageCheckPart.coming) throw new Error('in a page, the whole check is not on its way once the page was parsed');
     const told = [];
     const goodSource = inPage.createMemoryDataSource();
     const badSource = inPage.createMemoryDataSource();
@@ -3597,12 +3600,13 @@ console.log('the whole check in a page: asked for as the script starts, a page m
   });
   await new Promise((done) => dom.window.addEventListener('load', done));
   const { Fieldia: inPage, document: doc } = dom.window;
-  // The whole check (0.37): asked for as the script started, beside the page's own data and parts — in, or on its way,
-  // by the time a page is mounted; every page waits for it before its first draw. Let come here, so what follows reads
-  // the same on every run (a page mounted before it came: below, apart).
-  if (!inPage.pageCheckPart.loaded && !inPage.pageCheckPart.coming) throw new Error('in a page, the whole check was not asked for as the script started');
+  // The whole check (0.37): asked for once the page was parsed, no page waiting for its parts — in, or on its way, by the
+  // time a page is mounted later; no page waits for it. Let come here, so what follows reads the same on every run (a page
+  // mounted before it came: above, apart).
+  for (let turn = 0; turn < 200 && !inPage.pageCheckPart.loaded && !inPage.pageCheckPart.coming; turn++) await new Promise((done) => dom.window.setTimeout(done, 10));
+  if (!inPage.pageCheckPart.loaded && !inPage.pageCheckPart.coming) throw new Error('in a page, the whole check was not asked for once the page was parsed');
   await inPage.pageCheckPart.load();
-  // The memory part is a data source's, never a page's, and the whole check every page waits for: each said apart.
+  // The memory part is a data source's, never a page's, and the whole check is every page's, after its draw: each said apart.
   const loaded = () => PARTS.filter((part) => part !== 'memory' && part !== 'check' && handleIn(inPage, part).loaded).join(', ');
   /** The parts in after a step, every one so far — as one run of this check found them, each part's first use clear. */
   const hasIn = (step, want) => {
