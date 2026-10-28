@@ -418,12 +418,14 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * `themesPart` or `quietPart` (@fieldia/widgets), `.load()`ed the same way.
  */
 /**
- * The one-tag script's files a page draws from — `fieldia.list.js`, `fieldia.cards.js`, … — each part `partsFor` names:
- * what a server writes into the page as `<script async src="…">` tags before fieldia.js, from the folder fieldia.js
- * comes from, so they come beside it rather than once it has run and looked at the page (measured on a mid-range phone:
- * a list of customers usable 23% sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both). fieldia.js takes a
- * tag it finds for a part still on its way, never asking for it twice. A page given `createMemoryDataSource` adds
- * `fieldia.memory.js`. In the browser, the one-tag script's `partTags(page)` gives each with what its own tag carries.
+ * The one-tag script's files a page draws from — `fieldia.list.js`, `fieldia.cards.js`, … — each part `partsFor` names
+ * (never the whole check, `fieldia.check.js`, which nothing waits for to draw: a tag for it would share a slow line with
+ * fieldia.js and these, and the page draw later — fieldia.js asks for it once nothing is waited for): what a server writes into
+ * the page as `<script async src="…">` tags before fieldia.js, from the folder fieldia.js comes from, so they come beside
+ * it rather than once it has run and looked at the page (measured on a mid-range phone: a list of customers usable 23%
+ * sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both). fieldia.js takes a tag it finds for a part still on
+ * its way, never asking for it twice. A page given `createMemoryDataSource` adds `fieldia.memory.js`. In the browser,
+ * the one-tag script's `partTags(page)` gives each with what its own tag carries.
  */
 export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>, loading?: PageLoading): string[] {
   return withLoadingPart(page, partsFor(page, widgets, slots), loading).map((part) => `fieldia.${part.name}.js`);
@@ -461,5 +463,7 @@ export function waitsDrawnFromLoading(page: Page, waitsForRecord: boolean, appLo
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
   // With the parts that join a form, asked for as they are loaded: their module may come after this one's.
   // A page's own with the loading part where the viewer would wait for it with them: its first wait drawn as it says.
+  // Never the whole check's for a page (0.37): an app that waits for these before it mounts would wait for it too, and
+  // its page draw later — the viewer asks for it once the page is drawn. `loadParts()`, every part, loads it.
   await Promise.all((page ? withLoadingPart(page, partsFor(page, widgets, slots)) : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));
 }

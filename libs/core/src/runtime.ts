@@ -148,8 +148,9 @@ export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
 export { checkPage, type PageCheckOptions } from './lib/format/check-page';
-// The whole check — `validatePage`'s verdict without zod — in a part of its own, fetched after a page's first draw (0.36).
-export { checkPageWhole, pageCheckPart, pageInvalid, type PageCheckPart, type PageInvalid } from './lib/format/page-check';
+// The whole check — `validatePage`'s verdict without zod — in a part of its own, which every viewer runs as soon as a
+// page is drawn, taking down a page it refuses (0.37); the one-tag script asks for it as it starts.
+export { askForCheck, checkPageWhole, pageCheckPart, pageInvalid, type PageCheckPart, type PageInvalid } from './lib/format/page-check';
 export { fillValues, literalWords, plainWords, READ_WORDS, splitValues, valuesIn } from './lib/format/words';
 export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';

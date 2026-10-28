@@ -66,13 +66,31 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
   search and a list's options end at their deadline (30 s unless the app says) as the network's problem, with Retry.
   A request the app makes itself outside these calls has the deadline the app gives it. **Gate:**
   `libs/core/src/lib/record/deadline.spec.ts` ("ends at its deadline as the network’s problem").
-- **A page the check before the draw refuses is never drawn.** Every viewer runs `checkPage` first: what 0.35's
-  viewer refused — the outline, every name a part or a condition uses, every expression. The form's place says why,
-  and React, Vue and Angular apps stay up. After the first draw it runs the whole check (`checkPageWhole`,
-  `validatePage`'s verdict without zod). In 0.36 what only the whole check finds is said once in the console and to
-  `onError` as a warning, and the page stays drawn; from 0.37 it is refused (`page.invalid`). **Gates:**
-  `libs/viewer/src/lib/refused.spec.ts` ("says why where the form would be", "then says it once in the console and
-  to onError"), `libs/core/src/lib/format/shape-parity.spec.ts` ("one verdict on each", "never a page they pass").
+- **A page its checks refuse is taken down, and nothing is written through it.** Every viewer runs `checkPage` before a
+  page's first draw: what 0.35's viewer refused (the outline, every name a part or a condition uses, every expression).
+  A page it refuses is never drawn: the form's place says why, `onError` hears it (`stage: "draw"`), `mountViewer`
+  throws a `PageRefused`, and React, Vue and Angular apps stay up. As soon as the page is drawn it runs the whole check,
+  `validatePage`'s verdict without zod (`checkPageWhole`): a key the format does not have, a value of another kind, a
+  list's `pageSize` past 500, a least more than its most, a page stamped older than a setting it uses. Its part
+  (`fieldia.check.js` in the one-tag script, a chunk of its own in an app's bundle) is asked for once nothing a page is
+  drawn from is still on its way — beside the app's own data, never beside the page's parts, whose bytes it would share a
+  slow line with — and never waited for: a valid page draws as fast as 0.36 drew it. A page it refuses may show its form
+  for a moment, then is taken down: its form replaced by why, `onError` told (`stage: "check"`), `refused` settled with
+  the `PageRefused`. Nothing is written through a page before its whole check has run: a save, a send, a step's save,
+  an upload, the outbox's send, a draft kept on the server, a payment or a code sent asked for meanwhile waits for it,
+  and is refused with the page where the page is refused. **Gates:** `libs/viewer/src/lib/refused.spec.ts` ("says why
+  where the form would be", "drawn at once, then taken down", "a save asked before its check ran waits for it"),
+  `e2e/page-check.spec.ts` ("a send waits for it", "the app round it kept") in Chromium, Firefox and WebKit,
+  `libs/core/src/lib/format/shape-parity.spec.ts` ("one verdict on each", "never a page they pass").
+- **A page whose whole check cannot come is drawn, and said, and its writes go on.** Where its part cannot come — the
+  network refuses it, or its bytes are not those it was built with — the page stays drawn on the checks the main script
+  carries: `checkPage`'s, every address and file as above, and the bounds below (Bounded work), each checked as it is
+  used. What only the whole check finds is not looked for. That is said once in the console, to `onError` as a warning
+  (`stage: "check"`, `warning: true`), and over the page as any part that could not load, with its reload; the writes
+  held for it go on. What only the whole check finds is an author's mistake, which `validatePage`, `npx fieldia-check`
+  and the designer find where pages are made: a network's failure takes no form down. **Gates:**
+  `e2e/page-check.spec.ts` ("its check could not come"), `e2e/part-failures.spec.ts` (the `check` part, both ways it
+  fails) in Chromium, Firefox and WebKit.
 
 ### Bounded work
 
@@ -136,12 +154,14 @@ Fieldia releases on a train ([docs/maintainers/release-train.md](maintainers/rel
 
 ### Deprecations
 
-What is deprecated now, and the minor it changes in. The console's warning links here.
+What is deprecated now, and the minor it changes in. The console's warning links here. A deprecation its minor has
+changed is said no more, and stays here marked changed, as the minor's CHANGELOG cites it.
 
 | Id | Since | Changes in | Who | What changes, and what to write instead |
 | --- | --- | --- | --- | --- |
-| `format.under-stamped` | 0.36 | 0.37 | page authors | A page that says an older format than a setting it uses came in is warned of by the whole check a viewer runs after the first draw and by `validatePage`, and refused from 0.37. Stamp the page with `stampPage(page)`, or write the format the warning names. |
-| `page.invalid` | 0.36 | 0.37 | page authors | A page `validatePage` refuses that 0.35's viewer drew — a list's `pageSize` past 500, a key the format does not have, a value of another kind, its least more than its most, a first value outside its choices, an option or a column twice — is drawn in 0.36, its mistakes said once in the console and to `onError` (`stage: "check"`), and refused from 0.37 as the check before the draw refuses a page. Check pages with `validatePage` or `npx fieldia-check` before they are stored. |
+| `format.under-stamped` | 0.36 | 0.37 | page authors | Changed in 0.37: a page that says an older format than a setting it uses came in is refused by `validatePage`, and taken down by every viewer as its whole check runs (0.36 warned of it). Stamp the page with `stampPage(page)`, or write the format the refusal names. |
+| `page.invalid` | 0.36 | 0.37 | page authors | Changed in 0.37: a page `validatePage` refuses that 0.35's viewer drew — a list's `pageSize` past 500, a key the format does not have, a value of another kind, its least more than its most, a first value outside its choices, an option or a column twice — is taken down as its whole check runs, once it is drawn: its words where the form was, `onError` told (`stage: "check"`), `refused` settled with the `PageRefused`, nothing written through it (0.36 drew it and said its mistakes). Check pages with `validatePage` or `npx fieldia-check` before they are stored. |
+| `core.page-invalid` | 0.37 | 0.38 | app code | `pageInvalid()` and the type `PageInvalid`, the error a 0.36 viewer told `onError` as a warning, are made by nothing in Fieldia from 0.37, and go in 0.38. A viewer refuses such a page: use `PageRefused` from `@fieldia/viewer`, which `onError` hears with `stage: "check"`. |
 
 **Gate:** `tools/promises.test.mjs` ("every deprecation is in the table") holds this table to the list in
 `libs/core/src/lib/deprecations.ts`.
@@ -170,6 +190,13 @@ What is deprecated now, and the minor it changes in. The console's warning links
 - A list of 5,000 rows keeps some 1,600 DOM nodes in the page, not 130,343. A tick, a Tab or a fold costs what it
   did at 100 rows.
 - A table of 200 lines draws again only the lines a change touches. A Gantt of 500 tasks moves a bar in place.
+- From 0.37 a page's whole check runs as soon as it is drawn, and nothing waits for it. Measured on Slow 4G (1.44 Mbps,
+  562 ms), on a desktop and on a phone's CPU four times slower, 7 runs each interleaved with 0.36.0: a page of plain
+  fields, one fetched by the app, a record and a list drawn from parts, with and without their part tags — every first
+  draw within 9 ms of 0.36.0's, inside the runs' own spread. The check lands 0.01–0.08 s after the draw where the app
+  fetched its page, and about 0.7 s after it where the page was mounted as soon as `fieldia.js` ran (a round trip for
+  `fieldia.check.js`, asked for once the page's parts came): a write asked for before then waits for it. No gate:
+  measured by hand (the table in the lane's report).
 
 Each release is held to budgets that fail the build. The timings run alone in CI's perf job, one worker, with three
 times the budget's slack for a shared runner; the phone's budgets are four times a desktop's. The counts are counted
@@ -194,9 +221,9 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 | A list | 249.4 KB | 339.0 KB | `tools/npm-first-load.mjs` |
 | The screen designer | 604.2 KB | 837.9 KB | `tools/npm-first-load.mjs` |
 
-Usable counts the whole check, which a page asks for once it is drawn. The one-tag script, `fieldia.js`, is held to
-197.1 KB gzipped, the whole check it asks for after the first draw (`fieldia.check.js`) to 17.3 KB, and each other part
-it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
+Usable counts the whole check, which a page asks for as it is mounted and runs once it is drawn. The one-tag script,
+`fieldia.js`, is held to 197.7 KB gzipped, the whole check it asks for as it starts (`fieldia.check.js`) to 17.3 KB,
+and each other part it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
 
 These are budgets, not measurements. A count's budget is what the release counted, with a little room; a timing's is
 a frame for a key and a tenth of a second for a click. Each run's measurements are kept with CI's perf job.

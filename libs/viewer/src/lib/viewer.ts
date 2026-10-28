@@ -4,9 +4,9 @@ import {
   safeUrl,
   createForm,
   callsPartFunctions,
+  askForCheck,
   checkPage,
-  checkPageWhole,
-  pageInvalid,
+  pageCheckPart,
   functionsPart,
   isRightToLeft,
   localizePage,
@@ -27,6 +27,7 @@ import {
   type JsonValue,
   type LayoutNode,
   type Page,
+  type PageValidation,
   type Skin,
   type Theme,
   type RecordId,
@@ -111,7 +112,8 @@ export type { Skin };
 
 import { ownLocale, VIEWER_LABELS, viewerWords, type ViewerLabels } from './labels';
 import { inOwnWords } from './in-own-words';
-import { showRefused } from './refused';
+import { showRefused, type PageRefused } from './refused';
+import { heldWrites } from './held-writes';
 import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 export type { PageFinder, PageRequest } from './related';
@@ -168,9 +170,10 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * Told when a part of the page throws as it is drawn, brought up to date, focused or taken away: a field's widget
    * (the app's own or Fieldia's), a slot, a map, any other part. The part is then a small box that names it ("This
    * field could not be shown: Price"), and the rest of the form goes on working, saving included. The console is told
-   * either way. `where` says which part, its field, and what was being done. Told too of a page drawn whose whole check
-   * found mistakes `validatePage` refuses (`stage: "check"`, `part: "page"`, `warning: true`; the error a `PageInvalid`,
-   * its `issues` on it): drawn in 0.36, refused from 0.37 (`page.invalid`).
+   * either way. `where` says which part, its field, and what was being done. Told too of a refused page, the error a
+   * `PageRefused` with its `issues`: `stage: "draw"` for what the check before the draw refuses (as 0.35 refused it),
+   * `stage: "check"` for what the whole check finds once the page is drawn, the page taken down (0.37). And, as a warning
+   * (`stage: "check"`, `warning: true`), of a page whose whole check's part could not come: drawn, not fully checked.
    */
   onError?: (error: unknown, where: PartFailure) => void;
   /**
@@ -365,6 +368,15 @@ export interface ViewerHandle {
    * mistake there rejects this with what the mount throws for the rest, and nothing is drawn.
    */
   readonly drawn: Promise<void>;
+  /**
+   * Settled once the page's whole check has run — `validatePage`'s verdict, in a part of its own, run as soon as the page
+   * is drawn (0.37) — with the `PageRefused` where it refused the page, the page then taken down: its form replaced by
+   * why, `onError` told (`stage: "check"`). Null where it passed, where its part could not come (the page drawn, said as
+   * not fully checked), or where the viewer was taken away first. A page refused before it was drawn throws at the mount,
+   * or rejects `drawn`, and settles this with the same error. Until it settles, nothing is written through the page: a
+   * save, a send, an upload, a server draft asked for meanwhile waits for it, and is refused with the page.
+   */
+  readonly refused: Promise<PageRefused | null>;
   destroy(): void;
 }
 
@@ -457,6 +469,8 @@ interface Scope {
 }
 
 let mounts = 0;
+/** Whether this page's console has heard that a page could not be fully checked (its whole check's part never came): said once. */
+let uncheckedSaid = false;
 
 /** The inputs nothing is typed in: their change says a choice, never text to take. */
 const NOT_TYPED = new Set(['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image', 'color', 'range', 'hidden']);
@@ -481,10 +495,17 @@ function typeBack(box: HTMLInputElement | HTMLTextAreaElement, text: string) {
   box.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-/** Once the browser has nothing else to do (a moment at the most where it cannot say: WebKit has no requestIdleCallback). */
-function whenIdle(doc: Document): Promise<void> {
-  const view = doc.defaultView as (Window & { requestIdleCallback?(run: () => void, options?: { timeout: number }): number }) | null;
-  return new Promise((resolve) => (view?.requestIdleCallback ? view.requestIdleCallback(() => resolve(), { timeout: 2000 }) : setTimeout(resolve, 0)));
+/** Once the frame now being drawn is painted: the task after it (a moment, where the page paints no frame: out of sight). */
+function afterPaint(doc: Document): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, 100);
+    doc.defaultView?.requestAnimationFrame?.(() =>
+      setTimeout(() => {
+        clearTimeout(timer);
+        resolve();
+      }, 0)
+    );
+  });
 }
 
 /**
@@ -493,10 +514,14 @@ function whenIdle(doc: Document): Promise<void> {
  * Refuses a page the check before the draw refuses (`checkPage`, as 0.35's viewer
  * refused it): says so where the form would be, its problems under "What is
  * wrong", tells `onError` (`part: "page"`), and throws the error, its `issues` on
- * it (`PageRefused`). After the first draw, the whole check (`checkPageWhole`,
- * `validatePage`'s verdict, a part of its own asked for once the browser is idle):
- * what it finds is said once in the console and to `onError` as a warning
- * (`stage: "check"`), the page left drawn — refused from 0.37 (`page.invalid`).
+ * it (`PageRefused`). The whole check (`checkPageWhole`, `validatePage`'s verdict,
+ * a part of its own asked for as the page is mounted — as the one-tag script
+ * starts there) runs as soon as the page is drawn, never delaying the draw: a page
+ * it refuses is taken down — its form replaced by why, `onError` told (`stage:
+ * "check"`), `refused` settled with the `PageRefused` (0.37, `page.invalid`) — and
+ * nothing is written through the page before it has run (`heldWrites`). Where its
+ * part cannot come, the page stays drawn, said once in the console, to `onError`
+ * as a warning and over the page; its writes go on.
  */
 export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHandle {
   // Its own copy: setTokens changes what the dialogs it opens later wear, never the app's object.
@@ -508,6 +533,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const checked = checkPage(options.page, checks);
   // Refused: why, where the form would be — never a blank area — onError told, and thrown (refused.ts).
   if (!checked.ok) throw showRefused(host, options, checked.issues);
+  /** The whole check's run, once it is asked for: settled as it passes (or cannot come), rejected with the page's refusal. */
+  let checkSettled: Promise<void> | null = null;
+  /** What the whole check said: nothing yet; passed (or its part could not come: `unchecked`); refused, with its error. */
+  let verdict: { refused: PageRefused | null } | null = null;
+  let refusedNow!: (error: PageRefused | null) => void;
+  const refused = new Promise<PageRefused | null>((resolve) => (refusedNow = resolve));
   // The page's own words in its language first; the app's translator over what is left.
   const tag = options.locale ?? checked.page.language;
   const localized = tag ? localizePage(checked.page, tag) : checked.page;
@@ -627,7 +658,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // Every request this viewer makes of its source — its record's load, its lists' rows, a map's places, its sends —
   // under one deadline (`timeout`, 30 s unless the app says, 0 for none: deadline.ts in @fieldia/core), its form's and
   // its lists' the same source: a request past it ends its wait as failed, with Retry.
-  const dataSource = withDeadlines(options.dataSource, options.timeout, (options.messages ?? MESSAGES[locale]).noAnswer, options.scheduler);
+  // Every write through the page — a save, a send, an upload, a server draft — held until its whole check has run, refused
+  // with the page where it refuses it (held-writes.ts).
+  const dataSource = withDeadlines(heldWrites(options.dataSource, () => checkedNow()), options.timeout, (options.messages ?? MESSAGES[locale]).noAnswer, options.scheduler);
   const formOptions: FormOptions = {
     ...options,
     ...(dataSource ? { dataSource } : {}),
@@ -3021,12 +3054,88 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     for (let now = checkPage(options.page, checks); ; now = checkPage(options.page, checks)) {
       if (!now.ok) {
         root.remove();
-        throw showRefused(host, options, now.issues);
+        const error = showRefused(host, options, now.issues);
+        refusedNow(error);
+        throw error;
       }
       const owed = owedParts(now.later).filter((part) => !asked.has(part));
       if (!owed.length || gone) return;
       for (const part of owed) asked.add(part);
       await settleParts(owed);
+    }
+  }
+  /** The page's whole check, run once: what every write through the page waits for (held-writes.ts). */
+  function wholeChecked(): Promise<void> {
+    return (checkSettled ??= runWholeCheck());
+  }
+  /**
+   * What a write through the page waits for: nothing once the whole check has passed (or its part could not come); the
+   * page's refusal where it refused it; else the check, run at once where it can be — the page drawn, its part in — so a
+   * write goes in the same turn, as ever, on a page that passes; or waited for.
+   */
+  function checkedNow(): Promise<void> | null {
+    if (!verdict && pageDrawn && !gone && pageCheckPart.loaded) judge(pageCheckPart.loaded.wholeCheck(options.page, checks));
+    if (verdict) return verdict.refused ? Promise.reject(verdict.refused) : null;
+    return wholeChecked();
+  }
+  /** The whole check's verdict, once: a page it refuses taken down — why in its place, onError told, `refused` settled. */
+  function judge(whole: PageValidation): void {
+    if (verdict || gone) return;
+    if (whole.ok) {
+      verdict = { refused: null };
+      refusedNow(null);
+      return;
+    }
+    takeAway();
+    const error = showRefused(host, options, whole.issues, 'check');
+    verdict = { refused: error };
+    refusedNow(error);
+  }
+  /**
+   * The whole check (`validatePage`'s verdict, its part `fieldia.check.js` or a chunk of its own), once the page is drawn
+   * — a page refused before it was drawn is refused so — taking down a page it refuses (`judge`), and every write held
+   * meanwhile refused with it. Where its part cannot come, the page stays drawn, said, and its writes go on: the checks
+   * the main script carries — every safety check among them — passed.
+   */
+  async function runWholeCheck(): Promise<void> {
+    // Never within the mount: its drawing first, as the mount left it.
+    await Promise.resolve();
+    const before = await drawn.then(
+      () => null,
+      (error: PageRefused) => error
+    );
+    if (before) throw before;
+    if (gone) return;
+    let part: Awaited<ReturnType<typeof pageCheckPart.load>>;
+    try {
+      part = await pageCheckPart.load();
+    } catch {
+      if (!gone && !verdict) {
+        verdict = { refused: null };
+        unchecked();
+      }
+      refusedNow(null);
+      return;
+    }
+    judge(part.wholeCheck(options.page, checks));
+    if (verdict?.refused) throw verdict.refused;
+  }
+  /**
+   * The whole check's part could not come (the network, or bytes not those it was built with): the page stays drawn on
+   * the checks fieldia.js carries — its outline, every name and condition, and every address, file and bound, checked as
+   * it is used — said once in the console, to `onError` as a warning, and over the page as any part that could not load,
+   * with its reload. What only the whole check finds is authoring's mistakes, which `validatePage` and the designer find
+   * where pages are made: an availability failure takes no form down.
+   */
+  function unchecked(): void {
+    partUnloaded();
+    const error = new Error('This page could not be fully checked: fieldia.check.js could not be loaded. It is drawn on the checks fieldia.js carries.');
+    if (!uncheckedSaid) console.warn(`[Fieldia] ${error.message}`);
+    uncheckedSaid = true;
+    try {
+      options.onError?.(error, { stage: 'check', part: 'page', warning: true });
+    } catch (thrown) {
+      console.error('[Fieldia] onError threw', thrown);
     }
   }
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */
@@ -3088,23 +3197,16 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => void (worn.some((part) => !part.loaded) && partUnloaded())) : drawn;
-  // The whole check after the first draw, never before it (page-check.ts): its part asked for once the browser is idle,
-  // what it finds said — once in the console, to onError as a warning — and the page left drawn, as 0.35 drew it.
-  // A part that cannot come says nothing: the page was checked as 0.35 checked it.
-  drawn.then(() => whenIdle(doc)).then(
-    async () => {
-      if (gone) return;
-      const whole = await checkPageWhole(options.page, checks);
-      if (whole.ok || gone) return;
-      const error = pageInvalid(whole.issues);
-      try {
-        options.onError?.(error, { stage: 'check', part: 'page', warning: true });
-      } catch (thrown) {
-        console.error('[Fieldia] onError threw', thrown);
-      }
-    },
-    () => undefined
-  ).catch(() => undefined);
+  // ---- the whole check, as soon as the page is drawn (0.37: page-check.ts) ---------------------------------------------
+  // Asked for as soon as no page waits for its parts (askForCheck: the one-tag script asked as it started, where none did),
+  // run once the page is drawn and painted — never delaying the draw — or sooner where a write asks first, which waits
+  // for it (held-writes.ts).
+  if (awaited.length) askForCheck(drawn);
+  else queueMicrotask(() => askForCheck());
+  void drawn
+    .then(() => afterPaint(doc))
+    .then(() => wholeChecked())
+    .catch(() => undefined);
   // On paper, the app's logo and words, the record's title and the day over the page, its footer under it — its look
   // the print part's, as a person shows they mean to print (print.ts).
   const paper = paperFor({
@@ -3557,7 +3659,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     for (const [start, event] of early) tell(start, event);
   });
 
-  return {
+  const handle: ViewerHandle = {
     form,
     element: root,
     setSkin(skin) {
@@ -3619,21 +3721,30 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     run: (steps, context) => form.run(steps, context),
     print: () => afterDrawing(() => paper.print()),
     drawn: dressed,
+    refused,
     destroy() {
-      gone = true;
-      owned.abort();
-      unsubscribe();
-      for (const cleanup of cleanups) {
-        try {
-          cleanup();
-        } catch (error) {
-          report(error, { stage: 'remove', part: 'page' });
-        }
-      }
-      root.remove();
-      if (ownsForm) form.dispose();
+      takeAway();
+      // Taken away before its whole check ran: refused by none.
+      refusedNow(null);
     },
   };
+  /** The viewer taken away: what it listens to, draws and holds let go, its element out of the page. */
+  function takeAway(): void {
+    if (gone) return;
+    gone = true;
+    owned.abort();
+    unsubscribe();
+    for (const cleanup of cleanups) {
+      try {
+        cleanup();
+      } catch (error) {
+        report(error, { stage: 'remove', part: 'page' });
+      }
+    }
+    root.remove();
+    if (ownsForm) form.dispose();
+  }
+  return handle;
 }
 
 /** What a field is worked with: where its access key is said. */

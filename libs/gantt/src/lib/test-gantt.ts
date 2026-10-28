@@ -6,7 +6,7 @@ export const NOW = new Date(2026, 9, 14, 9, 40);
 /** A shop's fit-out, its tasks by trade, each waiting for the ones before it. */
 export function fitoutPage(gantt: Partial<ListGantt> = {}, more: Partial<Page> = {}): Page {
   return {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'fitout',
     title: 'Fit-out',
     data: { kind: 'record', model: 'fitout.task' },

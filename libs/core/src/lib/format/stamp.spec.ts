@@ -73,25 +73,27 @@ describe('a page stamped with the lowest format it needs', () => {
 
 describe('a page read by its stamp', () => {
   const SAID = Symbol.for('fieldia.deprecations.said');
-  it('says an older format than a setting it uses came in: in 0.36 warned of by validatePage and the whole check, at the setting, with the format to write — refused from 0.37', () => {
+  it('says an older format than a setting it uses came in: refused by validatePage and the whole check, at the setting, with the format to write (0.37; warned of in 0.36)', () => {
     delete (globalThis as { [SAID]?: Set<string> })[SAID];
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     const wrong = { ...page({ pin: { type: 'char', label: 'PIN', secret: true } }), fieldia: '0.10' };
     const words = 'this came in format 0.13, but the page says it is in format 0.10, which a Fieldia reading 0.10 would read without it: write "fieldia": "0.13" — lowestFormat(page) gives the lowest a page needs';
-    expect(validatePage(wrong)).toMatchObject({ ok: true, warnings: [{ path: 'fields.pin.secret', message: words }] });
+    const refused = { ok: false, issues: [{ path: 'fields.pin.secret', message: words }] };
+    expect(validatePage(wrong)).toEqual(refused);
+    // The whole check every viewer runs as soon as a page is drawn refuses it the same; the check before the draw, which
+    // reads no setting's format, passes it.
+    expect(wholeCheck(wrong)).toEqual(refused);
     expect(checkPage(wrong).ok).toBe(true);
-    // Said once in the page, as a deprecation is: format.under-stamped, refused from 0.37.
-    const said = `Fieldia: fields.pin.secret: ${words} — read as it is now, refused from 0.37 — deprecated, it changes in 0.37 (format.under-stamped; https://fieldia.dev/promises/#deprecations).`;
-    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([said]);
-    // The whole check a viewer runs after the first draw says it too, in a page not told yet; the check before the draw,
-    // which reads no setting's format, says nothing.
-    delete (globalThis as { [SAID]?: Set<string> })[SAID];
-    warn.mockClear();
-    expect(wholeCheck(wrong).ok).toBe(true);
-    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([said]);
-    // Stamped with what it needs, or later: nothing said.
-    for (const fieldia of ['0.13', FORMAT_VERSION]) expect(validatePage({ ...wrong, fieldia }).warnings).toBeUndefined();
-    expect(validatePage(stampPage(wrong)).warnings).toBeUndefined();
+    // Refused, never warned of: format.under-stamped is changed (0.37).
+    expect(warn).not.toHaveBeenCalled();
+    // Stamped with what it needs, or later: passed, nothing said.
+    for (const fieldia of ['0.13', FORMAT_VERSION]) expect(validatePage({ ...wrong, fieldia })).toMatchObject({ ok: true });
+    expect(validatePage(stampPage(wrong))).toMatchObject({ ok: true });
+    expect(wholeCheck(stampPage(wrong)).ok).toBe(true);
+    // What the names and conditions find is said first: the stamp's, where they find nothing.
+    const broken = { ...wrong, layout: { ...wrong.layout, children: [{ type: 'field', id: 'f-pin', field: 'pins' }] } };
+    expect(validatePage(broken)).toMatchObject({ ok: false, issues: [{ path: 'layout.children[0].field' }] });
+    expect(wholeCheck(broken)).toMatchObject({ ok: false, issues: [{ path: 'layout.children[0].field' }] });
     warn.mockRestore();
   });
 

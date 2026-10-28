@@ -102,6 +102,33 @@ describe('<FieldiaForm>', () => {
     quiet.mockRestore();
   });
 
+  it('a page its whole check refuses is drawn, then taken down: its words in its place, onError told, the app kept — and goes with it', async () => {
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const told: unknown[] = [];
+    const good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
+    // Drawn by 0.35, said by 0.36, taken down by 0.37 as its whole check runs (page.invalid).
+    const invalid = { ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page;
+    let ready: ViewerHandle | null = null;
+    const app = (shown: Page) => (
+      <main>
+        <h1>The app</h1>
+        <FieldiaForm page={shown} onError={(_, where) => told.push(where)} onReady={(handle) => (ready = handle)} />
+      </main>
+    );
+    const { rerender } = render(app(invalid));
+    expect(screen.getByLabelText('Note')).toBeTruthy();
+    await act(async () => void (await (ready as ViewerHandle | null)?.refused));
+    expect(screen.getByRole('heading', { name: 'The app' })).toBeTruthy();
+    expect([...document.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['fields.note.required']);
+    expect(document.querySelector('.fd-field')).toBeNull();
+    expect(told).toEqual([{ stage: 'check', part: 'page' }]);
+    // The next page, in the words' place.
+    rerender(app(good));
+    expect(document.querySelector('.fd-unshown')).toBeNull();
+    expect(screen.getByLabelText('Note')).toBeTruthy();
+    quiet.mockRestore();
+  });
+
   it('mounts the viewer into its own element', () => {
     const { container } = render(<FieldiaForm page={page('survey')} />);
     expect(container.querySelector('.fd-form')).not.toBeNull();

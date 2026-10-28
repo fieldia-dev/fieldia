@@ -13,7 +13,7 @@ test('a page with no build step fills in and sends a form', async ({ page }) => 
   await expect(page.locator('.fd-form')).toBeVisible();
   expect(await page.evaluate(() => typeof (window as any).Fieldia)).toBe('object');
   // English alone: no language's script asked for, and no other language's words in the one that came. The whole check
-  // aside, asked for once the form was drawn (page-check.spec).
+  // aside, asked for as the script started, once (page-check.spec).
   const scripts = () => requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path) && !path.endsWith('/fieldia.check.js'));
   expect(scripts()).toEqual(['/script/fieldia.js']);
   await expect.poll(() => requested.filter((path) => path.endsWith('/fieldia.check.js'))).toEqual(['/script/fieldia.check.js']);

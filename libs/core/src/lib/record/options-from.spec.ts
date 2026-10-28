@@ -21,7 +21,7 @@ const CITIES: Record<string, Option[]> = {
 
 function page(fields: Record<string, unknown> = {}): Page {
   return {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'lists',
     data: { kind: 'record', model: 'site' },
     fields: {

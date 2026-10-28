@@ -103,7 +103,7 @@ export const plannerSlot: SlotRenderer = () => loadPlanner();
 function partWords(where: PartFailure, page: Page = containedPage): string {
   const label = where.field ? page.fields[where.field]?.label ?? where.field : null;
   const what = label ? `The ${label} field’s own widget` : where.part === 'slot' ? `The app’s ${where.name ?? 'own'} panel` : `A ${where.part}`;
-  const when = { draw: 'as it was drawn', update: 'as its value changed', focus: 'as it took the focus', remove: 'as it was taken away' }[where.stage];
+  const when = { draw: 'as it was drawn', update: 'as its value changed', focus: 'as it took the focus', remove: 'as it was taken away', check: 'as it was checked' }[where.stage];
   return `${what} failed ${when}`;
 }
 

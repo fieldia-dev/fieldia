@@ -36,7 +36,9 @@ attribute, a default, a DOM contract — is deprecated in one minor and changed 
    order of a part's elements — `warns` is `"changelog"`, and the CHANGELOG alone says it.
 3. **List it under Deprecated** in the CHANGELOG section of its `since` minor, by its id, with what to write instead.
 4. **Change it in its `changesIn` minor**, whose Upgrading item cites it: `(deprecated in 0.37: \`viewer.mount-throws\`)`.
-   Then take it off the list.
+   Then mark it changed (`changed: true`): its `deprecated()` call goes — the change is made, nothing is warned of —
+   and it stays on the list, so that minor's citation of it is checked for good (0.37 first changed two: `page.invalid`
+   and `format.under-stamped`).
 
 From the train's first minor (0.37), every item of a minor's Upgrading part says what it is:
 
@@ -51,10 +53,10 @@ From the train's first minor (0.37), every item of a minor's Upgrading part says
   the publish workflow's `tools/publish-packs.mjs` (they refuse): an Upgrading item with none of the three tags; a
   citation of an id the list does not have, or whose `changesIn` is another minor, or whose `since` is this minor; a
   list entry that changes in this minor and is not cited; a list entry first warned of in this minor and not under
-  **Deprecated**; a malformed entry (an id twice, a `changesIn` not after `since`).
+  **Deprecated**; a malformed entry (an id twice, a `changesIn` not after `since`, a `changed` that is not `true`).
 - `tools/release-train.test.mjs`, on every pull request: those refusals, each shown to bite; the real CHANGELOG and
   list keep the train for every minor; and every `deprecated(…)` call in the packages names an entry with its
-  `changesIn`, while every entry said in the console has a call.
+  `changesIn` and not changed, while every entry said in the console and not changed has a call.
 - `libs/core/src/lib/deprecations.spec.ts`: a deprecated use warns once in a page; every example page checked,
   validated and made a form says nothing of a deprecation.
 
@@ -93,22 +95,35 @@ to it by `shape-parity.spec.ts`. Refusing every page it refuses at once would st
 `pageSize` past 500, a key the format does not have, its least more than its most — with no warning first. So the
 train's own rule applies to it, the deprecation `page.invalid`:
 
-- **0.36.** Before the draw a viewer runs `checkPage`, what 0.35's viewer refused, and a page it refuses is not drawn:
-  its words are where the form would be. The whole check is a part of its own (`fieldia.check.js`, a chunk in an app's
-  bundle), asked for once the page is drawn and the browser idle, never delaying the draw. What only it finds is said
-  once in the console and to `onError` (`stage: "check"`, `warning: true`), and the page stays drawn. A part that
-  cannot come says nothing (`e2e/part-failures.spec.ts`, its `check` case). The whole check is not in `fieldia.js`,
-  197.0 KB gzipped at 0.36.0, under the owner's 200.
-  *Gates:* `refused.spec.ts` (a page 0.35 drew is drawn and said once; one it refused is refused with the words),
-  `shape-parity.spec.ts` (the check before the draw refuses nothing the whole check passes), the script bundle's
-  in-page check (the part never asked for before the draw, a mistake said after it).
-- **0.37, the plan, not built.** The check part is asked for as the script starts, in parallel with the page's other
-  parts, and listed by `partFiles`, so a page's part tags and preload links carry it. The viewer waits for it as it
-  waits for the page's parts, then refuses what it finds before the first draw, as the check before the draw does.
-  `fieldia.js` keeps its size; the part's 17 KB comes beside the page's parts, not after them. Decide before 0.37 what a
-  page does when the check part cannot come: refuse it, as a send a part must check is refused, or draw it on the
-  check before the draw alone. 0.37's Upgrading part cites `page.invalid`, and `tools/release-train.mjs` refuses 0.37
-  if it does not.
+- **0.36.** Before the draw a viewer ran `checkPage`, what 0.35's viewer refused, and a page it refused was not drawn:
+  its words were where the form would be. The whole check was a part of its own, asked for once the page was drawn
+  and the browser idle; what only it found was said once in the console and to `onError` (`stage: "check"`,
+  `warning: true`), and the page stayed drawn. `fieldia.js` was 197.0 KB gzipped at 0.36.0, under the owner's 200.
+- **0.37, built** (the coordinator's decision of 28 Oct, after measuring the check before the draw on Slow 4G: every
+  valid page drew 0.1–0.8 s later, paying for authors' mistakes that `validatePage` finds where pages are made). The
+  whole check is a part of its own in an app's bundle too (in the one-tag script `fieldia.check.js`), asked for once
+  nothing a page is drawn from is still on its way (`askForCheck`: the one-tag script once the page is parsed, a viewer
+  waiting for its parts once it is drawn) — beside the app's own data, never beside a page's parts, whose bytes it would
+  share a slow line with — and run as soon as the page is drawn and painted: no page waits for it, and a valid page draws
+  as 0.36 drew it. It is no part a page is drawn from, so `partFiles` and `partTags` name it no more: a tag for it would
+  share the line with `fieldia.js` itself. A page it refuses is taken down: its form
+  replaced by why, `onError` told (`stage: "check"`; what 0.35 refused stays `"draw"`, thrown at the mount), the
+  viewer's `refused` settled with the `PageRefused`. And nothing is written through a page before it ran: every write
+  the page makes through its data source — a save, a send, a step's save, an upload, the outbox's send, a draft on the
+  server, a payment, a code sent — waits for it (held-writes.ts), and is refused with the page. 0.37's Upgrading part
+  cites `page.invalid` and `format.under-stamped`, marked changed.
+  *Gates:* `refused.spec.ts`, the bindings' specs, `e2e/page-check.spec.ts` (three engines, four frameworks: a send
+  held, then sent or refused), the script bundle's in-page checks, and the Slow 4G table against 0.36.0
+  (docs/promises.md, measured by hand).
+- **When the whole check's part cannot come** (the network refuses it, or its bytes are not those it was built with),
+  the page stays drawn — the checks the main script carries passed: the outline, every name, condition and
+  expression, and every safety check (addresses through `safeUrl`, files shown by their bytes, the bounds of what a page
+  or a person can make Fieldia do) — and it is said once in the console and to `onError` (a warning) that the page could
+  not be fully checked, and over the page as any part that could not load, with its reload; the writes held for it go
+  on. Why: what only the whole check finds is an author's mistake, which `validatePage`, `npx fieldia-check` and the
+  designer find where pages are made; an availability failure — a CDN's bad minute — must not take every form down.
+  *Gates:* `e2e/part-failures.spec.ts` (the `check` part, both ways it fails, three engines), `e2e/page-check.spec.ts`
+  ("its check could not come"), docs/promises.md.
 
 ## Releasing
 

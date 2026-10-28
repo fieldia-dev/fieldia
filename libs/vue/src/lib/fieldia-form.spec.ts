@@ -104,6 +104,22 @@ describe('<FieldiaForm> for Vue', () => {
     await nextTick();
     expect(wrapper.find('.fd-unshown').exists()).toBe(false);
     expect(wrapper.find('input').exists()).toBe(true);
+    // Drawn, then taken down as its whole check runs (0.37, page.invalid): told as the whole check's.
+    told.length = 0;
+    shown.value = { ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page;
+    await nextTick();
+    await nextTick();
+    expect(wrapper.find('input').exists()).toBe(true);
+    for (let i = 0; i < 100 && !wrapper.find('.fd-unshown').exists(); i++) await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(wrapper.find('h1').text()).toBe('The app');
+    expect(wrapper.findAll('.fd-unshown li code').map((code) => code.text())).toEqual(['fields.note.required']);
+    expect(wrapper.find('.fd-field').exists()).toBe(false);
+    expect(told).toEqual([{ stage: 'check', part: 'page' }]);
+    shown.value = good;
+    await nextTick();
+    await nextTick();
+    expect(wrapper.find('.fd-unshown').exists()).toBe(false);
+    expect(wrapper.find('input').exists()).toBe(true);
     wrapper.unmount();
     quiet.mockRestore();
   });

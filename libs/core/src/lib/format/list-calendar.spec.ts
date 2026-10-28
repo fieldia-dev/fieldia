@@ -23,7 +23,7 @@ const fields = {
 };
 
 const page = (calendar: Record<string, unknown>, more: Record<string, unknown> = {}) => ({
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'appointments',
   data: { kind: 'record', model: 'clinic.appointment' },
   fields,

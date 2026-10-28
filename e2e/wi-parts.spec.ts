@@ -172,7 +172,7 @@ test.describe('the script demo, its parts as scripts beside fieldia.js', () => {
     await page.goto('/script/');
     await expect(page.locator('.fd-form')).toBeVisible();
     await page.waitForLoadState('networkidle');
-    // The page of plain parts asked for none — but the whole check, as every page is drawn (page-check.spec).
+    // The page of plain parts asked for none — but the whole check, asked for as the script starts (page-check.spec).
     expect(requested.filter((path) => /fieldia(\.\w+)?\.js$/.test(path) && !path.endsWith('/fieldia.check.js'))).toEqual(['/script/fieldia.js']);
     const drawnAtOnce = await page.evaluate((shown) => {
       const fieldia = (window as any).Fieldia;

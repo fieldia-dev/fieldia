@@ -1,4 +1,4 @@
-import { literalWords, writtenPart, type CreateRequest, type DataSource, type Field, type LayoutNode, type OptionsRequest, type Page, type SearchRequest, type Tone } from '@fieldia/core';
+import { FORMAT_VERSION, literalWords, writtenPart, type CreateRequest, type DataSource, type Field, type LayoutNode, type OptionsRequest, type Page, type SearchRequest, type Tone } from '@fieldia/core';
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
 import type { ViewerOptions } from './viewer';
@@ -18,7 +18,9 @@ export { nameFieldOf };
 function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean, layout?: LayoutNode[], phone?: Page['phone'], lowerLabels?: boolean, placed?: string[]): Page {
   const shown = Object.fromEntries(Object.entries(fields).map(([name, def]) => [name, readonly ? { ...def, readonly: true } : def])) as Page['fields'];
   return {
-    fieldia: '0.1',
+    // In the format this Fieldia writes: its fields are the record's page's, whatever format they came in (a page is read
+    // by its stamp, and refused stamped older than a setting it uses).
+    fieldia: FORMAT_VERSION,
     id: 'values',
     title,
     data: { kind: 'record', model: 'values' },
@@ -103,7 +105,14 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     signal,
   };
   return {
-    canOpen: (model) => pageFor(model) !== null,
+    // Whether the app has a page for the model: one it is still fetching counts. Asked as a link is drawn, where nothing
+    // waits for it — its failure (a network's, or the page left as it came) is the opening's, asked anew then: never left
+    // unhandled here.
+    canOpen: (model) => {
+      const found = pageFor(model);
+      if (found instanceof Promise) found.catch(() => undefined);
+      return found !== null;
+    },
     async openRecord(model, request) {
       const found = await pageFor(model);
       if (!found) return null;

@@ -66,6 +66,10 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * (63 / 74), a list 244.5 / 332.3 (63 / 68), the designer 592.3 / 821.4 (76 / 86).
  * 0.36 merged with 0.35.3 and p3-found, measured, inside the merge's room: a record form 245.8 / 336.6 (63 / 71), in
  * Arabic 245.8 / 359.2, a list 245.0 / 332.9 (63 / 68), the designer 592.8 / 822.0 (76 / 86).
+ * 0.37 (p37-refuse), measured inside these budgets: the whole check run as soon as a page is drawn, its chunk asked for
+ * once no page waits for its parts (so "to usable" carries it, never the first paint), a page it refuses taken down, every write
+ * through the page held until it ran — a record form 247.2 / 338.0 (64 / 72), in Arabic 247.2 / 360.7 (64 / 75), a list
+ * 246.4 / 334.2 (64 / 69), the designer 594.2 / 823.4 (77 / 87): +1.4 with the page each.
  */
 const BUDGET = {
   record: { page: 250.3, usable: 342.9, files: 73 },

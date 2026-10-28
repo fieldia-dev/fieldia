@@ -1,4 +1,4 @@
-import { alikeRecords, createMemoryDataSource, gridClusters, scheduleSlots, type AppFunctions, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
+import { alikeRecords, createMemoryDataSource, FORMAT_VERSION, gridClusters, scheduleSlots, type AppFunctions, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import { pageFile, pageFrom, pageOf, type PageSource } from './lazy-page';
 import { LEASE, LEASE_AGENTS, LEASE_SHOWS } from './lease';
@@ -326,8 +326,12 @@ export async function pageFromQuery(params: URLSearchParams): Promise<Page> {
   const parts = params.get('parts');
   // A printout's words and logo over and under it, as JSON: `print={"footer":"Confidential · {name}"}`.
   const print = params.get('print');
+  // A page the address dresses in settings of its own is written in the format this Fieldia writes: a page is read by its
+  // stamp, and refused stamped older than a setting it uses (a printout's words came in 0.4).
+  const dressed = !!(maxWidth || actions || scheme || labels || parts || print);
   return {
     ...page,
+    ...(dressed ? { fieldia: FORMAT_VERSION } : {}),
     ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
     ...(actions ? { actionsPosition: actions as Page['actionsPosition'] } : {}),
     ...(scheme || labels || parts
