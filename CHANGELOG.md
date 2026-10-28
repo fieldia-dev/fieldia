@@ -46,6 +46,21 @@ from Odoo: a field a copy of the record does not keep (`"copy": false`), and a
 list's named filters in groups (`"group"`). A page is stamped 0.14 only where it
 uses one; every 0.13 page reads as it did.
 
+**The one-tag script is 13.4 KB lighter, and no page draws later for it.** What
+no page draws from comes in a part of its own, asked for right after a page's
+whole check: a page's steps run, its dialogs and a page opened, a link's and a
+line's dialogs, the viewer's own questions, and a save over someone else's
+answered (`fieldia.acts.js`; two chunks in an app's bundle). A press, a question
+or a dialog that comes sooner waits for it, its button busy — on Slow 4G about
+0.7 s for a press in a page's first second — and where it cannot come, nothing is
+done unasked: the press says so, with Retry. The classic formatted text's
+toolbar (`fieldia.html.js`) and a record sheet's furniture — its ribbons, stat
+buttons, badges, alerts, statusbar and attachment (`fieldia.sheet.js`) — are
+parts too, waited for only beside a page's other parts: a page that would wait
+for one alone is drawn at once without it, and it is drawn in place as it comes.
+`fieldia.js` is 184.7 KB gzipped (0.36.1: 197.3); every page in the gallery is
+drawn as soon as before or sooner, measured on Slow 4G.
+
 **New:**
 
 - `ViewerHandle.refused`: settled once the whole check has run — `null` where the
@@ -89,6 +104,18 @@ uses one; every 0.13 page reads as it did.
 - A deprecation its minor has changed is marked `changed: true` in
   `DEPRECATIONS`: said no more, kept for the citation (`tools/release-train.mjs`,
   `tools/promises.mjs` hold the console, the list and the promises' table to it).
+- `actsPart` (`@fieldia/viewer`) and `formActsPart` (`@fieldia/core`): what no
+  page draws from, in a part of its own — the form's half, the engine that runs
+  a page's steps and a save over someone else's answered (`reloadTheirs`,
+  `keepMine`, `putBack`); the viewer's, a page in a dialog or a panel, a page
+  opened by a step, a link's and a line's dialogs, Search more…, its own
+  question and save safety's two banners. Asked for right after a page's whole
+  check came, or could not; `askAfterCheck(ask)` (`@fieldia/core`) asks for
+  another part at that moment. `loadParts()` loads it with every part.
+- `htmlPart` (`@fieldia/widgets`): the classic formatted text's toolbar and its
+  paste put in plain; `htmlBox` draws its box alone until it comes. `sheetPart`
+  and `installSheetStyles(doc)` (`@fieldia/viewer`): a record sheet's furniture
+  and its look, which the designer's canvas installs for its sheet's head.
 
 **Fixes:**
 
@@ -162,6 +189,29 @@ uses one; every 0.13 page reads as it did.
     it does not keep.
   - New: `ViewerHandle.refused`, `askForCheck`, `Deprecation.changed`, and in
     `@fieldia/core` `searchViewFilters` and `filterGroups` (adds).
+  - (adds) A press of a button with steps, the question its `confirm` asks,
+    `form.run()` and `handle.run()`, `openFormDialog`, `openFormPanel` and
+    `openSearchDialog`, and a link's Open wait for the acts part where it has not
+    come: once a page is drawn its whole check comes, then the acts part — on
+    Slow 4G about 0.7 s after a press in a page's first second, one round trip.
+    The button that asked is `aria-busy` meanwhile. An app that opens a dialog as
+    it starts and wants it drawn at once awaits `actsPart.load()` (or
+    `loadParts()`) first.
+  - (adds) Where the acts part cannot come, nothing is done unasked: a press says
+    "This action could not load, so nothing was done. Try again." with Retry,
+    which presses it again; `form.run()` resolves `{ done: false, reason:
+    'cannot' }` with those words, and a save whose page has `beforeSave` steps is
+    stopped with them; "Discard your changes?" is asked by the browser's own
+    `confirm()` — a frame that may not ask keeps the work; a save over someone
+    else's says who changed the record, in plain words, and the page says part
+    of it could not load; `openFormDialog` and its two siblings reject, nothing
+    opened, and a link's Open says "This form could not be loaded."
+  - (adds) Two new messages, `guardNotDone` and `guardSteps`: an app's own
+    `messages` table gives them, or Fieldia's English.
+  - (adds) A page whose only part would be the html part or the sheet part is
+    drawn at once without it, which is drawn in place as it comes: `drawn`
+    resolves before it, and `partFiles(page)` and the one-tag script's
+    `partTags(page)` leave it out for such a page.
   - (adds) `PhotoEditing.encode`, optional: an app that calls the photos part's
     `editPhoto` itself may pass the files part's new `encodeSoon`, as a photo
     set does, so Apply never waits seconds; without it, `toBlob` as before.
@@ -180,10 +230,28 @@ uses one; every 0.13 page reads as it did.
     filters name no group draw as before.
   - (adds) The designer's field panel has "Copied with the record" on its Data
     tab, and a list filter row has a Group box ("Filter group").
+  - (adds) A unit test that presses a button with steps, answers a question or
+    opens a dialog in a file that has not loaded the parts (`loadParts()`) waits
+    for the acts part: it awaits the press's promise (`form.runAction`,
+    `handle.run`), or `actsPart.load()` first.
+  - (adds) The classic formatted text's box is drawn alone, with no toolbar,
+    until the html part comes; a sheet's ribbons, stat buttons, badges, alerts,
+    statusbar and attachment come with the sheet part — on a page that waits for
+    no other part, a moment after the page. A test that looks for them at once
+    there waits for them (`htmlPart.load()`, `sheetPart.load()`).
+  - (adds) A sheet's furniture's rules are in `#fieldia-sheet-styles`, first of
+    the parts' sheets (`PART_RANK.sheet` 0; every other rank one more than in
+    0.36). An app's CSS that overrides `.fd-stat`, `.fd-ribbon`, `.fd-badges` or
+    `.fd-attachment-preview` at the same specificity loads after Fieldia's parts'
+    sheets, or raises it.
+  - (adds) The script bundle has three more parts, `fieldia.acts.js`,
+    `fieldia.html.js` and `fieldia.sheet.js`: serve them beside `fieldia.js`, as
+    the others.
 - *Translators:* (adds) the designer's new words in ar, es, fa, tr and ur —
   "Copied with the record" and its hint, a filter's Group and its hint, the
   example word and the refusal — are machine-made and not yet reviewed by a
-  native speaker.
+  native speaker. So are "{part} could not load, so nothing was done." and
+  "This action" in every add-on (`guardNotDone`, `guardSteps`).
 
 **Size:** `fieldia.js` 588.9 KB, 198.03 gzipped (0.36.1: 588.2, 197.26): +0.77
 KB gzipped, under the owner's 200, all of it what a page must carry from its
@@ -216,6 +284,21 @@ plain form, a fetched page, a record and a list drawn from parts, with and
 without their part tags, measured before 0.36.1 joined: within 10 ms of 0.36.0's
 on a desktop — about what the 0.74 KB more takes on that line — and inside the
 runs' own spread on the phone.
+
+**Size, the parts (size-parts):** `fieldia.js` 588.9 → 546.3 KB, 198.03 →
+184.66 gzipped (−13.36), each move measured after the one before: a page's
+dialogs, a page opened, the viewer's question and the step engine in the acts
+part −7.03; save safety's banners with them −1.18; the classic formatted
+text's toolbar in the html part −1.64, and the words each moved part reads
+alone with it −0.19; a sheet's furniture and its look in the sheet part −2.27;
+Reload, Keep mine and Put back −0.28; a link's and a line's dialogs −0.78. The
+new parts: acts 12.39, html 2.73, sheet 4.28 gzipped; text +0.03 and path,
+choice and relations +0.01 (words they share with a moved part, each one's
+own now); each add-on +0.02 to +0.03 for its two new sentences. From the npm
+packages (with the page / to usable): a record form 248.0 → 235.9 / 339.0 →
+347.1, in Arabic 248.0 → 235.9 / 361.8 → 369.8, a list 247.2 → 235.1 / 335.3 →
+336.3, the designer 596.1 → 584.6 / 825.8 → 821.6 — the acts part's two chunks
+asked for after the draw, so "to usable" carries them.
 
 ## 0.36.1 — 2026-10-28
 
