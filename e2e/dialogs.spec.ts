@@ -114,7 +114,8 @@ for (const variant of VARIANTS) {
       await open(page, variant, 'page=real-sale-order&record=7101&skin=underline');
       const grid = node(page, 'f-order-line');
       await grid.locator('.ag-row[row-index="1"] .ag-cell[col-id="__open"]').getByRole('button', { name: 'Open line' }).click();
-      const dialog = page.getByRole('dialog', { name: 'Order Lines' });
+      // Titled as the one line it is, by its product (the 0.36 walk: "Order Lines" over one line).
+      const dialog = page.getByRole('dialog', { name: '[PM-12] Patient monitor PM-12' });
       await expect(dialog.getByRole('textbox', { name: 'Quantity' })).toBeVisible();
       // A column a person may show is there; Lead Time starts hidden in the grid.
       await expect(dialog.getByText('Lead Time', { exact: true })).toBeVisible();
@@ -127,19 +128,36 @@ for (const variant of VARIANTS) {
       await expect(dialog).toBeHidden();
     });
 
+    test('a tender’s requirement opens in its own form titled as the one requirement it is, never by the table’s plural', async ({ page }) => {
+      // The 0.36 walk: a tender requirement's form was titled "Requirements" — the table's plural over one line.
+      await open(page, variant, 'page=real-tender&record=7801&skin=underline');
+      await page.getByRole('tab', { name: 'Requirements' }).click();
+      const row = node(page, 'f-requirements').locator('tbody tr[data-line]').first();
+      const words = await row.getByRole('textbox', { name: 'Requirement' }).inputValue();
+      expect(words).toMatch(/\S/);
+      await row.getByRole('button', { name: 'Open line' }).click();
+      const dialog = page.getByRole('dialog', { name: words });
+      await expect(dialog.getByRole('textbox', { name: /^Requirement/ })).toHaveValue(words);
+      await expect(page.getByRole('dialog', { name: 'Requirements' })).toHaveCount(0);
+      await dialog.getByRole('button', { name: 'Discard' }).click();
+      await expect(dialog).toBeHidden();
+    });
+
     test('a line opens in a dialog with all its columns, its subtotal follows there, and Save & Close writes it to the grid', async ({ page }) => {
       await open(page, variant, 'page=order&skin=underline');
       const grid = node(page, 'f-lines');
       const cell = (row: number, col: string) => grid.locator(`.ag-row[row-index="${row}"] .ag-cell[col-id="${col}"]`);
       await expect(cell(1, 'subtotal')).toHaveText('E£ 21,546.00');
       await cell(1, '__open').getByRole('button', { name: 'Open line' }).click();
-      const dialog = page.getByRole('dialog', { name: 'Order lines' });
+      // Titled as the one line it is, by its product — never the table's plural (the 0.36 walk: "Order lines").
+      const dialog = page.getByRole('dialog', { name: 'Office chair, ergonomic' });
       await expect(dialog.getByLabel('Description')).toHaveValue('Black mesh back');
       // A column the grid hides is in the dialog too: a person may show it.
       await expect(dialog.getByLabel('Lead time (days)')).toHaveValue('14');
       await expect(dialog.getByLabel('Line type')).toHaveCount(0);
       // Its title once, in its head; its fields on the dialog's own surface, clear of its edges.
-      await expect(page.getByRole('heading', { name: 'Order lines' })).toHaveCount(1);
+      await expect(page.getByRole('heading', { name: 'Office chair, ergonomic' })).toHaveCount(1);
+      await expect(page.getByRole('heading', { name: 'Order lines' })).toHaveCount(0);
       const edge = (await dialog.boundingBox())!;
       const label = (await dialog.locator('.fd-label').first().boundingBox())!;
       expect(label.x - edge.x, 'the labels touch the dialog edge').toBeGreaterThanOrEqual(16);

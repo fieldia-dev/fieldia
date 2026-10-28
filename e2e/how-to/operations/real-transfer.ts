@@ -9,8 +9,8 @@ export const replay: DemoReplay = {
         const moves = page.locator('[data-node="f-moves"]');
         await press(moves.getByRole('button', { name: '+ Add a Product' }));
         if (phone) {
-          // A phone's line is a card: a new one is written in its own dialog.
-          const line = page.getByRole('dialog', { name: 'Operations' });
+          // A phone's line is a card: a new one is written in its own dialog, titled by its place as its card is.
+          const line = page.getByRole('dialog', { name: 'Line 5' });
           await press(line.getByRole('combobox', { name: /^Product/ }));
           await page.keyboard.type('screws', { delay: 15 });
           await press(page.getByRole('option', { name: /^Wood screws/ }).first());
@@ -82,7 +82,7 @@ export const replay: DemoReplay = {
         const moves = page.locator('[data-node="f-moves"]');
         if (phone) {
           await press(moves.getByRole('button', { name: 'Table leg, beech, 72 cm', exact: true }));
-          const line = page.getByRole('dialog', { name: 'Operations' });
+          const line = page.getByRole('dialog', { name: 'Table leg, beech, 72 cm' });
           await see(line.getByRole('textbox', { name: 'Quantity' })).toHaveValue('16.00');
           await type(line.getByRole('textbox', { name: 'Quantity' }), '12', { clear: true });
           await see(line.getByRole('textbox', { name: 'Quantity' })).toHaveValue('12');

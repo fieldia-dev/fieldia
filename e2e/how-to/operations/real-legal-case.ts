@@ -21,7 +21,7 @@ export const replay: DemoReplay = {
         const hearings = page.locator('[data-node="f-hearings"]');
         await press(hearings.getByRole('button', { name: '+ Add a line' }));
         if (phone) {
-          const hearing = page.getByRole('dialog', { name: 'Hearings' });
+          const hearing = page.getByRole('dialog', { name: 'Line 5' });
           await type(hearing.getByRole('textbox', { name: /^Hearing Title/ }), 'Urgent motion — attachment of receivables');
           await type(hearing.getByRole('textbox', { name: /^Date & Time/ }), typed);
           await press(hearing.getByRole('button', { name: 'Save & Close' }));
@@ -50,7 +50,7 @@ export const replay: DemoReplay = {
         const sheet = page.locator('[data-node="f-timesheets"]');
         await press(sheet.getByRole('button', { name: '+ Add a line' }));
         if (phone) {
-          const line = page.getByRole('dialog', { name: 'Timesheets' });
+          const line = page.getByRole('dialog', { name: 'Line 9' });
           await type(line.getByRole('textbox', { name: /^Shortcode/ }), 'COURT');
           await type(line.getByRole('textbox', { name: /^Hours/ }), '2', { clear: true });
           await see(line.getByRole('combobox', { name: /^Activity Category/ })).toHaveValue('Court appearance (COURT)');

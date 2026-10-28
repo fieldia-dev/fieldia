@@ -425,7 +425,8 @@ for (const [where, size] of [['its cell and its dialog', WIDE], ['a phone’s di
       await moves.locator('.ag-row[row-index="1"]:not(.fd-grid-totals) .fd-line-open').first().click();
     } else await moves.getByRole('button', { name: 'Table leg, beech, 72 cm' }).click();
     const row = size === WIDE ? 1 : 2;
-    const dialog = page.getByRole('dialog', { name: 'Operations' });
+    // Titled as the one line it is, by its product (the 0.36 walk: a table's plural over one line).
+    const dialog = page.getByRole('dialog', { name: size === WIDE ? 'MDF board 18 mm, 1220 × 2440 mm' : 'Table leg, beech, 72 cm' });
     const quantity = dialog.getByRole('textbox', { name: 'Quantity' });
     await quantity.click();
     const before = await onchange.asked();

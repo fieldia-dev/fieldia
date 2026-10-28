@@ -113,7 +113,8 @@ test.describe('axe on what a person reaches', () => {
   test('a line of an order, open in its dialog', async ({ page }) => {
     await visit(page, '/plain/?page=order&skin=underline');
     await node(page, 'f-lines').locator('.ag-row[row-index="1"] .ag-cell[col-id="__open"]').getByRole('button', { name: 'Open line' }).click();
-    await expect(page.getByRole('dialog', { name: 'Order lines' })).toBeVisible();
+    // Titled as the one line it is, by its product: never the table's plural (the 0.36 walk).
+    await expect(page.getByRole('dialog', { name: 'Office chair, ergonomic' })).toBeVisible();
     expect(await axeFindings(page, 'order line dialog')).toEqual([]);
   });
 

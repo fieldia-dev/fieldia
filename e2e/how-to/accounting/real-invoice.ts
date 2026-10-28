@@ -15,7 +15,7 @@ export const replay: DemoReplay = {
         await press(lines.getByRole('button', { name: '+ Add a line' }));
         if (phone) {
           // A phone's line: its own sheet, the product first.
-          const sheet = page.getByRole('dialog', { name: 'Invoice lines' });
+          const sheet = page.getByRole('dialog', { name: 'Line 4' });
           const product = sheet.getByRole('combobox', { name: 'Product' });
           await see(product).toBeFocused();
           await page.keyboard.type('desk', { delay: 15 });

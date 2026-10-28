@@ -14,8 +14,8 @@ export const replay: DemoReplay = {
         await see(page.locator('[data-node="f-remaining"]')).toContainText('12:00');
         await press(sheet.getByRole('button', { name: '+ Add a line' }));
         if (phone) {
-          // A phone's line is a card: a new one is written in its own dialog.
-          const line = page.getByRole('dialog', { name: 'Timesheets' });
+          // A phone's line is a card: a new one is written in its own dialog, titled as its card is, by its place.
+          const line = page.getByRole('dialog', { name: 'Line 4' });
           await see(line).toBeVisible();
           await press(line.getByRole('textbox', { name: 'Hours Spent' }));
           await page.keyboard.type('2.5', { delay: 15 });
@@ -45,7 +45,8 @@ export const replay: DemoReplay = {
         await press(page.getByRole('tab', { name: 'Sub-tasks' }));
         const subtasks = page.getByRole('tabpanel', { name: 'Sub-tasks' });
         await press(subtasks.getByRole('button', { name: 'Add a sub-task' }));
-        let task = page.getByRole('dialog', { name: 'Sub-tasks' });
+        // A new one by its place, as its card is headed; one with its title by its title — never the table's plural.
+        let task = page.getByRole('dialog', { name: 'Line 4' });
         if (phone) {
           await see(task).toBeVisible();
           await press(task.getByRole('textbox', { name: /^Title/ }));
@@ -60,7 +61,7 @@ export const replay: DemoReplay = {
           await see(title).toHaveText('Snag walk, both rooms');
           // The new sub-task opened from its line: its project and customer, the task's.
           await press(subtasks.locator('.ag-row[row-index="3"]:not(.fd-grid-totals)').getByRole('button', { name: 'Open line' }).first());
-          task = page.getByRole('dialog', { name: 'Sub-tasks' });
+          task = page.getByRole('dialog', { name: 'Snag walk, both rooms' });
         }
         await see(task.getByRole('textbox', { name: /^Title/ })).toHaveValue('Snag walk, both rooms');
         await see(task.getByRole('combobox', { name: 'Project' })).toHaveValue('Nile Towers 12th floor fit-out');

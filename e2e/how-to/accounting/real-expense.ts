@@ -24,7 +24,7 @@ export const replay: DemoReplay = {
         await see(sum('f-total')).toHaveText('E£ 34,930.00');
         await press(lines.getByRole('button', { name: '+ Add a line' }));
         if (phone) {
-          const sheet = page.getByRole('dialog', { name: 'Lines' });
+          const sheet = page.getByRole('dialog', { name: 'Line 5' });
           const description = sheet.getByRole('textbox', { name: /^Description/ });
           await see(description).toBeFocused();
           await page.keyboard.type('Parking at the venue', { delay: 15 });
