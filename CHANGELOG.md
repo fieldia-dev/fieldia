@@ -256,16 +256,17 @@ it, the record's state and whether it is shown read once; every app's answer
 handled as it is given, the held writes and the pager taking it through
 `answerOf` where each made a promise of its own). The parts, gzipped
 (0.36.1 → 0.37.0): check 17.26 → 17.22 (the shape with `copy` and `group`, the
-under-stamped warning's words gone); list 52.08 → 52.38 (a chip per group, the
-menu's line, the counts, the printout); memory 9.12 → 9.46 (its copy applying
-`copy: false`); lines 16.53 → 16.63 (a line's own copy; a line's dialog, its ↑ and ↓ titled as
-one line, its main-script half 12 B smaller); list 52.38 → 52.39, outbox 4.76 →
-4.77 and pay 3.46 → 3.47 (an app's answer handled as it is given); files 18.97 → 19.09 and
-photos 11.67 → 11.69 (a picture's encode never waited on for long); every other
-part and add-on within 0.01. From the npm packages, an app's first load (KB
-gzipped, with the page / to usable): a record form 246.2 → 248.0 / 337.0 →
-339.0; in Arabic 246.2 → 248.0 / 359.7 → 361.8; a list 245.4 → 247.2 / 333.2 →
-335.3; the screen designer 593.9 → 596.1 / 823.2 → 825.8 — the first paint +1.4
+under-stamped warning's words gone); list 52.08 → 52.39 (a chip per group, the
+menu's line, the counts, the printout; a row's and a view's answers of the app
+handled as given); memory 9.12 → 9.46 (its copy applying `copy: false`); lines
+16.53 → 16.63 (a line's own copy; a line's dialog, its ↑ and ↓ named as one
+line); outbox 4.76 → 4.77 and pay 3.46 → 3.47 (the app's answers handled as
+given); files 18.97 → 19.09 and photos 11.67 → 11.69 (a picture's encode never
+waited on for long); every other part and add-on within 0.01. From the npm
+packages, an app's first load (KB gzipped, with the page / to usable): a record
+form 246.2 → 248.0 / 337.0 → 339.2; in Arabic 246.2 → 248.0 / 359.7 → 361.9; a
+list 245.4 → 247.2 / 333.2 → 335.4; the screen designer 593.9 → 596.2 / 823.2 →
+826.0 — the first paint +1.4
 each for `refused`, the take-down and the held writes, +0.4 to +0.8 for the
 filter groups and the copy; the whole check in its chunk as in 0.36.
 `@fieldia/calendar` and `@fieldia/gantt` within 5 bytes of 0.36.1;
