@@ -1646,7 +1646,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // starts — less 0.36's check at idle and its warning; the checks a part carries called through one table of stand-ins
 // (owed-checks.ts) where 28 copies of one were made; a write on a page whose check passed (or whose part is in) going in
 // the same turn, as ever, and the app's answer to a held one handled as it is made; the whole check asked for once the
-// page is parsed and no page waits for its parts (askForCheck): 601,597 measured before, 602,157 after (+560), to 588.1.
+// page is parsed and no page waits for its parts (askForCheck); a linked record's page the app is still fetching, asked
+// for to know a link opens, never left failing unhandled (related.ts `canOpen`, +47): 601,597 measured before, 602,204
+// after (+607), to 588.1.
 const BUDGET_KB = 588.1;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -2035,7 +2037,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the words where its part cannot come, the part asked for as the script starts, less 0.36's check at idle; the 28
 // checks a part carries through one table of stand-ins, not 28 copies (−0.15): 197.02 measured before, 197.57 after
 // (+0.55), to 197.6; the whole check asked for once no page waits for its parts (page-check.ts `askForCheck`, +0.09) —
-// 197.66, to 197.7: under the owner's 200.
+// 197.66; `canOpen`'s failure handled (+0.02) — 197.68, to 197.7: under the owner's 200.
 const GZIP_BUDGET_KB = 197.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
