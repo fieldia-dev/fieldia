@@ -208,6 +208,8 @@ export interface WidgetLabels {
    */
   recordStarting: string;
   recordNothing: string;
+  /** A recording stopped under half a second after it began: too short to keep, Start again. */
+  recordTooShort: string;
   recordStoppedAt: string;
   recordStoppedSize: string;
   recordDone: string;
@@ -940,6 +942,7 @@ const en: WidgetLabels = {
   recordingNow: 'Recording…',
   recordStarting: 'Starting the recording…',
   recordNothing: 'Nothing was recorded: the recording had not started yet. Press Start recording to try again.',
+  recordTooShort: 'Nothing was kept: the recording was too short. Press Start recording to try again.',
   recordStoppedAt: 'Stopped at {time}, the longest a recording may be here.',
   recordStoppedSize: 'Stopped: the recording reached the largest file this field takes.',
   recordDone: 'Recorded {time}. Play it back, then use it or record again.',

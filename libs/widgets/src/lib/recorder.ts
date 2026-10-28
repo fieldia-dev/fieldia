@@ -306,13 +306,15 @@ export function openRecorder(context: RecorderContext): Recorder {
     const type = bare(taken.mimeType || chunks[0]?.type || asked) || bare(asked);
     const recorded = chunks;
     chunks = [];
-    // Nothing recorded — stopped before the browser's recorder began, which then hands back no bytes, or under half a
-    // second after (Firefox's hands back its first moments: a slip of the hand, 0.36's walk): no recording offered (an
-    // empty file plays nowhere), the microphone kept, Start recording again.
+    // Nothing kept — stopped before the browser's recorder began, which then hands back no bytes, or under half a second
+    // after (Firefox's hands back its first moments: a slip of the hand, 0.36's walk): no recording offered (an empty
+    // file plays nowhere), the microphone kept, Start recording again — said as it was: not begun yet, or too short to
+    // keep (the 0.37 walk: Firefox stopped at 0.3 s said "had not started yet", which it had).
     if (!recorded.some((one) => one.size) || seconds < 0.5) {
+      const begun = !!began;
       seconds = 0;
       showTime();
-      say(words.recordNothing);
+      say(begun ? words.recordTooShort : words.recordNothing);
       showing(start);
       if (asking.hidden) start.focus();
       return;
