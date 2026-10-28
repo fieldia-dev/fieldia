@@ -122,12 +122,15 @@ describe('the grid’s buttons beside Add a line, and a line copied', () => {
 
   it('starts a line field that says copy: false in the copy as a new line starts it — its default, else empty', async () => {
     const table = page.fields['workorder_ids'] as { fields: Record<string, unknown> };
-    const own = { ...page, fields: { ...page.fields, workorder_ids: { ...table, fields: { ...table.fields, hours: { type: 'float', label: 'Hours', copy: false, default: 1 } } } } } as unknown as Page;
+    // A field a copy does not keep came in format 0.14: the page says so, or the viewer takes it down as under-stamped.
+    const own = { ...page, fieldia: '0.14', fields: { ...page.fields, workorder_ids: { ...table, fields: { ...table.fields, hours: { type: 'float', label: 'Hours', copy: false, default: 1 } } } } } as unknown as Page;
     const { grid, form } = await mount('progress', own);
     (grid.querySelector('.ag-row[row-index="1"] button.fd-line-copy') as HTMLButtonElement).click();
     await frames();
     const now = form.getState().values['workorder_ids'] as Line[];
     expect(now.map((l) => [l.values['name'], l.values['hours']])).toEqual([['Assembly', null], ['Cut', 2], ['Cut', 1], ['Glue', 1]]);
+    // Its whole check passed: the page stays.
+    expect(await handle?.refused).toBeNull();
   });
 });
 
