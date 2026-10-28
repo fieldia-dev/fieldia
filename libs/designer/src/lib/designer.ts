@@ -993,7 +993,10 @@ export function createDesigner(options: {
       // a brace that names no field, said as whose words name what (brace-refusals.ts).
       const refused = draft;
       const braces = checked.issues.map((issue) => braceRefused(refused, issue));
-      issues = checked.issues.map((issue, i) => settingRefusal(issue.path, words) ?? (braces[i] ? braceWords(page, braces[i] as BraceRefused, words) : words.refusals.invalid(issue.path, issue.message)));
+      // Whose words, as they stood before this typing began (the edits a person types merge into one): never the words
+      // half typed on the way to the brace (the 0.37 walk: "Your name (as on the {customer's words name {customer}").
+      const named = merge && merge === mergeKey && past.length ? past[past.length - 1] : page;
+      issues = checked.issues.map((issue, i) => settingRefusal(issue.path, words) ?? (braces[i] ? braceWords(named, braces[i] as BraceRefused, words) : words.refusals.invalid(issue.path, issue.message)));
       refusedEdit = { texts: issues, draft: refused, braces: braces.filter((one): one is BraceRefused => one !== null) };
       notify();
       return false;
