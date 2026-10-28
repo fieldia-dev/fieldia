@@ -86,13 +86,14 @@ describe('<FieldiaForm>', () => {
     const app = (shown: Page) => (
       <main>
         <h1>The app</h1>
-        <FieldiaForm page={shown} onError={(_, where) => told.push(where)} />
+        <FieldiaForm page={shown} development onError={(_, where) => told.push(where)} />
       </main>
     );
     const { rerender } = render(app(broken));
     // The app round it is still there: the viewer's refusal never unmounts it.
     expect(screen.getByRole('heading', { name: 'The app' })).toBeTruthy();
-    expect(screen.getByRole('alert').textContent).toMatch(/^This form cannot be shown: its page has mistakes/);
+    // Its visitor's words; what is wrong under them, the app being made (`development`).
+    expect(screen.getByRole('alert').textContent).toBe('This form is not available right now. Please try again later, or contact whoever sent it to you.');
     expect([...document.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['layout.children[0].field']);
     expect(told).toEqual([{ stage: 'draw', part: 'page' }]);
     // A page that passes, given next, is drawn in the words' place.
@@ -112,7 +113,7 @@ describe('<FieldiaForm>', () => {
     const app = (shown: Page) => (
       <main>
         <h1>The app</h1>
-        <FieldiaForm page={shown} onError={(_, where) => told.push(where)} onReady={(handle) => (ready = handle)} />
+        <FieldiaForm page={shown} development onError={(_, where) => told.push(where)} onReady={(handle) => (ready = handle)} />
       </main>
     );
     const { rerender } = render(app(invalid));

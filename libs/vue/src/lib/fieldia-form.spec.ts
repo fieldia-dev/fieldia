@@ -90,12 +90,13 @@ describe('<FieldiaForm> for Vue', () => {
     const shown = ref<Page>(broken);
     const onError = (_: unknown, where: unknown) => void told.push(where);
     const form = FieldiaForm as unknown as Parameters<typeof h>[0];
-    const App = defineComponent({ setup: () => () => h('main', [h('h1', 'The app'), h(form, { page: shown.value, onError })]) });
+    const App = defineComponent({ setup: () => () => h('main', [h('h1', 'The app'), h(form, { page: shown.value, onError, development: true })]) });
     const wrapper = mount(App, { attachTo: document.body });
     await nextTick();
     // The app round it is still there: the viewer's refusal never unmounts it.
     expect(wrapper.find('h1').text()).toBe('The app');
-    expect(wrapper.find('[role="alert"]').text()).toMatch(/^This form cannot be shown: its page has mistakes/);
+    // Its visitor's words; what is wrong under them, the app being made (`development`).
+    expect(wrapper.find('[role="alert"]').text()).toBe('This form is not available right now. Please try again later, or contact whoever sent it to you.');
     expect(wrapper.findAll('.fd-unshown li code').map((code) => code.text())).toEqual(['layout.children[0].field']);
     expect(told).toEqual([{ stage: 'draw', part: 'page' }]);
     // A page that passes, given next, is drawn in the words' place.

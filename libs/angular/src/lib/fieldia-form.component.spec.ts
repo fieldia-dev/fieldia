@@ -221,7 +221,7 @@ class FunctionsHostComponent {
 
 @Component({
   imports: [FieldiaFormComponent],
-  template: `<main><h1>The app</h1><fieldia-form [page]="page()" (partError)="told.push($event.where)" /></main>`,
+  template: `<main><h1>The app</h1><fieldia-form [page]="page()" [development]="true" (partError)="told.push($event.where)" /></main>`,
 })
 class RefusedHostComponent {
   static readonly good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
@@ -248,7 +248,8 @@ describe('<fieldia-form> for Angular', () => {
     const el = fixture.nativeElement as HTMLElement;
     // The app round it is still there: the viewer's refusal never tears it down.
     expect(el.querySelector('h1')?.textContent).toBe('The app');
-    expect(el.querySelector('[role="alert"]')?.textContent).toMatch(/^This form cannot be shown: its page has mistakes/);
+    // Its visitor's words; what is wrong under them, the app being made (`development`).
+    expect(el.querySelector('[role="alert"]')?.textContent).toBe('This form is not available right now. Please try again later, or contact whoever sent it to you.');
     expect([...el.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['layout.children[0].field']);
     expect(fixture.componentInstance.told).toEqual([{ stage: 'draw', part: 'page' }]);
     // A page that passes, given next, is drawn in the words' place.
