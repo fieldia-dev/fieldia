@@ -62,7 +62,7 @@ page's other parts: a page that would wait for the toolbar alone is drawn at onc
 the toolbar's room held over its box, and it comes into it; a sheet's furniture
 that takes room is waited for as any part (its ribbons alone, over its card's
 corner, are drawn in place) — nothing a person may press moves as a part comes.
-`fieldia.js` is 185.9 KB gzipped (0.36.1: 197.3). Measured on Slow 4G on a
+`fieldia.js` is 186.0 KB gzipped (0.36.1: 197.3). Measured on Slow 4G on a
 desktop and a phone's CPU four times slower, every page timed — a plain form,
 one the app fetched, a record, a record sheet with and without its part tags, a
 list, a page that runs steps as it opens, a sheet that waits for nothing else —
@@ -230,8 +230,8 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   before the typing began, never by the words half typed ("Your name (as on the
   {customer's words name {customer}…").
 - Demos: the vendor bill's copy keeps no number and no dates, as Odoo's draft copy
-  (`"copy": false` on its number, bill date and due date): its title says Draft
-  until Confirm gives it its number. The Customer list, featured, opens a customer
+  (`"copy": false` on its number, bill date and due date): its number is a
+  draft's, "Draft", until Confirm gives it its number, as a new bill's is. The Customer list, featured, opens a customer
   with its way back, by the one rule a list opens its records by. The invoices
   list counts its filters with its filter groups (`filterCounts`), with a how-to
   step and its replay.
@@ -403,8 +403,8 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
     one stopped before it began says what it said.
   - (fix) The demos' invoices list counts its filters: a filter's name carries its
     count ("Overdue, 3 invoices"), found by its words' start, not their end. The
-    vendor bill's copy has no number (its title's placeholder says Draft) and no
-    dates.
+    vendor bill's copy has no number — "Draft", a new bill's too, till Confirm
+    numbers it — and no dates.
 - *Translators:* (adds) the designer's new words in ar, es, fa, tr and ur —
   "Copied with the record" and its hint, a filter's Group and its hint, the
   example word and the refusal — are machine-made and not yet reviewed by a
@@ -483,19 +483,20 @@ and 0.04 s before). The acts part lands about 1.3 s after the draw where a page
 was mounted as soon as `fieldia.js` ran (the whole check's round trip, then its
 own), 0.7 s where the app fetched its page.
 
-**Size, the walk's fixes (p37-walk-fix):** `fieldia.js` 546.2 → 550.1 KB
-(559,345 → 563,281 B), 184.64 → 185.93 gzipped (+1.29), all of it what a page
+**Size, the walk's fixes (p37-walk-fix):** `fieldia.js` 546.2 → 550.3 KB
+(559,345 → 563,507 B), 184.64 → 186.00 gzipped (+1.36), all of it what a page
 needs from its draw or its first press: a control a press waits on busy where it
-was pressed, the one rule that finds it in every engine and the ring's look, a
-second press asking nothing more, and Retry where its part cannot come; the
+was pressed, the one rule that finds it in every engine and the ring's look (a
+bar under a name), a second press asking nothing more, and Retry where its part
+cannot come; the
 classic formatted text's toolbar's room, its three text styles' names back from
 the html part; a sheet's furniture that takes room waited for, and a record's
 attachment's files part with the page's; a refused page's words to its visitor.
 Parts: acts 12.41 → 12.46, lines 16.63 → 16.67, record 5.46 → 5.50, loading
 3.06 → 3.08, html 2.73 → 2.72 gzipped; each add-on +0.06 to +0.12 for the new
 words. From the npm packages (with the page / to usable): a record form 236.0 →
-237.3 / 347.2 → 348.7, in Arabic 236.0 → 237.3 / 369.9 → 371.5, a list 235.2 →
-236.5 / 336.3 → 337.7, the designer 584.6 → 586.0 / 821.8 → 823.3. `@fieldia/map`
+237.4 / 347.2 → 348.7, in Arabic 236.0 → 237.4 / 369.9 → 371.6, a list 235.2 →
+236.6 / 336.3 → 337.8, the designer 584.6 → 586.1 / 821.8 → 823.3. `@fieldia/map`
 1 B smaller; `@fieldia/calendar` and `@fieldia/gantt` the same. A page's first
 draw on Slow 4G (7 runs interleaved with `release-0.37` before these fixes, a
 desktop and a phone's CPU four times slower), medians in ms: a plain form, a

@@ -284,7 +284,7 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 
 Usable counts the whole check, which a page asks for as it is mounted and runs once it is drawn, and what no page draws
 from, asked for right after it (from 0.37: a page's steps run, its dialogs, its questions, a save over someone else's).
-The one-tag script, `fieldia.js`, is held to 186.0 KB gzipped, the whole check it asks for once the page is parsed
+The one-tag script, `fieldia.js`, is held to 186.1 KB gzipped, the whole check it asks for once the page is parsed
 (`fieldia.check.js`) to 17.3 KB, what it asks for right after (`fieldia.acts.js`) to 12.5 KB, and each other part it
 loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
 
