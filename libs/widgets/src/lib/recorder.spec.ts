@@ -183,6 +183,8 @@ describe('Record beside a file field’s picker', () => {
     expect(box.classList.contains('fd-recording')).toBe(true);
     expect(shown('Stop') && !shown('Start recording')).toBe(true);
     expect(document.activeElement?.textContent).toContain('Stop');
+    // A second of it: under half a second is nothing recorded.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
     button(box, 'Stop')?.click();
     await until(() => shown('Use this recording'));
     // Played back in the browser's own player; the microphone let go.
@@ -212,6 +214,8 @@ describe('Record beside a file field’s picker', () => {
     expect(recorder()?.querySelector('video.fd-recorder-live')).not.toBeNull();
     button(recorder() as HTMLElement, 'Start recording')?.click();
     await until(() => said() === 'Recording…');
+    // A second of it: under half a second is nothing recorded.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
     button(recorder() as HTMLElement, 'Stop')?.click();
     await until(() => shown('Use this recording'));
     expect(recorder()?.querySelector('.fd-recorder-review video')?.getAttribute('aria-label')).toBe('Video 2026-10-21 07.30.05.webm');
@@ -269,6 +273,8 @@ describe('Record beside a file field’s picker', () => {
     await until(() => shown('Start recording'));
     button(recorder() as HTMLElement, 'Start recording')?.click();
     await until(() => said() === 'Recording…');
+    // A second of it: under half a second is nothing recorded.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
     button(recorder() as HTMLElement, 'Stop')?.click();
     // Escape at once, the recording still being finished: asked too, never let go unasked.
     key(recorder() as HTMLElement, 'Escape');
@@ -315,11 +321,37 @@ describe('Record beside a file field’s picker', () => {
     // Again, waited for: recorded, used.
     button(box, 'Start recording')?.click();
     await until(() => said() === 'Recording…');
+    // A second of it: under half a second is nothing recorded.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
     button(box, 'Stop')?.click();
     await until(() => shown('Use this recording'));
     button(box, 'Use this recording')?.click();
     await until(() => value().length);
     expect(value()).toHaveLength(1);
+  });
+
+  it('stopped a moment after it began, keeps nothing and says so; one of a second and more says its time as its clock does', async () => {
+    // Firefox's recorder begins at once and hands back its first moments: 0.36 kept a recording of 0.05 s and said
+    // "Recorded 0:01" while its clock said 0:00 (the 0.36 walk). Under half a second is nothing recorded, as a stop before
+    // the recorder began is; and the words say the time the clock beside them says.
+    const { el } = setup({ record: 'audio' });
+    button(el, 'Record a voice note')?.click();
+    await until(() => shown('Start recording'));
+    const box = recorder() as HTMLElement;
+    button(box, 'Start recording')?.click();
+    await until(() => said() === 'Recording…');
+    button(box, 'Stop')?.click();
+    await until(() => shown('Start recording') || shown('Use this recording'));
+    expect(said()).toBe('Nothing was recorded: the recording had not started yet. Press Start recording to try again.');
+    expect(box.querySelector('.fd-recorder-review audio')).toBeNull();
+    expect(box.querySelector('.fd-recorder-time')?.textContent).toBe('0:00 / 2:00');
+    button(box, 'Start recording')?.click();
+    await until(() => said() === 'Recording…');
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    button(box, 'Stop')?.click();
+    await until(() => shown('Use this recording'));
+    expect(said()).toBe('Recorded 0:01. Play it back, then use it or record again.');
+    expect(box.querySelector('.fd-recorder-time')?.textContent).toBe('0:01 / 2:00');
   });
 
   it('keeps a WebM recording with its length written in, which the browser’s recorder leaves out', async () => {
