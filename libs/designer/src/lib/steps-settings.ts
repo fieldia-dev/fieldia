@@ -216,7 +216,8 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       // A new tab is the default, so only "no" is written.
       const newTab = el('input', { type: 'checkbox', class: 'fd-check' }) as HTMLInputElement;
       newTab.addEventListener('change', () => ctx.change({ newTab: newTab.checked ? null : false }));
-      parts.push(el('label', { class: 'fd-prop-check' }, newTab, w.inNewTab));
+      // Its box and its words apart, its focus ring clear of the first letter (the 0.36 walk's "n a new tab").
+      parts.push(el('label', { class: 'fd-prop-check fd-inline-setting' }, newTab, w.inNewTab));
       updates.push((step) => {
         newTab.checked = step.do !== 'openUrl' || step.newTab !== false;
       });
