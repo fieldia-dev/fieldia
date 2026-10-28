@@ -222,7 +222,7 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 | The screen designer | 604.2 KB | 837.9 KB | `tools/npm-first-load.mjs` |
 
 Usable counts the whole check, which a page asks for as it is mounted and runs once it is drawn. The one-tag script,
-`fieldia.js`, is held to 197.7 KB gzipped, the whole check it asks for as it starts (`fieldia.check.js`) to 17.3 KB,
+`fieldia.js`, is held to 197.8 KB gzipped, the whole check it asks for once the page is parsed (`fieldia.check.js`) to 17.3 KB,
 and each other part it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
 
 These are budgets, not measurements. A count's budget is what the release counted, with a little room; a timing's is
