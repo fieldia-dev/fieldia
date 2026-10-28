@@ -204,12 +204,26 @@ test("the one-tag script takes its own tag's nonce, for its styles and for each 
   await page.goto('/csp/script.html');
   await expect(page.locator('.fd-form')).toBeVisible();
   await lookIsOn(page);
-  // The parts came, by tags carrying the nonce: a table of lines and the formatted note's looks.
+  // The parts came, by tags carrying the nonce: a table of lines, the formatted note's looks and its toolbar (the html
+  // part), and the sheet's furniture (the sheet part) — a ribbon, a badge, an alert, a stat button.
   await expect(page.locator('[data-field="rooms"] table, [data-field="rooms"] .fd-line-card').first()).toBeVisible();
   const note = page.locator('[data-field="note"] p', { hasText: 'Bring the' }).first();
   await expect(note).toHaveCSS('text-align', 'center');
   await expect(note.locator('span')).toHaveCSS('color', 'rgb(19, 101, 217)');
+  await expect(page.locator('[data-field="note"] .fd-richtext-bar')).toBeVisible();
+  await expect(page.locator('.fd-ribbon', { hasText: 'New' })).toBeVisible();
+  await expect(page.locator('.fd-alert', { hasText: 'Bring the floor plan.' })).toBeVisible();
   await page.locator('[data-field="name"] input, [data-field="name"] textarea').first().fill('Nile Traders Co.');
+  // A button's steps and a page opened in a dialog: the acts part, by a tag carrying the nonce too.
+  await page.getByRole('button', { name: 'Mark visited' }).click();
+  await expect(page.locator('.fd-say', { hasText: 'Marked as visited' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'North' })).toBeChecked();
+  await page.locator('.fd-stat', { hasText: 'Rooms' }).click();
+  const dialog = page.getByRole('dialog', { name: 'A room' });
+  await expect(dialog).toBeVisible();
+  await dialog.locator('[data-field="room"] input').fill('Kitchen');
+  await dialog.getByRole('button', { name: 'Discard' }).click();
+  await expect(dialog).toBeHidden();
   expect(await refused(page)).toEqual([]);
   await screen(page, 'csp-script');
   expect(problems).toEqual([]);

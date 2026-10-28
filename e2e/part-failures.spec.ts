@@ -25,11 +25,11 @@ import { validatePage } from '../libs/core/src/lib/format/validate';
  * - FIELD — a part that draws a field's own box (a date's, a phone's, a table of lines…): the plain box stays and
  *   works, and "Part of this field could not load, so it is shown plainly." under it, with Retry.
  * - PAGE — a part with no place of its own (a record's head, AI help, templates, a list's cards or filter bar, a send's
- *   steps drawn with the page, possible duplicates, the page's own look, its map's checks…): the page drawn plainly
+ *   steps drawn with the page, possible duplicates, the page's own look, its map's checks, a sheet's furniture…): the page drawn plainly
  *   without it, and said once over the page, with a reload to try again (what it would have drawn is drawn as the page
  *   is drawn).
  * - its own words, where it says so as a person asks for it (a list, Import, Record, a scan's reader, the signing,
- *   Undo, printing, the element, the memory source's first answer).
+ *   Undo, printing, the element, the memory source's first answer, a press's steps — the acts part, with Retry).
  * - nowhere, for who else has a record open alone (live): it appears unbidden, as someone else opens the record, and no
  *   one looks for it where it is not; the record works whole without it, as with a source that keeps no one's
  *   presence. The browser's console names the file that could not load.
@@ -167,6 +167,14 @@ function printer() {
 
 /** By part, the page (or pages) that need it, failing as each says. */
 const CASES: Record<string, Case | Case[]> = {
+  // What no page draws from (0.37): a page's steps run, its dialogs, a page opened, its questions — asked for once the
+  // page is drawn and its whole check came. A press that needs it does nothing without it: said by the press, with
+  // Retry, which presses it again.
+  acts: {
+    page: record({}, { note: { type: 'char', label: 'Note' } }, [{ type: 'button', id: 'b-fill', label: 'Fill the note', steps: [{ do: 'set', field: 'note', value: "'Filled'" }] }]),
+    bring: (page) => page.getByRole('button', { name: 'Fill the note' }).click(),
+    said: { at: '#app .fd-says .fd-say', words: 'This action could not load, so nothing was done. Try again.', retry: true },
+  },
   // The answers in a page's own words, and its ending: without the part, the words say the answers plainly ("Where do we
   // call Hana?") and the ending is the plain thanks — said over the page.
   answers: { page: responses({}, { where: { type: 'char', label: 'Where do we call {name}?' } }, [{ type: 'field', id: 'f-where', field: 'where' }]), said: over, place: at('f-where') },
@@ -224,6 +232,9 @@ const CASES: Record<string, Case | Case[]> = {
     also: { at: at('f-years'), words: 'Age could not be worked out: part of this page could not load. Saving tries again.' },
   },
   head: { page: record({}, {}, [], { head: { meta: [{ type: 'field', id: 'h-name', field: 'name', labels: 'hidden' }] } }), said: over },
+  // The classic formatted text's toolbar (0.37): its box drawn plainly meanwhile — its words cleaned, typed in — and
+  // where it cannot come, kept so, said under it with Retry.
+  html: { page: record({}, { body: { type: 'html', label: 'Notes' } }, [{ type: 'field', id: 'f-body', field: 'body' }]), ...field('f-body') },
   import: {
     page: list({ import: true }),
     source: people,
@@ -323,6 +334,17 @@ const CASES: Record<string, Case | Case[]> = {
   rows: { page: list({ sequenceField: 'sequence', sort: [{ field: 'sequence' }] }, { sequence: { type: 'integer', label: 'Sequence' } }), source: people, box: SEARCH, said: over, place: '#app .fd-list' },
   scan: { page: record({}, { code: { type: 'char', label: 'Code' } }, [{ type: 'field', id: 'f-code', field: 'code', options: { scan: true } }]), ...field('f-code') },
   schedule: { page: record({}, { rule: { type: 'char', label: 'Repeats' } }, [{ type: 'field', id: 'f-rule', field: 'rule', widget: 'repeat' }]), ...field('f-rule') },
+  // A sheet's furniture (0.37): a ribbon, a stat button, a badge, an alert. The sheet works without it, said over the page.
+  sheet: {
+    page: record({}, { rent: { type: 'integer', label: 'Rent' } }, [{ type: 'field', id: 'f-rent', field: 'rent' }], {
+      ribbon: { id: 'r-new', label: 'New' },
+      statButtons: [{ id: 's-rent', label: 'Rent', field: 'rent', action: 'open_rent' }],
+      badges: [{ id: 'g-new', label: 'New' }],
+      alerts: [{ id: 'a-due', message: 'Rent is due', tone: 'warning' }],
+    }),
+    said: over,
+    place: '#app .fd-card',
+  },
   slots: { page: record({}, { visit: { type: 'datetime', label: 'Visit' } }, [{ type: 'field', id: 'f-visit', field: 'visit', widget: 'slots', options: { length: 30 } }]), code: 'slots', ...field('f-visit') },
   survey: { page: record({}, { score: { type: 'integer', label: 'Score' } }, [{ type: 'field', id: 'f-score', field: 'score', widget: 'slider', options: { min: 0, max: 10 } }]), ...field('f-score') },
   surveyflow: { page: responses({ timeLimit: { minutes: 10 } }), said: over, guards: { press: 'Submit', words: 'The time limit could not load, so nothing was sent. Try again.' } },
