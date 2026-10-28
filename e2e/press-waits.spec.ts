@@ -62,7 +62,7 @@ async function pressAndLook(page: Page, pressed: Locator, control: Locator = pre
           w.looked = {
             busy: element.getAttribute('aria-busy'),
             ring: !!ring || style.content !== 'none',
-            seen: style.visibility === 'visible' && style.display !== 'none' && Number(style.opacity) > 0.5 && (!ring || (box.width >= 8 && box.height >= 8)),
+            seen: style.visibility === 'visible' && style.display !== 'none' && Number(style.opacity) > 0.5 && (!ring || (box.width >= 8 && box.height >= 3)),
             turning: style.animationName,
             inside: box.left >= at.left - 1 && box.right <= at.right + 1 && box.top >= at.top - 1 && box.bottom <= at.bottom + 1,
             glyph: getComputedStyle(element).color,
@@ -80,7 +80,8 @@ function expectBusy(look: Look, what: string) {
   expect(look.busy, `${what}: aria-busy`).toBe('true');
   expect(look.ring, `${what}: a ring drawn`).toBe(true);
   expect(look.seen, `${what}: the ring seen within a frame of the press`).toBe(true);
-  expect(look.turning.split(',').map((name) => name.trim()), `${what}: turning, at once`).toEqual(['fd-spin']);
+  // A ring turning, or under a name a bar running along its foot — at once, never after a delay.
+  expect(look.turning.split(',').map((name) => name.trim()), `${what}: turning, at once`).toEqual([expect.stringMatching(/^fd-(spin|pressing)$/)]);
   expect(look.inside, `${what}: at the control, not over the page`).toBe(true);
 }
 

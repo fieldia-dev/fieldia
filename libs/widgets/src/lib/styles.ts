@@ -893,7 +893,8 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
 @keyframes fd-unseen { from { visibility: hidden; } }
 .fd-form[data-fd-action] .fd-button:is([aria-busy="true"], [data-fd-wait])::after { display: none; }
 /* A control a press waits on, a part on its way or the app's answer (press.ts): a ring turning in its place from the
-   press — over an icon's glyph, at the end of a name or of a box, its buttons hidden — a button's own at once. Nothing moves. */
+   press — over an icon's glyph, at the end of a box, its buttons hidden — a button's own at once; under a name (a card's
+   head, a stat button), whose end may be another control's, a bar running along its foot. Nothing moves. */
 :where(.fd-form [data-fd-pressing]) { position: relative; }
 .fd-form [data-fd-pressing] { cursor: progress; }
 .fd-form [data-fd-pressing="icon"] { color: transparent !important; }
@@ -904,6 +905,8 @@ textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monosp
   border: 2px solid var(--fd-accent, currentColor); border-inline-end-color: transparent; border-radius: 50%; animation: fd-spin 0.8s linear infinite; pointer-events: none;
 }
 [data-fd-pressing="icon"] > .fd-pressing { inset-inline-start: 0; margin: auto; }
+[data-fd-pressing="words"] > .fd-pressing { inset: auto 0 0; margin: 0; inline-size: auto; block-size: 3px; border: 0; background: var(--fd-accent); animation: fd-pressing 0.6s ease-in-out infinite alternate; }
+@keyframes fd-pressing { from { scale: 0.1 1; } }
 /* A page opened in a form's place: Back over it, the way the page reads. */
 .fd-back { margin: 8px 12px; }
 .fd-back::before { content: "←"; }
