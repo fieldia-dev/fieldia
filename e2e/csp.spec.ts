@@ -23,20 +23,23 @@ interface Violation {
 }
 
 /**
- * WebKit 27.2's own refusal for every <select> made on a page with a style-src policy: its select's inner style refused
- * as an inline style attribute, as on a page of nothing but a bare <select> ("WebKit refuses its own select's style",
- * below, which fails once WebKit stops). Reported at the select, or at the document for one made before it is placed,
- * so told by nothing but its directive. Fieldia writes no style attribute (tools/csp-source.test.mjs), and Chromium and
- * Firefox hold every page here to it; in WebKit, every other refusal is still a failure.
+ * The browser's own refusals, as the page learnt them from a select of its own made first (demos/csp/index.html): WebKit
+ * 27.2 refuses the style inside each <select> it draws — on a page of nothing but a bare
+ * <select> too ("WebKit refuses its own select's style", below, which fails once WebKit stops). Told by its words (the
+ * policy's 'report-sample': "text-overflow:inherit"), at a select or, for one not yet placed, at the document. Fieldia
+ * writes no style attribute (tools/csp-source.test.mjs), and every other refusal fails, in every engine: a style
+ * attribute written on a select among them ("a style attribute written on a select", below). 0.36's excuse was any
+ * style-src-attr refusal with no words, in WebKit, which was every one: no policy here asked for the words.
  */
-const webKitsOwnSelect = (browserName: string) => (one: Violation) => browserName === 'webkit' && one.directive === 'style-src-attr' && one.blocked === 'inline' && !one.sample;
+const browsersOwn = (own: string[]) => (one: Violation) => one.directive === 'style-src-attr' && !!one.sample && own.includes(`${one.directive} ${one.sample}`) && (one.tag === 'SELECT' || one.tag === '');
+/** What the browser refuses of its own, as the page learnt it: WebKit's select alone. */
+const OWN = { webkit: ['style-src-attr text-overflow:inherit'], chromium: [], firefox: [] } as Record<string, string[]>;
 
 /**
  * What the policy refused, every one reported: a violation of our own is caused last, once the page is drawn, and
  * waited for — the browser reports them in order, so what came before it has been reported by then.
  */
 async function refused(page: Page): Promise<Violation[]> {
-  const engines = webKitsOwnSelect(page.context().browser()?.browserType().name() ?? '');
   // The page drawn, every part it draws from in (the viewer's `drawn`).
   await page.evaluate(() => (window as unknown as { fieldiaDemo?: { handle?: { drawn?: Promise<void> } } }).fieldiaDemo?.handle?.drawn);
   await page.evaluate(() => {
@@ -46,7 +49,9 @@ async function refused(page: Page): Promise<Violation[]> {
     document.body.append(mark);
   });
   await expect.poll(() => page.evaluate(() => (window as unknown as { cspViolations: Violation[] }).cspViolations.some((one) => one.target === 'csp-sentinel'))).toBe(true);
-  return (await page.evaluate(() => (window as unknown as { cspViolations: Violation[] }).cspViolations.filter((one) => one.target !== 'csp-sentinel'))).filter((one) => !engines(one));
+  const own = await page.evaluate(() => (window as unknown as { cspOwn: string[] }).cspOwn);
+  expect(own, 'what the page learnt the browser refuses of its own').toEqual(OWN[page.context().browser()?.browserType().name() ?? ''] ?? []);
+  return (await page.evaluate(() => (window as unknown as { cspViolations: Violation[] }).cspViolations.filter((one) => one.target !== 'csp-sentinel'))).filter((one) => !browsersOwn(own)(one));
 }
 
 /** Fieldia's look is on: its sheet came in (with the nonce), so its tokens are on the form. */
@@ -139,6 +144,17 @@ const WORKED: [string, string, (page: Page) => Promise<void>][] = [
     await dialog.getByRole('button', { name: 'Propose values' }).click();
     await expect(page.locator('.fd-proposal').first()).toBeVisible();
   }],
+  ['a formatted table’s header row turned off and on, its cells’ alignment kept', 'contract-fees', async (page) => {
+    // Each cell made again as a header's or a plain one's (rich-table.ts): its alignment through its style object.
+    const table = page.locator('[data-node="f-fees"] table');
+    await table.locator('th', { hasText: 'Qty' }).click();
+    for (const checked of ['false', 'true']) {
+      await page.locator('[data-node="f-fees"]').getByRole('button', { name: 'Table', exact: true }).click();
+      await page.getByRole('menu', { name: 'Table' }).getByRole('menuitemcheckbox', { name: 'Header row' }).click();
+      await expect(table.locator(checked === 'true' ? 'th' : 'td', { hasText: 'Qty' })).toHaveCSS('text-align', 'right');
+      await table.locator('td, th', { hasText: 'Qty' }).first().click();
+    }
+  }],
 ];
 for (const [what, query, work] of WORKED) {
   test(`${what} draw and work under a strict Content-Security-Policy, nothing refused`, async ({ page }) => {
@@ -215,11 +231,68 @@ test("a formatted text's tools align its words under a strict policy, in the val
 
 test("WebKit refuses its own select's style under a style-src policy, as the refusals left out above say", async ({ page, browserName }) => {
   test.skip(browserName !== 'webkit', "WebKit's alone: Chromium and Firefox refuse nothing on this page");
-  await page.setContent(`<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'nonce-n'"><body><script>
-    window.refused = []; document.addEventListener('securitypolicyviolation', (event) => refused.push(event.violatedDirective));
+  await page.setContent(`<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'nonce-n' 'report-sample'"><body><script>
+    window.refused = []; document.addEventListener('securitypolicyviolation', (event) => refused.push(event.violatedDirective + ' ' + event.sample));
     const select = document.createElement('select'); select.append(new Option('One')); document.body.append(select);
   </script></body>`);
-  // Once WebKit refuses nothing here, `webKitsOwnSelect` goes: every refusal is then a failure in WebKit too.
-  await expect.poll(() => page.evaluate(() => (window as unknown as { refused: string[] }).refused)).toEqual(['style-src-attr']);
+  // Once WebKit refuses nothing here, or other words, `OWN` says so: every refusal is then a failure in WebKit too.
+  await expect.poll(() => page.evaluate(() => (window as unknown as { refused: string[] }).refused)).toEqual(OWN['webkit']);
 });
 
+
+test('a style attribute written on a select is refused, and the gate says so, in every engine', async ({ page }) => {
+  await page.goto('/csp/?page=signup');
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  // What a style attribute in Fieldia's code would do: refused by the policy, and never taken for the browser's own.
+  await page.locator('select.fd-select').first().evaluate((select) => select.setAttribute('style', 'outline: 1px solid red'));
+  expect((await refused(page)).map((one) => [one.directive, one.tag])).toEqual([['style-src-attr', 'SELECT']]);
+});
+
+/**
+ * On a phone, as the 0.36 walk opened fieldia.dev/demos/csp/ in WebKit at an iPhone's size (its "Your role" select): the
+ * form and the one-tag script refuse nothing, and the note over the form says so — the browser's own refusals apart.
+ */
+test.describe('on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  /**
+   * A sheet opened over the page wears the form's look — the tokens and accent the form's own style object holds —
+   * through its own style object: a style attribute copied from the form is refused, and the sheet loses the look (0.36:
+   * a phone's country list, a list's Filters and Import, a scanner's sheet). The app's tokens put on first.
+   */
+  const SHEETS: [string, string, (page: Page) => Promise<void>, string][] = [
+    ['a phone’s country list', 'real-contact&record=7001', (page) => page.locator('[data-node="f-phone"] .fd-phone-country').click(), 'Country of Phone'],
+    ['a list’s Filters', 'homes-search', (page) => page.locator('.fd-filter-sheet-open').click(), 'Filters'],
+    ['a list’s Import', 'contacts', (page) => page.getByRole('button', { name: 'Import' }).click(), 'Import into Contacts'],
+  ];
+  for (const [what, query, opening, name] of SHEETS) {
+    test(`${what} opens wearing the form's look, nothing refused`, async ({ page }) => {
+      const problems = problemsOf(page);
+      await page.goto(`/csp/?page=${query}`);
+      await expect(page.locator('.fd-form').first()).toBeVisible();
+      await page.evaluate(() => (window as unknown as { fieldiaDemo: { handle: { drawn: Promise<void>; setTokens(tokens: Record<string, string>): void } } }).fieldiaDemo.handle.drawn);
+      await page.evaluate(() => (window as unknown as { fieldiaDemo: { handle: { setTokens(tokens: Record<string, string>): void } } }).fieldiaDemo.handle.setTokens({ accent: '#b42318' }));
+      await opening(page);
+      const sheet = page.getByRole('dialog', { name });
+      await expect(sheet).toBeVisible();
+      expect(await sheet.evaluate((box) => getComputedStyle(box).getPropertyValue('--fd-accent').trim())).toBe('#b42318');
+      expect(await refused(page)).toEqual([]);
+      expect(problems).toEqual([]);
+    });
+  }
+  for (const [what, address] of [['the strict-policy demo', '/csp/'], ['the one-tag script', '/csp/script.html']]) {
+    test(`${what} draws under the policy, nothing refused, and its note says so`, async ({ page }) => {
+      const problems = problemsOf(page);
+      await page.goto(address);
+      await expect(page.locator('.fd-form').first()).toBeVisible();
+      await lookIsOn(page);
+      const box = page.locator('.fd-field input[type="text"]:visible, .fd-field textarea:visible').first();
+      await box.tap();
+      await box.pressSequentially('Mona');
+      // The note first: the gate's own mark (`refused`) is a refusal it counts too.
+      await page.evaluate(() => (window as unknown as { fieldiaDemo?: { handle?: { drawn?: Promise<void> } } }).fieldiaDemo?.handle?.drawn);
+      await expect(page.locator('#csp-refused')).toHaveText('nothing');
+      expect(await refused(page)).toEqual([]);
+      expect(problems).toEqual([]);
+    });
+  }
+});

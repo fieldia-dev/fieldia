@@ -15,9 +15,13 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
 - **No code made from text, under a strict Content-Security-Policy.** No `eval`, no `new Function`, no style
   attribute and no `<style>` without the page's nonce, in any package; the page check runs with zod's JIT off. Forms,
   records, lists, surveys, every field, the designer and the one-tag script draw and work under a policy of
-  `script-src 'nonce-…'`, `style-src 'nonce-…'` and `connect-src 'self'`, nothing refused. **Gates:**
+  `script-src 'nonce-…'`, `style-src 'nonce-…'` and `connect-src 'self'`, nothing refused. One refusal is WebKit's
+  own: it refuses the style inside each `<select>` it draws (`text-overflow:inherit`) on any page under such a policy,
+  with Fieldia or without. The demo's note and the gate tell it apart by its words, which the policy asks for
+  (`'report-sample'`), and count everything else. **Gates:**
   `tools/csp-source.test.mjs` ("no Fieldia source makes code from text"), `libs/core/src/lib/format/jitless.spec.ts`,
-  `e2e/csp.spec.ts` ("under a strict Content-Security-Policy, nothing refused") in Chromium, Firefox and WebKit.
+  `e2e/csp.spec.ts` ("under a strict Content-Security-Policy, nothing refused") in Chromium, Firefox and WebKit, at a
+  desktop's size and at a phone's ("on a phone").
 - **No request of its own.** Fieldia asks only the data source the app gives it, and the files the app serves. It
   sends nothing to fieldia.dev or anywhere else, and counts nothing about its use. A map fetches its tiles, places
   and routes from the map provider the app chooses. **Gate:** `e2e/csp.spec.ts`, whose policy (`tools/csp-policy.mjs`)
