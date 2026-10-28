@@ -11,8 +11,8 @@ export const replay: DemoReplay = {
         const asked = 'Would you recommend us to a colleague?';
         await press(questions.getByRole('button', { name: 'Add a question' }));
         if (phone) {
-          // A phone's lines are cards: the question is written in its dialog.
-          const dialog = page.getByRole('dialog', { name: 'Sections and Questions' });
+          // A phone's lines are cards: the question is written in its dialog, titled by its place as its card is.
+          const dialog = page.getByRole('dialog', { name: 'Line 11' });
           await see(dialog.getByRole('textbox', { name: 'Question' })).toBeFocused();
           await page.keyboard.type(asked, { delay: 15 });
           await press(dialog.getByRole('button', { name: 'Save & Close' }));

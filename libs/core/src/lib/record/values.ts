@@ -277,3 +277,20 @@ function linesKept(next: Line[], held: Line[]): Line[] {
   });
   return same ? held : kept ? out : next;
 }
+
+/** The engine's own promise, whatever `Promise` is now (an Angular app's zone puts its own in its place): an async function's. */
+export const OwnPromise = (async () => undefined)().constructor as PromiseConstructor;
+
+/**
+ * An answer of the app's — its data source's, its page loader's, a hook's, its store's — as a promise of the engine's
+ * own, the app's promise handled at once, its handlers given as it is made: one it refuses at once, or refused before it
+ * was asked, is never said unhandled by a zone that watches its own promises (Angular's, as `NgZone.onError`) while an
+ * `await` of Fieldia's, code Angular did not compile, comes to it a microtask late. One that is the engine's own
+ * already, and what is not a promise, as it is: its answer comes not a moment later. Here, with the values every module
+ * reads, so whatever takes an app's answer — the runner, the outbox's store — finds it in a module it reads already, in
+ * the one-tag script's parts and in an app's bundle alike: no module loads with another for it.
+ */
+export function answerOf<T>(answer: T): T {
+  const then = (answer as { then?: unknown } | null | undefined)?.then;
+  return typeof then === 'function' && (answer as object).constructor !== OwnPromise ? (new OwnPromise((resolve, reject) => then.call(answer, resolve, reject)) as T) : answer;
+}

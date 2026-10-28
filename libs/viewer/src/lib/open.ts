@@ -1,4 +1,4 @@
-import { LINK_URL, safeUrl, type OpenRequest, type OpenResult, type Page, type PostedMessage, type SayUndo, type Tone, type Values } from '@fieldia/core';
+import { answerOf, LINK_URL, safeUrl, type OpenRequest, type OpenResult, type Page, type PostedMessage, type SayUndo, type Tone, type Values } from '@fieldia/core';
 import type { FormDialogResult } from './dialog';
 import { FIRST_FIELD, focusField } from './focus-field';
 import { openFormDialog, openFormPanel, type Mount } from './dialog-box';
@@ -46,8 +46,9 @@ export interface Opener {
  */
 export async function openPage(opener: Opener, request: OpenRequest): Promise<OpenResult> {
   const { options } = opener;
+  // The app's answer handled as it is given (`answerOf`), never a microtask late as this function's own.
   const theirs = options.onOpen?.(request);
-  if (theirs) return theirs;
+  if (theirs) return answerOf(theirs);
   const found = await findPage(options, request.version === undefined ? { id: request.page } : { id: request.page, version: request.version });
   if (!found) throw new Error(opener.missing(request.page));
   // It wears the look of the page that opened it, unless it has one of its own.

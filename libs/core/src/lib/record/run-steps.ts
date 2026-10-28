@@ -8,7 +8,7 @@ import { FIELD_NAME } from '../format/names';
 import { plainWords, splitValues } from '../format/words';
 import { fitTo } from './compute';
 import { resolveFilter } from './filter';
-import { emptyValue, sameValue, structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
+import { answerOf, emptyValue, sameValue, structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 import { LINK_URL, safeUrl } from '../safe-url';
 import { askOf, DONE, takenNow, type ActionRequest, type ActionResult, type OpenRequest, type OpenResult, type RunForm, type RunResult, type RunScope, type RunStop, type Stopped, type UndoKit } from './run';
 
@@ -163,7 +163,7 @@ export function createRunner(form: RunForm) {
     };
     let result: OpenResult;
     try {
-      result = await host.open(request);
+      result = await answerOf(host.open(request));
     } catch (error) {
       return { reason: 'cannot', message: wordsOf(error), error };
     }
@@ -222,7 +222,7 @@ export function createRunner(form: RunForm) {
     if (!form.onAction) return null;
     let answer: ActionResult | undefined;
     try {
-      answer = (await form.onAction(request)) ?? undefined;
+      answer = (await answerOf(form.onAction(request))) ?? undefined;
     } catch (error) {
       return { reason: 'app', message: wordsOf(error), error };
     }
@@ -279,7 +279,7 @@ export function createRunner(form: RunForm) {
     if (answer.file) {
       const host = form.host;
       if (!host?.file) return cannot(`Nothing can show the file "${answer.file.name}" here: the form has no host that shows files`);
-      await host.file(answer.file);
+      await answerOf(host.file(answer.file));
     }
     if (answer.open) {
       const opened = await open(answer.open, scope);
@@ -474,7 +474,7 @@ export function createRunner(form: RunForm) {
       case 'print': {
         const host = form.host;
         if (!host?.print) return cannot('Nothing can print here: the form has no host that prints');
-        await host.print();
+        await answerOf(host.print());
         return null;
       }
     }

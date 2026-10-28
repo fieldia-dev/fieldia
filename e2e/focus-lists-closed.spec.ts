@@ -35,7 +35,7 @@ test.describe('a box focused by the program keeps its list closed', () => {
     const { problems } = await open(page, 'plain', 'page=order&skin=underline');
     const grid = node(page, 'f-lines');
     await grid.locator('.ag-row[row-index="1"] .ag-cell[col-id="__open"]').getByRole('button', { name: 'Open line' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Order lines' });
+    const dialog = page.getByRole('dialog', { name: 'Office chair, ergonomic' });
     const product = dialog.locator('[data-node="values-product_id"] input[role="combobox"]');
     await expect(product).toBeFocused();
     await staysClosed(page, dialog.getByRole('listbox'), product);

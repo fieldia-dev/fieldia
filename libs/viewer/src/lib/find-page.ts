@@ -1,4 +1,4 @@
-import type { Page } from '@fieldia/core';
+import { answerOf, type Page } from '@fieldia/core';
 import { later } from './later';
 import type { ViewerOptions } from './viewer';
 
@@ -24,7 +24,9 @@ export function findPage(options: Pick<ViewerOptions, 'pages' | 'relatedPages'>,
   const { pages, relatedPages } = options;
   const key = 'model' in request ? request.model : request.version === undefined ? request.id : `${request.id}@${request.version}`;
   const found = typeof pages === 'function' ? pages(request) : pages && Object.prototype.hasOwnProperty.call(pages, key) ? pages[key] : null;
-  if (later(found)) return found.then((page) => page ?? null) as Promise<Page | null>;
+  // Handled as it is given, the engine's own (`answerOf`): one refused at once, or before it was asked, is never said
+  // unhandled by an Angular zone while an `await` of Fieldia's comes to what its own `then` made a microtask late (FU2).
+  if (later(found)) return answerOf(found).then((page) => page ?? null) as Promise<Page | null>;
   if (found || !('model' in request)) return found ?? null;
   return (typeof relatedPages === 'function' ? relatedPages(request.model) : relatedPages?.[request.model]) ?? null;
 }

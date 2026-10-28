@@ -11,16 +11,21 @@ import { SERVER_MS } from './functions';
 /** A choice's words for its value, as the page names its options. */
 const named = (request: RewriteRequest, field: string, value: unknown) => ((request.page.fields[field] as { options?: Option[] } | undefined)?.options ?? []).find((option) => option.value === value)?.label;
 
-/** The agency's reply to a buyer, from what the enquiry holds: the stand-in's draft of its `reply`. */
+/**
+ * The agency's reply to a buyer, from what the enquiry holds: the stand-in's draft of its `reply`. It opens with the
+ * enquiry's greeting as typed, its space kept ("Dear ", "Hello "), then the buyer's first name — the template's
+ * `{customer}`.
+ */
 export function enquiryDraft(values: Values, request: RewriteRequest): string {
   const first = String(values['partner_name'] ?? '').trim().split(/\s+/)[0];
+  const greeting = typeof values['greeting'] === 'string' ? values['greeting'] : 'Dear ';
   const kind = named(request, 'kind', values['kind'])?.toLowerCase() ?? 'home';
   const district = named(request, 'district', values['district']);
   const bedrooms = typeof values['bedrooms'] === 'number' && values['bedrooms'] > 0 ? `${values['bedrooms']} bedrooms` : '';
   const budget = typeof values['budget'] === 'number' ? `up to EGP ${values['budget'].toLocaleString('en')}` : '';
   const wants = [`a ${kind}`, district ? `in ${district}` : '', bedrooms ? `with ${bedrooms}` : ''].filter(Boolean).join(' ') + (budget ? `, ${budget}` : '');
   return [
-    `Dear ${first || 'there'},`,
+    `${greeting}${first || 'there'},`,
     '',
     `Thank you for your enquiry about ${wants}.`,
     '',
@@ -60,6 +65,7 @@ export function sampleEnquiries(): Record<string, Values> {
       district: null,
       budget: null,
       bedrooms: null,
+      greeting: 'Dear ',
       reply: '',
       state: 'new',
     },
@@ -74,6 +80,7 @@ export function sampleEnquiries(): Record<string, Values> {
       district: 'zamalek',
       budget: 9_000_000,
       bedrooms: 3,
+      greeting: 'Dear ',
       reply: 'hi omar\n\nthx for ur msg. we have 2 flats in zamalek that fit ur budget , one with a nile view. can u come on thursday at 5pm? pls let me know asap\n\nregards\nmona',
       state: 'new',
     },

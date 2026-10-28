@@ -5,7 +5,7 @@ import type { MenuItem, Tone } from '../format/layout';
 import type { ExpressionEnv } from '../expression/expression';
 import type { PaidPayment, PaymentDue, PayRequest, ResolvedFilter } from './data-source';
 import type { Facet } from './search';
-import { structuredCopy, type RecordId, type Value, type Values } from './values';
+import { answerOf, structuredCopy, type RecordId, type Value, type Values } from './values';
 import type { Messages } from './messages';
 
 /**
@@ -420,8 +420,10 @@ export const takenNow = (at: Values = {}): PressTaken => ({ said: [], app: [], a
 /** A question a run asks — a button's `confirm`, an `ask` step: the host's, else the app's `confirm`, else answered Yes. */
 export async function askOf(form: Pick<RunForm, 'host' | 'confirm'>, message: string, yes?: string): Promise<boolean> {
   const how = yes ? { yes } : undefined;
-  if (form.host) return form.host.ask(message, how);
-  if (form.confirm) return form.confirm(message, how);
+  // The app's answer handled as it is given, whatever its promise (values.ts, `answerOf`): so are its open, call, file
+  // and print.
+  if (form.host) return answerOf(form.host.ask(message, how));
+  if (form.confirm) return answerOf(form.confirm(message, how));
   return true;
 }
 

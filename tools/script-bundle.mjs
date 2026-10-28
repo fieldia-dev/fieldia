@@ -3337,6 +3337,19 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // encoder given to the editor, 0.36.1's cover kept in sight), to 31.5; list 160.07 and 52.38, files 51.24 and 19.09,
 // memory 26.14 and 9.46, check 65.15 and 17.22, filters, import, scan, rows, survey and prefill as 0.36.1 measured
 // them, each inside its budget.
+// 0.37 (p37-walk-rest), a line's dialog titled as one line (the 0.36 walk: "Order lines" over one order line): a
+// table's line named by its first column holding words — its dialog, its ↑ and ↓ and its move said aloud alike — else
+// "Line 3", and a card's dialog by the card's title — lines 49,078 and 16,938 B measured before, 49,355 and 17,028
+// after, to 48.3 and 16.7. fieldia.js 12 B smaller (603,040 → 603,028; 202,778 → 202,762 gzipped): the dialog takes
+// its title from the widget that opens it, reads the record's state once, and asks once whether the record is shown.
+// 0.37 (p37-walk-rest), every promise the app gives handled the moment it is given (FU2 on 0.36.1: a linked page whose
+// request had failed already when Open was pressed reached Angular's NgZone.onError) — `answerOf` with the values
+// every module reads (values.ts), so what takes an app's answer finds it in a module it reads already, in the parts' table
+// as in an app's bundle (an npm app's first load the same 65 and 73 files): list 163,913 and 53,634 B measured before,
+// 163,946 and 53,647 after (a row's onOpenRecord and a view's onNewRecord), to 160.2; outbox 11,434 → 11,514 (its
+// store's answers, its refreshes on their own heard), to 11.3; pay 8,018 → 8,046, inside 7.9.
+// fieldia.js 603,028 → 603,000 and 202,762 → 202,753 gzipped, smaller: held writes take a write's answer through
+// `answerOf` where they made a promise of their own for it, and the pager's id is `answerOf`'s, no `then()` of its own.
 // 0.37 (size-parts), three parts of their own, set from the build: acts 34.02 and 12.39 (a page's steps run, its dialogs,
 // a page opened, the viewer's question, a save over someone else's answered and its banners, and their words), to 34.1
 // and 12.4; html 6.49 and 2.73 (the classic formatted text's toolbar, its paste put in plain, its words), to 6.5 and
@@ -3344,7 +3357,7 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // part shares with others are each one's own now: text 73.19 and 24.73 (Search more…'s "No results" and the toolbar's
 // Formatting, Apply and Remove link), to 73.2 and 24.8; path 22.40 and relations 21.12 ("No results"), to 22.5 and 21.2;
 // choice 12.03 and 4.78, inside 12.1 and 4.8.
-const PART_BUDGET_KB = { acts: [34.1, 12.4], html: [6.5, 2.8], sheet: [11.4, 4.3], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.1, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.0, 16.6], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+const PART_BUDGET_KB = { acts: [34.1, 12.4], html: [6.5, 2.8], sheet: [11.4, 4.3], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.2, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.3, 16.7], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.3, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   acts: ['createRunner', 'reloadTheirs', 'keepMine', 'putBack', 'openFormDialog', 'openFormPanel', 'openSearchDialog', 'openPage', 'linkDialogs', 'askBox', 'conflictBanners'],

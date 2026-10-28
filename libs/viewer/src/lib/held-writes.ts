@@ -1,4 +1,4 @@
-import type { DataSource } from '@fieldia/core';
+import { answerOf, type DataSource } from '@fieldia/core';
 
 /**
  * The members of a data source that write through a page — a record saved, a form's answers sent (an outbox's kept
@@ -26,16 +26,10 @@ export function heldWrites(source: DataSource | undefined, checked: () => Promis
         if (typeof value !== 'function') return value;
         if (!WRITES.has(member)) return value.bind(target);
         return (...args: unknown[]) => {
+          // The app's answer handled as it is given, whatever its promise (deadline.ts): at once, or once the check let it go.
+          const write = () => answerOf(value.apply(target, args) as unknown);
           const waiting = checked();
-          if (!waiting) return value.apply(target, args);
-          return waiting.then(
-            () =>
-              new Promise((resolve, reject) => {
-                const answer = value.apply(target, args) as unknown;
-                if (answer && typeof (answer as PromiseLike<unknown>).then === 'function') (answer as PromiseLike<unknown>).then(resolve, reject);
-                else resolve(answer);
-              })
-          );
+          return waiting ? waiting.then(write) : write();
         };
       },
     })

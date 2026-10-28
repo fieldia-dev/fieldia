@@ -3,7 +3,7 @@ import { saveProblemOf, type DataSource, type RecordVersion, type SaveProblem, t
 import type { FormInner, FormJoin } from './joins';
 import { lastsPastThePage, ownerOf } from './browser-kept';
 import { fileBytesIn, formUploadsPart } from './uploads';
-import { structuredCopy, type FileValue } from './values';
+import { answerOf, structuredCopy, type FileValue } from './values';
 
 /**
  * An offline outbox (`outbox` on a page), the form's side — the outbox part's, which joins a form whose page has one
@@ -278,11 +278,13 @@ export function join(joined: FormInner): FormOutbox {
   // This person's sends alone: the signed-in person's, else this tab's — never another's, sent under their session.
   const owner = ownerOf(form.user());
   const mine = (item: OutboxItem) => item.owner === undefined || item.owner === owner;
+  // Each answer of the store — an app's own among them — handled as it is given (`answerOf`): one it refuses at once is
+  // never said unhandled by an Angular zone while an `await` here comes to it a microtask late.
   const store: OutboxStore = {
-    list: async (pageId) => (await shared.list(pageId)).filter(mine),
-    put: (item) => shared.put(item),
-    delete: (key) => shared.delete(key),
-    claim: (key, by, until) => shared.claim(key, by, until),
+    list: async (pageId) => (await answerOf(shared.list(pageId))).filter(mine),
+    put: (item) => answerOf(shared.put(item)),
+    delete: (key) => answerOf(shared.delete(key)),
+    claim: (key, by, until) => answerOf(shared.claim(key, by, until)),
   };
   const me = `sender-${++sender}-${Math.random().toString(36).slice(2, 8)}`;
   let sending: Promise<void> | null = null;
@@ -387,7 +389,8 @@ export function join(joined: FormInner): FormOutbox {
         sending = null;
         return refresh();
       });
-      void refresh();
+      // Told as it starts; a store that cannot answer tells nothing, and leaves nothing unhandled.
+      void refresh().catch(() => undefined);
       return sending;
     },
     refresh,
@@ -428,7 +431,7 @@ export function join(joined: FormInner): FormOutbox {
         // It went: there is signal, and what waited goes after it.
         if (kind !== 'upload') {
           keptNow(false);
-          void outbox.send();
+          void outbox.send().catch(() => undefined);
         }
         return answer;
       } catch (error) {
@@ -447,6 +450,6 @@ export function join(joined: FormInner): FormOutbox {
     },
   };
   // What waits from before — a reload, another tab — told at once.
-  void refresh();
+  void refresh().catch(() => undefined);
   return outbox;
 }

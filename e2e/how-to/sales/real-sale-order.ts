@@ -20,7 +20,7 @@ export const replay: DemoReplay = {
         await see(taxTotal(page, 'Untaxed amount')).toHaveText('E£ 289,450.00');
         if (phone) {
           await press(orderLines(page).getByRole('button', { name: '[PM-12] Patient monitor PM-12', exact: true }));
-          const dialog = page.getByRole('dialog', { name: 'Order Lines' });
+          const dialog = page.getByRole('dialog', { name: '[PM-12] Patient monitor PM-12' });
           await see(box(dialog, 'Quantity')).toHaveValue('4.00');
           await press(box(dialog, 'Quantity'));
           await keys('Control+a');
@@ -49,7 +49,8 @@ export const replay: DemoReplay = {
         await page.keyboard.type('defib', { delay: 15 });
         await press(page.getByRole('option', { name: '[AED-3] Defibrillator AED-3' }));
         if (phone) {
-          const dialog = page.getByRole('dialog', { name: 'Order Lines' });
+          // Added on a phone, the line opens at once in its own form, titled by its place as its card is headed.
+          const dialog = page.getByRole('dialog', { name: 'Line 4' });
           await see(box(dialog, 'Description')).toHaveValue(/Automated external defibrillator, adult and child pads\./);
           await see(dialog.getByRole('combobox', { name: 'UoM' })).toHaveValue('Units');
           await see(dialog.getByRole('group', { name: 'Taxes' })).toContainText('VAT 14%');
