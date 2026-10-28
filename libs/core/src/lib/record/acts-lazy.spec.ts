@@ -146,6 +146,29 @@ describe("a page's steps, their engine in a part of its own", () => {
     expect(source.records['sale.order'][7]['name']).toBe('SO007');
   });
 
+  it("a save over someone else's answered before it came — Keep mine — waits for it, then saves; where it cannot come, nothing", async () => {
+    const { createForm, orderPage } = await fresh();
+    const { createMemoryDataSource } = await import('./memory-data-source');
+    const source = createMemoryDataSource({ records: { 'sale.order': { 7: { name: 'SO007', quantity: 2 } } }, versions: { by: 'Mona' } });
+    const form = createForm({ page: orderPage(), dataSource: source, recordId: 7 });
+    await form.load();
+    form.setValue('name', 'SO007 B');
+    source.changeElsewhere('sale.order', 7, { quantity: 3 }, { by: 'Mona' });
+    expect(await form.save()).toBe(false);
+    expect(form.getState().conflict).not.toBeNull();
+    mockHeld.failing = 1;
+    const refused = form.keepMine();
+    await settle();
+    mockHeld.release?.();
+    expect(await refused).toBe(false);
+    expect(source.records['sale.order'][7]['name']).toBe('SO007');
+    const kept = form.keepMine();
+    await settle();
+    mockHeld.release?.();
+    expect(await kept).toBe(true);
+    expect(source.records['sale.order'][7]).toMatchObject({ name: 'SO007 B', quantity: 3 });
+  });
+
   it('asked for right after the whole check came, never beside it', async () => {
     const { askForCheck } = await import('../format/page-check');
     askForCheck();

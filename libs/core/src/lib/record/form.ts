@@ -74,6 +74,7 @@ import type { HistoryStep, Noted } from './history';
 import { pressUndoPart } from './undo-later';
 import { askOf, createMoments, DONE, takenNow, type ActionHost, type ActionRequest, type ActionResult, type AskHow, type OnAction, type PostedMessage, type RunContext, type RunForm, type RunResult, type RunScope, type Stopped } from './run';
 import { formActsPart, type FormActsPart } from './acts-later';
+import type { ConflictKit } from './conflict-choice';
 import {
   emptyValue,
   initialValues,
@@ -4437,6 +4438,32 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     wordsOf: (field) => wordsOfValue(fieldDef(field), state.values[field]),
     barred: (right) => (state.can?.[right] === false ? state.can.reason ?? named(messages[`${MAY_NOT[right]}Noun`], messages[MAY_NOT[right]]) : null),
   };
+  /** What a save over someone else's, answered, reaches this form by (conflict-choice.ts, the acts part's). */
+  const conflictKit: ConflictKit = {
+    state: () => state,
+    set,
+    fields,
+    page,
+    messages,
+    source: () => options.dataSource,
+    shownNow,
+    savesSettled,
+    readTyped,
+    load,
+    generation: () => generation,
+    track,
+    same: (name, a, b) => sameValue(fields[name], a, b),
+    kept: (path) => valueAt(state.values, path) !== gone,
+    rebase: (theirs) => void (baseline = { ...baseline, ...theirs }),
+    writeValues: (values) => writeValues(values),
+    save: () => save(),
+    setValue: (name, value) => form.setValue(name, value),
+  };
+  /** A conflict's choice: at once where the acts part has come, else once it does; `failed` where it cannot come. */
+  function answeredConflict<T, F>(run: (part: FormActsPart) => T | Promise<T>, failed: F): T | Promise<T | F> {
+    const part = formActsPart.loaded;
+    return part ? run(part) : formActsPart.load().then(run, () => failed);
+  }
   /** The engine that runs this form's steps, made once its part has come; undefined until then. */
   let runner: ReturnType<FormActsPart['createRunner']> | undefined;
   const engine = () => (runner ??= formActsPart.loaded?.createRunner(runForm));
@@ -5114,85 +5141,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     approvalLock: (name) => joined('approvals')?.lockWords(name) ?? null,
 
-    async reloadTheirs() {
-      // A save on its way first: its answer is not dropped by the load.
-      const asked = shownNow();
-      await savesSettled();
-      if (!asked()) return false;
-      // What is still typed is the person's too: read, a name looked up waited for, before theirs are loaded.
-      const waiting = readTyped();
-      if (waiting) await waiting;
-      if (!asked()) return false;
-      // The person's changes, kept before theirs are loaded over them; and text they left that does not read.
-      const mine: Values = {};
-      for (const name of state.dirty) mine[name] = structuredCopy(state.values[name]) as Value;
-      const typed = state.unread;
-      // The record loaded again is a record shown anew: what is set aside is laid on it alone.
-      const loading = load(true);
-      const loaded = generation;
-      await track(loading);
-      if (loaded !== generation || state.status !== 'ready') return false;
-      // Set aside where theirs differ from mine: a change they made the same way is no loss.
-      const aside: Values = { ...(state.setAside ?? {}) };
-      for (const [name, value] of Object.entries(mine)) if (!sameValue(fields[name], value, state.values[name])) aside[name] = value;
-      // Text that does not read is no value to set aside: it stays in its box, unread with why, over their value —
-      // never dropped unsaid. A line of theirs no longer there takes its cells' text with it.
-      const unread = Object.fromEntries(Object.entries(typed).filter(([path]) => valueAt(state.values, path) !== gone));
-      set({ conflict: null, saveProblem: null, setAside: Object.keys(aside).length ? aside : null, ...(Object.keys(unread).length ? { unread } : {}) });
-      return true;
-    },
-
-    async keepMine() {
-      const conflict = state.conflict;
-      let told = conflict?.theirs;
-      let version = conflict?.version;
-      // Not told the record as they left it: read as it is now, so a source that saves whole records keeps their work.
-      const source = options.dataSource;
-      if (conflict && !told) {
-        if (source?.load && state.recordId != null && page.data.kind === 'record') {
-          const shown = shownNow();
-          try {
-            const now = loadedRecordOf(await track(source.load({ model: page.data.model, id: state.recordId, fields })));
-            told = valuesFromSource(fields, now.values).values;
-            version = now.version ?? version;
-          } catch {
-            // Unread: said below.
-          }
-          // Read, or not, once another record is shown or the values let go: nothing is laid, nothing saved.
-          if (!shown()) return false;
-        }
-        // Still unread: saving now would go over work this person never saw. Nothing is saved; they are told, and choose again.
-        if (!told) {
-          const message = messages.theirsUnread;
-          set({ status: 'error', error: message, saveProblem: { kind: 'conflict', message, conflict: { version: conflict.version } }, conflict: { ...conflict, unread: true } });
-          return false;
-        }
-      }
-      if (told) {
-        // The record as they left it is where this person's changes start from: theirs stay wherever they changed nothing.
-        const theirs: Values = {};
-        for (const [name, value] of Object.entries(told)) if (fields[name]) theirs[name] = structuredCopy(value) as Value;
-        const mine = state.dirty;
-        baseline = { ...baseline, ...theirs };
-        const values = { ...(state.values as Values) };
-        for (const [name, value] of Object.entries(theirs)) if (!mine.includes(name)) values[name] = value;
-        writeValues(values);
-      }
-      // Saved with the version it has now: these changes over the record as it is.
-      if (version) set({ version });
-      return track(save());
-    },
-
-    putBack(field) {
-      const aside = state.setAside;
-      if (!aside) return;
-      const names = field === undefined ? Object.keys(aside) : Object.prototype.hasOwnProperty.call(aside, field) ? [field] : [];
-      if (!names.length) return;
-      const left = { ...aside };
-      for (const name of names) delete left[name];
-      set({ setAside: Object.keys(left).length ? left : null });
-      for (const name of names) form.setValue(name, aside[name]);
-    },
+    // A save over someone else's answered: the acts part's (conflict-choice.ts), in already where its banner asks — at
+    // once then; else once it came, nothing done where it cannot come.
+    reloadTheirs: () => Promise.resolve(answeredConflict((part) => part.reloadTheirs(conflictKit), false)),
+    keepMine: () => Promise.resolve(answeredConflict((part) => part.keepMine(conflictKit), false)),
+    putBack: (field) => void answeredConflict((part) => part.putBack(conflictKit, field), undefined),
 
     discardSetAside() {
       if (state.setAside) set({ setAside: null });
