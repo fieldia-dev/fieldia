@@ -80,7 +80,7 @@ ${
 }
 <footer class="foot">
   <p>Fieldia is MIT licensed. Its sister project is <a href="https://grafloria.com">Grafloria</a>, the diagram and dashboard engine.</p>
-  <p><a href="https://github.com/fieldia-dev/fieldia">Source on GitHub</a> · <a href="https://www.npmjs.com/org/fieldia">npm</a> · <a href="/accessibility/"${path === '/accessibility/' ? ' aria-current="page"' : ''}>Accessibility</a></p>
+  <p><a href="https://github.com/fieldia-dev/fieldia">Source on GitHub</a> · <a href="https://www.npmjs.com/org/fieldia">npm</a> · <a href="/accessibility/"${path === '/accessibility/' ? ' aria-current="page"' : ''}>Accessibility</a> · <a href="/promises/"${path === '/promises/' ? ' aria-current="page"' : ''}>What Fieldia promises</a></p>
 </footer>
 <script>
   // A phone's bar: the links folded under Menu (site.css), open below the bar until Menu or Escape folds them again.

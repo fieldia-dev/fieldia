@@ -9,6 +9,7 @@ export default {
 <header class="gallery-hero">
   <h1>Features</h1>
   <p class="lead"><b>Everything a page can do, by area.</b> Each area has a page of its own, every part shown from a real demo you can open and try, and a link to the docs that say how.</p>
+  <p>What each of them guarantees, and what your server must still check: <a href="/promises/">What Fieldia promises</a>.</p>
 </header>
 <div class="gallery-body">
   <ul class="feature-areas">

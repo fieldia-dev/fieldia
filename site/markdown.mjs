@@ -86,11 +86,14 @@ export function markdownPage(file) {
       for (; i < lines.length && lines[i].startsWith('|'); i++) rows.push(lines[i]);
       const cells = (row) => row.replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, '|'));
       if (!/^\|[\s:|-]+\|$/.test(rows[1] ?? '')) problem('a table needs its row of dashes under its heading');
-      const head = cells(rows[0]).map((cell) => `<th scope="col">${inline(cell, file)}</th>`).join('');
-      const body = rows.slice(2).map((row) => `<tr>${cells(row).map((cell) => `<td>${inline(cell, file)}</td>`).join('')}</tr>`).join('');
+      const head = cells(rows[0]).map((cell) => `<th scope="col" role="columnheader">${inline(cell, file)}</th>`).join('');
+      // Each cell names its column (`data-label`): on a phone a row reads as a block, each value under its column's name
+      // (site.css) — its roles keep it a table to a screen reader, whose layout no longer says so.
+      const labels = cells(rows[0]).map((cell) => escape(cell.replace(/`/g, '')).replace(/"/g, '&quot;'));
+      const body = rows.slice(2).map((row) => `<tr role="row">${cells(row).map((cell, at) => `<td role="cell" data-label="${labels[at] ?? ''}">${inline(cell, file)}</td>`).join('')}</tr>`).join('');
       // Wider than a phone, it scrolls on its own, by keyboard too: named by its heading row.
       const named = escape(cells(rows[0]).join(', ').replace(/`/g, '')).replace(/"/g, '&quot;');
-      out.push(`<div class="table-scroll" tabindex="0" role="region" aria-label="${named}"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`);
+      out.push(`<div class="table-scroll table-rows" tabindex="0" role="region" aria-label="${named}"><table role="table"><thead role="rowgroup"><tr role="row">${head}</tr></thead><tbody role="rowgroup">${body}</tbody></table></div>`);
       continue;
     }
     const bullet = /^(- |\d+\. )/.exec(line);

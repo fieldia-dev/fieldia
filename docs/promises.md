@@ -3,7 +3,24 @@
 What an app, a page author and a server can count on from Fieldia: what it guarantees in the browser and what the
 app's server must still do, how it changes from one version to the next, how fast it is, and the browsers it runs in.
 
-Each promise names its **gate**: a test in the repository that runs on every pull request, or in the CI job named
+## In short
+
+For an owner choosing Fieldia, in plain words; the rest of this page says the same in detail, each promise with the test
+that holds it.
+
+- **What you can count on.** Fieldia shows a page as data: it never runs code from a page, from a record or from what
+  a person types, and it works under a strict Content-Security-Policy. It sends nothing to anyone your app did not
+  choose. Anything that could break your app, your pages or your tests is announced a version before it changes; a
+  fix never changes them.
+- **What your server must still do.** Check the answers again where they arrive, decide who may see and change what,
+  and check what only it can know, such as a payment or a code sent by text. The checks in the browser help the person
+  filling in the form; they do not protect your data.
+- **Which browsers are checked, and how.** On every change, automated tests act in the browser as a person would —
+  the mouse and the keys at a desk, a finger on a phone's screen — in the engines of Chrome, Firefox and Safari, at a
+  desktop's size and at an iPhone's. From 0.37.0, a person also checks each new version on a real iPhone and a real
+  Android phone before it is published.
+
+Each promise below names its **gate**: a test in the repository that runs on every pull request, or in the CI job named
 beside it, and fails the build when the promise stops being true. Where a promise has no gate, it says so.
 `tools/promises.test.mjs` holds this page to its gates: every file it names exists, every test it quotes is in that
 file, and every number it gives is the one the code and its budgets hold.
@@ -212,10 +229,10 @@ an iPhone runs Safari's engine); and Chrome on Android. The npm packages are ES2
 
 | Browser | Checked in CI | Not checked in CI |
 | --- | --- | --- |
-| Chrome, Edge | Chromium 156, Playwright's build: every browser spec, in every framework's demo, every demo's how-to replayed by hand, and the perf gates; the key screens compared with their stored images in Playwright's own container | Chrome's and Edge's own builds; the major before |
+| Chrome, Edge | Chromium 156, Playwright's build: every browser spec, in every framework's demo, every demo's how-to taken step by step by an automated run that uses the mouse and the keys as a person would, and the perf gates; the key screens compared with their stored images in Playwright's own container | Chrome's and Edge's own builds; the major before |
 | Firefox | Firefox 157, Playwright's build: the smoke set (115 specs) in the plain demo | The rest of the specs; the major before |
 | Safari | WebKit 27.2, Safari's engine as Playwright builds it: the smoke set (115 specs) in the plain demo | Safari itself; the major before |
-| Safari on iOS | WebKit at an iPhone 14's size with touch: every demo's how-to replayed by a finger (`how-to-phone`), and the smoke set's phone specs | A real iPhone |
+| Safari on iOS | WebKit at an iPhone 14's size with touch: every demo's how-to taken step by step by an automated run that taps as a finger would (`how-to-phone`), and the smoke set's phone specs | A real iPhone |
 | Chrome on Android | Chromium at a phone's size with touch; the perf gates on a phone's CPU | A real Android phone |
 
 Each part the one-tag script loads is failed in turn in all three engines, and the page must still draw and say so
@@ -223,7 +240,7 @@ Each part the one-tag script loads is failed in turn in all three engines, and t
 browser jobs keep `retries: 0`, run what failed once more, and log each flake in the job's summary and an artifact
 (`tools/flake-log.mjs`, held by `tools/workflows.test.mjs`).
 
-From 0.37.0, each minor waits for a real iPhone and a real Android phone checked by hand; 0.36.0 was checked only by
+From 0.37.0, each minor waits for a real iPhone and a real Android phone checked by a person; 0.36.0 was checked only by
 CI's phones (WebKit iPhone 14 with touch, Chromium at a phone's size). The checklist and its record are
 `docs/maintainers/real-devices.md`; `node tools/release.mjs publish` and `tools/publish-packs.mjs` refuse a minor from
 0.37.0 on without a row that passed. **Gate:** `tools/real-devices.test.mjs` ("the gate bites from 0.37.0").
