@@ -292,6 +292,42 @@ describe('Record beside a file field’s picker', () => {
     expect(tracks.every((track) => track.stopped)).toBe(true);
   });
 
+  it('asks too while a stopped WebM is made into its file, its length being written in: never let go unasked', async () => {
+    // Firefox records WebM; under load its length took a moment to write, and Escape then let the recording go unasked
+    // (0.37's CI). The WebM's head read for it is held here, the recording stopped and its file not yet made.
+    const real = Blob.prototype.arrayBuffer;
+    let release: (() => void) | null = null;
+    Object.defineProperty(Blob.prototype, 'arrayBuffer', {
+      configurable: true,
+      value(this: Blob) {
+        return new Promise<ArrayBuffer>((done) => (release = () => void real.call(this).then(done)));
+      },
+    });
+    try {
+      const { el, value } = setup({ record: 'audio' });
+      button(el, 'Record a voice note')?.click();
+      await until(() => shown('Start recording'));
+      button(recorder() as HTMLElement, 'Start recording')?.click();
+      await until(() => said() === 'Recording…');
+      button(recorder() as HTMLElement, 'Stop')?.click();
+      await until(() => release);
+      key(recorder() as HTMLElement, 'Escape');
+      expect(recorder()).not.toBeNull();
+      const ask = recorder()?.querySelector('.fd-file-confirm') as HTMLElement;
+      expect([ask.hidden, ask.textContent]).toEqual([false, 'Discard this recording?DiscardGo back']);
+      // Made once its length is written; Go back keeps it, and it is used.
+      (release as unknown as () => void)();
+      await until(() => shown('Use this recording'));
+      key(recorder() as HTMLElement, 'Escape');
+      expect(ask.hidden).toBe(true);
+      button(recorder() as HTMLElement, 'Use this recording')?.click();
+      await until(() => value().length);
+      expect(value()).toHaveLength(1);
+    } finally {
+      Object.defineProperty(Blob.prototype, 'arrayBuffer', { configurable: true, value: real });
+    }
+  });
+
   it('runs its clock from when the browser’s recorder began; stopped before it began, keeps nothing and says so, Start again', async () => {
     Recorder.startsAfter = 300;
     const { el, value } = setup({ record: 'audio' });

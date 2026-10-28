@@ -278,4 +278,44 @@ test.describe('a voice note and a short film recorded on the page', () => {
     await expect(voice(page).locator('.fd-file-item')).toHaveCount(1);
     expect(problems).toEqual([]);
   });
+
+  test('Escape asks while a stopped recording is still being made into its file: never let go unasked', async ({ page }) => {
+    // After Stop a WebM's length is written into it (webm-duration.ts), its head read first: held here. Firefox records
+    // WebM, and under load that moment let Escape close the dialog, the recording lost (0.37's CI). An MP4 (Chromium's)
+    // has nothing written: it is made at once.
+    await page.addInitScript(() => {
+      const read = Blob.prototype.arrayBuffer;
+      const held: (() => void)[] = [];
+      const own = window as unknown as { holding: boolean; letRead: () => void };
+      own.holding = false;
+      own.letRead = () => {
+        own.holding = false;
+        for (const go of held.splice(0)) go();
+      };
+      Blob.prototype.arrayBuffer = function (this: Blob) {
+        return own.holding ? new Promise<ArrayBuffer>((done) => held.push(() => void read.call(this).then(done))) : read.call(this);
+      };
+    });
+    await devices(page, 'allow');
+    const { problems } = await open(page, 'plain', 'page=site-visit&record=1&skin=outlined');
+    if (!(await records(page))) return;
+    await voice(page).getByRole('button', { name: 'Record a voice note' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Record a voice note' });
+    await dialog.getByRole('button', { name: 'Start recording' }).click();
+    await expect(dialog.getByRole('timer')).toHaveText(/^0:01/);
+    await page.evaluate(() => ((window as unknown as { holding: boolean }).holding = true));
+    await dialog.getByRole('button', { name: 'Stop' }).click();
+    // Stopped: no longer recording, its file being made.
+    await expect(page.locator('.fd-recorder.fd-recording')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog.getByText('Discard this recording?')).toBeVisible();
+    await page.evaluate(() => (window as unknown as { letRead: () => void }).letRead());
+    await expect(dialog.getByRole('button', { name: 'Go back' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(dialog.getByRole('button', { name: 'Use this recording' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Use this recording' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(voice(page).locator('.fd-file-item')).toHaveCount(2);
+    expect(problems).toEqual([]);
+  });
 });

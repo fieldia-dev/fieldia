@@ -147,6 +147,8 @@ export function openRecorder(context: RecorderContext): Recorder {
   let seconds = 0;
   let ticking: ReturnType<typeof setInterval> | undefined;
   let made: { file: File; url: string } | null = null;
+  /** A recording stopped and being made into its file (a WebM's length written in): something to lose already. */
+  let finishing = false;
   let hearing: { context: AudioContext; frame: number } | null = null;
   let gone = false;
   /** Why it stopped itself, where it did: said once it has stopped. */
@@ -316,8 +318,11 @@ export function openRecorder(context: RecorderContext): Recorder {
     }
     letGoDevices();
     // A WebM's length written into it, which a browser's recorder never does: its player says how long it is (never
-    // Infinity) and can be scrubbed, here and wherever the file is played once it is kept.
+    // Infinity) and can be scrubbed, here and wherever the file is played once it is kept. Meanwhile it is a recording
+    // to lose: Escape, × or Cancel ask first (Firefox's WebM, under load, gave them a moment to let it go unasked).
+    finishing = true;
     const blob = await withDuration(new Blob(recorded, { type }), seconds * 1000);
+    finishing = false;
     if (gone) return;
     const name = `${fillIn(film ? words.recordingNameVideo : words.recordingNameVoice, { when: madeAt(context.now(), context.timeZone) })}.${EXTENSION[type] ?? (film ? 'webm' : 'webm')}`;
     const file = new File([blob], name, { type });
@@ -349,7 +354,7 @@ export function openRecorder(context: RecorderContext): Recorder {
 
   /** Leaving: at once with nothing to lose, else asked first — "Discard this recording?" in place — a recording being made or finished too. */
   function leave() {
-    if (!made && !recorder) return done();
+    if (!made && !recorder && !finishing) return done();
     setHidden(asking, false);
     back.focus();
   }
