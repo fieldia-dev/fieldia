@@ -148,7 +148,9 @@ export function openImport(context: ImportContext): Promise<ImportEnd | null> {
   const box = make('div', { class: 'fd-theme fd-form-dialog fd-size-large fd-import', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': title.id, tabindex: '-1' }, make('div', { class: 'fd-form-dialog-head' }, title, close), body, footer);
   // The look of the page the list is on: its skin, theme, tokens, direction and language, as the dialog sits outside it.
   const root = context.from.closest<HTMLElement>('.fd-form') ?? context.from;
-  for (const { name, value } of [...root.attributes]) if ((name.startsWith('data-') && name !== 'data-max-width') || name === 'style' || name === 'dir' || name === 'lang') box.setAttribute(name, value);
+  for (const { name, value } of [...root.attributes]) if ((name.startsWith('data-') && name !== 'data-max-width') || name === 'dir' || name === 'lang') box.setAttribute(name, value);
+  // Its tokens and accent through the style object, which a strict policy lets be: a style attribute it refuses.
+  box.style.cssText = root.style.cssText;
   const backdrop = make('div', { class: 'fd-dialog-backdrop fd-form-dialog-backdrop' }, box);
   (doc.body ?? doc.documentElement).append(backdrop);
 

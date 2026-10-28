@@ -46,6 +46,25 @@ const RULES = [
   // Markup Fieldia writes itself. A formatted text's value keeps its looks as style attributes (markdown.ts writes
   // them as a value): shown with showHtml, never read by the browser as style attributes (style-attributes.ts).
   { what: 'a style attribute in markup', pattern: /<[a-z][^<>`]*\sstyle=["'\\]/i, except: ['libs/widgets/src/lib/markdown.ts'] },
+  // A style attribute copied by its name (`name === 'style'` among the attributes copied): written with setAttribute.
+  // The look of the form a sheet wears goes through its style object (`box.style.cssText = root.style.cssText`).
+  { what: 'a style attribute copied by its name', pattern: /\b(name|attribute\.name)\s*===\s*['"`]style['"`]/ },
+  // Every attribute of one element written on another: its style attribute among them, unless the copy leaves it out
+  // (a cell made a header's keeps its looks through its style object) or copies only named ones (`data-…`, `LOOK`).
+  { what: 'a style attribute among the attributes copied', pattern: /\.attributes\b.*\bsetAttribute\(/, unless: /!==\s*['"`]style['"`]|startsWith\(['"`]data-|\bLOOK\(/ },
+  // HTML read as HTML (`innerHTML`) that may hold a value's looks: its style attributes held first (`heldHtml`), as a
+  // policy refuses a style attribute read as HTML (style-attributes.ts) — else words, or a drawing of Fieldia's own.
+  {
+    what: 'HTML read with its style attributes (heldHtml first)',
+    pattern: /\.(inner|outer)HTML\s*=(?!=)(?!\s*(?:heldHtml\(|['"`]|[A-Z][A-Z_]*\b))|insertAdjacentHTML\(\s*[^,]+,(?!\s*(?:heldHtml\(|['"`]))/,
+    // A drawing of Fieldia's own, its shapes written in the code.
+    allow: [
+      { file: 'libs/widgets/src/lib/extras.ts', has: 'button.innerHTML = icon;' },
+      { file: 'libs/widgets/src/lib/icons.ts', has: 'svg.innerHTML = inside;' },
+      { file: 'libs/widgets/src/lib/text-tools.ts', has: "svg.innerHTML = tool === 'emoji' ? drawing" },
+      { file: 'libs/chatter/src/lib/channels.ts', has: 'svg.innerHTML = two ?' },
+    ],
+  },
 ];
 
 test('no Fieldia source makes code from text, writes a style attribute, or makes a <style> without the nonce', () => {
@@ -56,6 +75,7 @@ test('no Fieldia source makes code from text, writes a style attribute, or makes
     for (const rule of RULES) {
       if (rule.except?.includes(name)) continue;
       lines.forEach((line, i) => {
+        if (rule.allow?.some((one) => one.file === name && line.includes(one.has)) || rule.unless?.test(line)) return;
         if (rule.pattern.test(line)) problems.push(`${name}:${i + 1}: ${rule.what}: ${line.trim().slice(0, 140)}`);
       });
     }
@@ -64,13 +84,19 @@ test('no Fieldia source makes code from text, writes a style attribute, or makes
 });
 
 test('the rules find what they are for', () => {
-  const found = (text) => RULES.filter((rule) => code(text).split('\n').some((line) => rule.pattern.test(line))).map((rule) => rule.what);
+  const found = (text) => RULES.filter((rule) => code(text).split('\n').some((line) => rule.pattern.test(line) && !rule.unless?.test(line))).map((rule) => rule.what);
   assert.deepEqual(found("const f = new Function('a', 'return a');"), ['code made from text']);
   assert.deepEqual(found("setTimeout('go()', 10);"), ['code made from text']);
   assert.deepEqual(found("box.setAttribute('style', 'width: 1px');"), ['a style attribute written']);
   assert.deepEqual(found("el('div', { class: 'x', style: `--a: ${b}` });"), ['a style attribute in an element factory']);
   assert.deepEqual(found("const s = document.createElement('style');"), ['a <style> element made without the nonce (fieldiaStyle)']);
   assert.deepEqual(found('box.innerHTML = `<span style="color: red">x</span>`;'), ['a style attribute in markup']);
+  assert.deepEqual(found("for (const { name, value } of [...root.attributes]) if (name === 'style') box.setAttribute(name, value);"), ['a style attribute copied by its name', 'a style attribute among the attributes copied']);
+  assert.deepEqual(found("for (const attribute of [...cell.attributes]) if (attribute.name !== 'scope') next.setAttribute(attribute.name, attribute.value);"), ['a style attribute among the attributes copied']);
+  assert.deepEqual(found("for (const a of [...cell.attributes]) if (a.name !== 'style') next.setAttribute(a.name, a.value);"), []);
+  assert.deepEqual(found('box.innerHTML = html;'), ['HTML read with its style attributes (heldHtml first)']);
+  assert.deepEqual(found("area.insertAdjacentHTML('beforeend', html);"), ['HTML read with its style attributes (heldHtml first)']);
+  assert.deepEqual(found('box.innerHTML = heldHtml(html); if (area.innerHTML !== last) showHtml(area, last); svg.innerHTML = CHEVRON;'), []);
   // What a policy lets be: a style object, a class, a comment, a word.
   assert.deepEqual(found("box.style.width = '1px'; box.style.setProperty('--a', b); // never setAttribute('style', …)"), []);
   assert.deepEqual(found("const words = 'a style: plain';"), []);

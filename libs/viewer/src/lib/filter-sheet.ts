@@ -80,7 +80,9 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
   );
   // The look of the page the list is on, as the sheet sits outside it.
   const root = context.from.closest<HTMLElement>('.fd-form') ?? context.from;
-  for (const { name, value } of [...root.attributes]) if ((name.startsWith('data-') && name !== 'data-max-width') || name === 'style' || name === 'dir' || name === 'lang') box.setAttribute(name, value);
+  for (const { name, value } of [...root.attributes]) if ((name.startsWith('data-') && name !== 'data-max-width') || name === 'dir' || name === 'lang') box.setAttribute(name, value);
+  // Its tokens and accent through the style object, which a strict policy lets be: a style attribute it refuses.
+  box.style.cssText = root.style.cssText;
   const backdrop = el('div', { class: 'fd-dialog-backdrop fd-form-dialog-backdrop fd-filter-sheet-backdrop' }, box);
 
   // ---- each field: its values to tick, or its range ----------------------------------------------------------------

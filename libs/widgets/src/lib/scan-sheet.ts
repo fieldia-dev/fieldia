@@ -131,7 +131,9 @@ export function openScanSheet(options: ScanSheetOptions): ScanSheet {
   said.id = `${id}-said`;
   // The look of the form the field is on, as the sheet sits outside it.
   const root = options.from.closest<HTMLElement>('.fd-form') ?? options.from.closest<HTMLElement>('[data-fd-theme], [dir]');
-  for (const { name, value } of [...(root?.attributes ?? [])]) if ((name.startsWith('data-') && name !== 'data-max-width') || name === 'style' || name === 'dir' || name === 'lang') box.setAttribute(name, value);
+  for (const { name, value } of [...(root?.attributes ?? [])]) if ((name.startsWith('data-') && name !== 'data-max-width') || name === 'dir' || name === 'lang') box.setAttribute(name, value);
+  // Its tokens and accent through the style object, which a strict policy lets be: a style attribute it refuses.
+  if (root) box.style.cssText = root.style.cssText;
   const backdrop = make('div', { class: 'fd-dialog-backdrop fd-form-dialog-backdrop fd-scan-backdrop' }, box);
   (doc.body ?? doc.documentElement).append(backdrop);
   shut.focus();
