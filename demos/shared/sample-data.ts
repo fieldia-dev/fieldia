@@ -411,11 +411,13 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
   if (!opensRows(params)) return;
   const next = new URLSearchParams(params);
   next.set('page', RECORD_PAGES[params.get('page') ?? ''] ?? 'customer');
-  next.set('record', String(id));
   // What kept the list to one record's records is the list's, not the record's.
   next.delete('filter');
   next.delete('search');
   next.set('from', params.get('page') ?? '');
+  // The record last, as an address names it.
+  next.delete('record');
+  next.set('record', String(id));
   location.search = next.toString();
 }
 
