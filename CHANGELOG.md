@@ -185,36 +185,37 @@ uses one; every 0.13 page reads as it did.
   example word and the refusal — are machine-made and not yet reviewed by a
   native speaker.
 
-**Size:** `fieldia.js` 588.3 KB, 197.76 gzipped (0.36.0: 587.5, 197.02): +0.74
+**Size:** `fieldia.js` 588.9 KB, 198.03 gzipped (0.36.1: 588.2, 197.26): +0.77
 KB gzipped, under the owner's 200, all of it what a page must carry from its
-mount. By lane, each measured on 0.36.0 and joined to the byte (601,597 + 607 +
-209 = 602,413): p37-refuse +0.66 — the handle's `refused` and the take-down of a
-refused page, every write held until the check ran (0.20 of it, the writes'
-names most) and let go in the same turn once it passed, the words where the
-check cannot come, the check asked for once nothing is waited for, a linked
-record's page that cannot come handled where it is asked for — less 0.36's check
-at idle and its warning, and the 28 checks a part carries called through one
-table of stand-ins, not 28 generated copies (−0.15); p37-format +0.08 — format
-0.14 among the formats every page's check reads before its first draw, and a
-list's named filters in their groups (`facetsToFilter`, the one-tag script's
-own, and `filterGroups` beside it). The parts, gzipped: check 17.27 → 17.22 (the
-shape with `copy` and `group`, the under-stamped warning's words gone); list
-52.07 → 52.36 (a chip per group, the menu's line, the counts, the printout);
-memory 9.12 → 9.46 (its copy applying `copy: false`); lines 16.45 → 16.47 (a
-line's own copy); files 18.97 → 19.09 and photos 11.61 → 11.64 (a picture's
-encode never waited on for long); every other part and add-on within 0.01. From
-the npm packages, an app's first load (KB gzipped, with the page / to usable): a
-record form 245.8 → 247.6 / 336.6 → 338.6; in Arabic 245.8 → 247.6 / 359.2 →
-361.3; a list 245.0 → 246.8 / 332.9 → 335.0; the screen designer 592.8 → 595.0 /
-822.0 → 824.6 — the first paint +1.4 each for `refused`, the take-down and the
-held writes, +0.4 to +0.8 for the filter groups and the copy; the whole check in
-its chunk as in 0.36. `@fieldia/map`, `@fieldia/calendar` and `@fieldia/gantt`
-within 4 bytes of 0.36.0. A valid page's first draw on Slow 4G (1.44 Mbps, 562
-ms; 7 runs interleaved with 0.36.0, a desktop and a phone's CPU four times
-slower), for a plain form, a fetched page, a record and a list drawn from parts,
-with and without their part tags: within 10 ms of 0.36.0's on a desktop — about
-what the 0.74 KB more takes on that line — and inside the runs' own spread on
-the phone.
+mount. By lane, each measured on 0.36.0: p37-refuse +0.66 — the handle's
+`refused` and the take-down of a refused page, every write held until the check
+ran (0.20 of it, the writes' names most) and let go in the same turn once it
+passed, the words where the check cannot come, the check asked for once nothing
+is waited for — less 0.36's check at idle and its warning, and the 28 checks a
+part carries called through one table of stand-ins, not 28 generated copies
+(−0.15); p37-format +0.08 — format 0.14 among the formats every page's check
+reads before its first draw, and a list's named filters in their groups
+(`facetsToFilter`, the one-tag script's own, and `filterGroups` beside it);
+joined with 0.36.1's +0.24, whose `later()` takes the place of 0.37's own
+handling of a link's page that cannot come. The parts, gzipped (0.36.1 →
+0.37.0): check 17.26 → 17.22 (the shape with `copy` and `group`, the
+under-stamped warning's words gone); list 52.08 → 52.38 (a chip per group, the
+menu's line, the counts, the printout); memory 9.12 → 9.46 (its copy applying
+`copy: false`); lines 16.53 → 16.54 (a line's own copy); files 18.97 → 19.09 and
+photos 11.67 → 11.69 (a picture's encode never waited on for long); every other
+part and add-on within 0.01. From the npm packages, an app's first load (KB
+gzipped, with the page / to usable): a record form 246.2 → 248.0 / 337.0 →
+339.0; in Arabic 246.2 → 248.0 / 359.7 → 361.8; a list 245.4 → 247.2 / 333.2 →
+335.3; the screen designer 593.9 → 596.1 / 823.2 → 825.8 — the first paint +1.4
+each for `refused`, the take-down and the held writes, +0.4 to +0.8 for the
+filter groups and the copy; the whole check in its chunk as in 0.36.
+`@fieldia/map`, `@fieldia/calendar` and `@fieldia/gantt` within 5 bytes of
+0.36.1. A valid page's first draw on Slow 4G (1.44 Mbps, 562 ms; 7 runs
+interleaved with 0.36.0, a desktop and a phone's CPU four times slower), for a
+plain form, a fetched page, a record and a list drawn from parts, with and
+without their part tags, measured before 0.36.1 joined: within 10 ms of 0.36.0's
+on a desktop — about what the 0.74 KB more takes on that line — and inside the
+runs' own spread on the phone.
 
 ## 0.36.1 — 2026-10-28
 
