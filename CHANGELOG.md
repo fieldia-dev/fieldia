@@ -92,6 +92,20 @@ uses one; every 0.13 page reads as it did.
 
 **Fixes:**
 
+- **Every promise the app gives Fieldia is handled the moment it is given.** In
+  an Angular app, a linked record's page whose request had failed already when
+  Open was pressed still reached `NgZone.onError` (NexiBI's FU2 on 0.36.1):
+  0.36.1 said why, but Fieldia's own `then` on it made a promise the zone saw
+  refused before Fieldia's `await`, code Angular did not compile, came to it.
+  Now every answer of the app is taken into one of the browser's own promises
+  as it is given (`answerOf`), as the data source's have been since 0.35.3: the
+  page loader (`pages`), a call step's `onAction`, an open step's `onOpen`,
+  `confirm`, an app's own host's open, ask, file, print, post and pay, the
+  pager's ids, a list row's `onOpenRecord` and a view's `onNewRecord`, the
+  outbox's store, and the maps' provider, search, naming, routes, reachable
+  areas, borders, count of an area and their own `fetch` and `token`. Each is
+  said where a person asked, and asked again at the next press. The outbox no
+  longer leaves its own refresh unhandled where its store cannot answer.
 - A line opened in a dialog is titled as the one line it is, never by its
   table's plural (the 0.36 walk: one sales order line titled "Order lines", one
   tender requirement "Requirements"): a table's or a grid's line by its words —
@@ -183,6 +197,10 @@ uses one; every 0.13 page reads as it did.
     it does not keep.
   - New: `ViewerHandle.refused`, `askForCheck`, `Deprecation.changed`, and in
     `@fieldia/core` `searchViewFilters` and `filterGroups` (adds).
+  - (adds) `answerOf(answer)` in `@fieldia/core` and the one-tag script: an
+    answer of the app's as one of the browser's own promises, handled as it is
+    given — what Fieldia does with every promise an app gives it; one of the
+    browser's own, and what is no promise, as it is.
   - (adds) `openLineDialog` takes the dialog's title as its last argument, a
     function given the line as it reads; the lines part and `@fieldia/grid`
     pass it. Left out, the dialog is titled by its table's label, as before.
@@ -204,6 +222,9 @@ uses one; every 0.13 page reads as it did.
     filters name no group draw as before.
   - (adds) The designer's field panel has "Copied with the record" on its Data
     tab, and a list filter row has a Group box ("Filter group").
+  - (fix) An Angular app's ErrorHandler no longer hears a refusal of an answer
+    the app gave Fieldia — a page, a call, a confirm, a store's, a map's —
+    where Fieldia says it in the page: a test that counted one there sees none.
   - (fix) A line's dialog is named by its line, not its table: a test that finds
     it by the table's label (`{ name: 'Order lines' }`) finds it by the line's
     words, by "Line 3", or by its card's title. A table line's ↑, ↓ and its move
@@ -217,7 +238,7 @@ uses one; every 0.13 page reads as it did.
   example word and the refusal — are machine-made and not yet reviewed by a
   native speaker.
 
-**Size:** `fieldia.js` 588.9 KB, 198.01 gzipped (0.36.1: 588.2, 197.26): +0.75
+**Size:** `fieldia.js` 588.9 KB, 198.00 gzipped (0.36.1: 588.2, 197.26): +0.74
 KB gzipped, under the owner's 200, all of it what a page must carry from its
 mount. By lane, each measured on 0.36.0: p37-refuse +0.66 — the handle's
 `refused` and the take-down of a refused page, every write held until the check
@@ -230,13 +251,16 @@ reads before its first draw, and a list's named filters in their groups
 (`facetsToFilter`, the one-tag script's own, and `filterGroups` beside it);
 joined with 0.36.1's +0.24, whose `later()` takes the place of 0.37's own
 handling of a link's page that cannot come; then p37-walk-rest, measured on
-the merged branch, −0.02 (16 B: a line's dialog titled by the widget that opens
-it, the record's state and whether it is shown read once). The parts, gzipped
+the merged branch, −0.02 (25 B: a line's dialog titled by the widget that opens
+it, the record's state and whether it is shown read once; every app's answer
+handled as it is given, the held writes and the pager taking it through
+`answerOf` where each made a promise of its own). The parts, gzipped
 (0.36.1 → 0.37.0): check 17.26 → 17.22 (the shape with `copy` and `group`, the
 under-stamped warning's words gone); list 52.08 → 52.38 (a chip per group, the
 menu's line, the counts, the printout); memory 9.12 → 9.46 (its copy applying
 `copy: false`); lines 16.53 → 16.63 (a line's own copy; a line's dialog, its ↑ and ↓ titled as
-one line, its main-script half 12 B smaller); files 18.97 → 19.09 and
+one line, its main-script half 12 B smaller); list 52.38 → 52.39, outbox 4.76 →
+4.77 and pay 3.46 → 3.47 (an app's answer handled as it is given); files 18.97 → 19.09 and
 photos 11.67 → 11.69 (a picture's encode never waited on for long); every other
 part and add-on within 0.01. From the npm packages, an app's first load (KB
 gzipped, with the page / to usable): a record form 246.2 → 248.0 / 337.0 →
@@ -244,8 +268,10 @@ gzipped, with the page / to usable): a record form 246.2 → 248.0 / 337.0 →
 335.3; the screen designer 593.9 → 596.1 / 823.2 → 825.8 — the first paint +1.4
 each for `refused`, the take-down and the held writes, +0.4 to +0.8 for the
 filter groups and the copy; the whole check in its chunk as in 0.36.
-`@fieldia/map`, `@fieldia/calendar` and `@fieldia/gantt` within 5 bytes of
-0.36.1. A valid page's first draw on Slow 4G (1.44 Mbps, 562 ms; 7 runs
+`@fieldia/calendar` and `@fieldia/gantt` within 5 bytes of 0.36.1;
+`@fieldia/map` 0.18 KB more with a place and an area, a list's map and a form's
+(the app's answers to the maps handled as they are given), its parts as they
+were. A valid page's first draw on Slow 4G (1.44 Mbps, 562 ms; 7 runs
 interleaved with 0.36.0, a desktop and a phone's CPU four times slower), for a
 plain form, a fetched page, a record and a list drawn from parts, with and
 without their part tags, measured before 0.36.1 joined: within 10 ms of 0.36.0's
