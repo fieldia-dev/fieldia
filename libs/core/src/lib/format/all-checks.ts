@@ -23,10 +23,9 @@ import * as schedule from './schedule-checks';
 import * as templates from './templates-checks';
 
 /**
- * Every check of a page that comes with a part (owed-checks.ts), by its part's name: what `checkPage`, `validatePage` and
- * `checkPageWhole` put in before they run, so they are whole at once — and, in an app's bundle, the chunk a viewer asks
- * for where its page's check owes one (format-checks-part.ts). The one-tag script carries none of it here: each comes
- * with its own part (tools/script-bundle.mjs stands an empty table in for this file).
+ * Every check of a page that comes with a part (owed-checks.ts), by its part's name: put in as a reference check is made
+ * (references.ts), so every check of an app's bundle is whole at once. The one-tag script carries none of it here: each
+ * comes with its own part (tools/script-bundle.mjs stands an empty table in for this file).
  */
 export const ALL_CHECKS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = { list, editable, head, limits, approvals, slots, files, answers, mapchecks, lines, business, options, languages, assist, scan, surveyflow, prefill, verify, pay, outbox, schedule, templates };
 

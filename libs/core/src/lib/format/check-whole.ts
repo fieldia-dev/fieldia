@@ -1,6 +1,6 @@
 import type { Page } from './page';
 import type { PageIssue, PageValidation } from './references';
-import { pageOutline, pageReferences, type PageCheckOptions } from './check-before';
+import { pageOutline, pageReferences, type PageCheckOptions } from './check-page';
 import { shapeCheck } from './shape-check';
 import { PAGE_SHAPE } from './page-shape';
 import { needOf, stampProblem } from './stamp';
@@ -13,11 +13,10 @@ import { SENSE } from './sense-checks';
  * shape-parity.spec.ts holds it and `validatePage` to one verdict. And the page read by its stamp: one that says an
  * older format than a setting it uses came in is refused (stamp.ts; `format.under-stamped`, warned of in 0.36).
  *
- * Every viewer runs it before a page's first draw, and refuses what it finds (0.37; said and drawn in 0.36,
- * `page.invalid`): in an app's bundle at once (check-now.ts), in the one-tag script once its part has come
- * (`fieldia.check.js`, asked for as the script starts). As the check before the draw, it owes the checks a part carries
- * until they are in (`later`, owed-checks.ts); `checkPageWhole` puts them all in first (check-part.ts). `shape: false`
- * leaves the shape out, for a caller that checked it against the format's schemas itself.
+ * In a part of its own (check-part.ts, `checkPageWhole`, `fieldia.check.js`): every viewer runs it as soon as a page is
+ * drawn, never delaying the draw, takes down a page it refuses, and holds every write through the page until it has run
+ * (0.37; said and drawn in 0.36, `page.invalid`). `shape: false` leaves the shape out, for a caller that checked it
+ * against the format's schemas itself.
  */
 export function wholeCheck(given: unknown, options: PageCheckOptions & { shape?: false } = {}): PageValidation {
   const outline = pageOutline(given);

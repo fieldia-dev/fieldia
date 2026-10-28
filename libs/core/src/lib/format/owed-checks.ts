@@ -28,10 +28,9 @@ import type * as TemplatesChecks from './templates-checks';
  * the check it owes it (`tools.owe(part)`, the reference check's `later`) — its tools are its last argument.
  *
  * In the one-tag script each part that draws what they check puts them in as it comes (tools/script-bundle.mjs,
- * `CHECKS_IN_PARTS`, which this table matches name for name). In an app's bundle they are in one chunk of their own
- * (`formatChecksPart`, format-checks.ts), asked for by a viewer whose page's check owes one — a record with no list, no
- * map, no limits … never fetches them (0.37: 12.8 KB gzipped out of an app's first paint). `checkPage`, `validatePage`
- * and `checkPageWhole` put them all in first (all-checks.ts): those are whole at once.
+ * `CHECKS_IN_PARTS`, which this table matches name for name): one table of stand-ins, where the script once made 28
+ * copies of one (0.37: 0.15 KB gzipped less). In an app's bundle every check puts them all in first (all-checks.ts, as
+ * the reference check is made): whole at once, as ever.
  */
 type Check = (...args: never[]) => void;
 function owed<F extends Check>(part: string, name: string): F {

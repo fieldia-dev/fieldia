@@ -147,12 +147,10 @@ export { INPUT_MODES, type InputMode } from './lib/format/autofill-group';
 export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
-export { checkPage } from './lib/format/check-page';
-export { checkPageOwing, type PageCheckOptions } from './lib/format/check-before';
-// The whole check — `validatePage`'s verdict without zod — which every viewer runs before a page's first draw (0.37): in
-// an app's bundle with the viewer, in the one-tag script a part of its own asked for as the script starts.
+export { checkPage, type PageCheckOptions } from './lib/format/check-page';
+// The whole check — `validatePage`'s verdict without zod — in a part of its own, which every viewer runs as soon as a
+// page is drawn, taking down a page it refuses (0.37); the one-tag script asks for it as it starts.
 export { checkPageWhole, pageCheckPart, pageInvalid, type PageCheckPart, type PageInvalid } from './lib/format/page-check';
-export { WHOLE_CHECK_APART, wholeCheckNow } from './lib/format/check-now';
 export { fillValues, literalWords, plainWords, READ_WORDS, splitValues, valuesIn } from './lib/format/words';
 export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
@@ -418,7 +416,5 @@ export { callsPartFunctions, functionsPart, type FunctionsPart } from './lib/exp
 export { recordLivePart, type RecordLivePart } from './lib/record/live-later';
 // A press said with Undo, and taken back: loaded with a page whose buttons offer it, or as an answer first brings one.
 export { pressUndoPart, type PressUndoPart } from './lib/record/undo-later';
-// The checks a page owes a part (`PageValidation.later`): in the one-tag script a map's come in a part of their own; in an
-// app's bundle every one in one chunk (`formatChecksPart`).
+// The checks a page owes a part of the one-tag script (`PageValidation.later`): a map's come in a part of their own.
 export { mapChecksPart } from './lib/format/later-checks';
-export { formatChecksPart } from './lib/format/format-checks';

@@ -6,7 +6,6 @@ import type { FunctionsKnown } from '../expression/app-functions';
 import { kindCheck } from './page-warnings';
 import { makeSchemasJitless } from './jitless';
 import { needOf, stampProblem } from './stamp';
-import { wholeChecks } from './all-checks';
 
 // zod compiles no code for these schemas: a strict Content-Security-Policy refuses it (jitless.ts).
 makeSchemasJitless();
@@ -38,8 +37,6 @@ export function validatePage(input: unknown, options: { functions?: FunctionsKno
   // whole check refuses it, after what the names and conditions find (0.37; warned of in 0.36, `format.under-stamped`).
   const stamp = stampProblem(input, needOf(upgraded));
   const page: Page = parsed.data;
-  // Whole at once: the checks a part carries in the one-tag script put in first (all-checks.ts).
-  wholeChecks();
   const check = kindCheck(page, options.functions);
   let issues;
   try {

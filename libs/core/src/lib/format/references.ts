@@ -28,6 +28,7 @@ import type { TableTools } from './table-checks';
 import type { FieldTools } from './part-checks';
 import { surveyFlow } from '../record/survey';
 import type { SenseChecks } from './sense-checks';
+import { wholeChecks } from './all-checks';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -130,6 +131,9 @@ export class ReferenceCheck {
     private readonly line?: LineOf,
     private readonly options: CheckOptions = {}
   ) {
+    // The checks a part carries, in to be run (all-checks.ts): every check is whole at once — but in the one-tag script,
+    // where each comes with its part and is owed until it has (`later`).
+    wholeChecks();
     try {
       this.table = functionTable(options.functions);
     } catch (error) {
