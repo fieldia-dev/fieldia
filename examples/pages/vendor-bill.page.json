@@ -4,7 +4,7 @@
   "title": "Vendor bill",
   "data": { "kind": "record", "model": "account.move" },
   "fields": {
-    "name": { "type": "char", "label": "Number", "readonly": true, "copy": false },
+    "name": { "type": "char", "label": "Number", "readonly": true, "copy": false, "default": "Draft" },
     "state": {
       "type": "selection",
       "label": "Status",
@@ -30,7 +30,7 @@
   "layout": {
     "type": "sheet",
     "id": "sheet",
-    "title": { "field": "name", "label": "Vendor bill", "placeholder": "Draft" },
+    "title": { "field": "name", "label": "Vendor bill" },
     "statusbar": { "field": "state", "visibleStates": ["draft", "posted"] },
     "buttons": [
       { "type": "button", "id": "b-post", "label": "Confirm", "style": "primary", "steps": [{ "do": "call", "action": "number_bill" }, { "do": "set", "field": "state", "value": "'posted'" }, { "do": "save" }, { "do": "post", "message": "Bill confirmed: {amount_total}" }], "invisible": "state != 'draft'" },

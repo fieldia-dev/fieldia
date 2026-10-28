@@ -122,14 +122,14 @@ describe('a field a copy does not keep: the memory source’s copy', () => {
     expect(page.fields['ref']).toMatchObject({ copy: false });
     expect(page.fields['payment_reference']).toMatchObject({ copy: false });
     // As Odoo's `name`, `invoice_date` and `invoice_date_due` (copy=False): a draft copy has no number and no dates yet
-    // (the 0.37 walk: "BILL/2026/10/0003 (copy)", billed 5 Oct and due 4 Nov). Its title says "Draft" meanwhile.
+    // (the 0.37 walk: "BILL/2026/10/0003 (copy)", billed 5 Oct and due 4 Nov) — its number a draft's, "Draft".
     for (const name of ['name', 'invoice_date', 'invoice_date_due']) expect(page.fields[name]).toMatchObject({ copy: false });
-    expect(page.layout.type === 'sheet' && page.layout.title).toMatchObject({ field: 'name', placeholder: 'Draft' });
+    expect(page.fields['name']).toMatchObject({ default: 'Draft' });
     expect(page.fieldia).toBe('0.14');
     const source = createMemoryDataSource({ records: { 'account.move': { 3: { name: 'BILL/2026/10/0003', state: 'posted', ref: 'NT-8907', payment_reference: 'BILL/2026/10/0003', invoice_date: '2026-10-05', invoice_date_due: '2026-11-04' } } } });
     const made = await source.copy({ model: 'account.move', id: 3, fields: page.fields });
-    expect(made.values).toMatchObject({ name: null, state: 'draft', ref: null, payment_reference: null, invoice_date: null, invoice_date_due: null });
-    expect(source.records['account.move'][String(made.id)]).toMatchObject({ name: null, state: 'draft', ref: null, payment_reference: null, invoice_date: null, invoice_date_due: null });
+    expect(made.values).toMatchObject({ name: 'Draft', state: 'draft', ref: null, payment_reference: null, invoice_date: null, invoice_date_due: null });
+    expect(source.records['account.move'][String(made.id)]).toMatchObject({ name: 'Draft', state: 'draft', ref: null, payment_reference: null, invoice_date: null, invoice_date_due: null });
     // The posted bill keeps its own.
     expect(source.records['account.move'][3]).toMatchObject({ name: 'BILL/2026/10/0003', state: 'posted', ref: 'NT-8907', payment_reference: 'BILL/2026/10/0003', invoice_date: '2026-10-05', invoice_date_due: '2026-11-04' });
   });

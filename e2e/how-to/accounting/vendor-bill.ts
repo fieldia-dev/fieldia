@@ -60,8 +60,7 @@ export const replay: DemoReplay = {
         await press(page.locator('.fd-record-bar .fd-record-gear'));
         await press(page.getByRole('menuitem', { name: 'Duplicate' }));
         // No number and no dates, as Odoo's draft copy: its title says Draft.
-        await see(page.locator('.fd-title [data-field="name"] textarea')).toHaveValue('');
-        await see(page.locator('.fd-title [data-field="name"] textarea')).toHaveAttribute('placeholder', 'Draft');
+        await see(page.locator('.fd-title [data-field="name"] textarea')).toHaveValue('Draft');
         await see(page.locator('[data-node="f-date"] input')).toHaveValue('');
         await see(page.locator('[data-node="f-due"] input')).toHaveValue('');
         // A copy of the posted bill is a draft, to change and confirm on its own.

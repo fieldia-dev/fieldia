@@ -53,8 +53,7 @@ for (const variant of VARIANTS) {
       await gear(page).click();
       await page.getByRole('menuitem', { name: 'Duplicate' }).click();
       // A draft copy has no number yet, as Odoo's: its title says Draft.
-      await expect(title(page)).toHaveValue('');
-      await expect(title(page)).toHaveAttribute('placeholder', 'Draft');
+      await expect(title(page)).toHaveValue('Draft');
       await expect(pagerText(page)).toHaveText('3 / 5');
       await gear(page).click();
       await page.getByRole('menuitem', { name: 'Archive' }).click();
@@ -72,8 +71,7 @@ for (const variant of VARIANTS) {
       await gear(page).click();
       await page.getByRole('menuitem', { name: 'Duplicate' }).click();
       // No number, no dates (copy: false, as Odoo's): its title says Draft until it is confirmed.
-      await expect(title(page)).toHaveValue('');
-      await expect(title(page)).toHaveAttribute('placeholder', 'Draft');
+      await expect(title(page)).toHaveValue('Draft');
       await expect(page.locator('[data-node="f-date"] input')).toHaveValue('');
       await expect(page.locator('[data-node="f-due"] input')).toHaveValue('');
       // A posted bill's status is the books', never copied: the copy starts as a draft, as an accounting server's copy does.
@@ -88,7 +86,7 @@ for (const variant of VARIANTS) {
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
       await page.keyboard.press('Escape');
       const copy = await page.evaluate(() => (window as any).fieldiaDemo.dataSource.records['account.move'][(window as any).fieldiaDemo.handle.form.getState().recordId]);
-      expect(copy).toMatchObject({ name: null, state: 'draft', ref: null, payment_reference: null, invoice_date: null, invoice_date_due: null });
+      expect(copy).toMatchObject({ name: 'Draft', state: 'draft', ref: null, payment_reference: null, invoice_date: null, invoice_date_due: null });
       // Confirmed, it is given its number, as Odoo numbers a draft as it posts it.
       await page.getByRole('button', { name: 'Confirm' }).click();
       await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Posted');
