@@ -89,7 +89,8 @@ export interface ListCommands {
   /** A named filter for the search bar. Returns its id. */
   addListFilter(label: string, filter: FilterCondition[]): string | false;
   /** Its words, its conditions, its period (a date's: "This month"; null for none), and whether it is on when the list opens. */
-  updateListFilter(id: string, patch: { label?: string; filter?: FilterCondition[] | null; period?: FilterPeriod | null; on?: boolean }): boolean;
+  /** A named filter changed: its words, its condition or period, on as the list opens, its group (one word; empty for none). */
+  updateListFilter(id: string, patch: { label?: string; filter?: FilterCondition[] | null; period?: FilterPeriod | null; on?: boolean; group?: string | null }): boolean;
   removeListFilter(id: string): boolean;
   /** A button for the rows chosen. Returns its id. */
   addListAction(label: string): string | false;
@@ -525,6 +526,13 @@ export function listCommands(context: {
             filters[at].period = { ...patch.period };
           }
           if (!filters[at].filter && !filters[at].period) throw new Refusal((w) => w.refusals.filterCondition);
+          // Its group, by one word: filters of a group are any of them, groups each (ListFilter.group). Empty: none.
+          if (patch.group !== undefined) {
+            const group = patch.group?.trim() ?? '';
+            if (!group) delete filters[at].group;
+            else if (!/^\S+$/.test(group)) throw new Refusal((w) => w.refusals.filterGroup);
+            else filters[at].group = group;
+          }
           if (patch.on !== undefined) {
             const on = new Set(list.defaultFilters ?? []);
             if (patch.on) on.add(id);

@@ -1,12 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { lowestFormat, needOf, stampPage } from './stamp';
+import { lowestFormat, needOf, stampPage, stampProblem } from './stamp';
 import { checkPage } from './check-page';
 import { wholeCheck } from './check-whole';
 import { validatePage } from './validate';
 import { upgradePage } from './upgrade';
 import { FORMAT_VERSION, FORMAT_VERSIONS } from './version';
 import * as Viewer030 from './test-version-0.30';
+import * as Viewer036 from './test-version-0.36';
 import type { Page } from './page';
 
 /**
@@ -17,6 +18,8 @@ import type { Page } from './page';
  */
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
 const read030 = (page: { fieldia?: unknown }) => Viewer030.formatProblem(upgradePage(page, { versions: Viewer030.FORMAT_VERSIONS, steps: [] }).fieldia, Viewer030.FORMAT_VERSIONS);
+/** The 0.36 viewer's format check, the last that reads format 0.13 (test-version-0.36.ts, held to its release). */
+const read036 = (page: { fieldia?: unknown }) => Viewer036.formatProblem(upgradePage(page, { versions: Viewer036.FORMAT_VERSIONS, steps: [] }).fieldia, Viewer036.FORMAT_VERSIONS);
 const page = (fields: Record<string, unknown>, more: Record<string, unknown> = {}): Page =>
   ({
     fieldia: FORMAT_VERSION,
@@ -52,6 +55,33 @@ describe('a page stamped with the lowest format it needs', () => {
     expect(lowestFormat(lines)).toBe('0.1');
     ((lines.layout as unknown as { children: Record<string, unknown>[] }).children[0])['cards'] = 'never';
     expect(lowestFormat(lines)).toBe('0.7');
+  });
+
+  it('saying what a copy does not keep, or a filter’s group, is stamped 0.14, which the 0.36 viewer refuses with its words — and a page saying neither stays as 0.36 read it', () => {
+    const bill = page({ state: { type: 'selection', label: 'Status', default: 'draft', options: [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }] } }, { data: { kind: 'record', model: 'account.move' } });
+    expect(lowestFormat(bill)).toBe('0.1');
+    expect(read036(stampPage(bill))).toBeNull();
+    const fields = bill.fields as unknown as Record<string, Record<string, unknown>>;
+    fields['state']['copy'] = false;
+    expect(lowestFormat(bill)).toBe('0.14');
+    expect(read036(stampPage(bill))).toBe('this page is in format 0.14, newer than this Fieldia reads (0.13): update Fieldia to show it');
+    // Said true, as a copy keeps it anyway: the same key, the same format.
+    fields['state']['copy'] = true;
+    expect(lowestFormat(bill)).toBe('0.14');
+    // A table's line field says it too.
+    const lines = page({ items: { type: 'one2many', label: 'Items', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, lot: { type: 'char', label: 'Lot', copy: false } } } });
+    expect(lowestFormat(lines)).toBe('0.14');
+    const filters = [
+      { id: 'late', label: 'Late', filter: [{ field: 'state', op: '=', value: 'posted' }] },
+      { id: 'draft', label: 'Draft', filter: [{ field: 'state', op: '=', value: 'draft' }] },
+    ];
+    const list = { fieldia: FORMAT_VERSION, id: 'bills', data: { kind: 'record', model: 'account.move' }, fields: { state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }] } }, layout: { type: 'list', id: 'l', columns: ['state'], filters } } as unknown as Page;
+    expect(lowestFormat(list)).toBe('0.1');
+    const grouped = { ...list, layout: { ...list.layout, filters: [{ ...filters[0], group: 'when' }, filters[1]] } } as unknown as Page;
+    expect(lowestFormat(grouped)).toBe('0.14');
+    expect(read036(stampPage(grouped))).toBe('this page is in format 0.14, newer than this Fieldia reads (0.13): update Fieldia to show it');
+    // Said 0.13, it is under-stamped: warned of now, refused from 0.37 (format.under-stamped, lane p37-refuse).
+    expect(stampProblem({ ...grouped, fieldia: '0.13' }, needOf(upgradePage(grouped)))).toMatchObject({ path: 'layout.filters[0].group' });
   });
 
   it('relying on a default a later format changed needs that format: its step says so (`uses`), as the train makes a changed default', () => {

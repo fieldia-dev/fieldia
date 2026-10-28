@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.13",
+  "fieldia": "0.14",
   "id": "invoices",
   "title": "Invoices",
   "data": { "kind": "record", "model": "invoice" },
@@ -45,10 +45,10 @@
       "amount": { "total": "sum" }
     },
     "filters": [
-      { "id": "overdue", "label": "Overdue", "filter": [{ "field": "state", "op": "=", "value": "sent" }], "period": { "field": "due_date", "is": "overdue" } },
-      { "id": "this_month", "label": "This month", "period": { "field": "invoice_date", "is": "thisMonth" } },
-      { "id": "last_month", "label": "Last month", "period": { "field": "invoice_date", "is": "lastMonth" } },
-      { "id": "this_year", "label": "This year", "period": { "field": "invoice_date", "is": "thisYear" } }
+      { "id": "overdue", "label": "Overdue", "filter": [{ "field": "state", "op": "=", "value": "sent" }], "period": { "field": "due_date", "is": "overdue" }, "group": "due" },
+      { "id": "this_month", "label": "This month", "period": { "field": "invoice_date", "is": "thisMonth" }, "group": "invoice_date" },
+      { "id": "last_month", "label": "Last month", "period": { "field": "invoice_date", "is": "lastMonth" }, "group": "invoice_date" },
+      { "id": "this_year", "label": "This year", "period": { "field": "invoice_date", "is": "thisYear" }, "group": "invoice_date" }
     ],
     "defaultFilters": ["this_year"],
     "card": { "title": "name", "subtitle": "partner_id", "status": "state", "lead": true, "fields": ["amount", "invoice_date", "due_date"] },

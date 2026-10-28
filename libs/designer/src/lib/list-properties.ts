@@ -88,6 +88,9 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
   on.addEventListener('change', () => designer.updateListFilter(id, { on: on.checked }));
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-link fd-button-danger' }, w.remove);
   remove.addEventListener('click', () => designer.removeListFilter(id));
+  // Its group, by a word, kept as the box is left: filters of a group are any of them, groups each.
+  const group = el('input', { class: 'fd-input', 'aria-label': w.filterGroup, title: w.filterGroupHint, placeholder: w.groupExample, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+  group.addEventListener('change', () => designer.updateListFilter(id, { group: group.value }));
   const byHand = el('p', { class: 'fd-properties-hint', hidden: '' }, w.byHand);
   const condition = el('div', { class: 'fd-list-filter-condition' }, which, test, valueBox);
   const element = el(
@@ -96,6 +99,7 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
     name,
     condition,
     byHand,
+    el('label', { class: 'fd-list-filter-group' }, el('span', {}, w.group), group),
     el('div', { class: 'fd-list-filter-foot' }, el('label', { class: 'fd-q-required' }, on, el('span', {}, w.onWhenOpens)), remove)
   );
 
@@ -179,6 +183,7 @@ function filterRow(el: ElementFactory, designer: Designer, id: string) {
     element,
     update(label: string, items: NonNullable<ListNode['filters']>[number], isOn: boolean) {
       if (!focused(name)) name.value = label;
+      if (!focused(group)) group.value = items.group ?? '';
       on.checked = isOn;
       remove.setAttribute('aria-label', w.removeFilter(label));
       // One condition, or a period alone: what this row edits. Anything more was written by hand.

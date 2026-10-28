@@ -216,6 +216,7 @@ export const refusals: DesignerWords['refusals'] = {
   pageSize: 'تضم صفحة القائمة من 1 إلى 500 صف',
   filterName: 'يحتاج عامل التصفية إلى اسم يعرفه الناس، مثل «نشط»',
   filterCondition: 'يحتاج عامل التصفية إلى شرط',
+  filterGroup: 'مجموعة عامل التصفية كلمة واحدة، مثل «الموعد»',
   buttonWords: 'يحتاج الزر إلى نص',
   listButtonAction: 'يحتاج الزر إلى اسم إجرائه، مثل archive',
   cellWidth: 'عرض العمود من 1 إلى 200 حرف، أو من 8 إلى 4000 بكسل',

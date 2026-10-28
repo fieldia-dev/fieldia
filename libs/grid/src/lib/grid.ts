@@ -1479,8 +1479,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const all = lines();
     const at = all.findIndex((l) => l.key === key);
     if (readonly || at < 0 || full()) return;
+    // Its order's field numbered as a new line's is, and a line field that says copy: false started as a new line's.
     const values = { ...all[at].values };
-    if (sequence) delete values[sequence];
+    for (const [field, own] of Object.entries(def.fields)) if (field === sequence || own.copy === false) delete values[field];
     const made = form.addLine(name, values);
     if (sequence) form.moveLine(name, made, at + 1);
     else {

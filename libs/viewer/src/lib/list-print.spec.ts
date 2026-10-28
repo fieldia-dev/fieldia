@@ -118,6 +118,25 @@ describe('a list’s Print', () => {
     expect(document.documentElement.classList.contains('fd-print-one')).toBe(false);
   });
 
+  it('says the named filters on in their groups, as their chips do: “Cairo or Giza · Posted”', async () => {
+    const filters = [
+      { id: 'posted', label: 'Posted', filter: [{ field: 'state', op: '=', value: 'posted' }], group: 'state' },
+      { id: 'cairo', label: 'Cairo', filter: [{ field: 'city', op: '=', value: 'cairo' }], group: 'city' },
+      { id: 'giza', label: 'Giza', filter: [{ field: 'city', op: '=', value: 'giza' }], group: 'city' },
+    ];
+    const host = await mount({ ...invoices, layout: { ...invoices.layout, filters } } as Page);
+    openMenu(host);
+    button(host, 'Cairo')!.click();
+    button(host, 'Posted')!.click();
+    button(host, 'Giza')!.click();
+    await until(() => host.querySelectorAll('.fd-facet').length === 2);
+    const print = printOpen();
+    printButton(host).click();
+    await until(() => print.mock.calls.length === 1);
+    const out = sheet(host) as HTMLElement;
+    expect([...out.querySelectorAll('.fd-print-about > div')].map((line) => line.textContent)).toEqual(['Filters: Cairo or Giza · Posted', '4 records']);
+  });
+
   it('heads the records with the list’s Group By: each group’s count and sums in their columns, its filters in words', async () => {
     const host = await mount();
     openMenu(host);

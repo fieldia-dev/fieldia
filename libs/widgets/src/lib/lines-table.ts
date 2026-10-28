@@ -5,7 +5,7 @@ import { cellText, currencyOf, keepsWhole } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker, setHidden } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
-import { moveLineTo } from './line-moves';
+import { lineCopy, moveLineTo } from './line-moves';
 import { columnTotal, itemNumber, kindTextField, lineForm, openLineDialog, waitingTotal } from './lines';
 import { afterPress } from './press';
 import { installLinesStyles } from './styles-lines';
@@ -689,9 +689,8 @@ function linesTable({ form, name, field, node, id, document, labels = WIDGET_LAB
       const all = current();
       const at = all.findIndex((l) => l.key === line.key);
       if (readonly || at < 0 || all.length >= max) return;
-      const values = { ...all[at].values };
-      if (def.sequenceField) delete values[def.sequenceField];
-      const made = form.addLine(name, values);
+      // A line field that says copy: false starts as a new line's does (lineCopy).
+      const made = form.addLine(name, lineCopy(def, all[at].values));
       moveLineTo(form, name, def, made, at + 1);
       rows.get(made)?.cells[0]?.widget.focus();
     });

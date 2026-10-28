@@ -7,7 +7,7 @@ import { demoFunctions } from './functions';
 import { customPage } from './custom-page';
 import { wiHeadPage, WI_HEAD_RECORDS } from './wi-header';
 import { wiMorePage, wiMoreRecords } from './wi-more';
-import { BILLS, billAttachments, billCopy, billNavigation, vendorBill } from './vendor-bill';
+import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
 import { wiPicker } from './wi-picker';
 import { businessData, businessPage } from './business';
@@ -1041,8 +1041,6 @@ export function sampleDataSource() {
   servicePerHour(source);
   // The pipeline's: a new stage before Won, which stays last (shared/editable-lists.ts).
   stageOrder(source);
-  // The accounting server's: a bill's copy is a draft, a posted bill's status never copied (shared/vendor-bill.ts).
-  billCopy(source);
   return source;
 }
 

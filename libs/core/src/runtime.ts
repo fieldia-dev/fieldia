@@ -306,7 +306,7 @@ export { valuesFromSource, type FromSource } from './lib/record/from-source';
 export { SEND_TIMEOUT_MS, withDeadlines } from './lib/record/deadline';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
-export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
+export { suggestions, facetsToFilter, filterGroups, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryAssist, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 export type { MemoryApprovalRoute } from './lib/record/memory-approvals';
 export type { MemoryCodes, SentCodeKept } from './lib/record/memory-codes';

@@ -119,6 +119,11 @@ export const list = {
   filterTest: 'Filter test',
   filterValue: 'Filter value',
   onWhenOpens: 'On when the list opens',
+  // Its group (ListFilter.group): filters of one group are any of them, groups each.
+  group: 'Group',
+  filterGroup: 'Filter group',
+  filterGroupHint: 'Filters of one group find any of them; filters of two groups, both. One word, such as when; empty for none.',
+  groupExample: 'when',
   remove: 'Remove',
   removeFilter: (label: string) => `Remove the filter ${label}`,
   byHand: 'Its conditions were written by hand: they stay as they are.',

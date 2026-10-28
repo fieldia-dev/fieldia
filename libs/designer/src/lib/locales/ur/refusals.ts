@@ -223,6 +223,7 @@ export const refusals: DesignerWords['refusals'] = {
   pageSize: 'فہرست کے ایک صفحے میں 1 سے 500 قطاریں ہوتی ہیں',
   filterName: 'فلٹر کو ایسا نام درکار ہے جسے لوگ پہچانیں، جیسے «فعال»',
   filterCondition: 'فلٹر کو ایک شرط درکار ہے',
+  filterGroup: 'فلٹر کا گروپ ایک لفظ ہوتا ہے، جیسے «وقت»',
   buttonWords: 'بٹن کو الفاظ درکار ہیں',
   listButtonAction: 'بٹن کو اپنی کارروائی کا نام درکار ہے، جیسے archive',
   cellWidth: 'کالم 1 سے 200 حروف، یا 8 سے 4000 پکسل چوڑا ہوتا ہے',

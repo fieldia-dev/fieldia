@@ -96,8 +96,8 @@ those, and said them in the console and to `onError`).
 | An option's value twice | `fields.topic.options[2].value: "sales" is the value of an option before it: each option's value once` | takes it down (0.36 drew it) | each value once |
 | A list's column twice | `layout.columns[1]: "name" is a column before it: each column once` | takes it down (0.36 drew it) | each column once |
 | A widget's option the format refuses | `layout.children[1].options.countries: countries is "list" (Fieldia’s own, found by typing) or "native" (the browser’s own list)` | takes it down (0.36 drew it) | one of the values listed |
-| No `fieldia` | `fieldia: "fieldia" says which format the page is written in: "0.13" for this Fieldia` | refuses it, as 0.35 did | `"fieldia": "0.13"`, or `stampPage(page)` |
-| A format newer than the reader | `fieldia: this page is in format 0.99, newer than this Fieldia reads (0.13): update Fieldia to show it` | refuses it, as 0.35 did | a format Fieldia has had |
+| No `fieldia` | `fieldia: "fieldia" says which format the page is written in: "0.14" for this Fieldia` | refuses it, as 0.35 did | `"fieldia": "0.14"`, or `stampPage(page)` |
+| A format newer than the reader | `fieldia: this page is in format 0.99, newer than this Fieldia reads (0.14): update Fieldia to show it` | refuses it, as 0.35 did | a format Fieldia has had |
 
 One more is refused, from 0.37 (0.36 warned of it): a setting that came in a later format than the page says —
 `"fieldia": "0.10"` with a field's `secret`, which came in 0.13. An older Fieldia would read the page without it. Write
@@ -105,6 +105,24 @@ One more is refused, from 0.37 (0.36 warned of it): a setting that came in a lat
 
 One is a warning: `validatePage` says it, and the page is still drawn. A field marked required that no part of the page
 shows: the form asks only for what it shows, so nothing ever asks for it. Place it, or leave `required` out.
+
+## What a copy keeps, and filters in groups
+
+Two settings a person who knows Odoo looks for. Both came in format 0.14 (Fieldia 0.37): a page that uses one says
+`"fieldia": "0.14"` — `stampPage` writes it — and an older viewer refuses it with
+`this page is in format 0.14, newer than this Fieldia reads (0.13): update Fieldia to show it`.
+
+- **A field a copy does not keep**, as Odoo's `copy=False`: `"copy": false` on a record's status or its number. The
+  record's Duplicate makes a copy whose field starts as a new record's does — its `default` (or `defaultFrom`), else
+  empty — so a posted bill's copy is a draft: `"state": { "type": "selection", …, "default": "draft", "copy": false }`.
+  On a table's line field, a line's own copy starts it so too. The app's data source makes the copy and applies it
+  (its `copy`, given the page's fields): the memory source does, and Odoo's server has its own `copy=False`. A field
+  is copied unless it says false, a status bar's field too.
+- **Filters in groups**, as Odoo's filters between `<separator/>`s: a list's named filter says `"group": "when"`.
+  Filters of one group that are on find what any of them finds ("Late or Today"); groups find what each finds
+  ("Overdue", and "This year"). Filters that name no group are one group, so a list whose filters name none finds what
+  any filter on finds, as before. A group is one word: `"group": "due date"` is refused with
+  `layout.filters[0].group: a filter’s group is named by one word, such as "when"`.
 
 ## A worked example
 

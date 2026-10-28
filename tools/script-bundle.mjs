@@ -1649,7 +1649,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // page is parsed and no page waits for its parts (askForCheck); a linked record's page the app is still fetching, asked
 // for to know a link opens, never left failing unhandled (related.ts `canOpen`, +47): 601,597 measured before, 602,204
 // after (+607), to 588.1.
-const BUDGET_KB = 588.1;
+// 0.37 (p37-format): format 0.14 among the formats every page's check reads before its first draw (+7: version.ts), and
+// a list's named filters in their groups — `facetsToFilter`, this script's own, any of a group and every group, and
+// `filterGroups` beside it (search.ts) +202; a line's copy and the search bar's chips are the lines and list parts' —
+// 601,597 measured before, 601,806 after (+209), to 587.8.
+// 0.37 merged (p37-refuse and p37-format): provisional, set from the merged build in the size commit.
+const BUDGET_KB = 588.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2038,7 +2043,10 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // checks a part carries through one table of stand-ins, not 28 copies (−0.15): 197.02 measured before, 197.57 after
 // (+0.55), to 197.6; the whole check asked for once no page waits for its parts (page-check.ts `askForCheck`, +0.09) —
 // 197.66; `canOpen`'s failure handled (+0.02) — 197.68, to 197.7: under the owner's 200.
-const GZIP_BUDGET_KB = 197.7;
+// 0.37 (p37-format), format 0.14 and a list's filters in their groups (listed with the raw budget above): 197.02
+// measured before, 197.10 after (+0.08), to 197.2: under the owner's 200.
+// 0.37 merged (p37-refuse and p37-format): provisional, set from the merged build in the size commit.
+const GZIP_BUDGET_KB = 197.8;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -3272,7 +3280,13 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // to the byte (586.45 KB); gzipped 196.59 to 196.60, only the record part's and the add-ons' hashes it carries changed.
 // 0.36 merged with p3-found, from the merged build: its slots, choice, filters and rows as it measured them; the list
 // part with both lines in it 159.13 and 52.07, to 159.2 and 52.1; survey 36.44 and 12.51, to 12.6, as p3-found had it.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.1, 4.8], filters: [23.2, 8.0], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [159.2, 52.1], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.6, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.6, 16.5], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+// 0.37 (p37-format), each measured before and after: list 159.13 and 52.07 → 160.00 and 52.36 (a chip for each group of
+// named filters on, a line between groups in the menu, each counted as alone of its group, the printout's words by
+// group: search-bar.ts, list-print.ts), to 160.1 and 52.4; lines 47.59 → 47.63 (a line's copy starts a field that says
+// copy: false as a new line's: line-moves.ts), to 47.7; memory 25.22 and 9.12 → 26.14 and 9.46 (its copy starts such a
+// field as a new record's: copied-values.ts), to 26.2 and 9.5; check 65.21 → 65.30 (the format's shape with copy and
+// group), to 65.4.
+const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.1, 4.8], filters: [23.2, 8.0], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.1, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.3], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.6, 7.4], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.7, 16.5], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.2, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.5, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.6, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.1, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.4, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],

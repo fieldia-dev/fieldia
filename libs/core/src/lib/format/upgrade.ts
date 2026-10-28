@@ -50,8 +50,10 @@ export interface PageUpgrade {
  * moment's way, its looks, its timing, a failure's way), on the page, a list, a related list and a map, and a field's
  * `options.loading` — so a 0.11 page is a 0.12 page as it is; and 0.13 (Fieldia 0.34) only added — a field's `secret`,
  * never kept in a draft — so a 0.12 page is a 0.13 page as it is (0.34's other checks — a field named `constructor`,
- * `__proto__` or `prototype`, a pattern that could take seconds — are refusals of what a page says, not its shape).
- * A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
+ * `__proto__` or `prototype`, a pattern that could take seconds — are refusals of what a page says, not its shape);
+ * and 0.14 (Fieldia 0.37) only added — a field's `copy`, which a record's copy does not keep when false, and a named
+ * filter's `group`, filters of one group "or" and groups "and" — so a 0.13 page is a 0.14 page as it is: its filters
+ * name no group, and are one group, as before. A release that renames or reshapes a setting adds a step here, with its example; one that only adds needs
  * none: the page is the same, and upgradePage writes the new version in it. From 0.36 a default that changes is a new
  * format too: its step writes the old default into an older page, so it keeps doing what it did, and says which pages
  * rely on the new one (`uses`), so `lowestFormat` stamps them with it. A page is saved in the lowest format it needs

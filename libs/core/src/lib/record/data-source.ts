@@ -63,7 +63,13 @@ export interface DataSource {
   saveDefinitions?(request: OptionsRequest & { definitions: PropertyDefinition[] }): Promise<void>;
   /** Archive a record, or bring it back (`archive: false`): Flectra's `active` set false or true. For the `archive` and `unarchive` steps. */
   archive?(request: ArchiveRequest): Promise<void>;
-  /** Copy a record, as a backend's copy does: the copy's id, and its values when the source has them. For the `duplicate` step. */
+  /**
+   * Copy a record, as a backend's copy does: the copy's id, and its values when the source has them. For the `duplicate`
+   * step. A field of `request.fields` that says `copy: false` — a table's line field too — the copy does not keep: it
+   * holds what a new record (a new line) starts with, its `default` or `defaultFrom`, else nothing, as Odoo's
+   * `copy=False` does. The source applies it as it makes the copy (the memory source does): Fieldia shows the copy as
+   * it is made, and writes nothing to it after.
+   */
   copy?(request: RecordRequest): Promise<SaveResult>;
   /** Delete a record. For the `delete` step. */
   delete?(request: RecordRequest): Promise<void>;

@@ -1,5 +1,5 @@
 {
-  "fieldia": "0.13",
+  "fieldia": "0.14",
   "id": "vendor-bill",
   "title": "Vendor bill",
   "data": { "kind": "record", "model": "account.move" },
@@ -12,7 +12,9 @@
         { "value": "draft", "label": "Draft" },
         { "value": "posted", "label": "Posted" },
         { "value": "cancel", "label": "Cancelled" }
-      ]
+      ],
+      "default": "draft",
+      "copy": false
     },
     "active": { "type": "boolean", "label": "Active" },
     "partner_id": { "type": "many2one", "label": "Vendor", "relation": "partner", "required": true },

@@ -92,21 +92,24 @@ export const replay: DemoReplay = {
       },
     },
     {
-      says: 'Open the menu at the end of the search box, turn This year off and Overdue on',
+      says: 'Open the menu at the end of the search box and turn on Overdue: this year’s invoices sent and not paid',
       async run(hand) {
         const { page, press, see } = hand;
         await searchMenu(hand, true);
         await see(menuOf(page)).toBeVisible();
         const filters = menuOf(page).getByRole('group', { name: 'Filters' });
-        await press(filters.getByRole('button', { name: /This year$/ }));
-        await see(filters.getByRole('button', { name: /This year$/ })).toHaveAttribute('aria-pressed', 'false');
+        // Overdue in a group of its own, the periods in another, a line between them.
+        await see(filters.locator('.fd-search-option[data-filter], [role="separator"]')).toHaveText([/^Overdue/, '', /^This month/, /^Last month/, /^This year/]);
         await press(filters.getByRole('button', { name: /Overdue$/ }));
         await see(filters.getByRole('button', { name: /Overdue$/ })).toHaveAttribute('aria-pressed', 'true');
+        await see(filters.getByRole('button', { name: /This year$/ })).toHaveAttribute('aria-pressed', 'true');
         await searchMenu(hand, false);
-        await see(chips(page)).toHaveText(['Overdue']);
-        // The invoices sent and not paid by their due date, counted from today: those, and no other.
-        const late = (await invoicesOf(hand)).filter(overdue);
-        await see(page.locator('.fd-pager-text')).toHaveText(`1–${Math.min(10, late.length)} of ${late.length} invoices`);
+        await see(chips(page)).toHaveText(['This year', 'Overdue']);
+        // This year's invoices sent and not paid by their due date, counted from today: both hold, and no other. Early in
+        // January none of this year's is a month old, and the list says it finds none.
+        const late = (await invoicesOf(hand)).filter((invoice) => overdue(invoice) && thisYear(invoice));
+        if (late.length) await see(page.locator('.fd-pager-text')).toHaveText(`1–${Math.min(10, late.length)} of ${late.length} invoices`);
+        else await see(page.getByText('No invoices match.')).toBeVisible();
         await see(invoiceRows(page).filter({ hasNotText: 'Sent' })).toHaveCount(0);
       },
     },
@@ -119,8 +122,8 @@ export const replay: DemoReplay = {
         await press(dates.getByRole('button', { name: 'Month' }));
         await see(dates.getByRole('button', { name: /Month$/ })).toHaveAttribute('aria-pressed', 'true');
         await searchMenu(hand, false);
-        // A heading for each month of what the search finds — the overdue invoices — its count and its sum.
-        const found = (await invoicesOf(hand)).filter(overdue);
+        // A heading for each month of what the search finds — this year's overdue invoices — its count and its sum.
+        const found = (await invoicesOf(hand)).filter((invoice) => overdue(invoice) && thisYear(invoice));
         const months = [...new Set(found.map((invoice) => invoice.invoice_date.slice(0, 7)))].sort();
         await see(headings(page)).toHaveText(
           months.map((month) => {
@@ -131,11 +134,13 @@ export const replay: DemoReplay = {
       },
     },
     {
-      says: 'Turn Overdue and Month off, and group by City: Dubai’s invoices are in dollars',
+      says: 'Turn Overdue, This year and Month off, and group by City: Dubai’s invoices are in dollars',
       async run(hand) {
         const { page, press, see } = hand;
         await searchMenu(hand, true);
         await press(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /Overdue$/ }));
+        await press(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /This year$/ }));
+        await see(menuOf(page).getByRole('group', { name: 'Filters' }).getByRole('button', { name: /This year$/ })).toHaveAttribute('aria-pressed', 'false');
         const dates = menuOf(page).getByRole('group', { name: 'Invoice date' });
         await press(dates.getByRole('button', { name: /Month$/ }));
         await see(dates.getByRole('button', { name: /Month$/ })).toHaveAttribute('aria-pressed', 'false');
