@@ -1663,7 +1663,16 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // refuses opened in a box that × and Escape close, its opener told no record (dialog.ts) +250 — 602,266, to 588.2.
 // 0.37 merged with 0.36.1, set once from the merged build: 0.37's 602,413 bytes and 0.36.1's +669 measured alone above —
 // 603,082 — less 42 where 0.37's `canOpen` lines gave way to 0.36.1's `later()` (related.ts): 603,040, to 589.0.
-const BUDGET_KB = 589.0;
+// 0.37 (size-parts), the main script back near 184 KB gzipped, no page drawn later (the coordinator's 28 Oct, from the
+// size map): what no page draws from in parts of their own — a page's steps run, its dialogs (a page in a dialog or a
+// panel, a page opened by a step, a link's and a line's, Search more…), the viewer's own question, a save over someone
+// else's answered and its banners, in the acts part, asked for right after the whole check; the classic formatted
+// text's toolbar in the html part; a sheet's furniture (ribbons, stat buttons, badges, alerts, statusbar, attachment,
+// their look) in the sheet part — those two drawn in place as they come, waited for only beside a page's other parts —
+// each part's own words with it. What stays to say a part could not come — a run that did nothing, a question the
+// browser asks, a conflict in plain words — and to hold a press until it comes: 603,040 measured before, 559,395 after
+// (−43,645), to 546.3.
+const BUDGET_KB = 546.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2060,7 +2069,12 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the owner's 200 (+3.35 on 0.35.3's 193.91).
 // 0.37 merged with 0.36.1, set once from the merged build (listed with the raw budget above): 0.37's 197.76 and 0.36.1's
 // +0.24 — 198.03 (+1.01 on 0.36.0's 197.02, +0.77 on 0.36.1's 197.26), to 198.1: under the owner's 200.
-const GZIP_BUDGET_KB = 198.1;
+// 0.37 (size-parts), listed with the raw budget above, each move measured after the one before: a page's dialogs, a
+// page opened, the viewer's question and the step engine in the acts part 198.03 → 191.00; save safety's two banners
+// with them 189.82; the classic formatted text's toolbar in the html part 188.18, and their words with them 187.99; a
+// sheet's furniture and its look in the sheet part 185.72; Reload, Keep mine and Put back with the acts 185.44; a link's
+// and a line's dialogs with them 184.66 — 13.36 less, to 184.7: under the owner's 200.
+const GZIP_BUDGET_KB = 184.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2457,7 +2471,12 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 22.0; German 61.30 and 18.77, 61.50 and 18.81, to 61.5 and 18.9; French 62.32 and 18.75, 62.56 and 18.79, to 62.6;
 // Turkish 69.43 and 19.09, 69.65 and 19.13, to 69.7 and 19.2; Persian 170.67 and 23.53, 171.14 and 23.57, to 171.2;
 // Urdu 173.51 and 23.64, 174.17 and 23.69, to 174.2; Spanish 59.35 and 18.53, 59.53 and 18.57, to 59.6.
-const ADD_ON_BUDGET_KB = { ar: [138.7, 23.0], de: [62.5, 19.9], fr: [63.6, 19.8], tr: [70.7, 20.2], fa: [172.2, 24.6], ur: [175.2, 24.7], es: [60.6, 19.6] }; // SIZE-PARTS-TODO
+// 0.37 (size-parts), a run of steps whose engine could not come said ("{part} could not load, so nothing was done.",
+// "This action"): two words in each — Arabic 137.66 and 21.94 measured before, 137.92 and 21.97 after, to 138.0; German
+// 61.50 and 18.81, 61.62 and 18.83, to 61.7; French 62.56 and 18.79, 62.67 and 18.81, to 62.7 and 18.9; Turkish 69.65
+// and 19.13, 69.78 and 19.15, to 69.8; Persian 171.14 and 23.57, 171.42 and 23.59, to 171.5; Urdu 174.17 and 23.69,
+// 174.45 and 23.71, to 174.5 and 23.8; Spanish 59.53 and 18.57, 59.64 and 18.59, to 59.7.
+const ADD_ON_BUDGET_KB = { ar: [138.0, 22.0], de: [61.7, 18.9], fr: [62.7, 18.9], tr: [69.8, 19.2], fa: [171.5, 23.6], ur: [174.5, 23.8], es: [59.7, 18.6] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3318,7 +3337,14 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // encoder given to the editor, 0.36.1's cover kept in sight), to 31.5; list 160.07 and 52.38, files 51.24 and 19.09,
 // memory 26.14 and 9.46, check 65.15 and 17.22, filters, import, scan, rows, survey and prefill as 0.36.1 measured
 // them, each inside its budget.
-const PART_BUDGET_KB = { acts: [40.0, 14.0], html: [12.0, 5.0], sheet: [20.0, 7.0], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.4], choice: [12.2, 4.9], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.1, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.0, 16.6], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.2], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+// 0.37 (size-parts), three parts of their own, set from the build: acts 34.02 and 12.39 (a page's steps run, its dialogs,
+// a page opened, the viewer's question, a save over someone else's answered and its banners, and their words), to 34.1
+// and 12.4; html 6.49 and 2.73 (the classic formatted text's toolbar, its paste put in plain, its words), to 6.5 and
+// 2.8; sheet 11.33 and 4.28 (a sheet's furniture, its look, the attachment's words), to 11.4 and 4.3. The words a moved
+// part shares with others are each one's own now: text 73.19 and 24.73 (Search more…'s "No results" and the toolbar's
+// Formatting, Apply and Remove link), to 73.2 and 24.8; path 22.40 and relations 21.12 ("No results"), to 22.5 and 21.2;
+// choice 12.03 and 4.78, inside 12.1 and 4.8.
+const PART_BUDGET_KB = { acts: [34.1, 12.4], html: [6.5, 2.8], sheet: [11.4, 4.3], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.1, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.0, 16.6], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   acts: ['createRunner', 'reloadTheirs', 'keepMine', 'putBack', 'openFormDialog', 'openFormPanel', 'openSearchDialog', 'openPage', 'linkDialogs', 'askBox', 'conflictBanners'],
