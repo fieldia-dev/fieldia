@@ -25,10 +25,13 @@ beforeEach(() => {
   HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement) {
     return { drawImage: () => drawn.push({ width: this.width, height: this.height }) } as unknown as CanvasRenderingContext2D;
   } as never;
-  HTMLCanvasElement.prototype.toBlob = function (done: BlobCallback, type?: string, quality?: number) {
+  // Encoded at once, as a browser's toDataURL does; its toBlob never answers, as Chromium's may not for seconds on a busy
+  // machine, which nothing may wait for (encode-now.ts).
+  HTMLCanvasElement.prototype.toDataURL = function (type?: string, quality?: number) {
     Object.assign(drawn[drawn.length - 1], { type, quality });
-    done(new Blob([new Uint8Array(written)], { type }));
+    return `data:${type};base64,${btoa('\0'.repeat(written))}`;
   };
+  HTMLCanvasElement.prototype.toBlob = () => undefined;
 });
 
 const photo = (name: string, type: string, size = 5000) => new File([new Uint8Array(size)], name, { type, lastModified: 7 });

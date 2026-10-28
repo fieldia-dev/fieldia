@@ -499,7 +499,7 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
   async function edit(tile: Tile) {
     const photo = tile.photo;
     const shown = stillShown(form);
-    const result: Edited = await editPhoto({ doc, words, id: `${id}-edit`, photo, name: named(photo, tiles.indexOf(tile), photos.length), shape, home: element, read: files.readPicture });
+    const result: Edited = await editPhoto({ doc, words, id: `${id}-edit`, photo, name: named(photo, tiles.indexOf(tile), photos.length), shape, home: element, read: files.readPicture, encode: files.encodeNow });
     (tile.edit.isConnected ? tile.edit : tile.open.isConnected ? tile.open : input).focus();
     if (!result || readonly || !shown()) return;
     // Where the photo is now: it may have moved while the dialog was open.
