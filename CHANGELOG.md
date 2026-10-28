@@ -89,6 +89,11 @@ how-to replays that counted on a calendar day.
 - **A recording under half a second is nothing recorded**, as one stopped before
   the recorder began; and the words say the time its clock says: Firefox kept
   a recording of 0.05 s and called it "Recorded 0:01".
+- **A recording still being finished is asked about before it goes.** After
+  Stop the recorder takes a moment to finish the file (a WebM's length written
+  into it); Escape, × or Cancel then saw nothing to lose and closed, and the
+  recording was lost — in Firefox, which records WebM, a long moment under
+  load. It counts as a recording to lose now: "Discard this recording?" asks.
 - **Smaller ones:** a phone's filter sheet counts nothing while a range is
   refused ("Show results", not the count for the half of it that was
   accepted); the arrow keys reach a tree's "Show 20 more" and go on past it; the
@@ -135,6 +140,8 @@ Behaviour you may notice in an app's own tests:
   check or a payment step that says so at its send.
 - A recording stopped within half a second of its start is not kept; "Recorded
   {time}" says the time as the clock beside it does (0.36.0 said at least 0:01).
+  Escape, × or Cancel right after Stop, while the file is being finished, asks
+  "Discard this recording?" where 0.36.0 closed the recorder.
 - A phone's filter sheet's Show says "Show results" while a range is refused.
 - A tree's Show more is reached by the arrow keys; a doc's table on fieldia.dev
   is drawn row by row under 640 pixels.
