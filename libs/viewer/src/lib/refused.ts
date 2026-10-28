@@ -18,7 +18,7 @@ export function refusal(issues: readonly PageIssue[]): PageRefused {
  * its problems listed under "What is wrong" for whoever made the page, the app's `onError` told, and the error handed
  * back for the viewer to throw. The words are in the page's language where Fieldia has its words, its look Fieldia's.
  * `stage`: `"draw"` for what the check before the draw refuses (`checkPage`, what 0.35's viewer refused), `"check"`
- * for what only the whole check finds (`validatePage`'s verdict, refused before the draw from 0.37).
+ * for what only the whole check finds (`validatePage`'s verdict, run once the page is drawn: from 0.37 the page taken down).
  */
 export function showRefused(
   host: HTMLElement,

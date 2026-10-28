@@ -80,8 +80,8 @@ describe('a page read by its stamp', () => {
     const words = 'this came in format 0.13, but the page says it is in format 0.10, which a Fieldia reading 0.10 would read without it: write "fieldia": "0.13" — lowestFormat(page) gives the lowest a page needs';
     const refused = { ok: false, issues: [{ path: 'fields.pin.secret', message: words }] };
     expect(validatePage(wrong)).toEqual(refused);
-    // The whole check every viewer runs before the draw refuses it the same; the check before it, which reads no
-    // setting's format, passes it.
+    // The whole check every viewer runs as soon as a page is drawn refuses it the same; the check before the draw, which
+    // reads no setting's format, passes it.
     expect(wholeCheck(wrong)).toEqual(refused);
     expect(checkPage(wrong).ok).toBe(true);
     // Refused, never warned of: format.under-stamped is changed (0.37).

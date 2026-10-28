@@ -4,6 +4,7 @@ import {
   safeUrl,
   createForm,
   callsPartFunctions,
+  askForCheck,
   checkPage,
   pageCheckPart,
   functionsPart,
@@ -3197,9 +3198,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => void (worn.some((part) => !part.loaded) && partUnloaded())) : drawn;
   // ---- the whole check, as soon as the page is drawn (0.37: page-check.ts) ---------------------------------------------
-  // Asked for as the page is mounted (the one-tag script asked as it started), run once the page is drawn and painted —
-  // never delaying the draw — or sooner where a write asks first, which waits for it (held-writes.ts).
-  void pageCheckPart.load().catch(() => undefined);
+  // Asked for as soon as no page waits for its parts (askForCheck: the one-tag script asked as it started, where none did),
+  // run once the page is drawn and painted — never delaying the draw — or sooner where a write asks first, which waits
+  // for it (held-writes.ts).
+  if (awaited.length) askForCheck(drawn);
+  else queueMicrotask(() => askForCheck());
   void drawn
     .then(() => afterPaint(doc))
     .then(() => wholeChecked())

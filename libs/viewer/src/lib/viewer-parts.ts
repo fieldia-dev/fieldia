@@ -418,8 +418,9 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * `themesPart` or `quietPart` (@fieldia/widgets), `.load()`ed the same way.
  */
 /**
- * The one-tag script's files a page draws from — `fieldia.list.js`, `fieldia.cards.js`, … — each part `partsFor` names,
- * and the whole check every page is checked with as soon as it is drawn (`fieldia.check.js`, 0.37): what a server writes into
+ * The one-tag script's files a page draws from — `fieldia.list.js`, `fieldia.cards.js`, … — each part `partsFor` names
+ * (never the whole check, `fieldia.check.js`, which nothing waits for to draw: a tag for it would share a slow line with
+ * fieldia.js and these, and the page draw later — fieldia.js asks for it once nothing is waited for): what a server writes into
  * the page as `<script async src="…">` tags before fieldia.js, from the folder fieldia.js comes from, so they come beside
  * it rather than once it has run and looked at the page (measured on a mid-range phone: a list of customers usable 23%
  * sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both). fieldia.js takes a tag it finds for a part still on
@@ -427,7 +428,7 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * the one-tag script's `partTags(page)` gives each with what its own tag carries.
  */
 export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>, loading?: PageLoading): string[] {
-  return [...withLoadingPart(page, partsFor(page, widgets, slots), loading), pageCheckPart].map((part) => `fieldia.${part.name}.js`);
+  return withLoadingPart(page, partsFor(page, widgets, slots), loading).map((part) => `fieldia.${part.name}.js`);
 }
 
 /** A page's parts, the loading part among them where the viewer asks for it with them (`loadingWithParts`): a record's page waits for its record. */
