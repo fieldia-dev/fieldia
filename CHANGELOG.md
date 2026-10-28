@@ -51,7 +51,9 @@ how-to replays that counted on a calendar day.
   answers with later — as a zone's promise or as the browser's own — is known
   by its `then`, so a saved form placed in another, and a related list's words
   for its records, come in an Angular app whatever kind of promise its pages
-  give.
+  give. A linked record whose page the viewer refuses opens a box with the
+  page's words, which × and Escape close; it stayed open for good, nothing
+  closing it, while its Open failed unhandled.
 - **Nothing is refused under a strict Content-Security-Policy that Fieldia
   writes.** A sheet over the page — a phone's country list, a list's Filters
   and Import, a scanner's sheet — wears the form's tokens and accent through
@@ -109,7 +111,9 @@ Behaviour you may notice in an app's own tests:
 - No stray rejection after a link's page that cannot come, drawn or opened, nor
   after the pager's next record the app could not give: an Angular spec that
   recorded one records none. The dialogs' `openRecord` resolves null where the
-  page cannot come, as where the app has none, and says why.
+  page cannot come, as where the app has none, and says why; where the viewer
+  refuses the page, once its box is closed. `openFormDialog` resolves, not
+  saved, for a page the viewer refuses, where it threw.
 - A page the app gives later as a promise of another kind than the global
   `Promise` (in a zone, the browser's own) is waited for as a page, where 0.36.0
   took it for one.
@@ -135,11 +139,12 @@ Behaviour you may notice in an app's own tests:
 - A tree's Show more is reached by the arrow keys; a doc's table on fieldia.dev
   is drawn row by row under 640 pixels.
 
-**Size:** `fieldia.js` 587.9 KB, 197.3 gzipped (0.36.0: 587.5, 197.0): a link's
+**Size:** `fieldia.js` 588.2 KB, 197.3 gzipped (0.36.0: 587.5, 197.0): a link's
 page that cannot come handled where it is asked +0.05 KB; every page or record
 the app cannot give said, never unhandled, +0.32; a part said at its send never
-said over the page +0.03 — +0.27 gzipped in all. Nine parts grow by 0.1 KB or
-less (filters, import, scan, lines, photos, survey, list, rows, prefill).
+said over the page +0.03; a refused page's box that closes +0.24 — +0.33
+gzipped in all. Nine parts grow by 0.1 KB or less (filters, import, scan,
+lines, photos, survey, list, rows, prefill).
 
 ## 0.36.0 — 2026-10-27
 
