@@ -10,7 +10,7 @@ import { fitTo } from './compute';
 import type { PaidPayment, PaymentDue, PayRequest, ResolvedFilter } from './data-source';
 import { resolveFilter } from './filter';
 import type { Facet } from './search';
-import { emptyValue, sameValue, structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
+import { answerOf, emptyValue, sameValue, structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 import type { Messages } from './messages';
 import { LINK_URL, safeUrl } from '../safe-url';
 
@@ -538,8 +538,10 @@ export function createRunner(form: RunForm) {
 
   async function ask(message: string, yes?: string): Promise<boolean> {
     const how = yes ? { yes } : undefined;
-    if (form.host) return form.host.ask(message, how);
-    if (form.confirm) return form.confirm(message, how);
+    // The app's answer handled as it is given, whatever its promise (values.ts, `answerOf`): so are its open, call, file
+    // and print.
+    if (form.host) return answerOf(form.host.ask(message, how));
+    if (form.confirm) return answerOf(form.confirm(message, how));
     return true;
   }
 
@@ -571,7 +573,7 @@ export function createRunner(form: RunForm) {
     };
     let result: OpenResult;
     try {
-      result = await host.open(request);
+      result = await answerOf(host.open(request));
     } catch (error) {
       return { reason: 'cannot', message: wordsOf(error), error };
     }
@@ -630,7 +632,7 @@ export function createRunner(form: RunForm) {
     if (!form.onAction) return null;
     let answer: ActionResult | undefined;
     try {
-      answer = (await form.onAction(request)) ?? undefined;
+      answer = (await answerOf(form.onAction(request))) ?? undefined;
     } catch (error) {
       return { reason: 'app', message: wordsOf(error), error };
     }
@@ -687,7 +689,7 @@ export function createRunner(form: RunForm) {
     if (answer.file) {
       const host = form.host;
       if (!host?.file) return cannot(`Nothing can show the file "${answer.file.name}" here: the form has no host that shows files`);
-      await host.file(answer.file);
+      await answerOf(host.file(answer.file));
     }
     if (answer.open) {
       const opened = await open(answer.open, scope);
@@ -882,7 +884,7 @@ export function createRunner(form: RunForm) {
       case 'print': {
         const host = form.host;
         if (!host?.print) return cannot('Nothing can print here: the form has no host that prints');
-        await host.print();
+        await answerOf(host.print());
         return null;
       }
     }

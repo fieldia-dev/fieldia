@@ -60,7 +60,7 @@ import type { Limits } from './form-limits';
 import type { FormApproval } from './approving';
 import { draftRead, resumeStep, timedStore } from './drafts';
 import { envelopeOf, valuesFromSource } from './from-source';
-import { DISCARD_GRACE_MS, stopSends, withDeadlines } from './deadline';
+import { answerOf as appAnswer, DISCARD_GRACE_MS, stopSends, withDeadlines } from './deadline';
 import { ownerOf, tabStore } from './browser-kept';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -4224,7 +4224,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const host = options.host;
     let yes = false;
     try {
-      yes = host ? await host.ask(message, { discard: true }) : options.confirm ? await options.confirm(message) : false;
+      yes = host ? await appAnswer(host.ask(message, { discard: true })) : options.confirm ? await appAnswer(options.confirm(message)) : false;
     } catch {
       // A question that could not be asked keeps the work.
     }
@@ -4324,7 +4324,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   async function post(message: PostedMessage): Promise<boolean> {
     if (options.host?.post) {
       try {
-        return (await options.host.post(message)) !== false;
+        return (await appAnswer(options.host.post(message))) !== false;
       } catch {
         return false;
       }
