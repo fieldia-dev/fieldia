@@ -116,6 +116,11 @@ uses one; every 0.13 page reads as it did.
   shrunk as it is added is made the same way. On that machine Apply now closes
   within 0.28 s: `toBlob` answered first in 34 of 60 runs (0.04 s at the
   median), the cap in the rest (0.25 s).
+- A recording stopped is never let go unasked while it is still being made
+  into its file. Escape, × or Cancel pressed while a WebM's length was being
+  written in (a moment, longer under load; Firefox records WebM) closed the
+  dialog and the recording was lost; now they ask first, as for a recording
+  made (0.36's length writing opened the moment).
 - Tests: the time-off how-to replay types its request's end from the start the
   demo shows; it had typed a fixed date, and failed from 28 October.
 
