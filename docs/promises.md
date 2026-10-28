@@ -232,6 +232,12 @@ changed is said no more, and stays here marked changed, as the minor's CHANGELOG
   0.01–0.08 s after the draw where the app fetched its page, and about 0.7 s after it where the page was mounted as
   soon as `fieldia.js` ran (a round trip for `fieldia.check.js`, asked for once the page's parts came): a write asked
   for before then waits for it. No gate: measured by hand for each minor.
+- From 0.37 what no page draws from — a page's steps run, its dialogs, its questions, a save over someone else's — comes
+  right after the whole check, and a sheet's furniture and the classic formatted text's toolbar are waited for only
+  beside a page's other parts: `fieldia.js` 13.4 KB lighter. Measured the same way against the build before, every
+  page's first draw 13 to 100 ms sooner, the phone's too (a record sheet's, −37 ms, inside the runs' own spread). A
+  press the moment a one-tag page is drawn waits for its steps' part: 0.71 s on the desktop, 0.74 s on the phone, one
+  round trip. No gate: measured by hand for each minor.
 
 Each release is held to budgets that fail the build. The timings run alone in CI's perf job, one worker, with three
 times the budget's slack for a shared runner; the phone's budgets are four times a desktop's. The counts are counted

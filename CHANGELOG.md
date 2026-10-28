@@ -58,8 +58,11 @@ toolbar (`fieldia.html.js`) and a record sheet's furniture — its ribbons, stat
 buttons, badges, alerts, statusbar and attachment (`fieldia.sheet.js`) — are
 parts too, waited for only beside a page's other parts: a page that would wait
 for one alone is drawn at once without it, and it is drawn in place as it comes.
-`fieldia.js` is 184.7 KB gzipped (0.36.1: 197.3); every page in the gallery is
-drawn as soon as before or sooner, measured on Slow 4G.
+`fieldia.js` is 184.7 KB gzipped (0.36.1: 197.3). Measured on Slow 4G on a
+desktop and a phone's CPU four times slower, every page timed — a plain form,
+one the app fetched, a record, a record sheet with and without its part tags, a
+list, a page that runs steps as it opens, a sheet that waits for nothing else —
+is drawn 13 to 100 ms sooner than without these parts.
 
 **New:**
 
@@ -298,7 +301,19 @@ own now); each add-on +0.02 to +0.03 for its two new sentences. From the npm
 packages (with the page / to usable): a record form 248.0 → 235.9 / 339.0 →
 347.1, in Arabic 248.0 → 235.9 / 361.8 → 369.8, a list 247.2 → 235.1 / 335.3 →
 336.3, the designer 596.1 → 584.6 / 825.8 → 821.6 — the acts part's two chunks
-asked for after the draw, so "to usable" carries them.
+asked for after the draw, so "to usable" carries them. A page's first draw on
+Slow 4G (1.44 Mbps, 562 ms; 7 runs interleaved with the build before these
+parts, a desktop and a phone's CPU four times slower), medians in ms: a plain
+form 2305 → 2232 and 2439 → 2347 on the phone; fetched 2880 → 2803 and 3003 →
+2930; a record 2941 → 2874 and 3074 → 2989; the customer's sheet 3450 → 3411
+and 3690 → 3653 (its ranges overlap on the phone), with its part tags 3369 →
+3269 and 3523 → 3428; a list 3409 → 3329 and 3587 → 3506; a page whose steps
+run as it opens 3032 → 3019 and 3295 → 3247; a sheet with nothing else to wait
+for 2318 → 2236 and 2453 → 2362. A press the moment a one-tag page is drawn
+waits for the acts part: its steps ran 0.71 s after it on the desktop, 0.74 s
+on the phone (0.01 and 0.05 s before). The acts part lands about 1.3 s after
+the draw where a page was mounted as soon as `fieldia.js` ran (the whole check's
+round trip, then its own), 0.7 s where the app fetched its page.
 
 ## 0.36.1 — 2026-10-28
 
