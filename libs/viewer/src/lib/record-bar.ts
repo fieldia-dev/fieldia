@@ -1,9 +1,10 @@
-import { LINK_URL, plainWords, safeUrl, recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult } from '@fieldia/core';
+import { LINK_URL, plainWords, safeUrl, recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult, type Tone } from '@fieldia/core';
 import { drawIcon, type IconSet, type Loading } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
 import type { ViewerLabels } from './labels';
 import { prefetchPrint } from './print';
+import { later } from './related';
 import { barredWords } from './save-safety';
 
 /**
@@ -55,6 +56,8 @@ export interface RecordBarContext {
   extra?: { element: HTMLElement; update(): void };
   /** How the page waits (loading.ts in @fieldia/widgets): a menu's items the app gives, as they come. Fieldia's without it. */
   loading?: Loading;
+  /** Words said as the viewer says them: why the app could not give the pager its next record, in the app's words. */
+  say?(message: string, tone: Tone): void;
 }
 
 const GEAR: IconSet = {
@@ -329,7 +332,12 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
   hotkeyOn(next, 'n', after);
   const box = el('div', { class: 'fd-record-pager', role: 'group', 'aria-label': sentence(labels.recordsNoun, labels.records) }, text, previous, next);
 
-  const idAt = async (place: number): Promise<RecordId> => (ids ? ids[place] : (asked as RecordPager).id(place));
+  /** The id at a place: the app's, where it gives a count — its answer handled as it is asked (`later`). */
+  const idAt = (place: number): RecordId | PromiseLike<RecordId> => {
+    const id = ids ? ids[place] : (asked as RecordPager).id(place);
+    return later(id) ? id.then() : id;
+  };
+  const cannot = (error: unknown) => context.say?.((error as Error)?.message ?? String(error), 'danger');
   async function move(by: number) {
     const from = here();
     if (moving || from === -1 || total < 2) return;
@@ -339,7 +347,13 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
       // The id first, which may come from the server: a change made while it is looked up is saved with the rest. The
       // record shown replaced meanwhile (the app opened another), the place it was counted from is gone: no move.
       const shown = form.recordShown();
-      const id = await idAt(to);
+      let id: RecordId;
+      try {
+        id = await idAt(to);
+      } catch (error) {
+        // The app could not give it: said; the record stays, and the next press asks again.
+        return void (shown() && cannot(error));
+      }
       if (!shown()) return;
       if (!(await context.leave())) return;
       at = to;
@@ -377,8 +391,8 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
         placed = id;
         void form.openRecord(id);
       };
-      const id = ids ? ids[at] : (asked as RecordPager).id(at);
-      if (id instanceof Promise) void id.then(go);
+      const id = idAt(at);
+      if (later(id)) id.then(go, cannot);
       else go(id);
     })
   );

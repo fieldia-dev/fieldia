@@ -2,6 +2,7 @@ import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { node, open, screen } from './support';
 import { VARIANTS } from './variants';
+import { installZonePromises } from '../testing/zone-promises';
 
 /** Records opened, made, searched and edited in dialogs, in every framework. */
 const value = (page: Page, name: string) => page.evaluate((n) => (window as any).fieldiaDemo.handle.form.getState().values[n], name);
@@ -167,6 +168,33 @@ for (const variant of VARIANTS) {
       await failed;
       await page.evaluate(() => new Promise((done) => setTimeout(done, 100)));
       await expect(node(page, 'f-client').getByRole('combobox')).toHaveValue('Nile Traders');
+      expect(problems.filter((problem) => problem.startsWith('page error'))).toEqual([]);
+    });
+
+    test('Open on a link whose page cannot come says why and opens nothing, nothing left unhandled; pressed again, it asks again', async ({ page }) => {
+      // The page's promises kept as an Angular app's zone keeps them (a refusal with no handler by the next microtask is
+      // said, as NgZone.onError hears it), and the engine's own unhandledrejection listened to too.
+      await page.addInitScript(installZonePromises);
+      await page.addInitScript(() => {
+        const W = window as any;
+        W.__native = [];
+        window.addEventListener('unhandledrejection', (event) => W.__native.push(String((event.reason as Error)?.message ?? event.reason)));
+      });
+      await page.route(/\/chunks\/customer\.page-[A-Z0-9]+\.js$/, (route) => route.abort());
+      const { problems } = await open(page, variant, 'page=fields&skin=outlined');
+      const openIt = node(page, 'f-client').getByRole('button', { name: 'Open Nile Traders' });
+      await openIt.click();
+      const said = page.locator('.fd-say').filter({ hasText: 'Couldn’t open record Nile Traders: part of this page could not load' });
+      await expect(said).toHaveCount(1);
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+      await page.evaluate(() => new Promise((done) => setTimeout(done, 100)));
+      const heard = () => page.evaluate(() => [...((window as any).__zoneSaid as unknown[]).map((reason) => String((reason as Error)?.message ?? reason)), ...(window as any).__native]);
+      expect(await heard()).toEqual([]);
+      // Pressed again, the app is asked again: said again where the engine keeps the module that failed, else it opens.
+      await page.unroute(/\/chunks\/customer\.page-[A-Z0-9]+\.js$/);
+      await openIt.click();
+      await expect.poll(async () => (await said.count()) === 2 || (await page.getByRole('dialog', { name: 'Nile Traders' }).isVisible())).toBe(true);
+      expect(await heard()).toEqual([]);
       expect(problems.filter((problem) => problem.startsWith('page error'))).toEqual([]);
     });
   });
