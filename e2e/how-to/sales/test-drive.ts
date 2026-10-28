@@ -109,7 +109,8 @@ export const replay: DemoReplay = {
         for (const day of await openDaysAhead(page)) {
           await press(days(page).and(page.getByRole('button', { name: day, exact: true })));
           await see(chips(page).first()).toBeVisible();
-          if ((await ten.count()) && (await ten.getAttribute('aria-pressed')) === 'false') break;
+          // Not the day the time of step 2 is pressed on: nothing of this one is booked yet.
+          if ((await ten.count()) && (await ten.getAttribute('aria-pressed')) === 'false' && !(await chips(page).and(page.locator('[aria-pressed="true"]')).count())) break;
         }
         await see(ten).toHaveAttribute('aria-pressed', 'false');
         const someone = bar.getByRole('button', { name: 'Someone else books 10:00' });
