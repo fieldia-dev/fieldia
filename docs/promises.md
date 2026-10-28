@@ -77,9 +77,10 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
   slow line with — and never waited for: a valid page draws as fast as 0.36 drew it. A page it refuses may show its form
   for a moment, then is taken down: its form replaced by why, `onError` told (`stage: "check"`), `refused` settled with
   the `PageRefused`. Nothing is written through a page before its whole check has run: a save, a send, a step's save,
-  an upload, the outbox's send, a draft kept on the server, a payment or a code sent asked for meanwhile waits for it,
-  and is refused with the page where the page is refused. **Gates:** `libs/viewer/src/lib/refused.spec.ts` ("says why
-  where the form would be", "drawn at once, then taken down", "a save asked before its check ran waits for it"),
+  a record's copy, an upload, the outbox's send, a draft kept on the server, a payment or a code sent asked for
+  meanwhile waits for it, and is refused with the page where the page is refused. **Gates:**
+  `libs/viewer/src/lib/refused.spec.ts` ("says why where the form would be", "drawn at once, then taken down", "a save
+  asked before its check ran waits for it", "makes no copy through it"),
   `e2e/page-check.spec.ts` ("a send waits for it", "the app round it kept") in Chromium, Firefox and WebKit,
   `libs/core/src/lib/format/shape-parity.spec.ts` ("one verdict on each", "never a page they pass").
 - **A page whose whole check cannot come is drawn, and said, and its writes go on.** Where its part cannot come — the
