@@ -3,7 +3,9 @@ import type { DataSource } from '@fieldia/core';
 /**
  * The members of a data source that write through a page — a record saved, a form's answers sent (an outbox's kept
  * sends too), a step's save, a file uploaded, a draft kept on the server, a decision, a payment, a code sent, records
- * copied, deleted or archived, cells and records changed in bulk, an import, a merge, a template.
+ * copied, deleted or archived, cells and records changed in bulk, an import, a merge, a template. A record's copy (the
+ * Duplicate step, format 0.14's `copy: false` applied by the source) is `copy`; a line's own copy (a table's ⧉, a card's
+ * Copy, the grid's) is a change to the form's values, written by the record's `save`, so both are held.
  */
 const WRITES: ReadonlySet<PropertyKey> = new Set(['save', 'submit', 'create', 'copy', 'delete', 'archive', 'upload', 'writeMany', 'createMany', 'importRecords', 'merge', 'markNotDuplicate', 'saveDraft', 'decide', 'pay', 'sendCode', 'saveDefinitions', 'saveTemplate', 'deleteTemplate']);
 
