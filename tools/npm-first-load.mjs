@@ -79,12 +79,19 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * 0.37 merged with 0.36.1, measured from the merged build, inside 0.36.0's budgets: a record form 248.0 / 339.0 (65 / 73),
  * in Arabic 248.0 / 361.8 (65 / 76), a list 247.2 / 335.3 (65 / 70), the designer 596.1 / 825.8 (78 / 88) — 0.36.1's
  * pages and records the app cannot give, said, +0.35 with the page and a file more each.
+ * 0.37 (size-parts), set from its build, about 2% room: what no page draws from in chunks of their own — a page's steps
+ * run, its dialogs, a page opened, its questions, a save over someone else's (the acts part's two halves, asked for
+ * right after the whole check, so "to usable" carries them), a sheet's furniture and the classic formatted text's
+ * toolbar (asked for with a page's parts) — and the chunks a bundler splits for what they share with the first paint:
+ * a record form 235.9 / 347.1 (72 / 84), in Arabic 235.9 / 369.8 (72 / 87), a list 235.1 / 336.3 (72 / 79), the
+ * designer 584.6 / 821.6 (85 / 97) — 12.1 less with the page each (11.5 the designer's), the after-draw chunks +8.1 to
+ * usable (a list's +1.0: its page draws no sheet). With the page held to what is measured: never grown back.
  */
 const BUDGET = {
-  record: { page: 250.3, usable: 342.9, files: 73 },
-  'record-ar': { page: 250.3, usable: 365.9, files: 76 },
-  list: { page: 249.4, usable: 339.0, files: 70 },
-  designer: { page: 604.2, usable: 837.9, files: 90 },
+  record: { page: 240.6, usable: 354.1, files: 86 },
+  'record-ar': { page: 240.6, usable: 377.2, files: 89 },
+  list: { page: 239.8, usable: 343.0, files: 81 },
+  designer: { page: 596.3, usable: 838.1, files: 99 },
 };
 
 /** A record of the customer page's, with the fields it shows. */
