@@ -381,6 +381,26 @@ test.describe('a chart of accounts opened a group at a time', () => {
     expect(problems).toEqual([]);
   });
 
+  test('the arrows reach Show 20 more from the last account shown, and go on past it either way (the 0.36 walk)', async ({ page }) => {
+    const { problems } = await open(page, 'plain', CHART);
+    await account(page, 'Assets').getByRole('button', { name: 'Assets' }).click();
+    await account(page, 'Cash and banks').getByRole('button', { name: 'Cash and banks' }).click();
+    const shown = page.locator('.fd-list-row[data-depth="2"]:visible');
+    await expect(shown).toHaveCount(20);
+    const more = page.locator('.fd-list-tree-more button');
+    await shown.nth(19).focus();
+    // Down from the twentieth: Show 20 more, as Tab reaches it — never the account after it (0.36 went to "Customers 12").
+    await page.keyboard.press('ArrowDown');
+    await expect(more).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(shown.nth(19)).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await expect(more).not.toBeFocused();
+    await expect(page.locator('.fd-list-row:focus')).toHaveCount(1);
+    expect(problems).toEqual([]);
+  });
+
   test('Show 20 more from the keys: the keys go on to the first account that came, never to the page', async ({ page }) => {
     const { problems } = await open(page, 'plain', CHART);
     await account(page, 'Assets').getByRole('button', { name: 'Assets' }).click();

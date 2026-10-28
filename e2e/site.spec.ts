@@ -1316,3 +1316,37 @@ test('the demos’ frame follows a dark system, the form inside it too, and a sc
   for (const [part, light] of Object.entries(await frame(`${demo}&scheme=dark`))) expect(light, `${part} is dark`).toBeLessThan(DARK);
   await expect(page.locator('.fd-form').first()).toHaveAttribute('data-scheme', 'dark');
 });
+
+test.describe('What Fieldia promises, for an owner (the 0.36 walk)', () => {
+  test('says it in plain words at its top, and is linked from the home page, Features and every footer', async ({ page }) => {
+    await page.goto(`${SITE}/promises/`);
+    await expect(page.locator('main h2').first()).toHaveText('In short');
+    await expect(page.locator('main')).not.toContainText('replayed by hand');
+    await expect(page.locator('main')).not.toContainText('replayed by a finger');
+    for (const path of ['/', '/features/', '/start/']) {
+      await page.goto(`${SITE}${path}`);
+      const links = page.locator('a[href="/promises/"]');
+      await expect(page.locator('footer a[href="/promises/"]')).toHaveCount(1);
+      if (path !== '/start/') expect(await links.count(), `${path}: a link in its own words besides the footer's`).toBeGreaterThan(1);
+    }
+  });
+
+  test('on a phone, its tables read row by row: no column a word a line, none cut at the screen’s edge', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${SITE}/promises/`);
+    await expectNoSidewaysScroll(page);
+    const cells = page.locator('main table td');
+    expect(await cells.count()).toBeGreaterThan(20);
+    const shape = await cells.evaluateAll((all) =>
+      all.map((cell) => {
+        const box = cell.getBoundingClientRect();
+        return { width: Math.round(box.width), right: Math.round(box.right), wide: cell.scrollWidth <= cell.clientWidth + 1 };
+      })
+    );
+    // Each cell as wide as the row it is in, whole on the screen, nothing in it scrolled out of sight.
+    expect(shape.filter((one) => one.width < 250)).toEqual([]);
+    expect(shape.filter((one) => one.right > 390)).toEqual([]);
+    expect(shape.filter((one) => !one.wide)).toEqual([]);
+    await screen(page, 'site-promises-phone');
+  });
+});

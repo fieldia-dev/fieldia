@@ -183,9 +183,9 @@ export function searchList(options: SearchListOptions): SearchList {
   /**
    * The look of the form it is on, worn by the sheet, which opens over the page outside it: its skin and theme
    * (`fd-theme`), and its scheme, accent, font and corners, which a dialog of the page's wears (`fd-form-dialog`) — dark
-   * on a dark page, as the scan sheet and Import are.
+   * on a dark page, as the scan sheet and Import are; its tokens through its style object (below).
    */
-  const LOOK = (name: string) => (name.startsWith('data-') && name !== 'data-max-width') || name === 'style' || name === 'dir' || name === 'lang';
+  const LOOK = (name: string) => (name.startsWith('data-') && name !== 'data-max-width') || name === 'dir' || name === 'lang';
   function open(typed = '') {
     if (isOpen()) return;
     find.value = typed;
@@ -193,6 +193,8 @@ export function searchList(options: SearchListOptions): SearchList {
     if (narrow) {
       const root = home.closest<HTMLElement>('.fd-form');
       for (const { name, value } of [...(root?.attributes ?? [])]) if (LOOK(name)) panel.setAttribute(name, value);
+      // Its tokens and accent through the style object, which a strict policy lets be: a style attribute it refuses.
+      if (root) panel.style.cssText = root.style.cssText;
       panel.classList.add('fd-theme', 'fd-form-dialog', 'fd-lookup-sheet');
       setAttr(panel, 'role', 'dialog');
       setAttr(panel, 'aria-modal', 'true');

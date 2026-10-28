@@ -80,8 +80,12 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
   );
   // The look of the page the list is on, as the sheet sits outside it.
   const root = context.from.closest<HTMLElement>('.fd-form') ?? context.from;
-  for (const { name, value } of [...root.attributes]) if ((name.startsWith('data-') && name !== 'data-max-width') || name === 'style' || name === 'dir' || name === 'lang') box.setAttribute(name, value);
+  for (const { name, value } of [...root.attributes]) if ((name.startsWith('data-') && name !== 'data-max-width') || name === 'dir' || name === 'lang') box.setAttribute(name, value);
+  // Its tokens and accent through the style object, which a strict policy lets be: a style attribute it refuses.
+  box.style.cssText = root.style.cssText;
   const backdrop = el('div', { class: 'fd-dialog-backdrop fd-form-dialog-backdrop fd-filter-sheet-backdrop' }, box);
+  // A range's box read as it is left or its Enter pressed — refused, it changes nothing to count: Show said again.
+  for (const type of ['change', 'focusout', 'keyup']) box.addEventListener(type, () => void Promise.resolve().then(showSays));
 
   // ---- each field: its values to tick, or its range ----------------------------------------------------------------
 
@@ -147,6 +151,14 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
   /** Each change counts on: an older count's answer is not drawn over a newer one's. */
   let asked = 0;
   let closed = false;
+  /** The last count that came: Show says it while every range holds what the person typed, else no number (below). */
+  let counted: number | null = null;
+  /** Show's words: no count while a range is refused — what it would count is not what was typed (0.36's walk). */
+  const showSays = () => {
+    const words = [...ranges.values()].some((control) => control.why()) ? labels.showResultsSome : showWords(counted);
+    // Written only when they change: a tap's own focus change re-says them, and WebKit drops a tap whose button changed under it.
+    if (show.textContent !== words) show.textContent = words;
+  };
   function recount(except?: string) {
     const mine = ++asked;
     for (const field of lists.keys()) {
@@ -169,12 +181,14 @@ export function openFilterSheet(context: FilterSheetContext): { close(): void } 
       .then((n) => {
         if (closed || mine !== asked) return;
         show.removeAttribute('aria-busy');
-        show.textContent = showWords(n);
+        counted = n;
+        showSays();
       })
       .catch(() => {
         if (closed || mine !== asked) return;
         show.removeAttribute('aria-busy');
-        show.textContent = labels.showResultsSome;
+        counted = null;
+        showSays();
       });
   }
   /** "Show 37 homes", "Show 1 home"; "Show results" where nothing could count them. */

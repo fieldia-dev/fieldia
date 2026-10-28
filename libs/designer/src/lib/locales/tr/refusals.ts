@@ -29,6 +29,8 @@ export const refusals: DesignerWords['refusals'] = {
   notAColumn: (name) => `${q(name)} bir sütun değil`,
   // The page's own check speaks English: said here without its words, as Arabic does.
   invalid: (path, _message) => `Bu düzenleme yapılamadı: sayfa ${q(path)} konumunda geçerli kalmazdı`,
+  braceNoField: (label, name) => `${label} sözcükleri {${name}} adını anıyor; bu bir alan değil`,
+  braceNoFieldHere: (name) => `Bu sözcükler {${name}} adını anıyor; bu bir alan değil`,
   cannotPublish: 'Bu sayfada sorunlar var; yayımlanamaz',
   // ---- the page and its parts
   surveyHasNoRecords: 'Anketin bağlanacak veya listelenecek kaydı yoktur: bu tür uygulama ekranları içindir',

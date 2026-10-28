@@ -139,6 +139,30 @@ test.describe('When… in the screen designer', () => {
     expect(problems).toEqual([]);
   });
 
+  test('Open a web address: its In a new tab box and its words apart, the focus ring clear of the I (the 0.36 walk)', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto('/screen/');
+    await expect(page.locator('.fd-designer-bar')).toBeVisible();
+    await page.locator('.fd-canvas-field').first().click();
+    await addButton(page, 'Portal');
+    await clicked(page).getByRole('button', { name: 'Add a step' }).click();
+    await menu(page).getByRole('menuitem', { name: 'Open a web address' }).click();
+    const box = clicked(page).getByRole('checkbox', { name: 'In a new tab' });
+    await box.focus();
+    // From the box's edge to its words' first letter: room for its focus ring, which is drawn outside the box.
+    const room = await box.evaluate((input) => {
+      const style = getComputedStyle(input);
+      const ring = parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
+      const words = [...(input.parentElement?.childNodes ?? [])].find((node) => node.nodeType === 3 && node.textContent?.trim());
+      const range = document.createRange();
+      range.selectNodeContents(words as Node);
+      const start = document.dir === 'rtl' ? input.getBoundingClientRect().left - range.getBoundingClientRect().right : range.getBoundingClientRect().left - input.getBoundingClientRect().right;
+      return { start, ring };
+    });
+    expect(room.start).toBeGreaterThanOrEqual(room.ring);
+    expect(problems).toEqual([]);
+  });
+
   test('a panel from a side: From shows once it opens in a panel, its sentence says the side, and a dialog drops it', async ({ page }) => {
     const problems = watch(page);
     await page.goto('/screen/');

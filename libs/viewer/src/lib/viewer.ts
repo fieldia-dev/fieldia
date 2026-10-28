@@ -73,6 +73,7 @@ import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, st
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
 import { onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
+import { later } from './later';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { nameFieldOf } from './name-field';
 import type { ListContext, ListViewFactory, OpenRowOptions } from './list';
@@ -1905,7 +1906,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           route:
             options.host?.open || options.onOpen
               ? async (model, request) => {
-                  const asked = { ...request, page: (await findPage(options, { model }))?.id ?? model };
+                  // The page's id, else the model's name — as where the app gives none, so where its page cannot come.
+                  const asked = { ...request, page: (await Promise.resolve(findPage(options, { model })).catch(() => null))?.id ?? model };
                   return (options.host?.open ? options.host.open(asked) : options.onOpen?.(asked)) ?? null;
                 }
               : undefined,
@@ -1943,7 +1945,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const of = (other: Page | null) => (other?.records ? shownAs(other).records : undefined);
       try {
         const found = findPage(options, { model });
-        return found instanceof Promise ? found.then(of, () => undefined) : of(found);
+        return later(found) ? found.then(of, () => undefined) : of(found);
       } catch {
         return undefined;
       }
@@ -2064,7 +2066,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       } catch {
         asked = null;
       }
-      if (asked instanceof Promise) asked.then(draw, () => draw(null));
+      if (later(asked)) asked.then(draw, () => draw(null));
       else draw(asked);
       return box;
     }
@@ -2363,6 +2365,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const joins: PageJoin[] = [];
   /** Those whose drawing could not come, each asked for anew by a send (`missingJoin`). */
   const joinRetries: (() => Promise<boolean>)[] = [];
+  /**
+   * The parts of a join that guards a send whose drawing could not come — the code check, the payment step — said where
+   * they are typed in or sent, with their own Retry (`missingJoin`): never over the page too, whose words would say
+   * otherwise (0.36's walk: "Reload the page" over a Pay button its Retry had brought).
+   */
+  const saidAtTheirSend = new Set<Part>();
   /** The page's questions and their buttons, once drawn: what a closed form's words, or what Continue later kept, stand in place of. */
   let questions: HTMLElement | null = null;
   /**
@@ -2470,6 +2478,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       render: renderNow,
       submenus: headPart.loaded?.submenus,
       loading,
+      say: actionHost.say,
       async leave() {
         // What is still typed is read first (a name being looked up, waited for): text that does not read keeps the
         // record on screen, said, as a change does. The changes are saved first, as the pager always has; a file still
@@ -2934,7 +2943,10 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       const ctx = { ...drawing, dataSource, tag: page.language ?? locale, icons: options.icons, editable: () => !locked, ask: (message: string) => actionHost.ask(message) };
       // One that guards a send whose drawing could not come is said in its place at once, with Retry where it can work (0.35.1).
       const missing = own && !own.loaded ? missingJoin(part, own, ctx, formOptions.messages ?? MESSAGES[locale], labels.retry) : null;
-      if (missing) joinRetries.push(missing.retry);
+      if (missing) {
+        joinRetries.push(missing.retry);
+        saidAtTheirSend.add(part).add(own);
+      }
       const join = own?.loaded?.draw(ctx) ?? missing;
       if (!join) continue;
       joins.push(join);
@@ -3179,7 +3191,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (words) inOwnWords(ownParts(), locale);
       drawPage();
       // A part that could not come, with no place of its own to say so: said over the page.
-      if (awaited.some((part) => !part.loaded && !SAID_IN_PLACE.has(part))) partUnloaded();
+      if (awaited.some((part) => !part.loaded && !SAID_IN_PLACE.has(part) && !saidAtTheirSend.has(part))) partUnloaded();
       // Drawn after the status took its place in a corner or across the top: the page's Save took it back beside itself.
       placeStatus();
       root.removeAttribute('aria-busy');

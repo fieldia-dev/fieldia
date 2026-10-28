@@ -1,6 +1,8 @@
-import { FORMAT_VERSION, literalWords, writtenPart, type CreateRequest, type DataSource, type Field, type LayoutNode, type OptionsRequest, type Page, type SearchRequest, type Tone } from '@fieldia/core';
+import { fill, FORMAT_VERSION, literalWords, MESSAGES, writtenPart, type CreateRequest, type DataSource, type Field, type LayoutNode, type OptionsRequest, type Page, type SearchRequest, type Tone } from '@fieldia/core';
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
+import { later } from './later';
+import { ownLocale, viewerWords } from './labels';
 import type { ViewerOptions } from './viewer';
 
 // The field a page's records are named by: a module of its own, which the duplicates part takes too without this one's
@@ -50,12 +52,15 @@ export type PageRequest = { model: string } | { id: string; version?: number };
  */
 export type PageFinder = Record<string, Page> | ((request: PageRequest) => Page | null | undefined | Promise<Page | null | undefined>);
 
-/** The page the app gives for a request: from `pages`, and for a model from `relatedPages` after it. A promise when it answers later. */
+/**
+ * The page the app gives for a request: from `pages`, and for a model from `relatedPages` after it. A promise when it
+ * answers later, the app's handled as it is made; whoever asks handles a page that cannot come.
+ */
 export function findPage(options: Pick<ViewerOptions, 'pages' | 'relatedPages'>, request: PageRequest): Page | null | Promise<Page | null> {
   const { pages, relatedPages } = options;
   const key = 'model' in request ? request.model : request.version === undefined ? request.id : `${request.id}@${request.version}`;
   const found = typeof pages === 'function' ? pages(request) : pages && Object.prototype.hasOwnProperty.call(pages, key) ? pages[key] : null;
-  if (found instanceof Promise) return found.then((page) => page ?? null);
+  if (later(found)) return found.then((page) => page ?? null) as Promise<Page | null>;
   if (found || !('model' in request)) return found ?? null;
   return (typeof relatedPages === 'function' ? relatedPages(request.model) : relatedPages?.[request.model]) ?? null;
 }
@@ -110,11 +115,23 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     // unhandled here.
     canOpen: (model) => {
       const found = pageFor(model);
-      if (found instanceof Promise) found.catch(() => undefined);
+      if (later(found)) found.then(undefined, () => undefined);
       return found !== null;
     },
     async openRecord(model, request) {
-      const found = await pageFor(model);
+      let found: Page | null;
+      try {
+        found = await pageFor(model);
+      } catch {
+        // Its page could not come (a network's failure, the page left as it came): said as a record that cannot be
+        // opened is, by its name or the name typed for a new one, else as a form that could not be loaded — never in
+        // the loader's words — and asked for anew at the next press.
+        const locale = ownLocale(options.locale ?? options.page.language);
+        const messages = options.messages ?? MESSAGES[locale];
+        const name = request.recordId == null ? request.name : request.title;
+        say?.(name ? fill(messages.openFailed, { id: name, problem: messages.partNotLoaded }) : viewerWords(locale, options.labels).formNotLoaded, 'danger');
+        return null;
+      }
       if (!found) return null;
       // A line opened in its model's page: its labels said as the record's are, unless that page says otherwise.
       const related = request.lowerLabels !== undefined && found.lowerLabels === undefined ? { ...found, lowerLabels: request.lowerLabels } : found;

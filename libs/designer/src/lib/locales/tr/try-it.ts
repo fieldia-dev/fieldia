@@ -9,6 +9,7 @@ export const tryIt: DesignerWords['tryIt'] = {
   width: 'Genişlik',
   sizes: { desktop: 'Masaüstü', tablet: 'Tablet', phone: 'Telefon' },
   note: 'Sayfa, kişilerin kullanacağı gibi çalışır. Burada yazılan hiçbir şey saklanmaz.',
+  lastPassed: (why) => `Dene, sayfayı son değişikliğinizden önceki hâliyle gösterir; sayfa o değişikliği almaz: ${why}`,
   language: 'Dil',
   wordsIn: 'Metinlerin dili',
   backToDesigning: 'Tasarıma dön',

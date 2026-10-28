@@ -306,9 +306,10 @@ export function openRecorder(context: RecorderContext): Recorder {
     const type = bare(taken.mimeType || chunks[0]?.type || asked) || bare(asked);
     const recorded = chunks;
     chunks = [];
-    // Nothing recorded — stopped before the browser's recorder began, which then hands back no bytes: no recording
-    // offered (an empty file plays nowhere), the microphone kept, Start recording again.
-    if (!recorded.some((one) => one.size)) {
+    // Nothing recorded — stopped before the browser's recorder began, which then hands back no bytes, or under half a
+    // second after (Firefox's hands back its first moments: a slip of the hand, 0.36's walk): no recording offered (an
+    // empty file plays nowhere), the microphone kept, Start recording again.
+    if (!recorded.some((one) => one.size) || seconds < 0.5) {
       seconds = 0;
       showTime();
       say(words.recordNothing);
@@ -333,7 +334,8 @@ export function openRecorder(context: RecorderContext): Recorder {
     review.replaceChildren(player);
     setHidden(review, false);
     setHidden(stage, true);
-    say([stoppedBy, fillIn(words.recordDone, { time: clock(Math.max(1, Math.round(seconds))) })].filter(Boolean).join(' '));
+    // Its time as its clock says it, never more.
+    say([stoppedBy, fillIn(words.recordDone, { time: clock(seconds) })].filter(Boolean).join(' '));
     showing(use, again);
     // Asked meanwhile whether to let it go: the question keeps the focus until it is answered.
     if (asking.hidden) use.focus();

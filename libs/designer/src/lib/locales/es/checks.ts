@@ -30,6 +30,7 @@ export const checks: DesignerWords['checks'] = {
   renameSecond: 'Cambiar el nombre del duplicado',
   // The page's own check speaks English: said here without its words, as Arabic's table and the refusals do.
   invalid: (path, _message) => (path ? `Esta parte de la página no es válida: ${path}` : 'La página contiene algo que no se ajusta a su formato.'),
+  showBracesAsWritten: 'Mostrar las llaves tal como se escriben',
   // ---- rules
   readsGone: (name, sentence, gone) =>
     `${q(name)}: ${q(sentence)} lee ${listOf('es', gone, 'and')}, que ya no ${gone.length === 1 ? 'está' : 'están'} en la página.`,

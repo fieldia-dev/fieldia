@@ -459,8 +459,11 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
     const tool = target.closest<HTMLElement>('[data-tool]')?.dataset['tool'];
     if (readonly || !tool) return;
     if (tool === 'cover') {
+      // Where the eye is, as it goes to the front (kept-in-sight.ts).
+      const top = tile.element.getBoundingClientRect().top;
       moveTo(tile, 0);
-      tile.open.focus();
+      keepInSight(tile.element, top);
+      tile.open.focus({ preventScroll: true });
     } else if (tool === 'edit') void edit(tile);
     else if (tool === 'retry' && tile.upload) form.retryUpload(tile.upload);
     else if (tool === 'remove') askRemove(tile);
@@ -652,3 +655,14 @@ export const photosWidget: WidgetFactory = ({ form, name, field: def, node, id, 
     },
   };
 };
+
+/**
+ * What a person moved, kept where their eye is: its top on the screen as the move was asked (`top`); once it is drawn in
+ * its new place, the page scrolled by as much as it moved (inside a dialog, which scrolls on its own, it moves as it is
+ * drawn). A focus given back after a move takes no scroll of the browser's own (`preventScroll`): WebKit scrolled to a
+ * button it had just put back from a layout not yet worked out, and threw the page to its top (0.36's walk, a line
+ * card's ↑ on an iPhone).
+ */
+function keepInSight(element: Element | null | undefined, top: number | undefined): void {
+  if (element?.isConnected && top !== undefined) element.ownerDocument.defaultView?.scrollBy(0, element.getBoundingClientRect().top - top);
+}

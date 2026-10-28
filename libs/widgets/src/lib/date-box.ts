@@ -374,8 +374,9 @@ export function dateBox(options: DateBoxOptions): DateBox {
       });
     },
     refuse(value) {
-      // The field's own limits, in the page's words: before its earliest, after its latest, a day it may not fall on.
-      return checkValue(field, value, false, MESSAGES[locale] ?? MESSAGES.en);
+      // The field's own limits, in the page's words: before its earliest, after its latest, a day it may not fall on —
+      // "today" the form's, as its own check counts it (the app's clock, `now`), never the computer's.
+      return checkValue(field, value, false, MESSAGES[locale] ?? MESSAGES.en, form.today());
     },
     update(state) {
       readonly = state.readonly;

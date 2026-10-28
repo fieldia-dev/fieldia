@@ -24,6 +24,8 @@ export const checks = {
   renameSecond: 'Rename the second',
   /** A page written by hand that does not pass the format's checks: where, and what. */
   invalid: (path: string, message: string) => (path ? `${path}: ${message}` : message),
+  /** The fix of words whose braces name no field: the braces kept as words (`\\{customer}`). */
+  showBracesAsWritten: 'Show the braces as written',
   // ---- rules
   readsGone: (name: string, sentence: string, gone: readonly string[]) => `“${name}”: “${sentence}” reads ${andList(gone)}, which ${gone.length === 1 ? 'is' : 'are'} no longer on the page.`,
   formulaBroken: (name: string, problem: string) => `“${name}”: its formula no longer reads — ${problem}.`,

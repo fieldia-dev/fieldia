@@ -381,6 +381,7 @@ Fieldia.mountViewer(host, { page, theme: 'fluent' });</code></pre>
   <div class="chapter-copy">
     <p class="chapter-no">8 · Tested and open</p>
     <h2 id="numbers-h">Tested on every change, and small enough for a script tag</h2>
+    <p>What you can count on, what your server must still check, and which browsers each change is tested in: <a href="/promises/">What Fieldia promises</a>.</p>
   </div>
   <ul class="figures">
     <li><b class="count" data-to="${TESTS.browser}" data-more="+">${figure(TESTS.browser)}+</b><span>browser tests, driving the demos by mouse and keyboard in every framework</span></li>

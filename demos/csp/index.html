@@ -12,12 +12,33 @@
       (tools/build-site.mjs), having no server to make one for every response.
     -->
     <script nonce="__CSP_NONCE__">
+      // What the browser refuses of its own on any page under such a policy, Fieldia or not — WebKit refuses the style
+      // inside each <select> it draws (its words "text-overflow:inherit") — learnt from a select of the page's own made
+      // first, hidden and let go once the page has loaded: a refusal at it is the browser's own, and so is any later one
+      // in its words (the policy's 'report-sample'). The note counts the rest, and says the browser's own apart.
       window.cspViolations = [];
+      window.cspOwn = [];
+      const count = (n) => (n === 1 ? '1 thing' : n + ' things');
+      const probe = document.createElement('select');
+      probe.hidden = true;
       document.addEventListener('securitypolicyviolation', (event) => {
-        window.cspViolations.push({ directive: event.violatedDirective, blocked: event.blockedURI, sample: event.sample, source: event.sourceFile, line: event.lineNumber, target: (event.target && event.target.id) || '', tag: (event.target && event.target.tagName) || '' });
+        const one = { directive: event.violatedDirective, blocked: event.blockedURI, sample: event.sample, source: event.sourceFile, line: event.lineNumber, target: (event.target && event.target.id) || '', tag: (event.target && event.target.tagName) || '' };
+        if (event.target === probe) {
+          if (one.sample) window.cspOwn.push(one.directive + ' ' + one.sample);
+          return;
+        }
+        window.cspViolations.push(one);
+        const own = window.cspViolations.filter((v) => window.cspOwn.includes(v.directive + ' ' + v.sample)).length;
         const said = document.getElementById('csp-refused');
-        if (said) said.textContent = window.cspViolations.length === 1 ? '1 thing' : window.cspViolations.length + ' things';
+        if (said) said.textContent = own === window.cspViolations.length ? 'nothing' : count(window.cspViolations.length - own);
+        const theirs = document.getElementById('csp-own');
+        if (theirs && own) {
+          theirs.hidden = false;
+          theirs.querySelector('b').textContent = count(own);
+        }
       });
+      document.documentElement.append(probe);
+      addEventListener('load', () => probe.remove());
     </script>
     <style nonce="__CSP_NONCE__">
       body { margin: 0; font-family: system-ui, sans-serif; }
@@ -34,7 +55,7 @@
     <p class="csp-note">
       <b>Under a strict Content-Security-Policy:</b> scripts and styles run here only with this page’s nonce — no
       <code>'unsafe-inline'</code>, no <code>'unsafe-eval'</code>, nothing from another site. Fieldia is given the nonce
-      and puts it on every style it adds. Refused by the policy so far: <b id="csp-refused">nothing</b>. A real server
+      and puts it on every style it adds. Refused by the policy so far: <b id="csp-refused">nothing</b>. <span id="csp-own" hidden>This browser refuses the style inside its own select boxes, as it does on any page under such a policy, with Fieldia or without: <b></b> of its own so far.</span> A real server
       sends the policy as a header and makes a new nonce for every response. fieldia.dev has no server of its own: there
       the policy is a meta tag in the page, and its nonce was written once, when the site was built — the same for every
       visitor.

@@ -6,7 +6,7 @@ import { htmlToMarkdown, markdownLoses, markdownToHtml } from './markdown';
 import { CHOOSING, EMOJI, HIGHLIGHTS, MARKDOWN_TOOLS, RICH_TOOLS, TEXT_COLOURS, TEXT_SIZES, TOGGLES, chevron, moreIcon, swatch, toolIcon, toolLabel, type TextTool } from './text-tools';
 import { textMenu, type MenuChoice, type TextMenu } from './text-menu';
 import { linkAddress, sanitizeHtml } from './sanitize';
-import { givenHtml, heldHtml, restyle, showHtml } from './style-attributes';
+import { givenHtml, heldHtml, restyle, showHtml, wearStyles } from './style-attributes';
 import { copyHtml, keepCells, pasteHtml } from './pasted-html';
 import { PICK_COLUMNS, cellAt, cellsInOrder, editTable, hasHeader, headedTables, markdownTable, newTable, pickerChoices, placeOf, tableGrid, tableHeight, tableSize, tableWidth, type TableEdit } from './rich-table';
 import { installEditorStyles } from './styles-editor';
@@ -305,8 +305,11 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
     const selection = doc.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(range);
-    doc.execCommand?.(next ? 'insertHTML' : 'delete', false, next?.outerHTML);
+    // Its cells' looks held as the browser's editing reads it, then put on through their style objects: a strict policy
+    // refuses a style attribute read as HTML (style-attributes.ts).
+    doc.execCommand?.(next ? 'insertHTML' : 'delete', false, next ? heldHtml(next.outerHTML) : undefined);
     const now = next ? (area.querySelectorAll('table')[index] as HTMLTableElement | undefined) : undefined;
+    if (now) wearStyles(now);
     if (now && next) keepCells(now, next);
     const cell = now && at ? cellAt(now, at) : null;
     if (cell) intoCell(cell, false);
@@ -953,7 +956,8 @@ export function formattedText(doc: Document, options: FormattedTextOptions = {})
   });
   area.addEventListener('blur', () => {
     // What is shown is what was kept: anything unsafe typed or pasted is gone.
-    if (editor === 'rich' && area.innerHTML !== (last ?? '') && last !== null) area.innerHTML = last;
+    // Shown as every value is (`showHtml`): its looks through style objects, which a strict policy lets be.
+    if (editor === 'rich' && area.innerHTML !== (last ?? '') && last !== null) showHtml(area, last);
     setTimeout(() => {
       if (!element.contains(doc.activeElement)) closeSuggestions();
     });

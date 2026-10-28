@@ -131,6 +131,22 @@ const records = (page: Page) => page.evaluate(() => typeof (window as any).Media
 const lengthOf = (player: Locator) => player.evaluate((media: HTMLMediaElement) => (media.readyState > 0 && Number.isFinite(media.duration) ? media.duration : -1));
 
 test.describe('a voice note and a short film recorded on the page', () => {
+  test('Stop at once after the recording began: nothing kept, said so, the words and the clock the same (0.36 walk, Firefox)', async ({ page }) => {
+    await devices(page, 'allow');
+    const { problems } = await open(page, 'plain', 'page=site-visit&record=1&skin=outlined');
+    if (!(await records(page))) return;
+    await voice(page).getByRole('button', { name: 'Record a voice note' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Record a voice note' });
+    // Start, then Stop at once, as the walk pressed them 63 ms apart: Firefox's recorder had begun, Chromium's not yet.
+    await dialog.getByRole('button', { name: 'Start recording' }).click();
+    await dialog.getByRole('button', { name: 'Stop' }).click();
+    await expect(dialog.getByRole('status')).toHaveText('Nothing was recorded: the recording had not started yet. Press Start recording to try again.');
+    await expect(dialog.getByRole('timer')).toHaveText('0:00 / 2:00');
+    await expect(dialog.locator('.fd-recorder-review audio')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Use this recording' })).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+
   test('a voice note recorded, played back, used, and stored with the visit; a film recorded from the camera', async ({ page }) => {
     await devices(page, 'allow');
     const { problems } = await open(page, 'plain', 'page=site-visit&record=1&skin=outlined');

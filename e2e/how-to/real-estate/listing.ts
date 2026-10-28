@@ -64,7 +64,11 @@ export const replay: DemoReplay = {
         expect(Number.isNaN(listed.getTime()), 'Listed on holds today').toBe(false);
         await type(page.getByRole('textbox', { name: 'Handover in (months)' }), '18');
         await keys('Tab');
-        const handover = new Date(Date.UTC(listed.getUTCFullYear(), listed.getUTCMonth() + 18, listed.getUTCDate()));
+        // A year and a half on, on the same day of the month — the month's last where it has fewer days, as addMonths
+        // counts (31 October on 18 months is 30 April): a day written as the overflowing Date.UTC made it ran out on the
+        // 29th to the 31st of every month whose month 18 on is shorter.
+        const last = new Date(Date.UTC(listed.getUTCFullYear(), listed.getUTCMonth() + 19, 0)).getUTCDate();
+        const handover = new Date(Date.UTC(listed.getUTCFullYear(), listed.getUTCMonth() + 18, Math.min(listed.getUTCDate(), last)));
         await see(page.getByRole('textbox', { name: 'Handed over by' })).toHaveValue(dayWords(handover));
         await type(page.getByRole('textbox', { name: 'Built on' }), '01/06/2015');
         await keys('Tab');

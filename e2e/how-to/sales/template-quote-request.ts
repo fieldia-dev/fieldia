@@ -15,10 +15,14 @@ export const replay: DemoReplay = {
         await press(page.getByRole('radio', { name: '$10,000 – $50,000' }));
         await see(page.getByRole('radio', { name: '$10,000 – $50,000' })).toBeChecked();
         const needed = page.getByRole('textbox', { name: 'Needed by' });
-        await type(needed, '15/12/2026');
+        // Seven weeks from the page's today, as "Needed by" may be no earlier than today: a day written here ran out on
+        // the day after it (15 Dec 2026), and was refused from then on.
+        const by = new Date((await page.evaluate(() => Date.now())) + 49 * 86_400_000);
+        const two = (n: number) => String(n).padStart(2, '0');
+        await type(needed, `${two(by.getDate())}/${two(by.getMonth() + 1)}/${by.getFullYear()}`);
         if (phone) await press(page.getByRole('textbox', { name: 'About the project' }));
         else await keys('Tab');
-        await see(needed).toHaveValue('15 Dec 2026');
+        await see(needed).toHaveValue(new RegExp(`^${by.getDate()} \\p{L}+\\.? ${by.getFullYear()}$`, 'u'));
         await see(needed).toHaveAttribute('aria-invalid', 'false');
       },
     },

@@ -1,4 +1,5 @@
 import { fillIn } from './kind-parts';
+import { givenHtml, heldHtml } from './style-attributes';
 import { inPlural, type WidgetLabels } from './labels';
 import type { MenuChoice } from './text-menu';
 
@@ -70,7 +71,9 @@ function emptyCell(doc: Document, header: boolean): Cell {
 function retag(cell: Cell, header: boolean): Cell {
   if ((cell.tagName === 'TH') === header) return cell;
   const next = cell.ownerDocument.createElement(header ? 'th' : 'td');
-  for (const attribute of [...cell.attributes]) if (attribute.name !== 'scope') next.setAttribute(attribute.name, attribute.value);
+  for (const attribute of [...cell.attributes]) if (attribute.name !== 'scope' && attribute.name !== 'style') next.setAttribute(attribute.name, attribute.value);
+  // Its looks (an alignment) through its style object, which a strict policy lets be: a style attribute it refuses.
+  next.style.cssText = cell.style.cssText;
   next.append(...cell.childNodes);
   cell.replaceWith(next);
   return next;
@@ -91,7 +94,8 @@ export const hasHeader = (table: HTMLTableElement) => headerRow(table.rows[0]);
 export function headedTables(html: string, doc: Document): string {
   if (!/<th[\s>]/i.test(html)) return html;
   const box = doc.createElement('template');
-  box.innerHTML = html;
+  // Read with its cells' styles held, as a strict policy refuses a style attribute read as HTML (style-attributes.ts).
+  box.innerHTML = heldHtml(html);
   let moved = false;
   for (const table of box.content.querySelectorAll('table')) {
     const first = table.rows[0];
@@ -101,7 +105,7 @@ export function headedTables(html: string, doc: Document): string {
     for (const body of [...table.tBodies]) if (!body.rows.length) body.remove();
     moved = true;
   }
-  return moved ? box.innerHTML : html;
+  return moved ? givenHtml(box.innerHTML) : html;
 }
 
 /** A new table of empty cells, its first row a header row. */

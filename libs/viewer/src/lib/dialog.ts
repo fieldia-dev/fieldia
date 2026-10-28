@@ -209,15 +209,33 @@ function openNow(options: FormDialogOptions, shape: string, side: PanelSide | un
 
   // A host of its own, so its steps run here too. Its form takes this close once, and puts its one check before it:
   // a `close` step closes it once nothing of the person's is at risk, or they let it go — saved, when a save went through.
-  const handle = mountViewer(body, {
-    ...options,
-    page: look && !options.page.look ? { ...options.page, look } : options.page,
-    showActions: false,
-    // A dialog has no pager or breadcrumbs: they belong to the record under it.
-    records: undefined,
-    breadcrumbs: undefined,
-    host: { ...options.host, close: () => close(false) },
-  });
+  let handle: ViewerHandle;
+  try {
+    handle = mountViewer(body, {
+      ...options,
+      page: look && !options.page.look ? { ...options.page, look } : options.page,
+      showActions: false,
+      // A dialog has no pager or breadcrumbs: they belong to the record under it.
+      records: undefined,
+      breadcrumbs: undefined,
+      host: { ...options.host, close: () => close(false) },
+    });
+  } catch {
+    // A page the viewer refuses (refused.ts): its words stay where the form would be, and × or Escape lets the box go —
+    // never a box nothing closes, nor a failure left to whoever opened it (0.36.1).
+    if (!closeButton.isConnected) box.prepend(closeButton);
+    closeButton.focus();
+    return new Promise((resolve) => {
+      const shut = (event: Event) => {
+        if (event.type !== 'click' && (event as KeyboardEvent).key !== 'Escape') return;
+        backdrop.remove();
+        under?.removeAttribute('data-behind');
+        opener?.focus();
+        resolve({ saved: false, recordId: null, values: {} });
+      };
+      box.onkeydown = closeButton.onclick = shut;
+    });
+  }
   // A panel runs the way its page does, its language's way unless told: the inline end it sits at is the left, right to left.
   if (panel && handle.element.dir) backdrop.dir = handle.element.dir;
   // A dialog round a page with a head: its ⤢ and × at the end of the head's badge row, and named by the badge and the title.

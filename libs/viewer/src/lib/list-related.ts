@@ -3,6 +3,7 @@ import { formatNumber, loadingOver, startLoading, whileShown, type IconSet, type
 import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 import { listView, type ListContext, type ListView } from './list';
+import { later } from './later';
 import { installListStyles } from './list-styles';
 
 /** What a related list is drawn with: the viewer's, its dialogs of the app's pages and its host's way to open a page. */
@@ -229,7 +230,7 @@ export function relatedList(context: RelatedContext): RelatedPart {
     }
   }
   const known = context.recordsOf?.(node.model);
-  if (known instanceof Promise) void known.then((given) => gone || nameRecords(given), () => undefined);
+  if (later(known)) void known.then((given) => gone || nameRecords(given), () => undefined);
   else nameRecords(known);
 
   /** The list for the record shown now: a new one for a record it was not listing, else its records asked again. */

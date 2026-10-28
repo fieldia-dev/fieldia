@@ -22,12 +22,15 @@ const blockName = (drive: Drive, day: string, from: string, to: string) =>
 /** A day with its year as this engine's Intl writes it: Chromium 156 puts a comma after the weekday, 141 did not. */
 const withYear = (day: string, year: string) => new RegExp(`^${day.replace(' ', ',? ')} ${year}$`);
 
+/** Whether the first step looked on to the next week, its own having few drives left in it (a Saturday's, a Sunday's). */
+let lookedOn = false;
+
 /** The test-drives demo's how-to steps, replayed by hand (e2e/how-to.spec.ts). */
 export const replay: DemoReplay = {
   steps: [
     {
       says: 'Look from another time zone (your own, if you are not in Berlin): each drive is at its Berlin time',
-      async run({ page, see, demo }) {
+      async run({ page, press, see, demo }) {
         // This browser's own zone is not Berlin's: an hour or two apart, as the page's own words say.
         expect(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).not.toBe('Europe/Berlin');
         await see(page.locator('.fd-cal-zone')).toHaveText(/^(CEST|CET)$/);
@@ -36,11 +39,17 @@ export const replay: DemoReplay = {
         // The week shown, Monday to Sunday round Berlin's today, and its drives at their times there.
         const today = berlinDay(0);
         const monday = (today.weekday + 6) % 7;
-        const week = [0, 1, 2, 3, 4, 5, 6].map((n) => berlinDay(n - monday).label.split(' ').slice(0, 3).join(' '));
-        const drives = Object.values((await demo<Record<string, Record<string, Drive>>>('dataSource.records'))['drive.booking'])
-          .map((drive) => ({ drive, from: inBerlin(drive.start), to: inBerlin(drive.stop) }))
-          .filter(({ from }) => week.includes(from.day))
-          .sort((a, b) => (a.drive.start < b.drive.start ? -1 : 1));
+        const weekOn = (shift: number) => [0, 1, 2, 3, 4, 5, 6].map((n) => berlinDay(n - monday + shift).label.split(' ').slice(0, 3).join(' '));
+        const all = Object.values((await demo<Record<string, Record<string, Drive>>>('dataSource.records'))['drive.booking']).map((drive) => ({ drive, from: inBerlin(drive.start), to: inBerlin(drive.stop) }));
+        const inWeek = (week: string[]) => all.filter(({ from }) => week.includes(from.day)).sort((a, b) => (a.drive.start < b.drive.start ? -1 : 1));
+        let drives = inWeek(weekOn(0));
+        // Late in the week — a Saturday, a Sunday — its drives are behind it (the showroom books from today on): the
+        // next week's, as a person looks on to them (0.36's replays on other days).
+        lookedOn = drives.length <= 3;
+        if (lookedOn) {
+          await press(page.locator('.fd-cal-step').nth(1));
+          drives = inWeek(weekOn(7));
+        }
         expect(drives.length).toBeGreaterThan(3);
         for (const { drive, from, to } of drives.slice(0, 6)) {
           await see(page.getByRole('button', { name: blockName(drive, from.day, from.time, to.time) })).toBeVisible();
@@ -99,10 +108,13 @@ export const replay: DemoReplay = {
         // A phone opens on the week's agenda, its days' names headings: Week shows them as names to press.
         if (phone) await press(page.getByRole('button', { name: 'Week', exact: true }));
         const tomorrow = berlinDay(1);
-        const label = (tomorrow.weekday === 1 ? berlinDay(0) : tomorrow).label.split(' ').slice(0, 3).join(' ');
+        // In the next week where the first step looked on to it: its Tuesday.
+        const pressed = lookedOn ? berlinDay(8 - ((berlinDay(0).weekday + 6) % 7)) : tomorrow.weekday === 1 ? berlinDay(0) : tomorrow;
+        const label = pressed.label.split(' ').slice(0, 3).join(' ');
         // A day's head named with the words it shows too (0.36): "Wednesday 28 October, Wed 28".
         await press(page.getByRole('button', { name: new RegExp(`^${label}, \\w+ \\d+$`) }));
-        await see(page.locator('.fd-cal-title')).toHaveText(withYear(label, berlinDay(0).label.split(' ')[3]));
+        // In the day's own year: tomorrow, on 31 December, is the next year's.
+        await see(page.locator('.fd-cal-title')).toHaveText(withYear(label, pressed.label.split(' ')[3]));
         await see(page.locator('.fd-cal-col')).toHaveCount(3);
         for (const car of ['City hatchback, electric', 'Family estate, hybrid', 'Compact SUV']) await see(page.getByRole('group', { name: `${label}, ${car}`, exact: true })).toBeVisible();
         // An empty slot of the estate's column: its first hour from 09:00 with nothing booked.

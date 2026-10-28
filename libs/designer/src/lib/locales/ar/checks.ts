@@ -25,6 +25,8 @@ export const checks: DesignerWords['checks'] = {
   twoFields: (label) => `حقلان نصهما ${q(label)}: قد لا يميّز الناس بينهما.`,
   renameSecond: 'إعادة تسمية الثاني',
   invalid: (path, _message) => (path ? `هذا الجزء من الصفحة غير صالح: ${ltr(path)}` : 'في الصفحة ما لا يطابق صيغتها.'),
+  // UNREVIEWED: machine-assisted, not yet reviewed by a native speaker (0.36.1).
+  showBracesAsWritten: 'اعرض الأقواس كما كُتبت',
   readsGone: (name, sentence, gone) => `${q(name)}: ${q(sentence)} تقرأ ${listOf('ar', gone, 'and')}، ولم يعد ${gone.length === 1 ? 'موجودًا' : 'موجودين'} في الصفحة.`,
   formulaBroken: (name, problem) => `${q(name)}: لم تعد صيغته تُقرأ — ${problem}.`,
   givesNothing: (name, sentence, problem) => `${q(name)}: في ${q(sentence)}، ${problem} — فلا يعطي هذا الجزء شيئًا.`,

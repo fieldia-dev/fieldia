@@ -76,6 +76,9 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * 595.0 / 824.6 (77 / 87) — p37-refuse's +1.4 with the page and p37-format's filter groups and copy, +0.4 to +0.8.
  * 0.37, a photo's picture never waited for long (the files part's encodeSoon): to usable a record form 338.6, in
  * Arabic 361.3; the rest as above.
+ * 0.37 merged with 0.36.1, measured from the merged build, inside 0.36.0's budgets: a record form 248.0 / 339.0 (65 / 73),
+ * in Arabic 248.0 / 361.8 (65 / 76), a list 247.2 / 335.3 (65 / 70), the designer 596.1 / 825.8 (78 / 88) — 0.36.1's
+ * pages and records the app cannot give, said, +0.35 with the page and a file more each.
  */
 const BUDGET = {
   record: { page: 250.3, usable: 342.9, files: 73 },

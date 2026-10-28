@@ -114,14 +114,17 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
     const holding = item.element.contains(document.activeElement);
     // At an end, the button that moved it is no use: the cursor goes to the other.
     refocus = holding ? { item, which: (which === 'up' && to === 0) || (which === 'down' && to === next.length - 1) ? (which === 'up' ? 'down' : 'up') : which } : null;
+    // Where the eye is, as it goes (kept-in-sight.ts).
+    const top = item.element.getBoundingClientRect().top;
     keep(next, item);
+    keepInSight(item.element, top);
     giveBackFocus();
   }
   function giveBackFocus() {
     if (!refocus) return;
     const { item, which } = refocus;
     refocus = null;
-    item[which].focus();
+    item[which].focus({ preventScroll: true });
   }
 
   list.addEventListener('keydown', (event) => {
@@ -199,3 +202,14 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
     },
   };
 };
+
+/**
+ * What a person moved, kept where their eye is: its top on the screen as the move was asked (`top`); once it is drawn in
+ * its new place, the page scrolled by as much as it moved (inside a dialog, which scrolls on its own, it moves as it is
+ * drawn). A focus given back after a move takes no scroll of the browser's own (`preventScroll`): WebKit scrolled to a
+ * button it had just put back from a layout not yet worked out, and threw the page to its top (0.36's walk, a line
+ * card's ↑ on an iPhone).
+ */
+function keepInSight(element: Element | null | undefined, top: number | undefined): void {
+  if (element?.isConnected && top !== undefined) element.ownerDocument.defaultView?.scrollBy(0, element.getBoundingClientRect().top - top);
+}

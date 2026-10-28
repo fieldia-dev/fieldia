@@ -6,6 +6,15 @@
     <title>Fieldia — a form on another site</title>
     <link rel="stylesheet" href="../demo.css" />
     <link rel="stylesheet" href="../shell.css" />
+    <script>
+      // The page is about unit B-12: an address that names no unit (the page opened alone) names it, as the gallery's
+      // link and a broker's do — before the frame finds the demo by its address and the form reads its unit from it.
+      const asked = new URL(location.href);
+      if (!asked.searchParams.has('unit')) {
+        asked.searchParams.set('unit', 'B-12');
+        history.replaceState(history.state, '', asked);
+      }
+    </script>
     <style>
       .partner { max-width: 760px; margin: 0 auto; padding: 16px; }
       /* In the frame's scheme, light or dark (shell.css sets the page's color-scheme). */

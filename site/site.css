@@ -160,6 +160,17 @@ th, td { text-align: start; vertical-align: top; padding: 9px 12px; border-botto
 th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); background: var(--head); }
 tr:last-child td { border-bottom: none; }
 .table-scroll { overflow-x: auto; }
+/* A doc's table on a phone (site/markdown.mjs): each row a block, its first cell its name, each other value under its
+   column's name — never a column squeezed to a word a line, nor one cut at the screen's edge. */
+@media (max-width: 640px) {
+  .table-rows table, .table-rows tbody, .table-rows tr, .table-rows td { display: block; }
+  .table-rows thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .table-rows tr { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .table-rows tr:last-child { border-bottom: none; }
+  .table-rows td { border: none; padding: 3px 14px; overflow-wrap: anywhere; }
+  .table-rows td:first-child { font-weight: 600; }
+  .table-rows td:not(:first-child)::before { content: attr(data-label); display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+}
 .fields td:first-child { white-space: nowrap; }
 .demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
 .demo-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }

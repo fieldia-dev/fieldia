@@ -12,6 +12,7 @@ export const tryIt: DesignerWords['tryIt'] = {
   width: 'Ancho',
   sizes: { desktop: 'Escritorio', tablet: 'Tableta', phone: 'Teléfono' },
   note: 'La página funciona tal como la usarán las personas. Nada de lo que se escriba aquí se guarda.',
+  lastPassed: (why) => `Probar muestra la página como era antes de tu último cambio, que la página no admite: ${why}`,
   language: 'Idioma',
   wordsIn: 'Textos en',
   // ---- Find anything

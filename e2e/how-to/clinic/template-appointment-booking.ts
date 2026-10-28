@@ -31,8 +31,11 @@ export const replay: DemoReplay = {
           await press(full.first());
           await see(bookingTimes(page)).toHaveCount(0);
         }
-        // The first day with free times, and its first time.
-        const open = bookingDays(page).and(page.locator('[aria-label$=" free times"]')).first();
+        // The first day with free times, and its first time — in the next month's page where this month has none left,
+        // as on its last evening: a person presses › first.
+        const free = bookingDays(page).and(page.locator('[aria-label$=" free times"]'));
+        if (!(await free.count())) await press(page.locator('[data-node="f-when"]').getByRole('button', { name: 'Next month' }));
+        const open = free.first();
         booked.label = (await open.getAttribute('aria-label'))!;
         // Its day as each engine's Intl writes it: Chromium 156 with a comma after the weekday.
         const [, d, m, y] = booked.label.match(/^\w+,? (\d+) (\w+) (\d{4})/)!;

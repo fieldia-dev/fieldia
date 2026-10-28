@@ -31,6 +31,8 @@ export interface TreeContext {
   searching: () => boolean;
   /** Rows came or went. */
   changed: () => void;
+  /** The keys from a row to the one shown beside it, down or up: a Show more's arrows, as a record's row's. */
+  step?: (tr: HTMLElement, down: boolean) => void;
 }
 
 /** A tree of records too big for a page (`loadChildren`), wired into a list's rows under their parent. */
@@ -169,6 +171,11 @@ export function lazyTree(context: TreeContext): LazyTree | null {
         }
       };
       button.addEventListener('click', () => void next());
+      button.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+        event.preventDefault();
+        context.step?.(moreRow, event.key === 'ArrowDown');
+      });
       more.push(moreRow);
     }
     after.after(...rows, ...more);

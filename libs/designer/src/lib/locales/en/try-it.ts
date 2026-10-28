@@ -7,6 +7,8 @@ export const tryIt = {
   width: 'Width',
   sizes: { desktop: 'Desktop', tablet: 'Tablet', phone: 'Phone' },
   note: 'The page works as people will use it. Nothing typed here is kept.',
+  /** Try it while the last change is refused: what it shows instead, and why. */
+  lastPassed: (why: string) => `Try it shows the page as it was before your last change, which the page cannot take: ${why}`,
   language: 'Language',
   wordsIn: 'Words in',
   // ---- Find anything

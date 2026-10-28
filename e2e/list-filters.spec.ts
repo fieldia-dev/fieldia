@@ -185,9 +185,12 @@ test.describe('a phone’s sheet with a range refused', () => {
     await page.keyboard.press('Enter');
     const area = sheet.locator('.fd-filter-sheet-field[data-field="area_m2"]');
     await expect(area.locator('.fd-refusal-hint:not([hidden])')).toHaveText('From is more than To');
+    // Show counts nothing while a range is refused: what it would show is not what the person typed (the 0.36 walk:
+    // "Show 5 homes", the count for From 300 alone).
+    const show = sheet.locator('.fd-filter-sheet-show');
+    await expect(show).toHaveText('Show results');
     // Scrolled on to Show, as a thumb goes: the refused range out of sight, the keys elsewhere.
     await sheet.locator('.fd-filter-sheet-body').evaluate((body) => (body.scrollTop = body.scrollHeight));
-    const show = sheet.locator('.fd-filter-sheet-show');
     await show.click();
     // Nothing shown: the sheet stays, says why where Show was pressed, and the keys are on the range, in sight.
     await expect(sheet).toBeVisible();
@@ -199,6 +202,7 @@ test.describe('a phone’s sheet with a range refused', () => {
     await to.fill('400');
     await to.press('Enter');
     await expect(sheet.getByRole('alert')).toBeHidden();
+    await expect(show).toHaveText(/^Show \d+ homes?$/);
     await show.click();
     await expect(sheet).toBeHidden();
     expect(problems).toEqual([]);

@@ -26,7 +26,7 @@ import { fixStepCheck, stepChanges, stepChecks, type StepFix, type StepFixer } f
  * fields on show, so it is required only when shown, as it should be.
  */
 
-export type CheckFix = { kind: 'go'; id: string; part: 'label' | 'options' } | { kind: 'remove'; id: string } | { kind: 'drop-rule'; id: string; rule: number } | { kind: 'print-all'; ids: string[] } | RuleFix | StepFix;
+export type CheckFix = { kind: 'go'; id: string; part: 'label' | 'options' } | { kind: 'remove'; id: string } | { kind: 'drop-rule'; id: string; rule: number } | { kind: 'print-all'; ids: string[] } | { kind: 'braces' } | RuleFix | StepFix;
 
 export interface PageCheck {
   /** The element it is about, or null for the page. */
@@ -238,6 +238,8 @@ export function fixCheck(designer: CheckFixer, check: PageCheck): boolean {
   if (action.kind === 'print-all') return action.ids.map((id) => designer.setPrinted(id, true)).every(Boolean);
   if (action.kind === 'remove-rule') return fixRuleCheck(designer, action);
   if (action.kind === 'remove-step' || action.kind === 'remove-steps') return fixStepCheck(designer, action);
+  // A refused edit's braces shown as written: the designer's own, which holds that edit (designer.ts).
+  if (action.kind === 'braces') return false;
   const target = withRules(designer.getPage()).find((t) => t.id === action.id);
   const condition = readCondition(target?.invisible);
   if (!condition || condition === 'custom') return false;

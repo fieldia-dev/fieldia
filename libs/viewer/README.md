@@ -1428,8 +1428,8 @@ record's head, a list's filter bar, a theme…), as it is pressed for Undo and
 printing; and a send it guards is refused, nothing sent:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.js"
-  integrity="sha256-ukvZlt6qspOUt/OlnBzglmZMpaYRLgXYY4dbxEOKw2c="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.js"
+  integrity="sha256-dQgaaTAAs7rFub4PEFyNjjl4qIKeFCJapyCYxHKR81U="
   crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(document.getElementById('app'), {
@@ -1444,11 +1444,11 @@ or Spanish, add that language's script after it (about 17–22 KB gzipped each),
 then pass `locale`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.js"
-  integrity="sha256-ukvZlt6qspOUt/OlnBzglmZMpaYRLgXYY4dbxEOKw2c="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.js"
+  integrity="sha256-dQgaaTAAs7rFub4PEFyNjjl4qIKeFCJapyCYxHKR81U="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.ar.js"
-  integrity="sha256-m+cCLFR0ERKHKMwecaqwFgZvRsrozJOO2JOnoAP+zlM="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.ar.js"
+  integrity="sha256-rlD91cBhhDrJlWu24RLCtdeujbWFyRGFZoIPUuZz7gY="
   crossorigin="anonymous"></script>
 <script>
   Fieldia.mountViewer(element, { page, dataSource, locale: 'ar' });
@@ -1460,23 +1460,23 @@ script per language the page is shown in:
 
 ```html
 <!-- German, French, Turkish, Persian, Urdu, Spanish -->
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.de.js"
-  integrity="sha256-lmK1sTav1k7ItmtLs/5XO+dpSIbT2laQaa6rwh/WuAA="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.de.js"
+  integrity="sha256-xkTaRr/VVDvEejS5jbcpBYv++1W6HdXAnzOesp6XLEI="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.fr.js"
-  integrity="sha256-ZVCBkwj0VgTF+zAKlNLlmmkIQuEAjXwJeXLNAlTWQxI="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.fr.js"
+  integrity="sha256-OciUAaTY8GIUznpYDu6+XJd2wqwPO0u9e0buHpEZCOE="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.tr.js"
-  integrity="sha256-PozvFNFq0cd712/mr+oTV5wMOn5rfb082A64rxe8lAg="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.tr.js"
+  integrity="sha256-RVqgIMw3QeKpR99xXb9w8+o5njwWmUYpaf/m1teYjvI="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.fa.js"
-  integrity="sha256-4XuJuUIfaioStcW5iSsbbmkQ5bAqDXm5hFIzlpDqafU="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.fa.js"
+  integrity="sha256-DYvuCL8E5/E6UtByv/eVZluf3FhT5WVVRTTLfUDnk3Q="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.ur.js"
-  integrity="sha256-0P8A3Tq7Fpxnkm95/l80QCRVOjGwX/knLYImgjJuOuE="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.ur.js"
+  integrity="sha256-e3Mdhml6TbGK0oKaxSgSlFhw+aR4EQh0cvT1LAIE0KY="
   crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.es.js"
-  integrity="sha256-CHTO5fT02JNWuvGE60canDnLZ6RCQMKrr/hCPs/kiw4="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.es.js"
+  integrity="sha256-oaOgdRa1+GnQCZ8xH+K51eb6Se7dfeBXbT5kzqU+xf0="
   crossorigin="anonymous"></script>
 ```
 
@@ -1532,8 +1532,8 @@ record's page saves through its `source`. An app built with a bundler calls
 `defineFieldiaForm()` once.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia.js"
-  integrity="sha256-ukvZlt6qspOUt/OlnBzglmZMpaYRLgXYY4dbxEOKw2c="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia.js"
+  integrity="sha256-dQgaaTAAs7rFub4PEFyNjjl4qIKeFCJapyCYxHKR81U="
   crossorigin="anonymous"></script>
 <fieldia-form src="/forms/enquiry.page.json" action="/api/enquiries" locale="ar"></fieldia-form>
 ```
@@ -1553,8 +1553,8 @@ sites from framing it at all. The tag passes on `data-locale`, `data-theme`,
 names), for a page that fills hidden fields from its link.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.0/bundle/fieldia-embed.js"
-  integrity="sha256-vSbaGo4ybrefMzaU+nrzjMg6e9y5cNLi8SwAYqE8AOc="
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer@0.36.1/bundle/fieldia-embed.js"
+  integrity="sha256-ExxESXxAGtdBEClR3ORbtRrsYUVPtidColiX28O95ZY="
   crossorigin="anonymous"
   data-src="https://forms.example.com/enquiry" data-locale="ar" async></script>
 ```
