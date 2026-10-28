@@ -350,19 +350,20 @@ without their part tags, measured before 0.36.1 joined: within 10 ms of 0.36.0's
 on a desktop — about what the 0.74 KB more takes on that line — and inside the
 runs' own spread on the phone.
 
-**Size, the parts (size-parts):** `fieldia.js` 588.9 → 546.3 KB, 198.03 →
-184.66 gzipped (−13.36), each move measured after the one before: a page's
-dialogs, a page opened, the viewer's question and the step engine in the acts
+**Size, the parts (size-parts):** `fieldia.js` 588.9 → 546.2 KB, 198.00 →
+184.64 gzipped (−13.36, on the branch merged with p37-walk-rest), each move
+measured after the one before: a page's dialogs, a page opened, the viewer's
+question and the step engine in the acts
 part −7.03; save safety's banners with them −1.18; the classic formatted
 text's toolbar in the html part −1.64, and the words each moved part reads
 alone with it −0.19; a sheet's furniture and its look in the sheet part −2.27;
 Reload, Keep mine and Put back −0.28; a link's and a line's dialogs −0.78. The
-new parts: acts 12.39, html 2.73, sheet 4.28 gzipped; text +0.03 and path,
+new parts: acts 12.41, html 2.73, sheet 4.28 gzipped; text +0.03 and path,
 choice and relations +0.01 (words they share with a moved part, each one's
 own now); each add-on +0.02 to +0.03 for its two new sentences. From the npm
-packages (with the page / to usable): a record form 248.0 → 235.9 / 339.0 →
-347.1, in Arabic 248.0 → 235.9 / 361.8 → 369.8, a list 247.2 → 235.1 / 335.3 →
-336.3, the designer 596.1 → 584.6 / 825.8 → 821.6 — the acts part's two chunks
+packages (with the page / to usable): a record form 248.0 → 236.0 / 339.2 →
+347.2, in Arabic 248.0 → 236.0 / 361.9 → 369.9, a list 247.2 → 235.2 / 335.4 →
+336.3, the designer 596.2 → 584.6 / 826.0 → 821.8 — the acts part's two chunks
 asked for after the draw, so "to usable" carries them. A page's first draw on
 Slow 4G (1.44 Mbps, 562 ms; 7 runs interleaved with the build before these
 parts, a desktop and a phone's CPU four times slower), medians in ms: a plain
