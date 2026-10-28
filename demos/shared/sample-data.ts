@@ -313,8 +313,12 @@ export const pages: Record<string, PageSource> = {
  * light system leaves the page exactly as it is drawn.
  */
 export async function pageFromQuery(params: URLSearchParams): Promise<Page> {
+  // A record opened from a list's row: the list's own page too, at once, for its name over the record (`trailFromQuery`).
+  const from = listOpening(params);
+  const list = from ? pageOf(pages[from]).then((page) => (listTitles[from] = page.title ?? ''), () => undefined) : undefined;
   // The code page in the editor the demo's switch picked.
   const named = params.get('page') === 'code' ? codePageFor(params.get('editor')) : await pageOf(pages[params.get('page') ?? 'signup'] ?? pages['signup']);
+  await list;
   // A list opened for one record's records (`filter=` or `search=`, a related list's View all by the app's route) shows them all, its own default filters off.
   const page = (params.get('filter') || params.get('search')) && named.layout.type === 'list' ? { ...named, layout: { ...named.layout, defaultFilters: [] } } : named;
   const maxWidth = params.get('maxWidth');
@@ -399,7 +403,10 @@ const CHANGED_IN_PLACE = new Set(['service-prices', 'staff-hours', 'deal-stages'
 /** Whether a list's rows open a record of their own: not those changed in place, whose rows are the whole of it. */
 export const opensRows = (params: URLSearchParams): boolean => !CHANGED_IN_PLACE.has(params.get('page') ?? '');
 
-/** A list's row opens its record on its own page, keeping the skin, language and direction. */
+/**
+ * A list's row opens its record on its own page, keeping the skin, language and direction — and the list it came
+ * from (`from`), whose name the record shows over it, its way back (`trailFromQuery`).
+ */
 export function openRecord(params: URLSearchParams, id: string | number): void {
   if (!opensRows(params)) return;
   const next = new URLSearchParams(params);
@@ -408,7 +415,42 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
   // What kept the list to one record's records is the list's, not the record's.
   next.delete('filter');
   next.delete('search');
+  next.set('from', params.get('page') ?? '');
   location.search = next.toString();
+}
+
+/** The list a record's address says it was opened from (`from`): one whose rows open records of this page. */
+function listOpening(params: URLSearchParams): string | null {
+  const from = params.get('from');
+  return from && RECORD_PAGES[from] === params.get('page') && pages[from] ? from : null;
+}
+
+/** The titles of the lists records were opened from, as `pageFromQuery` fetched them with the record's page. */
+const listTitles: Record<string, string> = {};
+
+/**
+ * A record opened from a list's row, its way back, as an app gives one (the walk of 0.36: an activity log entry had
+ * only the browser's Back): the list's name over the record (`breadcrumbs`, which the viewer draws as Flectra's
+ * trail, as the vendor bill's and the real pages' show theirs). Pressed, the browser's Back where the list is the page
+ * before — the list where it was left, its rows and its place, as Back keeps them (the walk of 0.35) — else the list's
+ * own address: a link opened in a tab of its own. Its name is the list page's title, which `pageFromQuery` (awaited
+ * before the viewer's options, by every demo) fetched with the record's page; none where it could not.
+ */
+function trailFromQuery(params: URLSearchParams): { breadcrumbs?: { label: string; href: string; open: () => void }[] } {
+  const from = listOpening(params);
+  const label = from && listTitles[from];
+  if (!from || !label) return {};
+  const list = new URLSearchParams(params);
+  list.set('page', from);
+  list.delete('record');
+  list.delete('from');
+  const href = `?${list}`;
+  const open = () => {
+    const before = document.referrer ? new URL(document.referrer) : null;
+    if (before?.origin === location.origin && before.pathname === location.pathname && before.searchParams.get('page') === from && history.length > 1) history.back();
+    else location.assign(href);
+  };
+  return { breadcrumbs: [{ label, href, open }] };
 }
 
 /**
@@ -423,7 +465,7 @@ export function optionsFromQuery(params: URLSearchParams): {
   user?: FormUser;
   context?: Record<string, JsonValue>;
   records?: (string | number)[];
-  breadcrumbs?: { label: string; href?: string }[];
+  breadcrumbs?: { label: string; href?: string; open?: () => void }[];
   keys?: { enterMovesToNext: boolean };
   showValid?: boolean;
   saveStatus?: 'inline' | 'toast' | 'bar';
@@ -462,6 +504,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('resume') ? { resume: params.get('resume') as string } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
     ...(params.get('page') === 'vendor-bill' ? billNavigation() : {}),
+    // A record opened from a list's row: the list's name over it, its way back.
+    ...trailFromQuery(params),
     // A real page's person, with the roles that show its parts, and the records round it: `roles=a,b` (or none) changes the roles.
     ...realAround(params),
     ...(params.get('translate') === 'fr' ? { translate: (text: string) => APP_CATALOG_FR[text] ?? text } : {}),
