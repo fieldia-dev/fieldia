@@ -166,6 +166,8 @@ export const PART_WORDS = {
   live: { messages: ['deletedElsewhere', 'deletedBy', 'changedElsewhere', 'changedBy'], viewer: ['presentHere', 'presentEditing'] },
   undo: { messages: ['pressDone', 'pressArchived', 'pressUnarchived'], viewer: ['undoPress', 'pressUndone', 'undoneField', 'redoneField', 'nothingSinceSave'] },
   templates: { viewer: ['templatesButton', 'templatesStart', 'templateSave', 'templateName', 'templateKeeps', 'templateKeep', 'templateSaved', 'templateReplaced', 'templateReplaceAsk', 'templateReplace', 'templateUsed', 'templatesDelete', 'templatesChosen', 'templatesDeleteNow', 'templatesDeleted'] },
+  // The attachment beside a sheet: its name, Open, Previous and Next.
+  sheet: { viewer: ['attachment', 'openAttachment', 'previousAttachment', 'nextAttachment'] },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],
