@@ -110,7 +110,9 @@ shows: the form asks only for what it shows, so nothing ever asks for it. Place 
 
 Two settings a person who knows Odoo looks for. Both came in format 0.14 (Fieldia 0.37): a page that uses one says
 `"fieldia": "0.14"` — `stampPage` writes it — and an older viewer refuses it with
-`this page is in format 0.14, newer than this Fieldia reads (0.13): update Fieldia to show it`.
+`this page is in format 0.14, newer than this Fieldia reads (0.13): update Fieldia to show it`. A page that uses one
+but still says `"fieldia": "0.13"` is refused as stamped older than a setting it uses, by `validatePage` and by every
+viewer as its whole check runs.
 
 - **A field a copy does not keep**, as Odoo's `copy=False`: `"copy": false` on a record's status or its number. The
   record's Duplicate makes a copy whose field starts as a new record's does — its `default` (or `defaultFrom`), else

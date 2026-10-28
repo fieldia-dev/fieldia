@@ -93,11 +93,14 @@ describe('docs/agents.md says what the checks say', () => {
 
   it('what a copy keeps and filters in groups: each as the guide writes it, stamped 0.14, refused by a 0.36 viewer and by the checks as it quotes', () => {
     const section = GUIDE.split('## What a copy keeps, and filters in groups')[1].split('\n## ')[0];
-    const bill = { ...base(), data: { kind: 'record', model: 'account.move' }, fields: { ...base().fields, state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }], default: 'draft', copy: false } } };
+    const bill = { ...base(), fieldia: '0.14', data: { kind: 'record', model: 'account.move' }, fields: { ...base().fields, state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }], default: 'draft', copy: false } } };
     expect(section).toContain('"state": { "type": "selection", …, "default": "draft", "copy": false }');
     expect(validatePage(bill)).toMatchObject({ ok: true });
     expect(stampPage(bill).fieldia).toBe('0.14');
-    const list = (group: string) => ({ ...base(), data: { kind: 'record', model: 'lead' }, layout: { type: 'list', id: 'leads', columns: ['name'], filters: [{ id: 'late', label: 'Late', filter: [{ field: 'seats', op: '>', value: 1 }], group }] } });
+    // Still saying "0.13": refused as stamped older than a setting it uses, by validatePage and the whole check (0.37).
+    expect(section).toContain('but still says `"fieldia": "0.13"` is refused as stamped older than a setting it uses');
+    for (const check of [validatePage, wholeCheck]) expect(check({ ...bill, fieldia: '0.13' })).toMatchObject({ ok: false, issues: [{ path: 'fields.state.copy' }] });
+    const list = (group: string) => ({ ...base(), fieldia: '0.14', data: { kind: 'record', model: 'lead' }, layout: { type: 'list', id: 'leads', columns: ['name'], filters: [{ id: 'late', label: 'Late', filter: [{ field: 'seats', op: '>', value: 1 }], group }] } });
     expect(section).toContain('"group": "when"');
     expect(validatePage(list('when'))).toMatchObject({ ok: true });
     expect(stampPage(list('when')).fieldia).toBe('0.14');
