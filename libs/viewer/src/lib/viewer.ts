@@ -25,7 +25,6 @@ import {
   type Form,
   type FormOptions,
   type FormState,
-  type JsonValue,
   type LayoutNode,
   type Page,
   type PageValidation,
@@ -88,14 +87,14 @@ import { sayer } from './say';
 import { earlyList, type EarlyList } from './list-early';
 import { tabStrip } from './tab-strip';
 import { valueWords, type ValueWriter } from './value-words';
+import type { Furniture, SheetKit } from './sheet-furniture';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { recordBar, type Breadcrumb, type RecordPager } from './record-bar';
-import { attachmentPreview } from './attachment-preview';
 import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHeading, type HeadKit } from './section-head';
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, withActs, actsPart, askActs, waitedFor, type HeadPart, type UndoPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, withActs, actsPart, askActs, waitedFor, furnished, sheetPart, type SheetPart, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import { missingJoin } from './join-missing';
@@ -2686,85 +2685,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       setHidden(discard, !dirty);
     });
     const header = el('div', { class: 'fd-header' }, actions);
-    const underTitle = node.statusbar?.position === 'title';
-    if (node.statusbar && !underTitle) header.append(statusbar(node.statusbar));
-
-    const card = el('div', { class: 'fd-card' });
-    const ribbons = [...(node.ribbon ? [node.ribbon] : []), ...(node.ribbons ?? [])];
-    if (ribbons.length) {
-      // The ribbons are clipped to the card's corner by their own frame, so the card itself never clips: lists open past it.
-      const frame = el('div', { class: 'fd-ribbon-frame' });
-      const drawn = ribbons.map((ribbon) => {
-        const element = el('div', { class: `fd-ribbon fd-tone-${ribbon.tone ?? 'muted'}`, 'data-node': ribbon.id, title: plainWords(ribbon.tooltip) }, plainWords(ribbon.label));
-        frame.append(element);
-        return { ribbon, element };
-      });
-      // One corner, one ribbon: the first whose condition holds; its words from a field when the field holds any.
-      updaters.push((state) => {
-        let shown = false;
-        for (const { ribbon, element } of drawn) {
-          const show: boolean = !shown && !form.node(ribbon.id).invisible;
-          shown ||= show;
-          setHidden(element, !show);
-          if (!show) continue;
-          const from = ribbon.labelField ? displayValue(page.fields[ribbon.labelField] as LineField, state.values[ribbon.labelField], state.values, locale) : '';
-          setText(element, from || plainWords(ribbon.label));
-        }
-      });
-      card.append(frame);
-    }
-    if (node.statButtons?.length) {
-      const stats = el('div', { class: 'fd-stats' });
-      /** A field's value as the field shows it: money with its currency, a date, a count grouped. */
-      const shownValue = (name: string | undefined, values: Values) =>
-        name && page.fields[name] ? displayValue(page.fields[name] as LineField, values[name], values, locale) : '';
-      for (const stat of node.statButtons) {
-        const value = el('span', { class: 'fd-stat-value' });
-        const label = el('span', { class: 'fd-stat-label' }, plainWords(stat.label));
-        // A second value with words of its own: the two one over the other, each after its words.
-        const second = stat.secondField && stat.secondLabel !== undefined ? { value: el('span', { class: 'fd-stat-value' }), label: el('span', { class: 'fd-stat-label' }, plainWords(stat.secondLabel)) } : null;
-        const icon = drawIcon(doc, stat.icon, options.icons);
-        const words = second
-          ? el('span', { class: 'fd-stat-words fd-stat-pair' }, el('span', { class: 'fd-stat-row' }, label, value), el('span', { class: 'fd-stat-row' }, second.label, second.value))
-          : el('span', { class: 'fd-stat-words' }, value, label);
-        // Its help, as Flectra's help=: its tooltip, and its description for a screen reader — never its name.
-        const helpId = stat.help ? uid(`${stat.id}-help`) : undefined;
-        const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id, title: plainWords(stat.help) || undefined, 'aria-describedby': helpId }, ...(icon ? [icon, words] : [words]));
-        if (helpId) stats.append(el('span', { class: 'fd-sr-only', id: helpId }, plainWords(stat.help as string)));
-        button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
-        updaters.push((state) => {
-          setHidden(button, form.node(stat.id).invisible);
-          const values = state.values as Values;
-          const unit = shownValue(stat.unitField, values) || plainWords(stat.unit) || '';
-          const first = shownValue(stat.field, values);
-          const other = shownValue(stat.secondField, values);
-          if (second) {
-            setText(value, first);
-            setText(second.value, [other, unit].filter(Boolean).join(' '));
-          } else setText(value, [[first, other].filter(Boolean).join(' / '), first || other ? unit : ''].filter(Boolean).join(' '));
-          setText(label, shownValue(stat.labelField, values) || plainWords(stat.label));
-        });
-        stats.append(button);
-      }
-      // No empty row while every button is hidden, as with the badges.
-      updaters.push(() => {
-        setHidden(stats, [...stats.querySelectorAll<HTMLElement>(':scope > .fd-stat')].every((stat) => stat.hidden));
-      });
-      card.append(stats);
-    }
-    card.append(...alertBoxes(node), ...(approvalBand ? [approvalBand] : []));
-    if (node.badges?.length) {
-      const badges = el('div', { class: 'fd-badges' });
-      for (const badge of node.badges) {
-        const chip = el('span', { class: `fd-badge fd-tone-${badge.tone ?? 'muted'}`, 'data-node': badge.id }, ...withIcon(badge.icon, plainWords(badge.label)));
-        hideWhen(chip, badge.id);
-        badges.append(chip);
-      }
-      // Their row with them: shown or hidden as their conditions say, when they are (shownAsItsCondition).
-      const all = node.badges;
-      updaters.push(() => hiddenAfterPress(badges, () => all.every((badge) => form.node(badge.id).invisible)));
-      card.append(badges);
-    }
+    // Its furniture's places — the statusbar in the header bar or under the title, the ribbons and stat buttons at the
+    // card's top, its alerts, its badges, the attachment beside it: drawn by the sheet part (`furnish`).
+    const at = furniturePlaces();
+    header.append(at.header);
+    const card = el('div', { class: 'fd-card' }, at.top, at.alerts, ...(approvalBand ? [approvalBand] : []), at.badges);
     if (node.title) {
       const title = el('div', { class: 'fd-title' });
       // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
@@ -2794,8 +2719,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       card.append(row);
     }
-    if (node.statusbar && underTitle) card.append(el('div', { class: 'fd-title-statusbar' }, statusbar(node.statusbar)));
-    card.append(grid(node.children, 1, top(false)));
+    card.append(at.underTitle, grid(node.children, 1, top(false)));
     if (own) card.append(own);
     if (atFoot && options.showActions !== false) {
       card.append(foot);
@@ -2804,15 +2728,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       });
     }
 
-    const layout = el('div', { class: 'fd-sheet-layout' }, card);
-    if (node.attachmentPreview) {
-      // Beside the sheet on a wide form, the side panel then under the sheet; under the sheet on a narrow one.
-      const preview = attachmentPreview({ doc, el, form, page, node: node.attachmentPreview, dataSource, labels, fill, unloaded: () => partUnloaded() });
-      layout.classList.add('fd-has-preview');
-      layout.append(preview.element);
-      updaters.push(preview.update);
-      cleanups.push(preview.destroy);
-    }
+    const layout = el('div', { class: 'fd-sheet-layout' }, card, at.beside);
+    // Beside the sheet on a wide form, the side panel then under the sheet; under the sheet on a narrow one.
+    if (node.attachmentPreview) layout.classList.add('fd-has-preview');
     if (node.sidePanel) {
       layout.classList.add('fd-has-side');
       if (node.sidePanelBeside) layout.setAttribute('data-side-beside', node.sidePanelBeside);
@@ -2822,40 +2740,56 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // AI help's Fill from text among the record's buttons, the review of what it proposed over the card.
     if (assistKit) actions.append(assistKit.fill);
     pageBox.append(...(bar ? [bar] : []), header, ...(assistKit ? [assistKit.bar] : []), layout);
+    furnish(node, at);
     return pageBox;
   }
 
-  /** The sheet's alerts: its words with the values they name, or a field's words while it holds any; its buttons after them, as links unless styled. */
-  function alertBoxes(node: SheetNode): HTMLElement[] {
-    return (node.alerts ?? []).map((alert) => {
-      const words = valueWords(doc, page.fields, alert.message, locale, answersPart.loaded && asSaid);
-      const message = el('span', { class: 'fd-alert-message' }, ...words.nodes);
-      let fromField = false;
-      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, message);
-      if (alert.buttons?.length) box.append(el('span', { class: 'fd-alert-actions' }, ...alert.buttons.map((button) => buttonItem({ ...button, style: button.style ?? 'link' }))));
-      updaters.push((state) => {
-        words.update(state.values);
-        const from = alert.messageField ? state.values[alert.messageField] : null;
-        const said = typeof from === 'string' ? from.trim() : '';
-        if (said) setText(message, said);
-        else if (fromField) message.replaceChildren(...words.nodes);
-        fromField = !!said;
-      });
-      if (alert.dismissible) {
-        // Closed, it stays closed while the page is open, whatever its condition does.
-        let dismissed = false;
-        const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': labels.dismiss }, '×');
-        close.addEventListener('click', () => {
-          dismissed = true;
-          box.hidden = true;
-        });
-        box.append(close);
-        updaters.push(() => {
-          setHidden(box, dismissed || form.node(alert.id).invisible);
-        });
-      } else hideWhen(box, alert.id);
-      return box;
-    });
+  /** Where a sheet's furniture goes, each place marked until it is drawn there (`furnish`). */
+  const furniturePlaces = (): Record<keyof Furniture, Text> => ({ header: doc.createTextNode(''), top: doc.createTextNode(''), alerts: doc.createTextNode(''), badges: doc.createTextNode(''), underTitle: doc.createTextNode(''), beside: doc.createTextNode('') });
+  /** What a sheet's furniture is drawn with: the viewer's own, as a record's head's is. */
+  const sheetKit = (): SheetKit => ({
+    doc,
+    el,
+    form,
+    page,
+    labels,
+    locale,
+    icons: options.icons,
+    dataSource,
+    uid,
+    fill,
+    withIcon,
+    press,
+    buttonItem,
+    hideWhen,
+    hiddenAfterPress,
+    watch: (update) => updaters.push(update),
+    cleanups,
+    asSaid: () => (answersPart.loaded ? asSaid : undefined),
+    widget: (node, id) => createWidget({ form, name: node.field, field: page.fields[node.field], node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report }, options.widgets),
+    locked: () => locked,
+    unloaded: () => partUnloaded(),
+  });
+  /**
+   * A sheet's furniture (sheet-furniture.ts), the sheet part's, in its places: at once where the part has come — a page
+   * that waits for other parts waits for it with them, drawn whole — else as it comes (a page that waits for no other part
+   * is drawn at once without it: `DRAWN_IN_PLACE`). Where it cannot come, the sheet works without it, said over the page.
+   */
+  function furnish(node: SheetNode, at: Record<keyof Furniture, Text>) {
+    if (!furnished(node)) return;
+    const put = (part: SheetPart) => {
+      const furniture = node.head ? { alerts: part.sheetAlerts(sheetKit(), node) } : part.sheetFurniture(sheetKit(), node);
+      for (const [where, mark] of Object.entries(at) as [keyof Furniture, Text][]) mark.replaceWith(...((furniture as Partial<Furniture>)[where] ?? []));
+    };
+    if (sheetPart.loaded) return put(sheetPart.loaded);
+    void sheetPart.load().then(
+      (part) => {
+        if (gone) return;
+        put(part);
+        if (pageDrawn) renderNow();
+      },
+      () => void (!gone && partUnloaded())
+    );
   }
 
   /**
@@ -2902,32 +2836,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     } finally {
       headNow = null;
     }
-    const body = el('div', { class: 'fd-head-body' }, ...alertBoxes(node), ...(approvalBand ? [approvalBand] : []), parts);
+    // Its alerts, the sheet part's (`furnish`).
+    const at = furniturePlaces();
+    const body = el('div', { class: 'fd-head-body' }, at.alerts, ...(approvalBand ? [approvalBand] : []), parts);
     // The side panel beside the body on a wide page; a dialog leaves it to the full page.
     const side = node.sidePanel ? el('aside', { class: 'fd-side' }, slotItem(node.sidePanel)) : null;
     const bar = topBar(node.toolbar ? { ...node.toolbar, menu: undefined } : undefined);
     pageBox.append(...(bar ? [bar] : []), head.element, side ? el('div', { class: 'fd-head-layout' }, body, side) : body);
+    furnish(node, at);
     return pageBox;
-  }
-
-  /** The sheet header's statusbar: the same widget a form can place anywhere. */
-  function statusbar(config: NonNullable<SheetNode['statusbar']>): HTMLElement {
-    const def = page.fields[config.field];
-    const barOptions: { [key: string]: JsonValue } = { clickable: config.clickable === true };
-    if (config.visibleStates) barOptions['visibleStates'] = config.visibleStates;
-    for (const key of ['durationsField', 'fold', 'saves'] as const) if (config[key] !== undefined) barOptions[key] = config[key];
-    const node: FieldNode = { type: 'field', id: '#statusbar', field: config.field, widget: 'statusbar', options: barOptions };
-    const widget = createWidget(
-      { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report },
-      options.widgets
-    );
-    if (widget.destroy) cleanups.push(() => widget.destroy?.());
-    updaters.push((state) => {
-      // Hidden while its own condition holds, or from people outside its roles.
-      setHidden(widget.element, form.node('#statusbar').invisible);
-      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly || locked, required: false, invalid: false });
-    });
-    return widget.element;
   }
 
   let wizardForward: (() => Promise<void>) | null = null;

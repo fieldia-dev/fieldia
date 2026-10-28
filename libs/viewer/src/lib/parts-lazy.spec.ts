@@ -4,7 +4,7 @@ import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
 import { mountViewer, type ViewerHandle } from './viewer';
-import { filtersPart, headPart, installListStyles, listPart, partsFor } from './viewer-parts';
+import { filtersPart, headPart, installListStyles, listPart, partsFor, sheetPart } from './viewer-parts';
 
 /**
  * Before its parts have come (parts.ts in @fieldia/widgets): a page that uses
@@ -181,16 +181,17 @@ describe('the parts a page draws from', () => {
     // A table's lines draw each cell with its column's widget: hours in a column.
     // A table's own part first (the lines part), then its cells'.
     expect(partsFor(page(sections(field('lines', { cells: { hours: { widget: 'duration' } } })), fields))).toEqual([linesPart, businessPart]);
-    // A sheet's statusbar is drawn as a field's with the statusbar widget.
+    // A sheet's statusbar is drawn as a field's with the statusbar widget — in its place by the sheet part, a sheet's
+    // furniture (drawn-in-place-lazy.spec.ts).
     const sheet = (more: Record<string, unknown> = {}) => page({ type: 'sheet', id: 'sheet', title: { field: 'name' }, statusbar: { field: 'state' }, children: [], ...more }, { ...fields, name: { type: 'char', label: 'Name' } });
-    expect(partsFor(sheet())).toEqual([businessPart]);
-    expect(partsFor(sheet({ statusbar: { field: 'stage', clickable: true } }))).toEqual([businessPart]);
+    expect(partsFor(sheet())).toEqual([businessPart, sheetPart]);
+    expect(partsFor(sheet({ statusbar: { field: 'stage', clickable: true } }))).toEqual([businessPart, sheetPart]);
     // None: the same fields plainly (a stage a link's box, the relations part's), a state's dot (the main script's), a sheet
     // with no statusbar, the app's own statusbar, a headed sheet (its state is its head's).
     expect(partsFor(page(sections(field('state'), field('stage'), field('hours'), field('split'), field('lines'), field('state', { widget: 'dot' })), fields))).toEqual([relationsPart, linesPart]);
     expect(partsFor(sheet({ statusbar: undefined }))).toEqual([]);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
-    expect(partsFor(sheet(), { 'selection.statusbar': own })).toEqual([]);
+    expect(partsFor(sheet(), { 'selection.statusbar': own })).toEqual([sheetPart]);
     expect(partsFor(BUG)).toEqual([headPart, quietPart]);
   });
 
@@ -208,9 +209,11 @@ describe('the parts a page draws from', () => {
     expect([...host.querySelectorAll('.fd-header .fd-statusbar li')].map((li) => li.textContent)).toEqual(['Draft', 'Done']);
     expect(host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')?.textContent).toBe('Done');
     expect(host.querySelector('[data-fd-plain]')).toBeNull();
-    // Its stylesheet among Fieldia's, first of the parts', before the page's own looks.
+    // Its stylesheet among Fieldia's, first of the parts' but a sheet's furniture's (the sheet part's, among whose rules
+    // its own once stood), before the page's own looks.
     const sheets = [...document.head.querySelectorAll('style')].map((style) => style.id);
-    expect(sheets.indexOf('fieldia-business-styles')).toBe(sheets.indexOf('fieldia-styles') + 1);
+    expect(sheets.indexOf('fieldia-sheet-styles')).toBe(sheets.indexOf('fieldia-styles') + 1);
+    expect(sheets.indexOf('fieldia-business-styles')).toBe(sheets.indexOf('fieldia-styles') + 2);
     expect(sheets.indexOf('fieldia-business-styles')).toBeLessThan(sheets.indexOf('fieldia-styles-looks'));
   });
 

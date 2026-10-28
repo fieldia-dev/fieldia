@@ -1,4 +1,4 @@
-import { callsPartFunctions, formActsPart, formJoins, formApprovalsPart, pageCheckPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formActsPart, formJoins, formApprovalsPart, pageCheckPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetNode, type SheetTitle } from '@fieldia/core';
 import { asksLoadingPart, loadingPart, loadingSettings, businessPart, htmlPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -19,6 +19,7 @@ import type * as LimitsModule from './limits-part';
 import type * as ListModule from './list-part';
 import type * as ViewsModule from './views-part';
 import type * as RowsModule from './rows-part';
+import type * as SheetModule from './sheet-part';
 import type * as SurveyFlowModule from './surveyflow-part';
 import type * as TemplatesModule from './templates-part';
 import type * as LiveModule from './live-part';
@@ -29,6 +30,8 @@ import { workHeading } from './section-head';
 export type ActsPart = typeof ActsModule;
 /** The head part: a record's head, split and toggled buttons, a group's work heading, the inset dialog's window tools. */
 export type HeadPart = typeof HeadModule;
+/** The sheet part: a record sheet's furniture — ribbons, stat buttons, alerts, badges, statusbar, the attachment beside it — and its look. */
+export type SheetPart = typeof SheetModule;
 /** The filters part: a list's filter bar. */
 export type FiltersPart = typeof FiltersModule;
 /** The list part: a list screen, its search bar and its stylesheet. */
@@ -98,6 +101,20 @@ export function withActs<T>(run: (part: ActsPart) => T | Promise<T>, doc?: Docum
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
 export const headPart: Part<HeadPart> = lazyPart('head', () => import('./head-part'));
+/**
+ * A record sheet's furniture (sheet-furniture.ts), loaded with a sheet page's parts where it has any (`furnished`): waited
+ * for beside the page's other parts, the page drawn whole; where the page waits for no other part, never waited for —
+ * the sheet drawn at once, its furniture put in place as it comes (`DRAWN_IN_PLACE`).
+ */
+export const sheetPart: Part<SheetPart> = lazyPart('sheet', () => import('./sheet-part'));
+
+/**
+ * Whether a sheet has furniture the sheet part draws: a statusbar, ribbons, stat buttons, badges, alerts, an attachment
+ * beside it — of a sheet with a head (the head part's), its alerts alone.
+ */
+export const furnished = (node: SheetNode): boolean =>
+  !!node.alerts?.length || (!node.head && (!!node.statusbar || !!node.ribbon || !!node.ribbons?.length || !!node.statButtons?.length || !!node.badges?.length || !!node.attachmentPreview));
+
 /** A list's filter bar, loaded the first time a list draws one. */
 export const filtersPart: Part<FiltersPart> = lazyPart('filters', () => import('./filters-part'));
 /** A list screen — its table, search bar, pager and switcher — loaded the first time a page draws a list. */
@@ -208,6 +225,23 @@ export function installListStyles(doc: Document): Promise<void> {
   );
 }
 
+/**
+ * Puts a sheet's furniture's look in a document, as a sheet does the first time it draws its furniture: at once when the
+ * sheet part has come, else as soon as it comes (settled then; a part that cannot come puts none). For what draws a
+ * sheet's look without a sheet: the designer's canvas.
+ */
+export function installSheetStyles(doc: Document): Promise<void> {
+  const loaded = sheetPart.loaded;
+  if (loaded) {
+    loaded.installSheetStyles(doc);
+    return Promise.resolve();
+  }
+  return sheetPart.load().then(
+    (part) => part.installSheetStyles(doc),
+    () => undefined
+  );
+}
+
 /** A list's cell's widget its box takes where the cell is changed in place: hours, a per cent, a phone, links as tags. */
 export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage', 'phone', 'tags']);
 
@@ -215,7 +249,7 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
  * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
  */
-const EVERY_PART: readonly Part[] = [loadingPart, actsPart, headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, htmlPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart, pageCheckPart];
+const EVERY_PART: readonly Part[] = [loadingPart, actsPart, sheetPart, headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, htmlPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart, pageCheckPart];
 
 /**
  * The parts a page draws from that say in their own place that they could not come: those that draw a field's own box
@@ -226,11 +260,11 @@ export const SAID_IN_PLACE: ReadonlySet<Part> = new Set<Part>([listPart, textPar
 
 /**
  * The parts a page is drawn without, plainly, and that draw themselves in place as they come: the classic formatted
- * text's toolbar, its box typed in meanwhile (`htmlBox`). Waited for only beside a page's other parts, whose round trip
+ * text's toolbar, its box typed in meanwhile (`htmlBox`); a sheet's furniture, the sheet itself drawn meanwhile. Waited for only beside a page's other parts, whose round trip
  * the page waits for anyway — the page then drawn whole at once; alone, never: the page drawn at once, as without them
  * (0.37: no page draws later for a part it can be drawn without).
  */
-export const DRAWN_IN_PLACE: ReadonlySet<Part> = new Set<Part>([htmlPart]);
+export const DRAWN_IN_PLACE: ReadonlySet<Part> = new Set<Part>([htmlPart, sheetPart]);
 
 /** Of the parts a page draws from, those it waits for: every one, unless each of them draws itself in place as it comes. */
 export const waitedFor = (parts: readonly Part[]): Part[] => (parts.every((part) => DRAWN_IN_PLACE.has(part)) ? [] : [...parts]);
@@ -358,6 +392,8 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     }
     // A menu's dividers and the menus inside it are the head part's.
     if (Array.isArray(node['menu']) && (node['menu'] as MenuItem[]).some((item) => item.type || item.menu || item.menuFrom)) found.add(headPart);
+    // A sheet's furniture: its ribbons, stat buttons, alerts, badges, statusbar, attachment.
+    if (node.type === 'sheet' && furnished(node as unknown as SheetNode)) found.add(sheetPart);
     if (node.type === 'sheet' && node['head']) found.add(headPart);
     else if (node.type === 'button' && isRichButton(node as unknown as ButtonNode)) found.add(headPart);
     else if (node.type === 'section' && Array.isArray(node['children']) && (workHeading(node as unknown as SectionNode) || markdownAlone(node as unknown as SectionNode))) found.add(headPart);
