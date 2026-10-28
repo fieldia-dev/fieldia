@@ -43,6 +43,11 @@ async function typeEnquiry(page: Page) {
 }
 
 const status = (page: Page) => page.locator('.fd-actions .fd-status');
+/**
+ * The page's own notice of a part that could not come ("…shown plainly. Reload the page and try again."): never for one
+ * that says so where it is sent or typed in, with its own Retry — the 0.36 walk's banner over a working Pay button.
+ */
+const notice = (page: Page) => page.locator('.fd-parts-unloaded');
 const retry = (page: Page) => page.locator('.fd-actions .fd-status-box .fd-retry');
 
 test('the payment step refused: Retry asks for it anew where the browser can, and the answers go once it comes', async ({ page, browserName }) => {
@@ -52,12 +57,14 @@ test('the payment step refused: Retry asks for it anew where the browser can, an
   await page.getByRole('button', { name: 'Submit' }).click();
   await expect(status(page)).toHaveText('The payment step could not load, so nothing was sent. Try again.');
   await expect(retry(page)).toBeVisible();
+  await expect(notice(page)).toBeHidden();
   await screen(page, 'guards-retry-pay-refused');
   // The network back: Retry asks for the part again — a request the browser makes, at an address of its own.
   held.on = false;
   const before = held.asked.length;
   await retry(page).click();
   await expect(page.getByRole('button', { name: /^Pay EGP 10,000\.00$/ })).toBeVisible();
+  await expect(notice(page)).toBeHidden();
   expect(held.asked.slice(before).every((file) => /\?fd-again=\d+$/.test(file))).toBe(true);
   expect(held.asked.length).toBeGreaterThan(before);
   await page.getByRole('button', { name: /^Pay EGP 10,000\.00$/ }).click();
@@ -71,8 +78,9 @@ test('the payment step refused where the browser names no module: the words ask 
   await typeEnquiry(page);
   await page.getByRole('button', { name: 'Submit' }).click();
   await expect(status(page)).toHaveText('The payment step could not load, so nothing was sent. Reload the page and try again.');
-  // No Retry that cannot work.
+  // No Retry that cannot work, and the send's words alone: nothing on the page is shown plainly.
   await expect(retry(page)).toBeHidden();
+  await expect(notice(page)).toBeHidden();
   await page.reload();
   await expect(node(page, 'f-name').locator('input')).toHaveValue('Hana Mostafa');
   await expect(node(page, 'f-message').locator('textarea')).toHaveValue('Is the price final?');
@@ -87,6 +95,7 @@ test('the code check refused: the mobile says so at once, and once it comes, Sen
   const said = page.locator('[data-node="f-phone"] .fd-join-missing');
   const again = browserName === 'webkit' ? 'Reload the page and try again.' : 'Try again.';
   await expect(said).toContainText(`The code check could not load, so nothing was sent. ${again}`);
+  await expect(notice(page)).toBeHidden();
   await screen(page, 'guards-retry-verify-at-once');
   if (browserName === 'webkit') return;
   held.on = false;
