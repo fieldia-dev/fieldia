@@ -89,19 +89,23 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
   `libs/core/src/lib/record/deadline.spec.ts` ("ends at its deadline as the network’s problem").
 - **A page its checks refuse is taken down, and nothing is written through it.** Every viewer runs `checkPage` before a
   page's first draw: what 0.35's viewer refused (the outline, every name a part or a condition uses, every expression).
-  A page it refuses is never drawn: the form's place says why, `onError` hears it (`stage: "draw"`), `mountViewer`
-  throws a `PageRefused`, and React, Vue and Angular apps stay up. As soon as the page is drawn it runs the whole check,
+  A page it refuses is never drawn: the form's place tells whoever opened it, in plain words, that the form is not
+  available now — try again later, or ask whoever sent it — never a check's or a function's words; what is wrong is for
+  whoever made the page: the console says it, `onError` hears it (`stage: "draw"`), `mountViewer` throws a
+  `PageRefused` with its `issues`, and the page lists it under "What is wrong" only where the app asks
+  (`development: true`, as the designer's Try it does). React, Vue and Angular apps stay up. As soon as the page is drawn it runs the whole check,
   `validatePage`'s verdict without zod (`checkPageWhole`): a key the format does not have, a value of another kind, a
   list's `pageSize` past 500, a least more than its most, a page stamped older than a setting it uses. Its part
   (`fieldia.check.js` in the one-tag script, a chunk of its own in an app's bundle) is asked for once nothing a page is
   drawn from is still on its way — beside the app's own data, never beside the page's parts, whose bytes it would share a
   slow line with — and never waited for: a valid page draws as fast as 0.36 drew it. A page it refuses may show its form
-  for a moment, then is taken down: its form replaced by why, `onError` told (`stage: "check"`), `refused` settled with
-  the `PageRefused`. Nothing is written through a page before its whole check has run: a save, a send, a step's save,
+  for a moment, then is taken down: its form replaced by the same plain words, `onError` told (`stage: "check"`),
+  `refused` settled with the `PageRefused`. Nothing is written through a page before its whole check has run: a save, a send, a step's save,
   a record's copy, an upload, the outbox's send, a draft kept on the server, a payment or a code sent asked for
   meanwhile waits for it, and is refused with the page where the page is refused. **Gates:**
-  `libs/viewer/src/lib/refused.spec.ts` ("says why where the form would be", "drawn at once, then taken down", "a save
-  asked before its check ran waits for it", "makes no copy through it"),
+  `libs/viewer/src/lib/refused.spec.ts` ("says to its visitor, where the form would be", "while the app is being made",
+  "never the check’s words", "drawn at once, then taken down", "a save asked before its check ran waits for it", "makes
+  no copy through it"),
   `e2e/page-check.spec.ts` ("a send waits for it", "the app round it kept") in Chromium, Firefox and WebKit,
   `libs/core/src/lib/format/shape-parity.spec.ts` ("one verdict on each", "never a page they pass").
 - **A page whose whole check cannot come is drawn, and said, and its writes go on.** Where its part cannot come — the
@@ -116,14 +120,30 @@ A page is data. Fieldia draws it and never runs code from a page, a record's val
 - **What no page draws from comes after it, and nothing is done unasked meanwhile.** A page's steps run, its dialogs, a
   page opened, its questions and a save over someone else's are a part of their own (`fieldia.acts.js` in the one-tag
   script, two chunks in an app's bundle), asked for right after the whole check — never beside it or a page's parts —
-  so no page waits for it to be drawn (0.37). A press, a question or a dialog that comes before it is held: the button
+  so no page waits for it to be drawn (0.37). A press, a question or a dialog that comes before it is held: the control
   that asked busy, and done as the part lands. Where it cannot come, nothing is done: a press says so, with Retry, which
-  presses it again; "Discard your changes?" is asked by the browser's own question, the one thing left that can ask,
-  and a frame that may not ask keeps the work; a save over someone else's says who changed the record, in plain words.
-  **Gates:** `libs/viewer/src/lib/acts-lazy.spec.ts` ("a press before it came", "\"Discard your changes?\" where it cannot
-  come", "a conflict where it cannot come"), `libs/core/src/lib/record/acts-lazy.spec.ts` ("a press that comes first
+  presses it again — a button's steps, a link's or a line's ↗, Search more… alike; "Discard your changes?" is asked by
+  the browser's own question, the one thing left that can ask, and a frame that may not ask keeps the work; a save over
+  someone else's says who changed the record, in plain words.
+  **Gates:** `libs/viewer/src/lib/acts-lazy.spec.ts` ("a press before it came", "a link's dialog before it came",
+  "\"Discard your changes?\" where it cannot come", "a conflict where it cannot come"), `libs/core/src/lib/record/acts-lazy.spec.ts` ("a press that comes first
   waits for it", "where it cannot come, a run does nothing and says so"), `e2e/acts-part.spec.ts` ("asked for right
   after the whole check came") and `e2e/part-failures.spec.ts` (the `acts` part, both ways it fails) in Chromium,
+  Firefox and WebKit.
+- **A press that waits looks busy where it was pressed, whatever the control.** A press that waits for a part, then for
+  the app's answer that follows (a linked record's page), shows it at once at the control: `aria-busy`, and a ring
+  turning in its place — over an icon's glyph (a link's ↗, a line's ↗), at the end of a name (a line card's head, a
+  stat button) or of a box (Search more…'s, its ↗ and × hidden meanwhile), a button's own — never a page overlay, until
+  the dialog it opens shows or its wait ends; a second press of it meanwhile asks nothing more (0.37 walk). **Gates:**
+  `e2e/press-waits.spec.ts` ("busy and turning within a frame of the press", "pressed twice while it waits", "says so
+  with Retry, which opens the line") in Chromium, Firefox and WebKit.
+- **Nothing a person may press moves as a part arrives.** A part a page is drawn without holds its room from the draw:
+  the classic formatted text's toolbar (its bar, its style box, a room for each tool, wrapping as it does); where a
+  part's room cannot be known before it draws — a sheet's furniture that takes room, its words and its record's
+  deciding how tall — the page waits for it as for any part, and a record's attachment's files part comes with the
+  page's parts. A skeleton's shapes are as tall as the boxes they stand for (0.37 walk). **Gates:**
+  `e2e/parts-in-place.spec.ts` ("comes into the room held for it", "waits for it: drawn whole", "only furniture is its
+  ribbon", "drawn from its skeleton", "takes its place as the bill is drawn") on a desktop and a phone in Chromium,
   Firefox and WebKit.
 
 ### Bounded work
@@ -279,8 +299,8 @@ an iPhone runs Safari's engine); and Chrome on Android. The npm packages are ES2
 | Browser | Checked in CI | Not checked in CI |
 | --- | --- | --- |
 | Chrome, Edge | Chromium 156, Playwright's build: every browser spec, in every framework's demo, every demo's how-to taken step by step by an automated run that uses the mouse and the keys as a person would, and the perf gates; the key screens compared with their stored images in Playwright's own container | Chrome's and Edge's own builds; the major before |
-| Firefox | Firefox 157, Playwright's build: the smoke set (117 specs) in the plain demo | The rest of the specs; the major before |
-| Safari | WebKit 27.2, Safari's engine as Playwright builds it: the smoke set (117 specs) in the plain demo | Safari itself; the major before |
+| Firefox | Firefox 157, Playwright's build: the smoke set (120 specs) in the plain demo | The rest of the specs; the major before |
+| Safari | WebKit 27.2, Safari's engine as Playwright builds it: the smoke set (120 specs) in the plain demo | Safari itself; the major before |
 | Safari on iOS | WebKit at an iPhone 14's size with touch: every demo's how-to taken step by step by an automated run that taps as a finger would (`how-to-phone`), and the smoke set's phone specs | A real iPhone |
 | Chrome on Android | Chromium at a phone's size with touch; the perf gates on a phone's CPU | A real Android phone |
 

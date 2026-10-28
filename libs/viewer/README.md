@@ -82,10 +82,13 @@ drawn: the slot then shows its box.
 `mountViewer` checks a page before drawing it (`checkPage`), refusing what 0.35's
 viewer refused: its outline, every name a part or a condition uses, every
 expression. It draws none of a page it refuses. Its form's place says so
-instead, never a blank area: "This form cannot be shown: its page has mistakes",
-with each problem under "What is wrong" for whoever made the page. `onError`
-hears it (`{ stage: 'draw', part: 'page' }`), and `mountViewer` throws the error,
-its `issues` on it (`PageRefused`):
+instead, never a blank area, in words for whoever opened it: "This form is not
+available right now. Please try again later, or contact whoever sent it to you."
+What is wrong is for whoever made the page: the console says it, `onError` hears
+it (`{ stage: 'draw', part: 'page' }`), and `mountViewer` throws the error, its
+`issues` on it (`PageRefused`). While the app is being made, `development: true`
+lists each problem under "What is wrong" on the page too (the designer's Try it
+does):
 
 ```ts
 try {

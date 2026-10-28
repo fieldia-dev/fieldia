@@ -210,9 +210,10 @@ mountViewer(document.getElementById('form')!, { page, dataSource, onError: (erro
 ```
 
 Had the agent stored the first page, the viewer would have refused it before drawing it: its email field is of no
-kind Fieldia knows. The form's place would say "This form cannot be shown: its page has mistakes", with
-`fields.email: a field needs a type Fieldia knows and a label` under "What is wrong", and the app's `onError` would hear
-it. In React, Vue and Angular the app around it stays. Had the agent fixed that alone, the viewer would draw it, then
+kind Fieldia knows. The form's place would say to its visitor "This form is not available right now. Please try again
+later, or contact whoever sent it to you."; the console would say
+`fields.email: a field needs a type Fieldia knows and a label`, and the app's `onError` would hear it — on the page
+too, under "What is wrong", where the app passes `development: true`. In React, Vue and Angular the app around it stays. Had the agent fixed that alone, the viewer would draw it, then
 take it down as its whole check ran, for its other three mistakes (`onError` hears `stage: "check"`), nothing sent
 through it meanwhile; 0.36 left such a page drawn and said them.
 
