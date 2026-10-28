@@ -2560,18 +2560,11 @@ export const gridWidgets: Record<string, WidgetFactory> = { 'one2many.grid': gri
 
 /**
  * What a person moved, kept where their eye is: its top on the screen as the move was asked (`top`); once it is drawn in
- * its new place, the page — or the box that scrolls round it — scrolled by as much as it moved. A focus given back after
- * a move takes no scroll of the browser's own (`preventScroll`): WebKit scrolled to a button it had just put back from a
- * layout not yet worked out, and threw the page to its top. (As @fieldia/widgets' kept-in-sight.ts, which it does not export.)
+ * its new place, the page scrolled by as much as it moved (inside a dialog, which scrolls on its own, it moves as it is
+ * drawn). A focus given back after a move takes no scroll of the browser's own (`preventScroll`): WebKit scrolled to a
+ * button it had just put back from a layout not yet worked out, and threw the page to its top (0.36's walk, a line
+ * card's ↑ on an iPhone). (As @fieldia/widgets' kind-parts.ts, which it does not export.)
  */
 function keepInSight(element: Element | null | undefined, top: number | undefined): void {
-  if (!element?.isConnected || top === undefined) return;
-  const by = element.getBoundingClientRect().top - top;
-  if (Math.abs(by) < 1) return;
-  const view = element.ownerDocument.defaultView;
-  for (let at = element.parentElement; at && view; at = at.parentElement) {
-    const y = view.getComputedStyle(at).overflowY;
-    if ((y === 'auto' || y === 'scroll') && at.scrollHeight > at.clientHeight) return void at.scrollBy(0, by);
-  }
-  view?.scrollBy(0, by);
+  if (element?.isConnected && top !== undefined) element.ownerDocument.defaultView?.scrollBy(0, element.getBoundingClientRect().top - top);
 }
