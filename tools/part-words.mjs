@@ -74,7 +74,7 @@ export const PART_WORDS = {
   editable: { widgets: ['cellName'], viewer: ['rowEditHint', 'rowAdd', 'rowAddNoun', 'rowDrop', 'rowNotSaved', 'rowSaved', 'rowOpen', 'rowChange', 'rowCell', 'rowLocked', 'rowLockedNoun', 'pasteAsk', 'pasteAskChange', 'pasteAskAdd', 'pasteYes', 'pasteUndo', 'pasteUndone', 'rowsNotSaved', 'rowsNotSavedOne', 'rowsDrop', 'rowsPutBack'] },
   record: {
     widgets: [
-      'recordVoice', 'recordVideo', 'recordAskMic', 'recordAskCamera', 'recordReady', 'recordStart', 'recordStop', 'recordingNow', 'recordStarting', 'recordNothing', 'recordStoppedAt', 'recordStoppedSize', 'recordDone', 'recordUse', 'recordAgain', 'recordDiscardAsk', 'recordDiscard', 'recordGoBack',
+      'recordVoice', 'recordVideo', 'recordAskMic', 'recordAskCamera', 'recordReady', 'recordStart', 'recordStop', 'recordingNow', 'recordStarting', 'recordNothing', 'recordTooShort', 'recordStoppedAt', 'recordStoppedSize', 'recordDone', 'recordUse', 'recordAgain', 'recordDiscardAsk', 'recordDiscard', 'recordGoBack',
       'recordMicRefused', 'recordCameraRefused', 'recordNoMic', 'recordNoCamera', 'recordBusy', 'recordCannot', 'recordTryAgain', 'recordingNameVoice', 'recordingNameVideo',
     ],
   },
@@ -134,8 +134,9 @@ export const PART_WORDS = {
       'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun', 'groupCountNoun', 'groupCountNounOne',
     ],
   },
-  // The classic formatted text's toolbar (with the work item's editor, which reads some of them too).
-  html: { widgets: ['formatting', 'textStyle', 'subheading', 'alignLeft', 'alignCenter', 'alignRight', 'applyLink', 'removeLink'] },
+  // The classic formatted text's toolbar (with the work item's editor, which reads some of them too). Its text styles'
+  // names stay in the main script, which holds the toolbar's room before it comes, its style box as wide (extras.ts).
+  html: { widgets: ['formatting', 'textStyle', 'alignLeft', 'alignCenter', 'alignRight', 'applyLink', 'removeLink'] },
   path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds', 'treeSearch', 'treeChosen', 'treeChosenOne', 'noResults'] },
   photos: {
     widgets: [

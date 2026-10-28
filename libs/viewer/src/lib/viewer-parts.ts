@@ -1,5 +1,5 @@
 import { callsPartFunctions, formActsPart, formJoins, formApprovalsPart, pageCheckPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetNode, type SheetTitle } from '@fieldia/core';
-import { asksLoadingPart, loadingPart, loadingSettings, businessPart, htmlPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { asksLoadingPart, pressedControl, pressWait, loadingPart, loadingSettings, businessPart, htmlPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, partWith, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as ElementModule from './element-part';
@@ -75,28 +75,31 @@ export type UndoPart = typeof UndoModule;
  * right after the whole check (page-check.ts), never with a page's parts; sooner by whatever needs it, which waits for
  * it (`withActs`). In the one-tag script, one script with the form's half (fieldia.acts.js).
  */
-export const actsPart: Part<ActsPart> = lazyPart('acts', () => Promise.all([import('./acts-part'), formActsPart.load()]).then(([module]) => module));
+// Each half its own lazy part (`partWith`): one that failed is asked for anew at its own address, and the viewer's half is
+// the part's module — never the form's half, asked anew alone (a Retry after the form's half failed opened nothing).
+export const actsPart: Part<ActsPart> = partWith(lazyPart('acts', () => import('./acts-part')), formActsPart);
 /** The viewer's half asked for as the form's is, right after the whole check (`askAfterCheck`): by each viewer as it mounts. */
 export const askActs = (): unknown => actsPart.load();
 
 /**
  * THE rule for what the acts part draws: at once where it has come, in the same turn; until then the control that asked
- * (a button pressed, a link's Open) busy, and drawn as the part lands; rejected where it cannot come — each caller says so
- * in its own words, nothing done. A press's steps wait the same way in the form (`runTop`, @fieldia/core), its button busy.
+ * (a button or a link's ↗ pressed, a box's Search more…) waits as every press does (`pressWait`): busy, its ring turning
+ * where the eye is, till the dialog it opens shows or its wait ends; drawn as the part lands; rejected where it cannot
+ * come — each caller says so in its own words, nothing done. A press's steps wait the same way in the form (`runTop`,
+ * @fieldia/core), its button busy. `control`: the one that asked, else the one pressed just now (`pressedControl`).
  */
-export function withActs<T>(run: (part: ActsPart) => T | Promise<T>, doc?: Document): Promise<T> {
+export function withActs<T>(run: (part: ActsPart) => T | Promise<T>, doc?: Document, control?: Element | null): Promise<T> {
   const part = actsPart.loaded;
+  const end = pressWait(control !== undefined ? control : pressedControl(doc ?? (typeof document === 'undefined' ? undefined : document)));
   if (part) {
     try {
-      return Promise.resolve(run(part));
+      return Promise.resolve(run(part)).finally(end);
     } catch (error) {
+      end();
       return Promise.reject(error);
     }
   }
-  const asked = (doc ?? (typeof document === 'undefined' ? undefined : document))?.activeElement?.closest('button, [role="button"], a[href]');
-  const busy = asked && !asked.hasAttribute('aria-busy') ? asked : null;
-  busy?.setAttribute('aria-busy', 'true');
-  return actsPart.load().then(run).finally(() => busy?.removeAttribute('aria-busy'));
+  return actsPart.load().then(run).finally(end);
 }
 
 /** A work item's record and its window, loaded the first time a page draws a head, a split button, a work heading or the inset dialog. */
@@ -259,15 +262,25 @@ const EVERY_PART: readonly Part[] = [loadingPart, actsPart, sheetPart, headPart,
 export const SAID_IN_PLACE: ReadonlySet<Part> = new Set<Part>([listPart, textPart, htmlPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart]);
 
 /**
- * The parts a page is drawn without, plainly, and that draw themselves in place as they come: the classic formatted
- * text's toolbar, its box typed in meanwhile (`htmlBox`); a sheet's furniture, the sheet itself drawn meanwhile. Waited for only beside a page's other parts, whose round trip
- * the page waits for anyway — the page then drawn whole at once; alone, never: the page drawn at once, as without them
- * (0.37: no page draws later for a part it can be drawn without).
+ * The parts a page is drawn without, plainly, and that draw themselves in place as they come, moving nothing: the classic
+ * formatted text's toolbar, its room held over its box meanwhile, its box typed in (`htmlBox`); a sheet's ribbons, over
+ * its card's corner. Waited for only beside a page's other parts, whose round trip the page waits for anyway — the page
+ * then drawn whole at once; alone, never: the page drawn at once, as without them (0.37: no page draws later for a part
+ * it can be drawn without). A sheet's furniture that takes room — its alerts, badges, statusbar, stat buttons, its
+ * attachment beside it — is as tall as its words and its record make it, unknown before the part draws it: its part is
+ * waited for as any other, its tag written (the 0.37 walk: a badge and an alert coming pushed a sheet 102 px down).
  */
 export const DRAWN_IN_PLACE: ReadonlySet<Part> = new Set<Part>([htmlPart, sheetPart]);
 
-/** Of the parts a page draws from, those it waits for: every one, unless each of them draws itself in place as it comes. */
-export const waitedFor = (parts: readonly Part[]): Part[] => (parts.every((part) => DRAWN_IN_PLACE.has(part)) ? [] : [...parts]);
+/** Whether a page's sheet has furniture that takes room in the page as it comes (`DRAWN_IN_PLACE`). */
+const furnitureTakesRoom = (page: Page): boolean => {
+  const node = page.layout;
+  return node.type === 'sheet' && (!!node.alerts?.length || (!node.head && (!!node.statusbar || !!node.statButtons?.length || !!node.badges?.length || !!node.attachmentPreview)));
+};
+
+/** Of the parts a page draws from, those it waits for: every one, unless each of them draws itself in place as it comes, moving nothing. */
+export const waitedFor = (parts: readonly Part[], page: Page): Part[] =>
+  parts.every((part) => DRAWN_IN_PLACE.has(part) && !(part === sheetPart && furnitureTakesRoom(page))) ? [] : [...parts];
 
 /** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -394,6 +407,9 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
     if (Array.isArray(node['menu']) && (node['menu'] as MenuItem[]).some((item) => item.type || item.menu || item.menuFrom)) found.add(headPart);
     // A sheet's furniture: its ribbons, stat buttons, alerts, badges, statusbar, attachment.
     if (node.type === 'sheet' && furnished(node as unknown as SheetNode)) found.add(sheetPart);
+    // Its attachment beside it, shown by the files part: in with the page's parts, so the file takes its place as the
+    // record is drawn, never the chatter's a moment after (the 0.37 walk: a bill's PDF moved its fields 91 px left).
+    if (node.type === 'sheet' && node['attachmentPreview'] && !node['head']) found.add(filesPart);
     if (node.type === 'sheet' && node['head']) found.add(headPart);
     else if (node.type === 'button' && isRichButton(node as unknown as ButtonNode)) found.add(headPart);
     else if (node.type === 'section' && Array.isArray(node['children']) && (workHeading(node as unknown as SectionNode) || markdownAlone(node as unknown as SectionNode))) found.add(headPart);
@@ -508,7 +524,7 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * the one-tag script's `partTags(page)` gives each with what its own tag carries.
  */
 export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>, loading?: PageLoading): string[] {
-  return withLoadingPart(page, waitedFor(partsFor(page, widgets, slots)), loading).map((part) => `fieldia.${part.name}.js`);
+  return withLoadingPart(page, waitedFor(partsFor(page, widgets, slots), page), loading).map((part) => `fieldia.${part.name}.js`);
 }
 
 /** A page's parts, the loading part among them where the viewer asks for it with them (`loadingWithParts`): a record's page waits for its record. */

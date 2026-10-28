@@ -49,9 +49,47 @@ export const htmlWidget: PartFactory = Object.assign(
   (context: WidgetContext) =>
     usesEditor(context.node.options)
       ? partWidget(textPart, context, (part) => part.modernHtml(context), htmlBox)
-      : partWidget(htmlPart, context, (part) => part.classicHtml(context), htmlBox),
+      : partWidget(htmlPart, context, (part) => part.classicHtml(context), toolbarHeld),
   { partOf: (node: FieldNode) => (usesEditor(node.options) ? textPart : htmlPart) }
 );
+
+/** How many tools the classic toolbar draws after its text style (html-classic.ts, `TOOLS`): each one's room held. */
+const TOOLS_HELD = 10;
+
+/**
+ * The classic formatted text drawn before its toolbar's part has come: its box, and the toolbar's room held over it — the
+ * same bar, its text style's box and its tools' room, wrapping where the toolbar would — so nothing under it moves as
+ * the toolbar comes (the 0.37 walk: Signed and Submit pushed 37 px down, 67 on a phone). Nothing in it is pressed; read
+ * only, it is hidden, as the toolbar is; where the part cannot come, it goes, the box shown plainly.
+ */
+function toolbarHeld(context: WidgetContext): Widget {
+  const box = htmlBox(context);
+  const { node, document: doc, labels = WIDGET_LABELS.en } = context;
+  if (node.options?.['toolbar'] === false || node.options?.['toolbar'] === 'never') return box;
+  const bar = doc.createElement('div');
+  bar.className = 'fd-richtext-bar';
+  bar.setAttribute('aria-hidden', 'true');
+  bar.inert = true;
+  const style = doc.createElement('select');
+  style.className = 'fd-richtext-style';
+  style.disabled = true;
+  for (const key of ['paragraph', 'heading', 'subheading'] as const) style.append(Object.assign(doc.createElement('option'), { textContent: labels[key] }));
+  bar.append(style);
+  for (let tool = 0; tool < TOOLS_HELD; tool++) bar.append(Object.assign(doc.createElement('span'), { className: 'fd-richtext-tool' }));
+  const element = doc.createElement('div');
+  element.className = 'fd-richtext-box';
+  element.append(bar, box.area);
+  // Where the part cannot come, the box is shown plainly, as it was: no room held for tools that will not come.
+  htmlPart.load().catch(() => bar.remove());
+  return {
+    ...box,
+    element,
+    update(state) {
+      if (bar.hidden !== state.readonly) bar.hidden = state.readonly;
+      box.update(state);
+    },
+  };
+}
 
 /** A formatted text's box alone: what it holds, cleaned, typed in place — every value through `sanitizeHtml`. */
 export function htmlBox({ form, name, node, id, document }: WidgetContext): Widget & { area: HTMLElement } {

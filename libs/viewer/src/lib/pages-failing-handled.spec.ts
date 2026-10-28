@@ -156,7 +156,7 @@ describe('a link whose record’s page cannot come', () => {
       const opened = dialogs.openRecord('partner', { recordId: 1, title: 'Nile Traders' });
       await settle();
       const box = dialog() as HTMLElement;
-      expect(box.textContent).toContain('This form cannot be shown: its page has mistakes.');
+      expect(box.textContent).toContain('This form is not available right now.');
       if (key === '×') (box.querySelector('.fd-dialog-close') as HTMLButtonElement).click();
       else box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       await expect(opened).resolves.toBeNull();

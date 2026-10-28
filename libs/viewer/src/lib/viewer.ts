@@ -68,7 +68,7 @@ import {
   type SignedBy,
 } from '@fieldia/core';
 import { overFirstPaint } from './first-paint-over';
-import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
+import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses, pressWait } from '@fieldia/widgets';
 import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
@@ -175,6 +175,12 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * (`stage: "check"`, `warning: true`), of a page whose whole check's part could not come: drawn, not fully checked.
    */
   onError?: (error: unknown, where: PartFailure) => void;
+  /**
+   * While the app is being made: a page the viewer refuses shows, under the words its visitor reads ("This form is not
+   * available right now…"), what is wrong with it — each problem by its path — as the console and `onError` say it. Off,
+   * a visitor reads only those words, never a check's (0.37). The designer's Try it turns it on.
+   */
+  development?: boolean;
   /**
    * The page's language, as a language tag (`ar`, `es`, `pt-BR`): the page's
    * own words in it when the page keeps them, and the viewer's labels,
@@ -560,7 +566,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const preferences = options.preferences ?? browserPreferences(undefined, options.user?.id);
   // What it opens — dialogs, panels, a page in its place — taken away with it (`destroy()`).
   const owned = new AbortController();
-  const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone), owned.signal);
+  // Words with Retry (a press's dialog whose part could not come) are the viewer's own, as a press's steps' are.
+  const dialogs = pageDialogs(options, (message, tone, act) => (act ? say(message, tone, undefined, act) : actionHost.say(message, tone)), owned.signal);
   const ownsForm = !options.form;
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
   const labels: ViewerLabels = viewerWords(locale, options.labels);
@@ -788,6 +795,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     const ownBusy = !wait || acting !== 'button';
     if (ownBusy) button.setAttribute('aria-busy', 'true');
     button.setAttribute('aria-disabled', 'true');
+    // Its steps' engine on its way (the acts part): no quick answer, so its ring turns at once, as every press's that
+    // waits on a part (`pressWait`); and a press of what draws no ring of its own (a stat button) waits as they do.
+    const parted = formActsPart.loaded && button.classList.contains('fd-button') ? null : pressWait(button);
     try {
       const { reason, message } = await run();
       if (reason === 'check' || reason === 'save') {
@@ -797,6 +807,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       if (reason === 'cannot' && !formActsPart.loaded) say(message ?? '', 'warning', undefined, { label: labels.retry, run: () => void press(button, run) });
     } finally {
       pressing--;
+      parted?.();
       if (ownBusy) button.removeAttribute('aria-busy');
       button.removeAttribute('aria-disabled');
       endAction(wait);
@@ -3083,7 +3094,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
   const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
   // A part the page can be drawn without, drawing itself in place as it comes, waited for only beside others (`waitedFor`).
-  const owed = waitedFor([...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded));
+  const owed = waitedFor([...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded), page);
   // The loading part — a skeleton, the bars, the spinners — with the page's own parts where it waits for any and will
   // then wait for its data drawn from it (its record, a list's rows, a related list's, a map's, a saved form's), so that
   // wait is drawn as it says: asked for alongside them, it delays none. And where the app's own way names a look of its.

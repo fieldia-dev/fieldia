@@ -52,8 +52,8 @@ async function open(browser: Browser) {
 }
 
 /** `given` mounted in the app's page on a memory source (`window.source`): what onError heard, what the mount threw, how `drawn` and `refused` settled. */
-async function mount(browser: Browser, given: unknown) {
-  await browser.evaluate((shown) => {
+async function mount(browser: Browser, given: unknown, development = false) {
+  await browser.evaluate(([shown, making]) => {
     const w = window as unknown as {
       Fieldia: { mountViewer(h: Element, o: unknown): { drawn: Promise<void>; refused: Promise<Error | null> }; createMemoryDataSource(o?: unknown): unknown };
       checked: Checked;
@@ -66,6 +66,7 @@ async function mount(browser: Browser, given: unknown) {
         page: shown,
         dataSource: w.source,
         onError: (error: { message: string; issues?: { path: string }[] }, where: { stage: string; part: string; warning?: boolean }) => w.checked.told.push({ ...where, paths: (error.issues ?? []).map((issue) => issue.path), message: error.message }),
+        ...(making ? { development: true } : {}),
       });
       // Drawn as it was mounted, in the same task: nothing waited for.
       w.checked.drawnAtMount = !!document.querySelector('#app .fd-field');
@@ -74,12 +75,13 @@ async function mount(browser: Browser, given: unknown) {
     } catch (error) {
       w.checked.thrown = (error as Error).message;
     }
-  }, given);
+  }, [given, development] as const);
 }
 const checked = (browser: Browser) => browser.evaluate(() => (window as unknown as { checked: Checked }).checked);
 const sent = (browser: Browser) => browser.evaluate(() => (window as unknown as { source: { responses: unknown[] } }).source.responses.length);
 /** When a script was asked for, by the page's clock; null where it was not. */
-const UNSHOWN = 'This form cannot be shown: its page has mistakes. Whoever made it can check it with validatePage.';
+/** What a visitor reads where a refused form would be (0.37 walk: never a function's name or a check's words). */
+const UNSHOWN = 'This form is not available right now. Please try again later, or contact whoever sent it to you.';
 /** The name typed and Submit pressed. */
 async function send(browser: Browser) {
   await browser.getByRole('textbox', { name: 'Your name' }).fill('Hana Fouad');
@@ -155,9 +157,10 @@ test('a page only the whole check refuses: drawn at once, then taken down as its
   await browser.waitForFunction(() => !!(window as unknown as { Fieldia: { pageCheckPart: { loaded?: unknown } } }).Fieldia.pageCheckPart.loaded);
   await mount(browser, onlyWhole());
   expect((await checked(browser)).drawnAtMount).toBe(true);
+  // Its visitor reads plain words with a way on, nothing of the check: what is wrong goes to the console and onError.
   await expect(browser.locator('#app .fd-unshown [role="alert"]')).toHaveText(UNSHOWN);
-  await browser.locator('#app .fd-unshown summary').click();
-  await expect(browser.locator('#app .fd-unshown li code')).toHaveText(['fields.name.required']);
+  await expect(browser.locator('#app .fd-unshown')).toHaveText(UNSHOWN);
+  await expect(browser.locator('#app .fd-unshown summary')).toHaveCount(0);
   await expect(browser.locator('#app .fd-field')).toHaveCount(0);
   const { told, thrown, refused } = await checked(browser);
   expect(thrown).toBeNull();
@@ -198,7 +201,8 @@ test('its check on its way: a send waits for it — then a page it refuses is ta
 
 test('a page 0.35 refused: refused at the mount, its words where the form would be, told as before (stage "draw")', async ({ page: browser }) => {
   await open(browser);
-  await mount(browser, page((p) => (p.layout.children[1]['field'] = 'phone')));
+  // The app being made (`development`): what is wrong under the visitor's words, for whoever made the page.
+  await mount(browser, page((p) => (p.layout.children[1]['field'] = 'phone')), true);
   const words = browser.locator('#app .fd-unshown [role="alert"]');
   await expect(words).toHaveText(UNSHOWN);
   await browser.locator('#app .fd-unshown summary').click();
@@ -247,9 +251,9 @@ for (const variant of VARIANTS) {
       await route.fulfill({ response: real, body: code.replace(/required:\s*!0/, 'required:"yes"') });
     });
     await browser.goto(`/${variant}/?page=enquiry`);
+    // Its visitor's words alone: the demo is a business's page, not the app being made.
     await expect(browser.locator('.fd-unshown [role="alert"]')).toHaveText(UNSHOWN);
-    await browser.locator('.fd-unshown summary').click();
-    await expect(browser.locator('.fd-unshown li code').first()).toHaveText(/^fields\.[a-z_]+\.required$/);
+    await expect(browser.locator('.fd-unshown summary')).toHaveCount(0);
     await expect(browser.locator('.fd-field')).toHaveCount(0);
     // The demo's own page round it — its header — still there, and nothing thrown out of the app.
     await expect(browser.locator('header, nav').first()).toBeVisible();

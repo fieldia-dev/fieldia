@@ -41,13 +41,13 @@ const made = (change: (page: Loose) => void): Page => {
 };
 
 /** A host on the page, and what mounting `page` there did: the error thrown, what onError heard. */
-function mount(page: Page) {
+function mount(page: Page, development = false) {
   const host = document.createElement('div');
   document.body.append(host);
   const told: unknown[] = [];
   let thrown: PageRefused | null = null;
   try {
-    handle = mountViewer(host, { page, onError: (error, where) => told.push({ error, where }) });
+    handle = mountViewer(host, { page, onError: (error, where) => told.push({ error, where }), ...(development ? { development } : {}) });
   } catch (error) {
     thrown = error as PageRefused;
   }
@@ -56,20 +56,37 @@ function mount(page: Page) {
 
 /** What a page has said of a deprecation, kept on the page itself (deprecations.ts): forgotten, for each test its own page. */
 const SAID = Symbol.for('fieldia.deprecations.said');
+
+/** What a visitor reads where a refused form would be: plain words with a way on, never a check's. */
+const VISITOR = 'This form is not available right now. Please try again later, or contact whoever sent it to you.';
+/** Never in what a visitor reads: a function's name, a check's or a schema's words, a path. */
+const DEVELOPERS = /validatePage|fieldia-check|Invalid input|expected|received|no field|layout\.|fields\./;
 const forget = () => delete (globalThis as { [SAID]?: unknown })[SAID];
 
 describe('a page the check before the draw refuses, as 0.35 refused it', () => {
-  it('says why where the form would be, lists what is wrong, tells onError and throws the problems', () => {
+  it('says to its visitor, where the form would be, that it is not available now, with a way on; tells onError and throws the problems', () => {
     const { host, told, thrown } = mount(made((p) => (p.layout.children[0]['field'] = 'phone')));
     expect(thrown?.issues).toEqual([{ path: 'layout.children[0].field', message: 'no field "phone"' }]);
     expect(thrown?.message).toMatch(/^This page cannot be shown:\n {2}layout\.children\[0\]\.field: no field "phone"/);
-    // Never a blank area: the words where the form would be, in Fieldia's look.
+    // Never a blank area: the visitor's words where the form would be, in Fieldia's look — and nothing for the developer
+    // (the 0.37 walk: "Whoever made it can check it with validatePage", and the check's own words, read by a visitor).
     const box = host.querySelector('.fd-form.fd-unshown') as HTMLElement;
-    expect(box.querySelector('[role="alert"]')?.textContent).toBe('This form cannot be shown: its page has mistakes. Whoever made it can check it with validatePage.');
-    expect(box.querySelector('details summary')?.textContent).toBe('What is wrong');
-    expect([...box.querySelectorAll('details li')].map((item) => item.textContent)).toEqual(['layout.children[0].field no field "phone"']);
+    expect(box.querySelector('[role="alert"]')?.textContent).toBe(VISITOR);
+    expect(box.textContent).toBe(VISITOR);
+    expect(box.textContent).not.toMatch(DEVELOPERS);
+    expect(box.querySelector('details')).toBeNull();
     expect(told).toEqual([{ error: thrown, where: { stage: 'draw', part: 'page' } }]);
     expect(host.querySelector('.fd-field, input')).toBeNull();
+  });
+
+  it('while the app is being made (`development`), lists what is wrong under the visitor’s words, for whoever made the page', () => {
+    const { host, thrown } = mount(made((p) => (p.layout.children[0]['field'] = 'phone')), true);
+    const box = host.querySelector('.fd-form.fd-unshown') as HTMLElement;
+    expect(box.querySelector('[role="alert"]')?.textContent).toBe(VISITOR);
+    expect(box.querySelector('details summary')?.textContent).toBe('What is wrong');
+    expect(box.querySelector('details p')?.textContent).toBe('Its page has mistakes, so the form is not shown. Check the page with validatePage or npx fieldia-check.');
+    expect([...box.querySelectorAll('details li')].map((item) => item.textContent)).toEqual(['layout.children[0].field no field "phone"']);
+    expect(thrown?.issues).toHaveLength(1);
   });
 
   it.each([
@@ -111,7 +128,7 @@ describe('a page 0.35 drew that validatePage refuses: drawn, then taken down as 
     }), 'fields.pin.secret'],
     ['a 0.13 page saying what a copy does not keep, which came in 0.14 (format.under-stamped)', made((p) => (p.fields['state']['copy'] = false)), 'fields.state.copy'],
   ])('%s: drawn at once, then taken down — its words in its place, onError told (stage "check"), refused settled', async (_, page, path) => {
-    const { host, told, thrown } = mount(page);
+    const { host, told, thrown } = mount(page, true);
     // Never thrown, never waited for: drawn as 0.36 drew it.
     expect(thrown).toBeNull();
     expect(host.querySelector('.fd-form input, .fd-form select')).not.toBeNull();
@@ -119,7 +136,8 @@ describe('a page 0.35 drew that validatePage refuses: drawn, then taken down as 
     expect(error.issues).toEqual(expect.arrayContaining([expect.objectContaining({ path })]));
     expect(error.message).toMatch(/^This page cannot be shown:\n/);
     const box = host.querySelector('.fd-form.fd-unshown') as HTMLElement;
-    expect(box.querySelector('[role="alert"]')?.textContent).toBe('This form cannot be shown: its page has mistakes. Whoever made it can check it with validatePage.');
+    // One way of saying both refusals: the visitor's words, what is wrong under them while the app is being made.
+    expect(box.querySelector('[role="alert"]')?.textContent).toBe(VISITOR);
     expect([...box.querySelectorAll('details li code')].map((code) => code.textContent)).toContain(path);
     // (What 0.35 did with it besides, it does as it is drawn: options as words draw their field as a box that says it
     // failed, told as a field's.)
@@ -128,6 +146,15 @@ describe('a page 0.35 drew that validatePage refuses: drawn, then taken down as 
     expect(host.querySelector('.fd-field, input, select')).toBeNull();
     // Refused, never warned of: page.invalid and format.under-stamped are changed (0.37).
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('taken down, it says to its visitor what a page refused at the mount says — never the check’s words', async () => {
+    const { host } = mount(made((p) => (p.fields['name']['required'] = 'yes')));
+    const error = (await handle?.refused) as PageRefused;
+    expect(error.issues).toEqual([expect.objectContaining({ path: 'fields.name.required' })]);
+    const box = host.querySelector('.fd-form.fd-unshown') as HTMLElement;
+    expect(box.textContent).toBe(VISITOR);
+    expect(box.textContent).not.toMatch(DEVELOPERS);
   });
 
   it('what 0.35 refused is thrown at the mount as before (stage "draw"), even with a mistake only the whole check finds beside it', () => {

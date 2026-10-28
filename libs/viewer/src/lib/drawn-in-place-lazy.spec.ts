@@ -61,6 +61,12 @@ const lease = (more: Page['fields'] = {}, nodes: object[] = []): Page =>
       children: [{ type: 'field', id: 'f-rent', field: 'rent' }, ...nodes],
     },
   }) as Page;
+/** A lease's sheet whose only furniture is its ribbon, over its card's corner: it takes no room. */
+const ribboned = (): Page =>
+  ({
+    ...lease(),
+    layout: { type: 'sheet', id: 'root', title: { field: 'name' }, ribbon: { id: 'r-late', label: 'Late', tone: 'danger', invisible: 'rent < 100' }, children: [{ type: 'field', id: 'f-rent', field: 'rent' }] },
+  }) as Page;
 const leaseSource = async () => (await import('@fieldia/core')).createMemoryDataSource({ records: { lease: { 1: { name: 'Hana Fouad', rent: 120 } } } });
 const settle = async () => {
   for (let turn = 0; turn < 8; turn++) await new Promise((resolve) => setTimeout(resolve, 0));
@@ -69,18 +75,19 @@ const settle = async () => {
 describe('a part drawn in place as it comes', () => {
   it('alone, never waited for: the page drawn at once, its box typed in, the toolbar in its place as it comes', async () => {
     const { host, handle } = await mount(note());
-    // Drawn at once: its formatted text's box alone, typed in.
+    // Drawn at once: its formatted text's box, typed in, the toolbar's room held over it — nothing in it to press.
     const area = host.querySelector('[data-node="f-body"] .fd-richtext[contenteditable="true"]') as HTMLElement;
     expect(area).not.toBeNull();
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
-    expect(host.querySelector('.fd-richtext-bar')).toBeNull();
+    expect(host.querySelector('.fd-richtext-bar[aria-hidden="true"]')).not.toBeNull();
+    expect(host.querySelector('.fd-richtext-bar button')).toBeNull();
     area.innerHTML = '<p>Hello</p>';
     area.dispatchEvent(new Event('input', { bubbles: true }));
     const { htmlPart } = await import('@fieldia/widgets');
     await htmlPart.load();
     await handle.drawn;
     for (let turn = 0; turn < 5; turn++) await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(host.querySelector('[data-node="f-body"] .fd-richtext-bar')).not.toBeNull();
+    expect(host.querySelector('[data-node="f-body"] .fd-richtext-bar [aria-label="Bold"]')).not.toBeNull();
     expect(host.querySelector('[data-node="f-body"] .fd-richtext')?.innerHTML).toBe('<p>Hello</p>');
     expect(handle.form.getState().values['body']).toBe('<p>Hello</p>');
   });
@@ -93,24 +100,41 @@ describe('a part drawn in place as it comes', () => {
     expect(host.querySelector('[data-node="f-body"] .fd-richtext-bar')).not.toBeNull();
   });
 
-  it("its tags: none for a page that waits for it alone, its own beside the page's others", async () => {
+  it("its tags: none for a page that waits for it alone, its own beside the page's others — and a sheet's whose furniture takes room", async () => {
     const { partFiles } = await import('./viewer-parts');
     expect(partFiles(note())).toEqual([]);
     expect(partFiles(note({ when: { type: 'date', label: 'When' } }, [{ type: 'field', id: 'f-when', field: 'when' }])).sort()).toEqual(['fieldia.date.js', 'fieldia.html.js']);
-    expect(partFiles(lease())).toEqual([]);
+    expect(partFiles(ribboned())).toEqual([]);
+    expect(partFiles(lease()).sort()).toEqual(['fieldia.loading.js', 'fieldia.sheet.js']);
     expect(partFiles(lease({ start: { type: 'date', label: 'Start' } }, [{ type: 'field', id: 'f-start', field: 'start' }])).sort()).toEqual(['fieldia.date.js', 'fieldia.loading.js', 'fieldia.sheet.js']);
   });
 
-  it("a sheet that waits for no other part: drawn at once, its furniture put in place as it comes, working", async () => {
+  it("a sheet whose furniture takes room waits for it, as for any part, drawn whole — its room cannot be held before it is drawn", async () => {
     const { host, handle } = await mount(lease(), { dataSource: await leaseSource(), recordId: 1 });
-    // The sheet at once: its header's Save, its card, its title, its fields; none of its furniture yet.
+    // Not drawn before its stat buttons, badges and alerts, which would push it down as they came (the 0.37 walk: 102 px).
+    expect(handle.element.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('.fd-card [data-node="f-rent"]')).toBeNull();
+    await handle.drawn;
+    expect(host.querySelector('.fd-card > .fd-stats .fd-stat')).not.toBeNull();
+    expect(host.querySelector('.fd-card > .fd-alert')).not.toBeNull();
+  });
+
+  it("a sheet whose only furniture is its ribbon, over its card's corner: drawn at once, the ribbon put in place as it comes", async () => {
+    const { host, handle } = await mount(ribboned(), { dataSource: await leaseSource(), recordId: 1 });
     expect(handle.element.hasAttribute('aria-busy')).toBe(false);
-    expect(host.querySelector('.fd-sheet-page .fd-header')).not.toBeNull();
     expect(host.querySelector('.fd-card [data-node="f-rent"]')).not.toBeNull();
-    expect(host.querySelector('.fd-ribbon, .fd-stat, .fd-badge, .fd-alert')).toBeNull();
+    expect(host.querySelector('.fd-ribbon')).toBeNull();
     await handle.form.settled();
     const { sheetPart } = await import('./viewer-parts');
     await sheetPart.load();
+    await settle();
+    expect((host.querySelector('.fd-card > .fd-ribbon-frame .fd-ribbon') as HTMLElement).hidden).toBe(false);
+  });
+
+  it("a sheet waited for: its furniture in its places, working", async () => {
+    const { host, handle } = await mount(lease(), { dataSource: await leaseSource(), recordId: 1 });
+    await handle.drawn;
+    await handle.form.settled();
     await settle();
     // In its places, in the order a sheet draws them: the ribbon's frame, the stat buttons, the alert, the badges, the title.
     const card = host.querySelector('.fd-card') as HTMLElement;
@@ -134,7 +158,8 @@ describe('a part drawn in place as it comes', () => {
   });
 
   it('where it cannot come: the sheet works whole without its furniture, said over the page', async () => {
-    mockSheetFails = 1;
+    // Waited for, then asked again as the sheet is drawn, as every part a page draws from is: failing both times.
+    mockSheetFails = 2;
     const { host, handle } = await mount(lease(), { dataSource: await leaseSource(), recordId: 1 });
     await handle.form.settled();
     await settle();
