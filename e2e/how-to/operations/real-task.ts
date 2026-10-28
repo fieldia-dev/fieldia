@@ -14,8 +14,8 @@ export const replay: DemoReplay = {
         await see(page.locator('[data-node="f-remaining"]')).toContainText('12:00');
         await press(sheet.getByRole('button', { name: '+ Add a line' }));
         if (phone) {
-          // A phone's line is a card: a new one is written in its own dialog, titled as its card is, by its place.
-          const line = page.getByRole('dialog', { name: 'Line 4' });
+          // A phone's line is a card: a new one is written in its own dialog, titled by the button that added it.
+          const line = page.getByRole('dialog', { name: 'Add a line', exact: true });
           await see(line).toBeVisible();
           await press(line.getByRole('textbox', { name: 'Hours Spent' }));
           await page.keyboard.type('2.5', { delay: 15 });
@@ -45,8 +45,8 @@ export const replay: DemoReplay = {
         await press(page.getByRole('tab', { name: 'Sub-tasks' }));
         const subtasks = page.getByRole('tabpanel', { name: 'Sub-tasks' });
         await press(subtasks.getByRole('button', { name: 'Add a sub-task' }));
-        // A new one by its place, as its card is headed; one with its title by its title — never the table's plural.
-        let task = page.getByRole('dialog', { name: 'Line 4' });
+        // A new one by the button that added it; one with its title by its title — never the table's plural.
+        let task = page.getByRole('dialog', { name: 'Add a sub-task', exact: true });
         if (phone) {
           await see(task).toBeVisible();
           await press(task.getByRole('textbox', { name: /^Title/ }));

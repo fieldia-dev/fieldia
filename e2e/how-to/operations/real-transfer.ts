@@ -9,8 +9,8 @@ export const replay: DemoReplay = {
         const moves = page.locator('[data-node="f-moves"]');
         await press(moves.getByRole('button', { name: '+ Add a Product' }));
         if (phone) {
-          // A phone's line is a card: a new one is written in its own dialog, titled by its place as its card is.
-          const line = page.getByRole('dialog', { name: 'Line 5' });
+          // A phone's line is a card: a new one is written in its own dialog, titled by the button that added it.
+          const line = page.getByRole('dialog', { name: 'Add a Product', exact: true });
           await press(line.getByRole('combobox', { name: /^Product/ }));
           await page.keyboard.type('screws', { delay: 15 });
           await press(page.getByRole('option', { name: /^Wood screws/ }).first());

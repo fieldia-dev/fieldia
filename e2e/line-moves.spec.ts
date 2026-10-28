@@ -22,8 +22,9 @@ test.describe('on a phone', () => {
     const asked = 'Would you recommend us to a colleague?';
     // Added as a phone adds a line: in its own form — which brings a plain table of its own, its answers, with it.
     await questions.getByRole('button', { name: 'Add a question' }).tap();
-    // Titled as its card is headed while it has no words: by its place among the questions, never the table's plural.
-    const dialog = page.getByRole('dialog', { name: 'Line 11' });
+    // Titled by the button that added it while it has no words — never by its place ("Line 11", the 0.37 walk), nor the
+    // table's plural.
+    const dialog = page.getByRole('dialog', { name: 'Add a question', exact: true });
     await expect(dialog.getByRole('textbox', { name: 'Question' })).toBeFocused();
     await page.keyboard.type(asked);
     await dialog.getByRole('button', { name: 'Save & Close' }).tap();
@@ -61,7 +62,7 @@ test.describe('on a phone', () => {
     const questions = node(page, 'f-questions');
     const asked = 'Would you recommend us to a colleague?';
     await questions.getByRole('button', { name: 'Add a question' }).tap();
-    const dialog = page.getByRole('dialog', { name: 'Line 11' });
+    const dialog = page.getByRole('dialog', { name: 'Add a question', exact: true });
     await expect(dialog.getByRole('textbox', { name: 'Question' })).toBeFocused();
     await page.keyboard.type(asked);
     await dialog.getByRole('button', { name: 'Save & Close' }).tap();
