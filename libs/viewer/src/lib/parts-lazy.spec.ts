@@ -1,5 +1,5 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { businessPart, choicePart, datePart, evidencePart, filesPart, linesPart, pathPart, photosPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, evidencePart, filesPart, htmlPart, linesPart, pathPart, photosPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
@@ -66,9 +66,10 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page({ type: 'list', id: 'l', columns: [], search: 'fields', filterFields: [] }))).toEqual([listPart, filtersPart]);
     // A work item's bug: its head (its Changed Date is words in the head's "Updated by", no box), and its quiet skin's look.
     expect(partsFor(BUG)).toEqual([headPart, quietPart]);
-    // The classic formatted text: no part. The plain many2one: its box, the relations part's.
-    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }), fields))).toEqual([]);
-    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }, { type: 'field', id: 'g', field: 'area' }), fields))).toEqual([relationsPart]);
+    // The classic formatted text: its toolbar, the html part's (drawn in place as it comes, waited for only beside
+    // others: drawn-in-place-lazy.spec.ts). The plain many2one: its box, the relations part's.
+    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }), fields))).toEqual([htmlPart]);
+    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }, { type: 'field', id: 'g', field: 'area' }), fields))).toEqual([htmlPart, relationsPart]);
     // The app's own widget for the field: no part.
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'area', widget: 'path' }), fields), { 'many2one.path': own })).toEqual([]);

@@ -95,7 +95,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, withActs, actsPart, askActs, type HeadPart, type UndoPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, withActs, actsPart, askActs, waitedFor, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import { missingJoin } from './join-missing';
@@ -3164,7 +3164,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // The parts its check owes (the one-tag script's), with the page's own: the check runs again once they came.
   // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
   const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
-  const owed = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
+  // A part the page can be drawn without, drawing itself in place as it comes, waited for only beside others (`waitedFor`).
+  const owed = waitedFor([...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded));
   // The loading part — a skeleton, the bars, the spinners — with the page's own parts where it waits for any and will
   // then wait for its data drawn from it (its record, a list's rows, a related list's, a map's, a saved form's), so that
   // wait is drawn as it says: asked for alongside them, it delays none. And where the app's own way names a look of its.

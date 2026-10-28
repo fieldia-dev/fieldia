@@ -1,5 +1,5 @@
 import { callsPartFunctions, formActsPart, formJoins, formApprovalsPart, pageCheckPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
-import { asksLoadingPart, loadingPart, loadingSettings, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
+import { asksLoadingPart, loadingPart, loadingSettings, businessPart, htmlPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
 import type * as ElementModule from './element-part';
@@ -215,14 +215,25 @@ export const CELL_BOXES: ReadonlySet<string> = new Set(['duration', 'percentage'
  * Every part the viewer can draw from, its own and its widgets', and the print part (print.ts), which draws nothing —
  * but the decode part, which reads codes only where a browser reads none itself, as Scan is pressed.
  */
-const EVERY_PART: readonly Part[] = [loadingPart, actsPart, headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart, pageCheckPart];
+const EVERY_PART: readonly Part[] = [loadingPart, actsPart, headPart, listPart, cardsPart, columnsPart, importPart, editablePart, viewsPart, rowsPart, filtersPart, duplicatesPart, answersPart, limitsPart, templatesPart, livePart, undoPart, ...Object.values(joinDrawings), elementPart, surveyFlowPart, formSurveyPart, approvalsPart, assistPart, printPart, textPart, htmlPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart, themesPart, quietPart, functionsPart, formLimitsPart, optionRulesPart, formApprovalsPart, pageCheckPart];
 
 /**
  * The parts a page draws from that say in their own place that they could not come: those that draw a field's own box
  * (each through `partWidget`: the field drawn plainly, and says so under itself, with Retry) and the list part (in the
  * list's place, with Retry). What says a page's part could not load, once over the page, leaves them out.
  */
-export const SAID_IN_PLACE: ReadonlySet<Part> = new Set<Part>([listPart, textPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart]);
+export const SAID_IN_PLACE: ReadonlySet<Part> = new Set<Part>([listPart, textPart, htmlPart, pathPart, choicePart, datePart, monthsPart, typedPart, linesPart, businessPart, filesPart, evidencePart, recordPart, codesPart, pinsPart, photosPart, surveyPart, phonePart, slotsPart, schedulePart, relationsPart, languagesPart, scanPart]);
+
+/**
+ * The parts a page is drawn without, plainly, and that draw themselves in place as they come: the classic formatted
+ * text's toolbar, its box typed in meanwhile (`htmlBox`). Waited for only beside a page's other parts, whose round trip
+ * the page waits for anyway — the page then drawn whole at once; alone, never: the page drawn at once, as without them
+ * (0.37: no page draws later for a part it can be drawn without).
+ */
+export const DRAWN_IN_PLACE: ReadonlySet<Part> = new Set<Part>([htmlPart]);
+
+/** Of the parts a page draws from, those it waits for: every one, unless each of them draws itself in place as it comes. */
+export const waitedFor = (parts: readonly Part[]): Part[] => (parts.every((part) => DRAWN_IN_PLACE.has(part)) ? [] : [...parts]);
 
 /** A group holding a text read first alone — Markdown, or one edited by its button — whose Edit and Done its heading takes: drawn with the work heading's tools. */
 const markdownAlone = (node: SectionNode) => {
@@ -461,7 +472,7 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * the one-tag script's `partTags(page)` gives each with what its own tag carries.
  */
 export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>, loading?: PageLoading): string[] {
-  return withLoadingPart(page, partsFor(page, widgets, slots), loading).map((part) => `fieldia.${part.name}.js`);
+  return withLoadingPart(page, waitedFor(partsFor(page, widgets, slots)), loading).map((part) => `fieldia.${part.name}.js`);
 }
 
 /** A page's parts, the loading part among them where the viewer asks for it with them (`loadingWithParts`): a record's page waits for its record. */
