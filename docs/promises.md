@@ -192,11 +192,12 @@ changed is said no more, and stays here marked changed, as the minor's CHANGELOG
 - A table of 200 lines draws again only the lines a change touches. A Gantt of 500 tasks moves a bar in place.
 - From 0.37 a page's whole check runs as soon as it is drawn, and nothing waits for it. Measured on Slow 4G (1.44 Mbps,
   562 ms), on a desktop and on a phone's CPU four times slower, 7 runs each interleaved with 0.36.0: a page of plain
-  fields, one fetched by the app, a record and a list drawn from parts, with and without their part tags — every first
-  draw within 9 ms of 0.36.0's, inside the runs' own spread. The check lands 0.01–0.08 s after the draw where the app
-  fetched its page, and about 0.7 s after it where the page was mounted as soon as `fieldia.js` ran (a round trip for
-  `fieldia.check.js`, asked for once the page's parts came): a write asked for before then waits for it. No gate:
-  measured by hand (the table in the lane's report).
+  fields, one fetched by the app, a record and a list drawn from parts, with and without their part tags — at 0.37.0
+  every first draw within 10 ms of 0.36.0's on a desktop (about what its 0.74 KB more takes on that line), and on the
+  phone inside the runs' own spread (−11 to +31 ms in one run; the two farthest again, −2 and −18). The check lands
+  0.01–0.08 s after the draw where the app fetched its page, and about 0.7 s after it where the page was mounted as
+  soon as `fieldia.js` ran (a round trip for `fieldia.check.js`, asked for once the page's parts came): a write asked
+  for before then waits for it. No gate: measured by hand for each minor.
 
 Each release is held to budgets that fail the build. The timings run alone in CI's perf job, one worker, with three
 times the budget's slack for a shared runner; the phone's budgets are four times a desktop's. The counts are counted
@@ -222,8 +223,8 @@ An app's first load from the npm packages, bundled by esbuild, KB gzipped — th
 | The screen designer | 604.2 KB | 837.9 KB | `tools/npm-first-load.mjs` |
 
 Usable counts the whole check, which a page asks for as it is mounted and runs once it is drawn. The one-tag script,
-`fieldia.js`, is held to 197.8 KB gzipped, the whole check it asks for once the page is parsed (`fieldia.check.js`) to 17.3 KB,
-and each other part it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
+`fieldia.js`, is held to 197.8 KB gzipped, the whole check it asks for once the page is parsed (`fieldia.check.js`)
+to 17.3 KB, and each other part it loads later to its own budget. **Gate:** `tools/script-bundle.mjs`.
 
 These are budgets, not measurements. A count's budget is what the release counted, with a little room; a timing's is
 a frame for a key and a tenth of a second for a click. Each run's measurements are kept with CI's perf job.
