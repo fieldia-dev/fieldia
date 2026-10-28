@@ -190,8 +190,8 @@ for (const variant of VARIANTS) {
     });
 
     test('Open on a link whose page cannot come says why and opens nothing, nothing left unhandled; pressed again, it asks again', async ({ page }) => {
-      // The page's promises kept as an Angular app's zone keeps them (a refusal with no handler by the next microtask is
-      // said, as NgZone.onError hears it), and the engine's own unhandledrejection listened to too.
+      // The page's promises kept as an Angular app's zone keeps them (a refusal with no handler once its zone's microtasks
+      // have drained is said, as NgZone.onError hears it), and the engine's own unhandledrejection listened to too.
       await page.addInitScript(installZonePromises);
       await page.addInitScript(() => {
         const W = window as any;
