@@ -1,4 +1,4 @@
-import { callsPartFunctions, checkPageOwing, formJoins, formApprovalsPart, formatChecksPart, pageCheckPart, WHOLE_CHECK_APART, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
+import { callsPartFunctions, formJoins, formApprovalsPart, pageCheckPart, editableColumns, formLimitsPart, formSurveyPart, functionsPart, hasLanguages, hasLimits, surveyFlow, hasOptionRules, languagesOf, mapChecksPart, optionRulesPart, pressUndoPart, READ_WORDS, signsAnswers, type ButtonNode, type Field, type FieldNode, type ListNode, type MenuItem, type Page, type PageLoading, type SectionNode, type SheetTitle } from '@fieldia/core';
 import { asksLoadingPart, loadingPart, loadingSettings, businessPart, choicePart, codesPart, datePart, pinsPart, monthsPart, typedPart, evidencePart, filesPart, languagesPart, lazyPart, linesPart, partsOf, pathPart, phonePart, phoneSettings, photosPart, quietPart, recordPart, relationsPart, scanPart, scans, schedulePart, slotsPart, surveyPart, textPart, themesPart, widgetPart, type Part, type WidgetFactory } from '@fieldia/widgets';
 import { isRichButton } from './button-parts';
 import { printPart } from './print';
@@ -387,16 +387,13 @@ export function partsFor(page: Page, widgets: Record<string, WidgetFactory> = {}
 }
 
 /**
- * The parts whose checks a page's check owes (`PageValidation.later`: the checks of what a part draws, owed-checks.ts in
- * @fieldia/core): asked for with the page's own, the check run again once they came — in an app's bundle the one chunk
- * that brings them all (`formatChecksPart`), in the one-tag script each part that brings its own.
+ * The parts whose checks a page's check owes (`PageValidation.later`, in the one-tag script alone: they come with the
+ * part that draws what they check): asked for with the page's own, the check run again once they came.
  */
 export function owedParts(later: readonly string[] | undefined): Part[] {
-  if (!later?.length) return [];
-  if (formatChecksPart) return [formatChecksPart];
   // The checks of the parts that join a form come with them, asked for with the page's own (`partsFor`).
   const by: Record<string, Part> = { list: listPart, editable: editablePart, head: headPart, limits: limitsPart, approvals: approvalsPart, answers: answersPart, assist: assistPart, surveyflow: surveyFlowPart, slots: slotsPart, files: filesPart, lines: linesPart, business: businessPart, options: optionRulesPart, mapchecks: mapChecksPart, languages: languagesPart, scan: scanPart };
-  return later.flatMap((name) => (by[name] ? [by[name]] : []));
+  return (later ?? []).flatMap((name) => (by[name] ? [by[name]] : []));
 }
 
 /** A list's columns whose numbers it writes as people read them: those it shows as a phone (`cells.<field>.widget`), where its page or the cell's options say so. */
@@ -422,7 +419,7 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  */
 /**
  * The one-tag script's files a page draws from — `fieldia.list.js`, `fieldia.cards.js`, … — each part `partsFor` names,
- * and the whole check every page is checked with before it is drawn (`fieldia.check.js`, 0.37): what a server writes into
+ * and the whole check every page is checked with as soon as it is drawn (`fieldia.check.js`, 0.37): what a server writes into
  * the page as `<script async src="…">` tags before fieldia.js, from the folder fieldia.js comes from, so they come beside
  * it rather than once it has run and looked at the page (measured on a mid-range phone: a list of customers usable 23%
  * sooner on 4G and 27% on Fast 3G, a record with tabs 16% on both). fieldia.js takes a tag it finds for a part still on
@@ -465,8 +462,6 @@ export function waitsDrawnFromLoading(page: Page, waitsForRecord: boolean, appLo
 export async function loadParts(page?: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>): Promise<void> {
   // With the parts that join a form, asked for as they are loaded: their module may come after this one's.
   // A page's own with the loading part where the viewer would wait for it with them: its first wait drawn as it says.
-  // The whole check's part too where the viewer waits for it (the one-tag script's), and in an app's bundle the checks of
-  // what a part draws where the page owes one (`formatChecksPart`): every one the viewer would wait for, as for its own.
-  const checks = [...(WHOLE_CHECK_APART ? [pageCheckPart] : []), ...(formatChecksPart && (!page || checkPageOwing(page).later?.length) ? [formatChecksPart] : [])];
-  await Promise.all([...(page ? withLoadingPart(page, partsFor(page, widgets, slots)) : [...EVERY_PART, ...formJoins()]), ...checks].map((part) => part.load()));
+  // The whole check's part too, which the viewer runs as soon as the page is drawn: in already, it runs at once.
+  await Promise.all((page ? [...withLoadingPart(page, partsFor(page, widgets, slots)), pageCheckPart] : [...EVERY_PART, ...formJoins()]).map((part) => part.load()));
 }

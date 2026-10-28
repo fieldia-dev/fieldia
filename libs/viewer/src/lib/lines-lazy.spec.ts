@@ -56,18 +56,14 @@ describe('the lines part', () => {
     expect(partsFor(page(field('plain_ids')), { one2many: own })).toEqual([]);
   });
 
-  it('a page without one never asks for it: drawn at once, or once the checks of its table came (0.37: in their own chunk)', async () => {
+  it('a page without one is drawn at once and never asks for it', async () => {
     const host = document.createElement('div');
     document.body.append(host);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
-    const plain = mountViewer(host, { page: page(field('name')) });
-    handles.push(plain);
-    expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
-    // Its table drawn by the app's own widget: the lines part never asked for, the table's checks owed and asked for.
     const handle = mountViewer(host, { page: page(field('name'), field('plain_ids', { widget: 'grid' })), widgets: { 'one2many.grid': own } });
     handles.push(handle);
+    expect(host.querySelector('[data-node="f-name"]')).not.toBeNull();
     await handle.drawn;
-    expect(host.querySelectorAll('[data-node="f-name"]')).toHaveLength(2);
     expect(linesPart.loaded).toBeUndefined();
   });
 

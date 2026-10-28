@@ -256,10 +256,12 @@ describe('<fieldia-form> for Angular', () => {
     await fixture.whenStable();
     expect(el.querySelector('.fd-unshown')).toBeNull();
     expect(el.querySelector('input')).not.toBeNull();
-    // Refused before the draw from 0.37, as validatePage refuses it (page.invalid): told as the whole check's.
+    // Drawn, then taken down as its whole check runs (0.37, page.invalid): told as the whole check's.
     fixture.componentInstance.told.length = 0;
     fixture.componentInstance.page.set({ ...RefusedHostComponent.good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page);
     await fixture.whenStable();
+    expect(el.querySelector('input')).not.toBeNull();
+    for (let i = 0; i < 100 && !el.querySelector('.fd-unshown'); i++) await new Promise((resolve) => setTimeout(resolve, 10));
     expect(el.querySelector('h1')?.textContent).toBe('The app');
     expect([...el.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['fields.note.required']);
     expect(el.querySelector('.fd-field')).toBeNull();
