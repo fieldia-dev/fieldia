@@ -4,13 +4,13 @@ import { join } from 'node:path';
 import { lazyPart, settleParts } from './parts';
 import { installPartStyles, installStyles, PART_RANK } from './styles';
 import { quietPart, themesPart, wearQuiet, wearTheme } from './look-parts';
-import { choicePart, datePart, pathPart, relationsPart, surveyPart, textPart } from './widget-parts';
+import { choicePart, datePart, htmlPart, pathPart, relationsPart, surveyPart, textPart } from './widget-parts';
 import { createWidget, widgetPart, type Widget } from './widgets';
 
 /**
  * Before its part has come (parts.ts): a widget made by something that did
- * not wait for it, as the viewer does, is drawn plainly — the classic editor
- * for a work item's text, the plain box for a path picker — then by its part,
+ * not wait for it, as the viewer does, is drawn plainly — a formatted text's
+ * box alone for a work item's text and for the classic toolbar's, the plain box for a path picker — then by its part,
  * in the same place, with the last state it was given and the focus if it had
  * it. This file starts with no part loaded (src/test-parts.ts leaves it so).
  */
@@ -61,7 +61,8 @@ describe('a part', () => {
 
   it('is named by the widget that needs it, for the field that needs it', () => {
     expect(widgetPart(fields['notes'], { type: 'field', id: 'n', field: 'notes', options: { toolbar: 'focus' } })).toBe(textPart);
-    expect(widgetPart(fields['notes'], { type: 'field', id: 'n', field: 'notes' })).toBeUndefined();
+    // The classic formatted text: its toolbar the html part's, its box drawn plainly until it comes.
+    expect(widgetPart(fields['notes'], { type: 'field', id: 'n', field: 'notes' })).toBe(htmlPart);
     expect(widgetPart(fields['area'], { type: 'field', id: 'a', field: 'area', widget: 'path' })).toBe(pathPart);
     // A link to another record: the relations part's box (relations-lazy.spec.ts).
     expect(widgetPart(fields['area'], { type: 'field', id: 'a', field: 'area' })).toBe(relationsPart);
@@ -127,11 +128,11 @@ describe('a widget made before its part came', () => {
     const box = document.createElement('div');
     document.body.append(box);
     box.append(widget.element);
-    // The classic editor meanwhile: it works.
-    expect(widget.element.querySelector('.fd-richtext')).not.toBeNull();
+    // Its box alone meanwhile, its words cleaned: it works.
+    expect(widget.element.matches('.fd-richtext[contenteditable="true"]')).toBe(true);
     widget.update(state('<p>First</p>'));
     widget.focus();
-    expect(document.activeElement).toBe(widget.element.querySelector('.fd-richtext'));
+    expect(document.activeElement).toBe(widget.element);
     await textPart.load();
     await Promise.resolve();
     // The work item's editor in its place, the text it was given, the focus in it.
