@@ -72,7 +72,8 @@ import { formJoins, joinGate, type FormInner, type FormJoin, type FormJoins, typ
 import type { Part } from '../parts';
 import type { HistoryStep, Noted } from './history';
 import { pressUndoPart } from './undo-later';
-import { createMoments, createRunner, takenNow, type ActionHost, type ActionRequest, type ActionResult, type AskHow, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
+import { askOf, createMoments, DONE, takenNow, type ActionHost, type ActionRequest, type ActionResult, type AskHow, type OnAction, type PostedMessage, type RunContext, type RunForm, type RunResult, type RunScope, type Stopped } from './run';
+import { formActsPart, type FormActsPart } from './acts-later';
 import {
   emptyValue,
   initialValues,
@@ -3943,10 +3944,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return went ? null : { reason: 'check', message: Object.values(state.errors)[0] };
   }
 
-  /** Run steps from the top — a button's, a moment's, the app's — and tell how it ended: on the record shown as it starts (`generation`). */
+  /**
+   * Run steps from the top — a button's, a moment's, the app's — and tell how it ended: on the record shown as it starts
+   * (`generation`). The engine that runs them is the acts part's (acts-later.ts): at once once it has come; until then
+   * the run waits for it, a press keeping its button busy — on the record it was set off on, as every wait of a run is
+   * — and stops with nothing done where it cannot come, said (`guardNotDone`), asked for anew by the next run.
+   */
   async function runTop(list: readonly ActionStep[], scope: RunScope): Promise<RunResult> {
     scope.generation ??= generation;
-    const result = await runner.runSteps(list, scope);
+    let steps = list.length ? engine() : undefined;
+    if (list.length && !steps) {
+      try {
+        await formActsPart.load();
+        steps = engine();
+      } catch (error) {
+        const again = formActsPart.asksAgain === false ? messages.guardReload : messages.guardTryAgain;
+        const result: RunResult = { done: false, stoppedAt: 0, step: list[0], reason: 'cannot', message: fillMessage(messages, messages.guardNotDone, { part: messages.guardSteps, again }), error };
+        emit('run', { id: scope.id, steps: list, result });
+        return result;
+      }
+    }
+    const result = await (steps ? steps.runSteps(list, scope) : DONE);
     emit('run', { id: scope.id, steps: list, result });
     return result;
   }
@@ -4334,7 +4352,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return true;
   }
 
-  const runner = createRunner({
+  /** What the engine that runs this form's steps reaches it by (run-steps.ts, in the acts part). */
+  const runForm: RunForm = {
     fields,
     messages,
     values: () => state.values,
@@ -4417,7 +4436,10 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     post,
     wordsOf: (field) => wordsOfValue(fieldDef(field), state.values[field]),
     barred: (right) => (state.can?.[right] === false ? state.can.reason ?? named(messages[`${MAY_NOT[right]}Noun`], messages[MAY_NOT[right]]) : null),
-  });
+  };
+  /** The engine that runs this form's steps, made once its part has come; undefined until then. */
+  let runner: ReturnType<FormActsPart['createRunner']> | undefined;
+  const engine = () => (runner ??= formActsPart.loaded?.createRunner(runForm));
   // A moment's run is on the record it was set off on: one set off again while its run goes, and run after it, is let
   // go when another record is shown by then (its steps were for that one).
   const moment = createMoments((key, list, chain, on, yes) => runTop(list, { id: key, chain, generation: on, yes }), () => generation);
@@ -4458,7 +4480,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     scope.typed ??= 'first';
     return track(
       (async (): Promise<RunResult> => {
-        if (confirm && !(await runner.ask(confirm, scope.yes))) {
+        if (confirm && !(await askOf(runForm, confirm, scope.yes))) {
           const result: RunResult = { done: false, reason: 'no', message: confirm };
           emit('run', { id: scope.id, steps: list, result });
           return result;
@@ -4500,7 +4522,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     scope.taken = undefined;
     void track(
       pressUndoPart.load().then(
-        (part) => part.offerUndo(inner, { kit: runner.kit, source, scope, taken, result, offers }),
+        (part) => part.offerUndo(inner, { kit: (engine() as NonNullable<typeof runner>).kit, source, scope, taken, result, offers }),
         () => taken.said.forEach((words) => options.host?.say(words.message, words.tone))
       )
     );

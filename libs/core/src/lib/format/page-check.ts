@@ -1,5 +1,6 @@
 import { lazyPart, type Part } from '../parts';
 import { deprecated } from '../deprecations';
+import { formActsPart } from '../record/acts-later';
 import type { PageIssue, PageValidation } from './references';
 import type { PageCheckOptions } from './check-page';
 import type * as CheckPart from './check-part';
@@ -42,7 +43,28 @@ export function askForCheck(until?: Promise<unknown>): void {
     () => undefined,
     // Forgotten as the part is (parts.ts): asked for anew by the next page, or by a write that waits for it.
     () => void (asked = false)
-  );
+  ).then(afterCheck);
+}
+
+/**
+ * What no page draws from, asked for right after the whole check — once it came, or could not — never beside it nor
+ * beside a page's parts, whose bytes it would share a slow line with: the acts part (a page's steps run, its dialogs, a
+ * page opened, its questions), which a first press, question or moment that comes sooner asks for itself and waits for.
+ * Each asked once here; one that could not come is asked for anew by what needs it. `askAfterCheck` adds another's.
+ */
+let afterAsked = false;
+/** The others' asks (a viewer's half of the acts part), each once: made as they are added, never as the modules start. */
+let afterAsks: Set<() => unknown> | undefined;
+function afterCheck(): void {
+  if (afterAsked) return;
+  afterAsked = true;
+  for (const ask of [() => formActsPart.load(), ...(afterAsks ?? [])]) void Promise.resolve(ask()).catch(() => undefined);
+}
+
+/** A part to ask for right after the whole check (`afterCheck`), once: at once where that was asked already. */
+export function askAfterCheck(ask: () => unknown): void {
+  if (afterAsked) void Promise.resolve(ask()).catch(() => undefined);
+  else (afterAsks ??= new Set()).add(ask);
 }
 
 /**
