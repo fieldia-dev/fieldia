@@ -18,8 +18,10 @@ async function mount(preferences: PreferenceStore = memoryPreferences(), page: P
   return host;
 }
 /** The customers' filters in two groups: a status, and a country. */
+// Filters in groups came in format 0.14: a page that uses them says so, or the viewer takes it down as under-stamped.
 const grouped = {
   ...customers,
+  fieldia: '0.14',
   layout: {
     ...customers.layout,
     filters: [
@@ -170,6 +172,8 @@ describe('the search bar', () => {
     button(panelPlain, 'Egypt').click();
     expect(chips(plain)).toEqual(['Active or Egypt']);
     await shows(plain, ['Amira Clinics', 'Nile Traders']);
+    // Both pages' whole check passed: each stays, never taken down after the test has read it.
+    for (const one of handles) expect(await one.refused).toBeNull();
   });
 
   it('counts each filter as if it alone of its group were on, the other groups’ kept', async () => {
