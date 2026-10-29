@@ -131,6 +131,27 @@ describe("a page's steps, their engine in a part of its own", () => {
     expect(form.getState().values['note']).toBe('filled');
   });
 
+  it('a save whose beforeSave steps wait for their engine says it is saving meanwhile — never a press that waits in silence — then runs them and saves', async () => {
+    const { createForm, orderPage, orderSource } = await fresh();
+    const source = orderSource();
+    const form = createForm({ page: orderPage({ on: { beforeSave: [{ do: 'set', field: 'ref', value: "'R-1'" }] } }), dataSource: source, recordId: 7 });
+    await form.load();
+    form.setValue('name', 'SO007 B');
+    const statuses: string[] = [];
+    form.subscribe((state) => statuses.at(-1) !== state.status && statuses.push(state.status));
+    const saving = form.save();
+    await settle();
+    // Held: said saving — its Submit busy — its steps not run yet, nothing sent.
+    expect(form.getState().status).toBe('saving');
+    expect(form.getState().values['ref']).not.toBe('R-1');
+    expect(source.records['sale.order'][7]['name']).toBe('SO007');
+    mockHeld.release?.();
+    expect(await saving).toBe(true);
+    expect(source.records['sale.order'][7]).toMatchObject({ name: 'SO007 B', ref: 'R-1' });
+    // Ready again as it landed, its steps run, then saving as it went.
+    expect(statuses.slice(-4)).toEqual(['saving', 'ready', 'saving', 'saved']);
+  });
+
   it('a save whose beforeSave steps cannot get their engine is stopped, said, nothing saved', async () => {
     const { createForm, orderPage, orderSource } = await fresh();
     const source = orderSource();

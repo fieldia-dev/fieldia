@@ -3617,6 +3617,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({ status: 'ready' });
     }
     if (page.on?.beforeSave) {
+      // Its steps' engine still on its way (the acts part, acts-later.ts): the save says so meanwhile — saving, its
+      // Submit busy — as it does while files go, ready again as the engine lands and its steps run; one that cannot come
+      // is said by the run below. Never a press that waits in silence (0.37: a page that keeps its sends without signal,
+      // its part held by a slow line, waited with nothing said).
+      if (!formActsPart.loaded && page.on.beforeSave.length) {
+        set({ status: 'saving', error: null, saveProblem: null });
+        const landed = () => void (asked === generation && state.status === 'saving' && set({ status: 'ready' }));
+        void formActsPart.load().then(landed, landed);
+      }
       // Its run stops of itself on a record shown by anything but its own steps (a `call`'s `{ record }`, a reload):
       // those move the save on with it.
       // Its questions' Yes goes on with what set the save off: its words (Submit, a button's).
