@@ -1680,7 +1680,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // with the page's (viewer-parts.ts); a refused page's words to its visitor, what is wrong only in `development`
 // (refused.ts); under a name pressed (a card's head, a stat button), a bar along its foot where its end is another
 // control's: 559,345 measured before, 563,507 after (+4,162), to 550.4.
-const BUDGET_KB = 550.4;
+// 0.37 (p37-tail), each needed before the acts part is there: a page that keeps its sends without signal and acts asks
+// for that part with its own, its tag written with theirs (viewer-parts.ts `asksActs`, viewer.ts) +133; a save whose
+// beforeSave steps wait for it says so, saving, its Submit busy — never a press that waits in silence (form.ts) +174:
+// 563,507 measured before, 563,814 after (+307), to 550.6.
+const BUDGET_KB = 550.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2083,7 +2087,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // sheet's furniture and its look in the sheet part 185.72; Reload, Keep mine and Put back with the acts 185.44; a link's
 // and a line's dialogs with them 184.66 — 13.36 less, to 184.7: under the owner's 200.
 // 0.37 (p37-walk-fix), listed with the raw budget above: 184.64 → 186.00 (+1.36: 189,075 → 190,464 B), to 186.1.
-const GZIP_BUDGET_KB = 186.1;
+// 0.37 (p37-tail), listed with the raw budget above: 186.00 → 186.12 (+0.12: 190,464 → 190,587 B; the viewer's +51, the
+// form's +72), to 186.2: under the owner's 200.
+const GZIP_BUDGET_KB = 186.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
