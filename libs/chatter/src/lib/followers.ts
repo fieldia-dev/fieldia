@@ -1,4 +1,4 @@
-import { fill } from '@fieldia/core';
+import { answerOf, fill } from '@fieldia/core';
 import { drawIcon } from '@fieldia/widgets';
 import type { ChatterContext } from './chatter';
 import type { Follower, Person } from './source';
@@ -22,6 +22,18 @@ export function followersPart(context: ChatterContext) {
   const element = el('div', { class: 'fd-followers', hidden: '', role: 'group', 'aria-label': labels.followers }, list, none, ...(adding ? [adding] : []));
   let followers: Follower[] = [];
   let asking = 0;
+  /**
+   * A change a person asked for, the source's answer handled as it is given (`answerOf`): what was said of the last goes
+   * as it is asked; one the source refuses is said, with why (`notDone`), and asked again at the next press.
+   */
+  const asked = async (change: () => Promise<unknown>) => {
+    context.notDone?.();
+    try {
+      await change();
+    } catch (error) {
+      context.notDone?.(error);
+    }
+  };
 
   function draw() {
     count.textContent = String(followers.length);
@@ -32,12 +44,14 @@ export function followersPart(context: ChatterContext) {
         const row = el('li', { class: 'fd-follower' }, el('span', { class: 'fd-follower-name' }, follower.person.name));
         if (source.unfollow) {
           const remove = el('button', { type: 'button', class: 'fd-attachment-remove', 'aria-label': fill(labels.removeFollower, { name: follower.person.name }) }, '×');
-          remove.addEventListener('click', async () => {
-            const record = context.record();
-            if (!record || !source.unfollow) return;
-            await source.unfollow(record, follower.id);
-            await load();
-          });
+          remove.addEventListener('click', () =>
+            asked(async () => {
+              const record = context.record();
+              if (!record || !source.unfollow) return;
+              await answerOf(source.unfollow(record, follower.id));
+              await load();
+            })
+          );
           row.append(remove);
         }
         return row;
@@ -48,7 +62,13 @@ export function followersPart(context: ChatterContext) {
   async function suggest() {
     if (!source.people) return;
     const mine = ++asking;
-    const people = await source.people(find.value);
+    let people: Person[];
+    try {
+      people = await answerOf(source.people(find.value));
+    } catch {
+      // Not given: those offered as they were, asked again as the next letter is typed.
+      return;
+    }
     if (mine !== asking) return;
     const following = new Set(followers.map((f) => f.person.id));
     const offered = people.filter((person) => !following.has(person.id)).slice(0, 8);
@@ -56,14 +76,16 @@ export function followersPart(context: ChatterContext) {
       ...(offered.length
         ? offered.map((person: Person) => {
             const option = el('li', { role: 'option', 'aria-selected': 'false' }, person.name);
-            option.addEventListener('click', async () => {
-              const record = context.record();
-              if (!record || !source.follow) return;
-              await source.follow(record, person.id);
-              find.value = '';
-              candidates.replaceChildren();
-              await load();
-            });
+            option.addEventListener('click', () =>
+              asked(async () => {
+                const record = context.record();
+                if (!record || !source.follow) return;
+                await answerOf(source.follow(record, person.id));
+                find.value = '';
+                candidates.replaceChildren();
+                await load();
+              })
+            );
             return option;
           })
         : [el('li', { class: 'fd-empty' }, labels.noOneFound)])
@@ -73,7 +95,12 @@ export function followersPart(context: ChatterContext) {
   async function load() {
     const record = context.record();
     if (!record || !source.followers) return;
-    followers = await source.followers(record);
+    try {
+      followers = await answerOf(source.followers(record));
+    } catch {
+      // Not given: who follows as it was, asked again with the conversation.
+      return;
+    }
     if (context.record() === record) draw();
   }
 

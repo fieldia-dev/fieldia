@@ -1,10 +1,10 @@
-import { PICTURE_URL, safeUrl, fill, labelAt, recordSentence, dayTag, wordsComing, wordsReady, type Locale, type PageRecords, intlFormat } from '@fieldia/core';
+import { answerOf, PICTURE_URL, safeUrl, fill, labelAt, recordSentence, dayTag, wordsComing, wordsReady, type Locale, type PageRecords, intlFormat } from '@fieldia/core';
 import { drawIcon, installStyles, sanitizeHtml, showHtml, type IconSet } from '@fieldia/widgets';
 import { initials } from './chatter';
 import { installHistoryStyles } from './history-styles';
 import { chatterLabels, type ChatterLabels } from './labels';
 import { ageOf, empty, firstDayOfWeek, HISTORY_AGES, historyEntries, type HistoryAge, type HistoryEntry } from './history-data';
-import type { ChatterSource, Person, RecordRef } from './source';
+import type { ChatterMessage, ChatterSource, Person, RecordRef } from './source';
 import { drawnLater } from './later';
 
 export { HISTORY_STYLES, installHistoryStyles } from './history-styles';
@@ -526,7 +526,14 @@ function drawHistory(host: HTMLElement, options: MountHistoryOptions): HistoryHa
       drawList();
       return;
     }
-    const messages = await options.source.messages(current);
+    let messages: ChatterMessage[];
+    try {
+      // The source's answer handled as it is given (`answerOf`).
+      messages = await answerOf(options.source.messages(current));
+    } catch {
+      // Not given: the history as it was, asked again at the next refresh.
+      return;
+    }
     if (destroyed || record !== current) return; // another record, or gone, meanwhile
     const next = historyEntries(messages, options.stateField, options.reasonField);
     // Fetched again as it is shown again: drawn again only where something changed — never the same rows drawn anew
