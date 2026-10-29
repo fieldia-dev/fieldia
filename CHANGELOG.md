@@ -142,6 +142,35 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   areas, borders, count of an area and their own `fetch` and `token`. Each is
   said where a person asked, and asked again at the next press. The outbox no
   longer leaves its own refresh unhandled where its store cannot answer.
+- **The chatter handles every answer of its source as it is given, too.** Its
+  own calls — the conversation (the chatter's, asked again while it is live, a
+  discussion's, a history's, a sheet's attachments from it), Send, Retry, the
+  channels a reply goes by, a file, a reaction, the people suggested, the
+  activities and their types, Schedule, Mark done and Cancel, the followers,
+  Add and Stop following — were awaited as the chatter's own code came to them,
+  a microtask late: in an Angular app one the source refused at once reached
+  `NgZone.onError`, and so did one it had refused before where the chatter made
+  a promise of it (an activity's types and people asked together, a step's post
+  followed by the conversation fetched again). Mark done, Cancel, Schedule, Add
+  and Stop following and a reaction the source refused did nothing, said
+  nothing, and left the chatter's own promise unhandled. Now each answer is
+  taken as it is given (`answerOf`); a change a person asked for that the source
+  refused is said under the chatter's bar, "Not done: " and the source's words,
+  and goes at the next press; what the chatter asked of itself keeps what it
+  drew, asked again at the next refresh.
+- **A page that keeps its sends without signal and runs steps asks for their part
+  with its own** (`outbox`; 0.37's acts part was asked for once the whole check
+  came, or by the first press, with no signal by then): where it runs steps or
+  asks anywhere — its sends' own (`on.beforeSave`), a moment's, a button's or a
+  menu item's step, the app's action, a question — the acts part is asked for
+  with the page's parts while the signal is there, its tag written with theirs,
+  and never waited for. A Submit pressed later without signal runs its steps,
+  is kept on the device, and is sent once the signal is back.
+- **A save whose steps wait for their part says so.** A save whose page has
+  `on.beforeSave` steps, pressed before the acts part came — a page's first
+  second, a slow line — showed nothing while it waited, up to 30 s where the
+  line stalled: now it is saving meanwhile, its Submit busy, then runs them and
+  goes; where the part cannot come it says why, with Retry, as before.
 - A line opened in a dialog is titled as the one line it is, never by its
   table's plural (the 0.36 walk: one sales order line titled "Order lines", one
   tender requirement "Requirements"): a table's or a grid's line by its words —
@@ -353,6 +382,19 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   - (adds) `PhotoEditing.encode`, optional: an app that calls the photos part's
     `editPhoto` itself may pass the files part's new `encodeSoon`, as a photo
     set does, so Apply never waits seconds; without it, `toBlob` as before.
+  - (adds) `partFiles(page)` and the one-tag script's `partTags(page)` name
+    `fieldia.acts.js` for a page with `outbox` that runs steps or asks, and its
+    viewer asks for it as it mounts; nothing waits for it.
+  - (fix) A save whose `on.beforeSave` steps wait for the acts part is `saving`
+    while it waits, `ready` as the part lands and its steps run, then `saving`
+    as it goes: an app that watches a form's `status` sees it saving at once.
+  - (fix) A chatter's, a discussion's and a history's `refresh()` and
+    `setRecord()` resolve where the source could not give the conversation,
+    what was drawn kept; they rejected with the source's refusal, which nothing
+    heard.
+  - (adds) The chatter's words have `notDone`, "Not done: {reason}": a language
+    of the app's own (`ChatterLabels`) adds it, or the chatter says it in
+    English. `ChatterContext` has `notDone()`, which a chatter's parts call.
 - *Tests and CSS:*
   - A unit test that mounts a page and at once expects a write to reach its data
     source awaits the handle's `refused` first, or `loadParts()` before the mount,
@@ -389,6 +431,8 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   - (fix) An Angular app's ErrorHandler no longer hears a refusal of an answer
     the app gave Fieldia — a page, a call, a confirm, a store's, a map's —
     where Fieldia says it in the page: a test that counted one there sees none.
+    Nor one the chatter's source gave it; a change it refused is said in
+    `.fd-chatter-failed` (`role="alert"`, under the chatter's bar).
   - (fix) A line's dialog is named by its line, not its table: a test that finds
     it by the table's label (`{ name: 'Order lines' }`) finds it by the line's
     words — a card's line too — by "Line 3", by its card's title where it holds
@@ -416,7 +460,9 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   "This action" in every add-on (`guardNotDone`, `guardSteps`). (fix) So are the
   words a refused page says in ar, de, es, fa, fr, tr and ur — its visitor's
   (`formUnavailable`, new) and the line over what is wrong (`pageUnshown`,
-  changed) — and a recording too short to keep (`recordTooShort`, new).
+  changed) — and a recording too short to keep (`recordTooShort`, new). (adds)
+  So is the chatter's "Not done: {reason}" (`notDone`) in ar, de, es, fa, fr, tr
+  and ur.
 
 **Size:** `fieldia.js` 588.9 KB, 198.00 gzipped (0.36.1: 588.2, 197.26): +0.74
 KB gzipped, under the owner's 200, all of it what a page must carry from its
@@ -509,6 +555,12 @@ a page pressed as it is drawn — each within 8 ms, its press waiting as before
 part, now waiting for it: 2231 → 2857 and 2336 → 2967 on the phone without its
 part tags, in use 3152 → 3160 and 3216 → 3256 — nothing in it moving after; with
 its tags, which name the sheet part again, 2288 → 2340 and 2395 → 2479.
+
+**Size, the tail (p37-tail):** `fieldia.js` 550.3 → 550.6 KB (563,507 →
+563,814 B), 186.00 → 186.12 gzipped (+0.12), all of it what is needed before
+the acts part is there: a page that keeps its sends without signal and acts asks
+for it with its own (+0.05), and a save whose steps wait for it says so (+0.07).
+The parts are as they were; the chatter, in no script, is an npm package's.
 
 ## 0.36.1 — 2026-10-28
 
