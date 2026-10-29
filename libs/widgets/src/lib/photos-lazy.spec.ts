@@ -1,5 +1,6 @@
 import { createForm, type Field, type FieldNode, type FileValue, type Page } from '@fieldia/core';
 import { WIDGET_LABELS } from './labels';
+import { PART_RANK } from './styles';
 import { filesPart, photosPart } from './widget-parts';
 import { createWidget, widgetPart } from './widgets';
 
@@ -42,7 +43,7 @@ describe('the photos part', () => {
     expect(filesPart.loaded).toBeDefined();
     expect(document.querySelectorAll('.fd-photo')).toHaveLength(2);
     expect(document.querySelector('.fd-photo-cover:not([hidden])')?.textContent).toBe('Cover');
-    expect(document.getElementById('fieldia-photos-styles')?.getAttribute('data-fd-rank')).toBe('13');
+    expect(document.getElementById('fieldia-photos-styles')?.getAttribute('data-fd-rank')).toBe(String(PART_RANK.photos));
   });
 
   it('is the part of a picture field of several photos drawn as a set; a plain picture field’s is the files part’s', () => {

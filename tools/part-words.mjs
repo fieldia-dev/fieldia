@@ -26,6 +26,14 @@ export const WORD_TABLES = {
 
 /** By part, the keys of each table only that part's modules (and the other parts named with a key) read. */
 export const PART_WORDS = {
+  // A step's web address refused, a dialog's Save & Close, Search more…'s empty list (with the other lists that say so),
+  // and a save over someone else's: who and when, what each changed, Reload's words, the changes set aside to put back,
+  // their version unread.
+  acts: {
+    messages: ['addressRefused', 'theirsUnread'],
+    widgets: ['noResults'],
+    viewer: ['saveClose', 'conflictAt', 'conflictAtNoun', 'conflictChanged', 'conflictBoth', 'conflictChoice', 'reloaded', 'reloadedNoun', 'putBackField', 'putAllBack', 'nowIs'],
+  },
   approvals: {
     messages: ['approvalLocked', 'approvalReasonNeeded', 'approvalNotYours'],
     viewer: [
@@ -46,7 +54,7 @@ export const PART_WORDS = {
   business: {
     widgets: ['moreSteps', 'timeInStep', 'copyValue', 'addAccount', 'sharesOff', 'untaxed', 'amountDue', 'paymentOf', 'openPayment', 'hoursDecimal', 'account', 'deleteLine', 'stillHolds'],
   },
-  choice: { widgets: ['createNamed', 'stillHolds'] },
+  choice: { widgets: ['createNamed', 'stillHolds', 'noResults'] },
   columns: { widgets: ['movedTo'], viewer: ['moveColumnUp', 'moveColumnDown', 'resetColumns', 'resizeColumn'] },
   date: { widgets: ['chooseDate', 'weekShort', 'notPastedDate', 'previousMonth', 'nextMonth'] },
   duplicates: {
@@ -66,7 +74,7 @@ export const PART_WORDS = {
   editable: { widgets: ['cellName'], viewer: ['rowEditHint', 'rowAdd', 'rowAddNoun', 'rowDrop', 'rowNotSaved', 'rowSaved', 'rowOpen', 'rowChange', 'rowCell', 'rowLocked', 'rowLockedNoun', 'pasteAsk', 'pasteAskChange', 'pasteAskAdd', 'pasteYes', 'pasteUndo', 'pasteUndone', 'rowsNotSaved', 'rowsNotSavedOne', 'rowsDrop', 'rowsPutBack'] },
   record: {
     widgets: [
-      'recordVoice', 'recordVideo', 'recordAskMic', 'recordAskCamera', 'recordReady', 'recordStart', 'recordStop', 'recordingNow', 'recordStarting', 'recordNothing', 'recordStoppedAt', 'recordStoppedSize', 'recordDone', 'recordUse', 'recordAgain', 'recordDiscardAsk', 'recordDiscard', 'recordGoBack',
+      'recordVoice', 'recordVideo', 'recordAskMic', 'recordAskCamera', 'recordReady', 'recordStart', 'recordStop', 'recordingNow', 'recordStarting', 'recordNothing', 'recordTooShort', 'recordStoppedAt', 'recordStoppedSize', 'recordDone', 'recordUse', 'recordAgain', 'recordDiscardAsk', 'recordDiscard', 'recordGoBack',
       'recordMicRefused', 'recordCameraRefused', 'recordNoMic', 'recordNoCamera', 'recordBusy', 'recordCannot', 'recordTryAgain', 'recordingNameVoice', 'recordingNameVideo',
     ],
   },
@@ -126,7 +134,10 @@ export const PART_WORDS = {
       'importFailedNoun', 'importUndoAskNoun', 'importUndoAskNounOne', 'importUndoneNoun', 'importUndoneNounOne', 'importUndoSomeNoun', 'relatedAllNoun', 'relatedNewNoun', 'relatedUnsavedNoun', 'relatedNoneNoun', 'relatedShownNoun', 'groupCountNoun', 'groupCountNounOne',
     ],
   },
-  path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds', 'treeSearch', 'treeChosen', 'treeChosenOne'] },
+  // The classic formatted text's toolbar (with the work item's editor, which reads some of them too). Its text styles'
+  // names stay in the main script, which holds the toolbar's room before it comes, its style box as wide (extras.ts).
+  html: { widgets: ['formatting', 'textStyle', 'alignLeft', 'alignCenter', 'alignRight', 'applyLink', 'removeLink'] },
+  path: { widgets: ['expandNamed', 'collapseNamed', 'stillHolds', 'treeSearch', 'treeChosen', 'treeChosenOne', 'noResults'] },
   photos: {
     widgets: [
       'photosMove', 'photosMoveCover', 'photosMoveTouch', 'photosMoveTouchCover', 'photoCover', 'makeCover', 'coverNow', 'editPhoto', 'photoCaption', 'captionPlaceholder', 'photoNamed', 'photoNamedCover', 'photoAt', 'photoAtStart', 'photoAlone', 'photoAloneStart', 'photoCoverAt', 'cropLetGoAsk', 'cropLetGo', 'cropKeepEditing', 'photoCount', 'photoCountOne', 'photoCountOf', 'upToPhotos',
@@ -145,7 +156,7 @@ export const PART_WORDS = {
   typed: { widgets: ['maskDigit', 'maskLetter', 'maskEither', 'maskFull', 'maskShort', 'maskShortOne', 'codeDigits', 'codeCharacters', 'codeDigitOnly', 'codeLetterOrDigit', 'codeFull', 'codeFullCharacters', 'shorthandIs', 'shorthandOnly'] },
   phone: { widgets: ['phoneNoCountry', 'phoneFindCountry', 'phoneCountries', 'phoneNoCountryFound', 'phoneCall', 'phoneWhatsApp', 'phoneCountry', 'phoneNeedsCountry', 'phoneNoCode', 'phoneShort', 'phoneLong', 'phoneStart', 'phoneCallNamed', 'phoneWhatsAppNamed', 'phoneLetters'] },
   print: { viewer: ['printedOn'] },
-  relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds'] },
+  relations: { widgets: ['createAndEdit', 'addNamed', 'addTag', 'tagThere', 'tagsAtMost', 'noMatchCreate', 'createNamed', 'stillHolds', 'noResults'] },
   scan: {
     widgets: ['scanButton', 'scanInto', 'scanCountInto', 'scanTitle', 'scanStarting', 'scanAim', 'scanAimCount', 'scanTypeInstead', 'scanTypeCode', 'scanTypeCount', 'scanDone', 'scanLookingUp', 'scanNoneFound', 'scanSeveral', 'scanLookUpFailed', 'scanNoPart', 'scanRead', 'scanCounted', 'scanRefused', 'scanNoCamera', 'scanCameraBusy', 'scanUnavailable', 'scanNoReader'],
   },
@@ -157,6 +168,8 @@ export const PART_WORDS = {
   live: { messages: ['deletedElsewhere', 'deletedBy', 'changedElsewhere', 'changedBy'], viewer: ['presentHere', 'presentEditing'] },
   undo: { messages: ['pressDone', 'pressArchived', 'pressUnarchived'], viewer: ['undoPress', 'pressUndone', 'undoneField', 'redoneField', 'nothingSinceSave'] },
   templates: { viewer: ['templatesButton', 'templatesStart', 'templateSave', 'templateName', 'templateKeeps', 'templateKeep', 'templateSaved', 'templateReplaced', 'templateReplaceAsk', 'templateReplace', 'templateUsed', 'templatesDelete', 'templatesChosen', 'templatesDeleteNow', 'templatesDeleted'] },
+  // The attachment beside a sheet: its name, Open, Previous and Next.
+  sheet: { viewer: ['attachment', 'openAttachment', 'previousAttachment', 'nextAttachment'] },
   slots: { widgets: ['slotsFinding', 'slotsFailed', 'slotsRetry', 'slotsFree', 'slotsFreeOne', 'slotsOpen', 'slotsFull', 'slotsClosed', 'slotsHoliday', 'slotsOn', 'slotsNoneOn', 'slotsPickDay', 'slotSpan', 'slotChosen', 'slotChecking', 'slotTaken', 'slotsZone', 'previousMonth', 'nextMonth'] },
   survey: {
     widgets: ['notAnswered', 'addressStreet', 'addressCity', 'addressLine2', 'addressRegion', 'addressPostcode', 'addressCountry', 'keepOrder', 'addProperty', 'propertyName', 'propertyType', 'propertyTypes', 'colourCode', 'colourCodeBox', 'noColour', 'rankTop', 'moveUp', 'moveDown', 'movedTo', 'removed'],
@@ -166,7 +179,7 @@ export const PART_WORDS = {
   },
   text: {
     widgets: ['textColour', 'linkRecordNamed', 'moreTools', 'switchToMarkdown', 'switchToRich', 'markdownSupported', 'pasteOrSelect', 'editNamed', 'doneEditing', 'addLink', 'existingItem', 'newItem', 'formattingLost', 'cursorInLink', 'attachFile', 'switchAnyway', 'headingLevel',
-      'tableTool', 'tableInsert', 'tableSize', 'tableRows', 'tableRowsOne', 'tableColumns', 'tableColumnsOne', 'tableColumn', 'tableRowAbove', 'tableRowBelow', 'tableColumnLeft', 'tableColumnRight', 'tableDeleteRow', 'tableDeleteColumn', 'tableHeaderRow', 'tableDelete', 'tableKeys', 'tableRowAdded', 'tableColumnAdded', 'tableRowDeleted', 'tableColumnDeleted', 'tableDeleted',
+      'noResults', 'formatting', 'applyLink', 'removeLink', 'tableTool', 'tableInsert', 'tableSize', 'tableRows', 'tableRowsOne', 'tableColumns', 'tableColumnsOne', 'tableColumn', 'tableRowAbove', 'tableRowBelow', 'tableColumnLeft', 'tableColumnRight', 'tableDeleteRow', 'tableDeleteColumn', 'tableHeaderRow', 'tableDelete', 'tableKeys', 'tableRowAdded', 'tableColumnAdded', 'tableRowDeleted', 'tableColumnDeleted', 'tableDeleted',
     ],
   },
 };

@@ -5,6 +5,7 @@ import type * as FormMapModule from './form-part';
 import type * as ListMapModule from './view-part';
 import type * as WidgetsModule from './widgets-part';
 import { loadLeaflet } from './leaflet';
+import { adoptedSettings } from './adopt';
 import type { MapSettings } from './settings';
 
 /**
@@ -33,7 +34,9 @@ export const mapWidgetsPart: Part<typeof WidgetsModule> = lazyPart('mapwidgets',
  *
  *     mountViewer(host, { page, listViews: mapListViews({ provider }) })
  */
-export function mapListViews(settings: MapSettings): Record<string, ListViewFactory> {
+export function mapListViews(given: MapSettings): Record<string, ListViewFactory> {
+  // Every answer the app gives the maps handled as it is given (adopt.ts).
+  const settings = adoptedSettings(given);
   return { map: (context) => (mapViewPart.loaded ? mapViewPart.loaded.listMap(settings, context) : lazyListMap(settings, context)) };
 }
 
@@ -55,7 +58,8 @@ export function mapListViews(settings: MapSettings): Record<string, ListViewFact
  *
  *     mountViewer(host, { page, maps: mapParts({ provider }) })
  */
-export function mapParts(settings: MapSettings): MapPartFactory {
+export function mapParts(given: MapSettings): MapPartFactory {
+  const settings = adoptedSettings(given);
   return (context) => (formMapPart.loaded ? formMapPart.loaded.formMap(settings, context) : lazyFormMap(settings, context));
 }
 

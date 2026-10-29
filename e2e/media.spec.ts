@@ -137,10 +137,18 @@ test.describe('a voice note and a short film recorded on the page', () => {
     if (!(await records(page))) return;
     await voice(page).getByRole('button', { name: 'Record a voice note' }).click();
     const dialog = page.getByRole('dialog', { name: 'Record a voice note' });
-    // Start, then Stop at once, as the walk pressed them 63 ms apart: Firefox's recorder had begun, Chromium's not yet.
+    // Start, then Stop a moment after the recording began, as the walk pressed it (0.3 s): too short to keep, said as
+    // that — never "had not started yet", which it had (the 0.37 walk, Firefox). Stop is pressed the moment the browser's
+    // recorder says it began, whatever the machine's load: a person's quick second press.
+    await page.evaluate(() => {
+      const real = MediaRecorder.prototype.start;
+      MediaRecorder.prototype.start = function (this: MediaRecorder, ...args: Parameters<MediaRecorder['start']>) {
+        this.addEventListener('start', () => setTimeout(() => [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find((button) => button.textContent?.trim() === 'Stop')?.click()), { once: true });
+        return real.apply(this, args);
+      };
+    });
     await dialog.getByRole('button', { name: 'Start recording' }).click();
-    await dialog.getByRole('button', { name: 'Stop' }).click();
-    await expect(dialog.getByRole('status')).toHaveText('Nothing was recorded: the recording had not started yet. Press Start recording to try again.');
+    await expect(dialog.getByRole('status')).toHaveText('Nothing was kept: the recording was too short. Press Start recording to try again.');
     await expect(dialog.getByRole('timer')).toHaveText('0:00 / 2:00');
     await expect(dialog.locator('.fd-recorder-review audio')).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Use this recording' })).toBeHidden();

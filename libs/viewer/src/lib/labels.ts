@@ -907,7 +907,11 @@ export interface ViewerLabels {
    * (fieldia.element.js) could not come, said with Retry: in the main script, as what could not come cannot say it.
    */
   formNotLoaded: string;
-  /** A page the viewer's check refused, said where the form would be; under it, "What is wrong" and each problem. */
+  /**
+   * A page the viewer's checks refused, said where the form would be to whoever opened it (`formUnavailable`); where the
+   * app is being made (`development`), under it "What is wrong", why for whoever made the page, and each problem.
+   */
+  formUnavailable: string;
   pageUnshown: string;
   pageUnshownWhy: string;
   /**
@@ -1574,7 +1578,8 @@ const en: ViewerLabels = {
   payFailedWhy: 'The payment did not go through: {why} Nothing was sent.',
   payNotStarted: 'The payment could not be started: try again.',
   formNotLoaded: 'This form could not be loaded.',
-  pageUnshown: 'This form cannot be shown: its page has mistakes. Whoever made it can check it with validatePage.',
+  formUnavailable: 'This form is not available right now. Please try again later, or contact whoever sent it to you.',
+  pageUnshown: 'Its page has mistakes, so the form is not shown. Check the page with validatePage or npx fieldia-check.',
   pageUnshownWhy: 'What is wrong',
   partPlainField: 'Part of this field could not load, so it is shown plainly.',
   partPlainPage: 'Part of this page could not load, so it is shown plainly.',

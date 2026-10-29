@@ -235,6 +235,7 @@ export const refusals: DesignerWords['refusals'] = {
   pageSize: 'Una página de la lista contiene de 1 a 500 filas',
   filterName: 'Un filtro necesita un nombre que la gente reconozca, como Activos',
   filterCondition: 'Un filtro necesita una condición',
+  filterGroup: 'El grupo de un filtro es una palabra, como plazo',
   buttonWords: 'Un botón necesita texto',
   listButtonAction: 'Un botón necesita el nombre de su acción, como archive',
   cellWidth: 'Una columna mide de 1 a 200 caracteres de ancho, o de 8 a 4000 píxeles',

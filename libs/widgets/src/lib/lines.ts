@@ -1,5 +1,6 @@
 import { optionsList, plainPart, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type RecordId, type Value, type Values } from '@fieldia/core';
 import { currencyOf } from './display';
+import { pressedControl } from './press';
 import { stillShown, whileShown } from './shown';
 import type { WidgetDialogs } from './widgets';
 
@@ -139,11 +140,17 @@ export function ownCurrency(sub: LineField, parent: Readonly<Values>): LineField
  * record by the table's model — what its page saved is written back to the
  * line's fields of the same names — else, or for a line not saved yet, its
  * fields as the table shows them, recalculated as they change and written back
- * on Save & Close. Shared with @fieldia/grid.
+ * on Save & Close. Titled by `title`, given the line as it reads once what was
+ * typed in it is read: the line as its table, card or grid names it ("Office
+ * chair, ergonomic", "Line 3", "Contact 2"), never the table's plural (the 0.36
+ * walk: one order line titled "Order lines"); left out, the table's label, as
+ * before. Shared with @fieldia/grid.
  */
-export async function openLineDialog(form: Form, name: string, node: FieldNode, pressed: Line, dialogs: WidgetDialogs, readonly: boolean): Promise<void> {
+export async function openLineDialog(form: Form, name: string, node: FieldNode, pressed: Line, dialogs: WidgetDialogs, readonly: boolean, title?: (line: Line) => string): Promise<void> {
   const def = form.page.fields[name] as Extract<Field, { type: 'one2many' }>;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
+  // Its ↗, a card's head: what was pressed, before the cell's words are read — busy till the dialog shows (`pressWait`).
+  const from = pressedControl(typeof document === 'undefined' ? undefined : document);
   // What is still typed in a cell is read first — a name looked up (the cell left as the line was opened) waited for —
   // so the dialog shows the line as it reads, and its Save & Close never writes back what the typing replaced.
   const asked = stillShown(form);
@@ -152,39 +159,42 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
   const settling = form.settle?.();
   if (form.reading?.()) await settling;
   const line = lines().find((l) => l.key === pressed.key);
-  // Taken away, or another record shown, meanwhile: nothing to open.
+  // Taken away, or another record shown, meanwhile: nothing to open. From here on `asked` holds the record it is opened on.
   if (!line || !asked()) return;
+  const heading = title?.(line) ?? plainPart(def).label;
   // Its answer is for the record it was opened on: written back only while that one is still shown, never on a line of
   // another (two records' lines may have the same key).
   const write = whileShown(form, (values: Values) => form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l))));
-  const shown = stillShown(form);
   if (node.lineOpens === 'record' && line.id !== undefined && dialogs.canOpen(def.relation)) {
     // A line is part of its record: its labels said as the record's page asks, unless its own page says otherwise.
-    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: plainPart(def).label, withValues: true, ...lowerLabels });
+    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: heading, withValues: true, from, ...lowerLabels });
     const back = Object.fromEntries(Object.entries(saved?.values ?? {}).filter(([key]) => key in def.fields && key !== def.sequenceField));
     if (Object.keys(back).length) write(back as Values);
     return;
   }
+  // The record as the dialog opens, read once: its money's currency, and the line's parent.
+  const state = form.getState();
   const fields = Object.fromEntries(
     Object.entries(def.fields)
       .filter(([key]) => key !== def.lineKinds?.field && key !== def.sequenceField)
-      .map(([key, sub]) => [key, ownCurrency(sub, form.getState().values)])
+      .map(([key, sub]) => [key, ownCurrency(sub, state.values)])
   ) as Record<string, Field>;
   // The dialog shows what the onchange makes of the line as it is edited; the line itself waits for Save & Close.
   // Laid out by the table's lineForm when it has one, its conditions reading the line, its record as parent.
-  const state = form.getState();
   const values = await dialogs.editValues({
-    title: plainPart(def).label,
+    title: heading,
     fields,
     values: line.values,
     readonly,
     // Worked out on its own line while its record is shown; after, as it is.
-    recompute: (edited) => (shown() ? form.previewLine(name, line.key, edited) : Promise.resolve(edited)),
+    recompute: (edited) => (asked() ? form.previewLine(name, line.key, edited) : Promise.resolve(edited)),
     parent: { values: state.values, fields: form.page.fields, id: state.recordId },
     // Without a form of its own, what the table shows: its columns, in its order — those its rules hide on this record
     // left out, those a person hid kept. A field no column shows (a parent's key, a state or a flag its rules read, a
     // currency its amounts are in) is the app's, kept as it is, never shown: 0.35 showed every field of the line.
-    ...(node.lineForm ? { layout: node.lineForm.children } : { shown: (node.columns ?? Object.keys(fields)).filter((column) => column in fields && !form.columnHidden(node.id, column)) }),
+    // Each with its column's widget, as the table's cells draw it (an analytic distribution's shares, never their JSON).
+    ...(node.lineForm ? { layout: node.lineForm.children } : { shown: (node.columns ?? Object.keys(fields)).filter((column) => column in fields && !form.columnHidden(node.id, column)), ...(node.cells ? { cells: node.cells } : {}) }),
+    from,
     ...lowerLabels,
   });
   // Written in one go, so the form recalculates once.

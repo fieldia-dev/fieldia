@@ -76,6 +76,8 @@ export interface ChatterLabels {
   search: string;
   noOneFound: string;
   couldNotSend: string;
+  /** A change a person asked for that the source refused — an activity done, scheduled or cancelled, a follower, a reaction —: `{reason}`, its words. */
+  notDone: string;
   /** Send pressed while files are still on their way: one, or `{n}`; and one that did not get there (`{name}`). */
   sendingAfterFile: string;
   sendingAfterFiles: string;
@@ -201,6 +203,7 @@ export const CHATTER_LABELS = {
     search: 'Search…',
     noOneFound: 'No one found',
     couldNotSend: 'Not sent: {reason}',
+    notDone: 'Not done: {reason}',
     sendingAfterFile: '1 file still uploading. Sending when it is done.',
     sendingAfterFiles: '{n} files still uploading. Sending when they are done.',
     notSentFile: 'Not sent: {name} was not uploaded. Retry it, or remove it.',

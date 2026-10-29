@@ -2,6 +2,7 @@ import { functionTable } from '../expression/app-functions';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { PaidPayment, PaymentDue, PayRequest } from './data-source';
 import type { FormInner, FormJoin } from './joins';
+import { answerOf } from './values';
 
 /** A payment step that shows what is due and settles once it is paid, or with null once the person goes back. */
 export type PayStep = (due: PaymentDue, request: PayRequest) => Promise<PaidPayment | null>;
@@ -77,7 +78,8 @@ export function join(host: FormInner): FormPayment {
       };
       let paid: PaidPayment | null = null;
       const step = shown ?? options.host?.pay;
-      if (step) paid = await step(due, request);
+      // The app's own pay step's answer handled as it is given, whatever its promise (values.ts, `answerOf`).
+      if (step) paid = await answerOf(step(due, request));
       else if (source?.pay) {
         const answer = await source.pay(request);
         paid = answer.status === 'paid' ? { amount: due.amount, currency: due.currency, key: due.key, ...(answer.reference ? { reference: answer.reference } : {}) } : null;

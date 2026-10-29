@@ -1,9 +1,12 @@
-import { LINK_URL, safeUrl, type OpenRequest, type OpenResult, type Page, type PostedMessage, type SayUndo, type Tone, type Values } from '@fieldia/core';
-import { FIRST_FIELD, focusField, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
+import { answerOf, LINK_URL, safeUrl, type OpenRequest, type OpenResult, type Page, type PostedMessage, type SayUndo, type Tone, type Values } from '@fieldia/core';
+import type { FormDialogResult } from './dialog';
+import { FIRST_FIELD, focusField } from './focus-field';
+import { openFormDialog, openFormPanel, type Mount } from './dialog-box';
 import { stayed } from './discard';
 import type { Breadcrumb } from './record-bar';
-import { findPage, nameFieldOf } from './related';
-import { mountViewer, type ViewerOptions } from './viewer';
+import { findPage } from './find-page';
+import { nameFieldOf } from './name-field';
+import type { ViewerOptions } from './viewer';
 
 /** What opening a page needs of the viewer that opens it. */
 export interface Opener {
@@ -30,6 +33,8 @@ export interface Opener {
   leaveNow(): boolean;
   /** Aborts as the viewer is taken away (`destroy()`): what it opened — a dialog, a panel, a page in its place — goes too. */
   signal?: AbortSignal;
+  /** What draws the page opened: the viewer's `mountViewer` (a part never imports the viewer's module: dialog-box.ts). */
+  mount: Mount;
 }
 
 /**
@@ -37,12 +42,13 @@ export interface Opener {
  * (`onOpen`), else found through `pages` and opened in a dialog, a side panel
  * (from the side the step names) or this form's place — with the same data
  * source, pages, words and look.
- * Resolves with how it ended; the saved record named by its page's title field.
+ * Resolves with how it ended; the saved record named by its page's title field. The acts part's: no page draws from it.
  */
 export async function openPage(opener: Opener, request: OpenRequest): Promise<OpenResult> {
   const { options } = opener;
+  // The app's answer handled as it is given (`answerOf`), never a microtask late as this function's own.
   const theirs = options.onOpen?.(request);
-  if (theirs) return theirs;
+  if (theirs) return answerOf(theirs);
   const found = await findPage(options, request.version === undefined ? { id: request.page } : { id: request.page, version: request.version });
   if (!found) throw new Error(opener.missing(request.page));
   // It wears the look of the page that opened it, unless it has one of its own.
@@ -70,8 +76,8 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
   const over: ViewerOptions = { ...shared, host: { ...options.host, say: opener.say, post: opener.post } };
   const result =
     request.as === 'page' ? await inPlace(opener, { ...shared, host: { ...options.host, post: opener.post } })
-    : request.as === 'panel' ? await openFormPanel({ ...over, title, side: request.side, signal: opener.signal })
-    : await openFormDialog({ ...over, title, size: found.layout.type === 'sheet' ? 'large' : 'medium', signal: opener.signal });
+    : request.as === 'panel' ? await openFormPanel({ ...over, title, side: request.side, signal: opener.signal }, opener.mount)
+    : await openFormDialog({ ...over, title, size: found.layout.type === 'sheet' ? 'large' : 'medium', signal: opener.signal }, opener.mount);
   const name = nameFieldOf(found);
   const label = name ? result.values[name] : undefined;
   return { ...result, ...(typeof label === 'string' && label ? { label } : {}) };
@@ -123,7 +129,7 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
     // goes through its check as well, once this page's own let go (the bar over it asks that first).
     const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs.map((crumb) => throughOpener(opener, crumb, doc)), { label: opener.name(), open: () => void endChecked(false) }] : undefined;
     // Its form takes this close once, its one check before it: a `close` step returns once nothing is at risk, or let go.
-    const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => end(false) } });
+    const opened = opener.mount(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => end(false) } });
     // The viewer under it taken away: this page goes with it.
     const gone = () => end(false);
     opener.signal?.addEventListener('abort', gone, { once: true });

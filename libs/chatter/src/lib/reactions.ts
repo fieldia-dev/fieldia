@@ -1,3 +1,4 @@
+import { answerOf } from '@fieldia/core';
 import type { ChatterContext } from './chatter';
 import type { ChatterId, Reaction } from './source';
 
@@ -16,11 +17,17 @@ export function reactionBar(context: ChatterContext, messageId: ChatterId, react
   const bar = el('div', { class: 'fd-reactions' });
   const picker = el('div', { class: 'fd-reaction-picker', hidden: '', role: 'group', 'aria-label': labels.react });
 
+  /** The person's reaction on or off: the source's answer handled as it is given (`answerOf`); refused, said with why (`notDone`). */
   const toggle = async (emoji: string) => {
     const record = context.record();
     if (!record) return;
     picker.hidden = true;
-    draw(await react(record, messageId, emoji));
+    context.notDone?.();
+    try {
+      draw(await answerOf(react(record, messageId, emoji)));
+    } catch (error) {
+      context.notDone?.(error);
+    }
   };
   for (const emoji of REACTION_CHOICES) {
     const choice = el('button', { type: 'button', 'data-emoji': emoji, 'aria-label': emoji }, emoji);

@@ -92,8 +92,11 @@ for (const variant of VARIANTS) {
 
       // A card's ↗ opens the line's own form: the type as radios, a sentence for each, the parts its type has.
       await tab(page, 'tab-contacts').click();
-      await node(page, 'f-children').locator('.fd-repeat-card[data-line="c7002"]').getByRole('button', { name: 'Open line' }).click();
-      const dialog = page.getByRole('dialog', { name: 'Contact' });
+      const card = node(page, 'f-children').locator('.fd-repeat-card[data-line="c7002"]');
+      const named = await card.getByRole('textbox', { name: 'Contact Name' }).inputValue();
+      await card.getByRole('button', { name: 'Open line' }).click();
+      // Titled by the contact's name, as a table's line by its words (the 0.37 walk: "Contact 2" over Rania Fawzy).
+      const dialog = page.getByRole('dialog', { name: named, exact: true });
       await expect(dialog).toBeVisible();
       await expect(dialog.getByRole('radio', { name: 'Contact', exact: true })).toBeChecked();
       await expect(dialog.getByText('Use this to organize the contact details of employees')).toBeVisible();

@@ -1,4 +1,4 @@
-import { suggestions, DATE_INTERVALS, type DateInterval, type Facet, type FilterPeriod, type ListNode, type Locale, type Page, type ResolvedFilter, type Suggestion } from '@fieldia/core';
+import { filterGroups, suggestions, DATE_INTERVALS, type DateInterval, type Facet, type FilterPeriod, type ListNode, type Locale, type Page, type ResolvedFilter, type Suggestion } from '@fieldia/core';
 import { drawIcon, openToRoom, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import { customFilterPart } from './custom-filter';
 import type { El } from './dom';
@@ -41,6 +41,22 @@ export interface SearchContext {
 /** A date's spans in the menu, longest first, as a person narrows down: Year, Quarter, Month, Week, Day. */
 const SPANS = [...DATE_INTERVALS].reverse();
 const SPAN_WORDS: Record<DateInterval, WordKey> = { year: 'groupByYear', quarter: 'groupByQuarter', month: 'groupByMonth', week: 'groupByWeek', day: 'groupByDay' };
+
+type FiltersFacet = Extract<Facet, { kind: 'filters' }>;
+
+/** The named filters on with only these of them, each with its words. */
+const keeping = (facet: FiltersFacet, ids: string[]): FiltersFacet => ({ ...facet, ids, labels: ids.map((id) => facet.labels[facet.ids.indexOf(id)] ?? id) });
+
+/** A facet's chips: one for each, but named filters, one for each of their groups (`ListFilter.group`) — its ids. */
+export function facetChips(facet: Facet, list: ListNode): { facet: Facet; ids?: string[] }[] {
+  if (facet.kind !== 'filters') return [{ facet }];
+  return filterGroups(facet.ids, list).map((ids) => ({ facet: keeping(facet, ids), ids }));
+}
+
+/** Each chip's words of a facet (`facetChips`): one for each group of named filters on, each "or" within it. */
+export function facetTexts(facet: Facet, labels: Pick<ViewerLabels, 'or'>, list: ListNode): string[] {
+  return facetChips(facet, list).map((chip) => facetText(chip.facet, labels));
+}
 
 /** A chip's words: a field and the values looked for in it, filters any of which apply, or the fields grouped by. */
 export function facetText(facet: Facet, labels: Pick<ViewerLabels, 'or'>): string {
@@ -102,13 +118,25 @@ export function searchBar(context: SearchContext) {
   let offered: Suggestion[] = [];
   let active = 0;
 
+  /** Every chip: a facet's own, or one group of the named filters on; and what is left once it is taken away. */
+  const allChips = () =>
+    facets.flatMap((facet, index) =>
+      facetChips(facet, node).map((chip) => ({
+        ...chip,
+        without: (): Facet[] => {
+          const ids = chip.ids ? (facet as FiltersFacet).ids.filter((id) => !chip.ids?.includes(id)) : [];
+          return ids.length ? facets.map((one, i) => (i === index ? keeping(one as FiltersFacet, ids) : one)) : facets.filter((_, i) => i !== index);
+        },
+      }))
+    );
+
   function drawChips() {
     chips.replaceChildren(
-      ...facets.map((facet, index) => {
+      ...allChips().map(({ facet, without }) => {
         const text = facetText(facet, labels);
         const remove = el('button', { type: 'button', class: 'fd-facet-remove', 'aria-label': fill(labels.removeFacet, { label: text }) }, '×');
         remove.addEventListener('click', () => {
-          change(facets.filter((_, i) => i !== index));
+          change(without());
           input.focus();
         });
         const kind = facet.kind === 'groupBy' ? 'layers' : facet.kind === 'field' ? '' : 'filter';
@@ -175,7 +203,8 @@ export function searchBar(context: SearchContext) {
       event.preventDefault();
       if (offered.length) pick(offered[active]);
     } else if (event.key === 'Backspace' && !input.value && facets.length) {
-      change(facets.slice(0, -1));
+      // The last chip: a facet, or the last group of the named filters on.
+      change(allChips().at(-1)?.without() ?? facets.slice(0, -1));
     } else if (event.key === 'Escape' && !offeredList.hidden) {
       event.preventDefault();
       closeOffered();
@@ -210,6 +239,11 @@ export function searchBar(context: SearchContext) {
     button.addEventListener('click', () => toggleIn('filters', filter.id));
     return button;
   });
+  /** The filters' buttons in the menu: each group's together, the groups in the order they first come, a line between. */
+  const filterParts = filterGroups((node.filters ?? []).map((filter) => filter.id), node).flatMap((ids, at) => [
+    ...(at ? [el('div', { class: 'fd-search-separator', role: 'separator' })] : []),
+    ...ids.map((id) => filterButtons.find((button) => button.dataset['filter'] === id) as HTMLButtonElement),
+  ]);
   /** A grouping in words: its field's label, and for a date the span it is grouped in ("Invoice date: Month"). */
   function groupWords(key: string): string {
     const [field, span] = key.split(':');
@@ -242,7 +276,7 @@ export function searchBar(context: SearchContext) {
     const custom = customFilterPart({ page, el, labels, locale: context.locale, periods: context.periods, add: (facet) => change([...facets, facet]) });
     favourites = (context.favourites ?? favouritesPart)({ page, el, labels, fill, preferences: context.preferences, current: () => facets, apply: change, ...(context.count ? { slot: countSlot, drawn: drawCounts } : {}) });
     panel.append(
-      group('filters', 'filter', labels.filters, ...filterButtons, custom.button, custom.form),
+      group('filters', 'filter', labels.filters, ...filterParts, custom.button, custom.form),
       ...(groupChoices.length ? [group('groupBy', 'layers', labels.groupBy, ...groupChoices)] : []),
       group('favourites', 'star', labels.favourites, favourites.list, favourites.none, favourites.open, favourites.form)
     );
@@ -277,9 +311,15 @@ export function searchBar(context: SearchContext) {
       };
       return count(searchFilter(of)).then(draw, () => draw(null));
     };
-    // A named filter as if it were the only one on: the filters on are any of them.
+    // A named filter as if it were the only one of its group on, the other groups' kept: a group's are any of them.
     const rest = facets.filter((f) => f.kind !== 'filters');
-    for (const filter of node.filters ?? []) void mark(filterSlots.get(filter.id) as HTMLElement, filter.label, [...rest, { kind: 'filters', ids: [filter.id], labels: [filter.label] }]);
+    const on = facets.find((f): f is FiltersFacet => f.kind === 'filters');
+    const groupOf = (id: string) => node.filters?.find((f) => f.id === id)?.group ?? '';
+    for (const filter of node.filters ?? []) {
+      const others = (on?.ids ?? []).filter((id) => groupOf(id) !== (filter.group ?? ''));
+      // Counted, never shown: its words are not read.
+      void mark(filterSlots.get(filter.id) as HTMLElement, filter.label, [...rest, { kind: 'filters', ids: [...others, filter.id], labels: [] }]);
+    }
     for (const { slot, name, facets: kept } of favourites?.slots() ?? []) void mark(slot, name, kept);
   }
 

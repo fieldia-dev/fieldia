@@ -68,6 +68,7 @@ export const fa: ChatterLabels = {
   search: 'جستجو…',
   noOneFound: 'کسی پیدا نشد',
   couldNotSend: 'ارسال نشد: {reason}',
+  notDone: 'انجام نشد: {reason}',
   sendingAfterFile: '1 فایل هنوز در حال بارگذاری است. پس از پایان آن ارسال می‌شود.',
   sendingAfterFiles: '{n} فایل هنوز در حال بارگذاری است. پس از پایان آن‌ها ارسال می‌شود.',
   notSentFile: 'ارسال نشد: {name} بارگذاری نشد. دوباره تلاش کنید یا آن را بردارید.',

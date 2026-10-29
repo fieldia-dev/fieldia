@@ -5,7 +5,7 @@ import { gather } from './list-export';
 import { groupFilter, groupName, type GroupKey, type Heading } from './list-groups';
 import type { ListTotals } from './list-totals';
 import type { ViewerLabels } from './labels';
-import { facetText } from './search-bar';
+import { facetText, facetTexts } from './search-bar';
 import { printWords } from './value-words';
 
 /**
@@ -150,7 +150,8 @@ export async function printout(list: PrintList, progress: (done: number, total: 
   const footer = own.footer ? printWords(list.doc, fields, own.footer, list.locale) : null;
   header?.update({});
   footer?.update({});
-  const filters = list.facets.filter((facet) => facet.kind !== 'groupBy').map((facet) => facetText(facet, labels));
+  // Each chip's words: the named filters on, one for each of their groups.
+  const filters = list.facets.filter((facet) => facet.kind !== 'groupBy').flatMap((facet) => facetTexts(facet, labels, node));
   const grouped = list.facets.flatMap((facet) => (facet.kind === 'groupBy' ? [facetText(facet, labels)] : []));
   const about = [
     ...(filters.length ? [list.fill(labels.printFilters, { filters: filters.join(' · ') })] : []),

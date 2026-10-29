@@ -66,12 +66,32 @@ const jsonAt = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
  * (63 / 74), a list 244.5 / 332.3 (63 / 68), the designer 592.3 / 821.4 (76 / 86).
  * 0.36 merged with 0.35.3 and p3-found, measured, inside the merge's room: a record form 245.8 / 336.6 (63 / 71), in
  * Arabic 245.8 / 359.2, a list 245.0 / 332.9 (63 / 68), the designer 592.8 / 822.0 (76 / 86).
+ * 0.37 (p37-refuse), measured inside these budgets: the whole check run as soon as a page is drawn, its chunk asked for
+ * once no page waits for its parts (so "to usable" carries it, never the first paint), a page it refuses taken down, every write
+ * through the page held until it ran — a record form 247.2 / 338.0 (64 / 72), in Arabic 247.2 / 360.7 (64 / 75), a list
+ * 246.4 / 334.2 (64 / 69), the designer 594.2 / 823.4 (77 / 87): +1.4 with the page each.
+ * 0.37 (p37-format), measured inside these budgets: a record form 246.3, a list 245.5, the designer 593.6 with the page.
+ * 0.37 merged, measured from the merged build, inside 0.36.0's budgets (kept: the coordinator's "back near 0.36's"): a
+ * record form 247.6 / 338.5 (64 / 72), in Arabic 247.6 / 361.2 (64 / 75), a list 246.8 / 335.0 (64 / 69), the designer
+ * 595.0 / 824.6 (77 / 87) — p37-refuse's +1.4 with the page and p37-format's filter groups and copy, +0.4 to +0.8.
+ * 0.37, a photo's picture never waited for long (the files part's encodeSoon): to usable a record form 338.6, in
+ * Arabic 361.3; the rest as above.
+ * 0.37 merged with 0.36.1, measured from the merged build, inside 0.36.0's budgets: a record form 248.0 / 339.0 (65 / 73),
+ * in Arabic 248.0 / 361.8 (65 / 76), a list 247.2 / 335.3 (65 / 70), the designer 596.1 / 825.8 (78 / 88) — 0.36.1's
+ * pages and records the app cannot give, said, +0.35 with the page and a file more each.
+ * 0.37 (size-parts), set from its build, about 2% room: what no page draws from in chunks of their own — a page's steps
+ * run, its dialogs, a page opened, its questions, a save over someone else's (the acts part's two halves, asked for
+ * right after the whole check, so "to usable" carries them), a sheet's furniture and the classic formatted text's
+ * toolbar (asked for with a page's parts) — and the chunks a bundler splits for what they share with the first paint:
+ * a record form 235.9 / 347.1 (72 / 84), in Arabic 235.9 / 369.8 (72 / 87), a list 235.1 / 336.3 (72 / 79), the
+ * designer 584.6 / 821.6 (85 / 97) — 12.1 less with the page each (11.5 the designer's), the after-draw chunks +8.1 to
+ * usable (a list's +1.0: its page draws no sheet). With the page held to what is measured: never grown back.
  */
 const BUDGET = {
-  record: { page: 250.3, usable: 342.9, files: 73 },
-  'record-ar': { page: 250.3, usable: 365.9, files: 76 },
-  list: { page: 249.4, usable: 339.0, files: 70 },
-  designer: { page: 604.2, usable: 837.9, files: 90 },
+  record: { page: 240.6, usable: 354.1, files: 86 },
+  'record-ar': { page: 240.6, usable: 377.2, files: 89 },
+  list: { page: 239.8, usable: 343.0, files: 81 },
+  designer: { page: 596.3, usable: 838.1, files: 99 },
 };
 
 /** A record of the customer page's, with the fields it shows. */

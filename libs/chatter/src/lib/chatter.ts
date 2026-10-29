@@ -1,4 +1,4 @@
-import { PICTURE_URL, safeUrl, fill, recordSentence, wordsComing, wordsReady, type DateOrder, type Locale, type PageRecords } from '@fieldia/core';
+import { answerOf, PICTURE_URL, safeUrl, fill, recordSentence, wordsComing, wordsReady, type DateOrder, type Locale, type PageRecords } from '@fieldia/core';
 import { installStyles, sanitizeHtml, showHtml, type IconSet, type ShrinkOptions } from '@fieldia/widgets';
 import { activitiesPart, momentWords } from './activities';
 import { attachmentList, composerFiles } from './attachments';
@@ -88,6 +88,12 @@ export interface ChatterContext {
   dateOrder?: DateOrder;
   /** Taken as something is asked for the record shown: true while that record is still the one shown, as it was. */
   shown(): () => boolean;
+  /**
+   * A change a person asked for that the source refused — an activity done, scheduled or cancelled, a follower added or
+   * taken away, a reaction —: said under the chatter's bar, with why (`notDone`); called with nothing as the next is
+   * asked, said no more.
+   */
+  notDone?(error?: unknown): void;
 }
 
 /** What was typed, as HTML: a paragraph for each block, a line break for each line, every character escaped. */
@@ -183,6 +189,12 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
   const waiting = el('p', { class: 'fd-chatter-waiting', hidden: '' }, recordSentence(options.records, labels.notSavedNoun, labels.notSaved, locale));
   const empty = el('p', { class: 'fd-chatter-empty', hidden: '' }, labels.empty);
   const list = el('ol', { class: 'fd-chatter-messages' });
+  // A change asked for that the source refused, said under the bar, with why — never a press that did nothing silently.
+  const failed = el('p', { class: 'fd-chatter-failed', role: 'alert', hidden: '' });
+  context.notDone = (error) => {
+    failed.hidden = error === undefined;
+    failed.textContent = error === undefined ? '' : fill(labels.notDone, { reason: (error as Error | null)?.message || String(error) });
+  };
   // Messages arriving while the conversation is shown, said politely (the channels part says them).
   const news = el('p', { class: 'fd-sr-only', role: 'status' });
 
@@ -325,7 +337,8 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
     try {
       const mentioned = mentioning.picked();
       const by = picker?.chosen();
-      const made = await options.source.post(current, {
+      // The source's answer handled as it is given (`answerOf`), never a microtask late as this function's own await.
+      const made = await answerOf(options.source.post(current, {
         kind: mode,
         body: box.value.trim() ? textToHtml(box.value) : '',
         attachments,
@@ -333,7 +346,7 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
         ...(mentioned.length ? { mentions: mentioned } : {}),
         ...(by?.channel ? { channel: by.channel.id } : {}),
         ...(by?.to ? { to: by.to } : {}),
-      });
+      }));
       if (made?.id != null) own.add(key(made.id));
       posting = false;
       closeComposer();
@@ -503,7 +516,7 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
     deliveryOf(message.id, 'pending', null);
     if (focused) drawn.get(key(message.id))?.item.querySelector<HTMLElement>('.fd-message-reply')?.focus();
     try {
-      await options.source.resend(asked, message.id);
+      await answerOf(options.source.resend(asked, message.id));
     } catch (error) {
       if (still()) deliveryOf(message.id, 'failed', (error as Error).message || message.failure || null);
     }
@@ -515,7 +528,7 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
     const still = shown();
     let found: ReplyChannel[];
     try {
-      found = await options.source.replyChannels(asked);
+      found = await answerOf(options.source.replyChannels(asked));
     } catch {
       found = [];
     }
@@ -550,15 +563,22 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
     void loadChannels(asked);
     const still = shown();
     fetching++;
-    let messages: ChatterMessage[];
+    let messages: ChatterMessage[] | null = null;
     try {
-      [messages] = await Promise.all([options.source.messages(asked), partReady]);
+      // Asked beside the part on its way, the answer handled as it is given (`answerOf`): never left for a `Promise.all`
+      // of the page's, refused in its zone before the await here comes to it.
+      const asking = answerOf(options.source.messages(asked));
+      await partReady;
+      messages = await asking;
       // A message that came by a channel, or says how far it got, is drawn with the channels part.
       if (!part && messages.some((message) => message.channel || message.delivery)) await channelsPart.load().then(withPart, () => undefined);
+    } catch {
+      // Not given: what is drawn stays, asked again at the next refresh, the next record, the next save.
     } finally {
       fetching--;
     }
     if (!still()) return; // another record, or gone, meanwhile
+    if (!messages) return void live?.replay();
     // Another record's items are nothing to this one. Live, an answer is laid over what was pushed (a delivery never
     // going back), and what was pushed meanwhile after it.
     if (drawnFor !== asked) drawn = new Map();
@@ -573,7 +593,7 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
   // Who follows sits at the far end of the bar, its list just under it.
   const followers = followersPart(context);
   if (followers.button) bar.append(el('span', { class: 'fd-spacer' }), followers.button);
-  root.append(bar, ...(followers.element ? [followers.element] : []), waiting, composer, ...(activities.element ? [activities.element] : []), empty, list, news);
+  root.append(bar, failed, ...(followers.element ? [followers.element] : []), waiting, composer, ...(activities.element ? [activities.element] : []), empty, list, news);
   host.append(root);
   // The part in at once where it came before, else asked for; a chatter with channels sends nothing before it knows
   // them: Send message shows once the part has come.
@@ -587,6 +607,8 @@ function drawChatter(host: HTMLElement, options: ChatterOptions): ChatterHandle 
     refresh: load,
     async setRecord(next) {
       record = next;
+      // What the last record's change was refused for is nothing to this one.
+      context.notDone?.();
       live?.follow(next);
       await load();
     },

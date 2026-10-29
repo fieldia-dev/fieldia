@@ -285,9 +285,12 @@ describe('a photo cropped and turned', () => {
   beforeAll(() => {
     const context = new Proxy({}, { get: (_target, name) => (...args: unknown[]) => void drawn.push(`${String(name)}(${args.filter((a) => typeof a === 'number').map((a) => Math.round(a as number)).join(',')})`), set: () => true });
     HTMLCanvasElement.prototype.getContext = (() => context) as unknown as HTMLCanvasElement['getContext'];
-    HTMLCanvasElement.prototype.toBlob = function (this: HTMLCanvasElement, done: BlobCallback, type?: string) {
-      done(new Blob([`${this.width}x${this.height}`], { type: type ?? 'image/png' }));
+    // Its toBlob never answers, as Chromium's may not for seconds on a busy machine: the picture is encoded at once
+    // (toDataURL) once the cap passed, nothing waiting on it (encode-now.ts).
+    HTMLCanvasElement.prototype.toDataURL = function (this: HTMLCanvasElement, type?: string) {
+      return `data:${type ?? 'image/png'};base64,${btoa(`${this.width}x${this.height}`)}`;
     };
+    HTMLCanvasElement.prototype.toBlob = () => undefined;
     Object.assign(window, { createImageBitmap: async () => ({ width: 400, height: 300, close: () => undefined }) });
   });
   beforeEach(() => (drawn.length = 0));
@@ -317,6 +320,8 @@ describe('a photo cropped and turned', () => {
     drawn.length = 0;
     button('Apply').click();
     await until(() => value()[1].edit);
+    // Closed, though toBlob never answered: the cap passed, the picture encoded at once.
+    expect(document.querySelector('.fd-photo-editor')).toBeNull();
     // A 300 × 300 part of the photo turned a quarter, drawn at the photo's own pixels.
     expect(drawn).toEqual(['translate(0,-50)', 'translate(300,0)', 'rotate(2)', 'drawImage(0,0,400,300)']);
     expect(value()[1]).toEqual({

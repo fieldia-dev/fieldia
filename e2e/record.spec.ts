@@ -52,7 +52,8 @@ for (const variant of VARIANTS) {
       await open(page, variant, 'page=vendor-bill&record=2&skin=underline');
       await gear(page).click();
       await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-      await expect(title(page)).toHaveValue('BILL/2026/10/0002 (copy)');
+      // A draft copy has no number yet, as Odoo's: its title says Draft.
+      await expect(title(page)).toHaveValue('Draft');
       await expect(pagerText(page)).toHaveText('3 / 5');
       await gear(page).click();
       await page.getByRole('menuitem', { name: 'Archive' }).click();
@@ -69,16 +70,28 @@ for (const variant of VARIANTS) {
       await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Posted');
       await gear(page).click();
       await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-      await expect(title(page)).toHaveValue('BILL/2026/10/0001 (copy)');
+      // No number, no dates (copy: false, as Odoo's): its title says Draft until it is confirmed.
+      await expect(title(page)).toHaveValue('Draft');
+      await expect(page.locator('[data-node="f-date"] input')).toHaveValue('');
+      await expect(page.locator('[data-node="f-due"] input')).toHaveValue('');
       // A posted bill's status is the books', never copied: the copy starts as a draft, as an accounting server's copy does.
       await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Draft');
       await expect(page.getByRole('button', { name: 'Confirm' })).toBeVisible();
       await expect(page.locator('[data-node="f-partner"] input')).toBeEditable();
+      // Its bill and payment references start empty (copy: false, as Odoo's): a payment quoting the copy never names the
+      // posted bill.
+      await expect(page.locator('[data-node="f-ref"] input')).toHaveValue('');
+      await expect(page.locator('[data-node="f-payment-ref"] input')).toHaveValue('');
       await gear(page).click();
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
       await page.keyboard.press('Escape');
-      const copy = await page.evaluate(() => Object.values((window as any).fieldiaDemo.dataSource.records['account.move'] as Record<string, { name: string; state: string }>).find((bill) => bill.name === 'BILL/2026/10/0001 (copy)'));
-      expect(copy?.state).toBe('draft');
+      const copy = await page.evaluate(() => (window as any).fieldiaDemo.dataSource.records['account.move'][(window as any).fieldiaDemo.handle.form.getState().recordId]);
+      expect(copy).toMatchObject({ name: 'Draft', state: 'draft', ref: null, payment_reference: null, invoice_date: null, invoice_date_due: null });
+      // Confirmed, it is given its number, as Odoo numbers a draft as it posts it.
+      await page.getByRole('button', { name: 'Confirm' }).click();
+      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Posted');
+      await expect(title(page)).toHaveValue(/^BILL\/2026\/10\/\d{4}$/);
+      await expect(title(page)).not.toHaveValue(/^BILL\/2026\/10\/000[1-4]$/);
     });
 
     test('reads right to left in Arabic, and folds onto a phone without scrolling sideways', async ({ page }) => {

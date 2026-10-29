@@ -60,7 +60,7 @@ import type { Limits } from './form-limits';
 import type { FormApproval } from './approving';
 import { draftRead, resumeStep, timedStore } from './drafts';
 import { envelopeOf, valuesFromSource } from './from-source';
-import { DISCARD_GRACE_MS, stopSends, withDeadlines } from './deadline';
+import { answerOf as appAnswer, DISCARD_GRACE_MS, stopSends, withDeadlines } from './deadline';
 import { ownerOf, tabStore } from './browser-kept';
 import { waitingOn, workedOutFrom, type WaitsFor } from './waits';
 import { createUploads, fileBytesIn, uploadGoing, withoutFileBytes, type FileUpload, type UploadHow } from './uploads';
@@ -72,7 +72,9 @@ import { formJoins, joinGate, type FormInner, type FormJoin, type FormJoins, typ
 import type { Part } from '../parts';
 import type { HistoryStep, Noted } from './history';
 import { pressUndoPart } from './undo-later';
-import { createMoments, createRunner, takenNow, type ActionHost, type ActionRequest, type ActionResult, type AskHow, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
+import { askOf, createMoments, DONE, takenNow, type ActionHost, type ActionRequest, type ActionResult, type AskHow, type OnAction, type PostedMessage, type RunContext, type RunForm, type RunResult, type RunScope, type Stopped } from './run';
+import { formActsPart, type FormActsPart } from './acts-later';
+import type { ConflictKit } from './conflict-choice';
 import {
   emptyValue,
   initialValues,
@@ -3615,6 +3617,15 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
       set({ status: 'ready' });
     }
     if (page.on?.beforeSave) {
+      // Its steps' engine still on its way (the acts part, acts-later.ts): the save says so meanwhile — saving, its
+      // Submit busy — as it does while files go, ready again as the engine lands and its steps run; one that cannot come
+      // is said by the run below. Never a press that waits in silence (0.37: a page that keeps its sends without signal,
+      // its part held by a slow line, waited with nothing said).
+      if (!formActsPart.loaded && page.on.beforeSave.length) {
+        set({ status: 'saving', error: null, saveProblem: null });
+        const landed = () => void (asked === generation && state.status === 'saving' && set({ status: 'ready' }));
+        void formActsPart.load().then(landed, landed);
+      }
       // Its run stops of itself on a record shown by anything but its own steps (a `call`'s `{ record }`, a reload):
       // those move the save on with it.
       // Its questions' Yes goes on with what set the save off: its words (Submit, a button's).
@@ -3943,10 +3954,27 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return went ? null : { reason: 'check', message: Object.values(state.errors)[0] };
   }
 
-  /** Run steps from the top — a button's, a moment's, the app's — and tell how it ended: on the record shown as it starts (`generation`). */
+  /**
+   * Run steps from the top — a button's, a moment's, the app's — and tell how it ended: on the record shown as it starts
+   * (`generation`). The engine that runs them is the acts part's (acts-later.ts): at once once it has come; until then
+   * the run waits for it, a press keeping its button busy — on the record it was set off on, as every wait of a run is
+   * — and stops with nothing done where it cannot come, said (`guardNotDone`), asked for anew by the next run.
+   */
   async function runTop(list: readonly ActionStep[], scope: RunScope): Promise<RunResult> {
     scope.generation ??= generation;
-    const result = await runner.runSteps(list, scope);
+    let steps = list.length ? engine() : undefined;
+    if (list.length && !steps) {
+      try {
+        await formActsPart.load();
+        steps = engine();
+      } catch (error) {
+        const again = formActsPart.asksAgain === false ? messages.guardReload : messages.guardTryAgain;
+        const result: RunResult = { done: false, stoppedAt: 0, step: list[0], reason: 'cannot', message: fillMessage(messages, messages.guardNotDone, { part: messages.guardSteps, again }), error };
+        emit('run', { id: scope.id, steps: list, result });
+        return result;
+      }
+    }
+    const result = await (steps ? steps.runSteps(list, scope) : DONE);
     emit('run', { id: scope.id, steps: list, result });
     return result;
   }
@@ -4224,7 +4252,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     const host = options.host;
     let yes = false;
     try {
-      yes = host ? await host.ask(message, { discard: true }) : options.confirm ? await options.confirm(message) : false;
+      yes = host ? await appAnswer(host.ask(message, { discard: true })) : options.confirm ? await appAnswer(options.confirm(message)) : false;
     } catch {
       // A question that could not be asked keeps the work.
     }
@@ -4324,7 +4352,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
   async function post(message: PostedMessage): Promise<boolean> {
     if (options.host?.post) {
       try {
-        return (await options.host.post(message)) !== false;
+        return (await appAnswer(options.host.post(message))) !== false;
       } catch {
         return false;
       }
@@ -4334,7 +4362,8 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     return true;
   }
 
-  const runner = createRunner({
+  /** What the engine that runs this form's steps reaches it by (run-steps.ts, in the acts part). */
+  const runForm: RunForm = {
     fields,
     messages,
     values: () => state.values,
@@ -4417,7 +4446,36 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     post,
     wordsOf: (field) => wordsOfValue(fieldDef(field), state.values[field]),
     barred: (right) => (state.can?.[right] === false ? state.can.reason ?? named(messages[`${MAY_NOT[right]}Noun`], messages[MAY_NOT[right]]) : null),
-  });
+  };
+  /** What a save over someone else's, answered, reaches this form by (conflict-choice.ts, the acts part's). */
+  const conflictKit: ConflictKit = {
+    state: () => state,
+    set,
+    fields,
+    page,
+    messages,
+    source: () => options.dataSource,
+    shownNow,
+    savesSettled,
+    readTyped,
+    load,
+    generation: () => generation,
+    track,
+    same: (name, a, b) => sameValue(fields[name], a, b),
+    kept: (path) => valueAt(state.values, path) !== gone,
+    rebase: (theirs) => void (baseline = { ...baseline, ...theirs }),
+    writeValues: (values) => writeValues(values),
+    save: () => save(),
+    setValue: (name, value) => form.setValue(name, value),
+  };
+  /** A conflict's choice: at once where the acts part has come, else once it does; `failed` where it cannot come. */
+  function answeredConflict<T, F>(run: (part: FormActsPart) => T | Promise<T>, failed: F): T | Promise<T | F> {
+    const part = formActsPart.loaded;
+    return part ? run(part) : formActsPart.load().then(run, () => failed);
+  }
+  /** The engine that runs this form's steps, made once its part has come; undefined until then. */
+  let runner: ReturnType<FormActsPart['createRunner']> | undefined;
+  const engine = () => (runner ??= formActsPart.loaded?.createRunner(runForm));
   // A moment's run is on the record it was set off on: one set off again while its run goes, and run after it, is let
   // go when another record is shown by then (its steps were for that one).
   const moment = createMoments((key, list, chain, on, yes) => runTop(list, { id: key, chain, generation: on, yes }), () => generation);
@@ -4458,7 +4516,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     scope.typed ??= 'first';
     return track(
       (async (): Promise<RunResult> => {
-        if (confirm && !(await runner.ask(confirm, scope.yes))) {
+        if (confirm && !(await askOf(runForm, confirm, scope.yes))) {
           const result: RunResult = { done: false, reason: 'no', message: confirm };
           emit('run', { id: scope.id, steps: list, result });
           return result;
@@ -4500,7 +4558,7 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
     scope.taken = undefined;
     void track(
       pressUndoPart.load().then(
-        (part) => part.offerUndo(inner, { kit: runner.kit, source, scope, taken, result, offers }),
+        (part) => part.offerUndo(inner, { kit: (engine() as NonNullable<typeof runner>).kit, source, scope, taken, result, offers }),
         () => taken.said.forEach((words) => options.host?.say(words.message, words.tone))
       )
     );
@@ -5092,85 +5150,11 @@ function innerForm(options: FormOptions, within: string[], place?: Place, outer?
 
     approvalLock: (name) => joined('approvals')?.lockWords(name) ?? null,
 
-    async reloadTheirs() {
-      // A save on its way first: its answer is not dropped by the load.
-      const asked = shownNow();
-      await savesSettled();
-      if (!asked()) return false;
-      // What is still typed is the person's too: read, a name looked up waited for, before theirs are loaded.
-      const waiting = readTyped();
-      if (waiting) await waiting;
-      if (!asked()) return false;
-      // The person's changes, kept before theirs are loaded over them; and text they left that does not read.
-      const mine: Values = {};
-      for (const name of state.dirty) mine[name] = structuredCopy(state.values[name]) as Value;
-      const typed = state.unread;
-      // The record loaded again is a record shown anew: what is set aside is laid on it alone.
-      const loading = load(true);
-      const loaded = generation;
-      await track(loading);
-      if (loaded !== generation || state.status !== 'ready') return false;
-      // Set aside where theirs differ from mine: a change they made the same way is no loss.
-      const aside: Values = { ...(state.setAside ?? {}) };
-      for (const [name, value] of Object.entries(mine)) if (!sameValue(fields[name], value, state.values[name])) aside[name] = value;
-      // Text that does not read is no value to set aside: it stays in its box, unread with why, over their value —
-      // never dropped unsaid. A line of theirs no longer there takes its cells' text with it.
-      const unread = Object.fromEntries(Object.entries(typed).filter(([path]) => valueAt(state.values, path) !== gone));
-      set({ conflict: null, saveProblem: null, setAside: Object.keys(aside).length ? aside : null, ...(Object.keys(unread).length ? { unread } : {}) });
-      return true;
-    },
-
-    async keepMine() {
-      const conflict = state.conflict;
-      let told = conflict?.theirs;
-      let version = conflict?.version;
-      // Not told the record as they left it: read as it is now, so a source that saves whole records keeps their work.
-      const source = options.dataSource;
-      if (conflict && !told) {
-        if (source?.load && state.recordId != null && page.data.kind === 'record') {
-          const shown = shownNow();
-          try {
-            const now = loadedRecordOf(await track(source.load({ model: page.data.model, id: state.recordId, fields })));
-            told = valuesFromSource(fields, now.values).values;
-            version = now.version ?? version;
-          } catch {
-            // Unread: said below.
-          }
-          // Read, or not, once another record is shown or the values let go: nothing is laid, nothing saved.
-          if (!shown()) return false;
-        }
-        // Still unread: saving now would go over work this person never saw. Nothing is saved; they are told, and choose again.
-        if (!told) {
-          const message = messages.theirsUnread;
-          set({ status: 'error', error: message, saveProblem: { kind: 'conflict', message, conflict: { version: conflict.version } }, conflict: { ...conflict, unread: true } });
-          return false;
-        }
-      }
-      if (told) {
-        // The record as they left it is where this person's changes start from: theirs stay wherever they changed nothing.
-        const theirs: Values = {};
-        for (const [name, value] of Object.entries(told)) if (fields[name]) theirs[name] = structuredCopy(value) as Value;
-        const mine = state.dirty;
-        baseline = { ...baseline, ...theirs };
-        const values = { ...(state.values as Values) };
-        for (const [name, value] of Object.entries(theirs)) if (!mine.includes(name)) values[name] = value;
-        writeValues(values);
-      }
-      // Saved with the version it has now: these changes over the record as it is.
-      if (version) set({ version });
-      return track(save());
-    },
-
-    putBack(field) {
-      const aside = state.setAside;
-      if (!aside) return;
-      const names = field === undefined ? Object.keys(aside) : Object.prototype.hasOwnProperty.call(aside, field) ? [field] : [];
-      if (!names.length) return;
-      const left = { ...aside };
-      for (const name of names) delete left[name];
-      set({ setAside: Object.keys(left).length ? left : null });
-      for (const name of names) form.setValue(name, aside[name]);
-    },
+    // A save over someone else's answered: the acts part's (conflict-choice.ts), in already where its banner asks — at
+    // once then; else once it came, nothing done where it cannot come.
+    reloadTheirs: () => Promise.resolve(answeredConflict((part) => part.reloadTheirs(conflictKit), false)),
+    keepMine: () => Promise.resolve(answeredConflict((part) => part.keepMine(conflictKit), false)),
+    putBack: (field) => void answeredConflict((part) => part.putBack(conflictKit, field), undefined),
 
     discardSetAside() {
       if (state.setAside) set({ setAside: null });

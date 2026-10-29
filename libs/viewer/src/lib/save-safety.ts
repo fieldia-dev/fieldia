@@ -1,7 +1,7 @@
-import { labelAt, recordSentence, dayTag, listComma, type Form, type FormState, type LineField, type Locale, type Page, type RecordPermissions, type Values, intlFormat } from '@fieldia/core';
-import { displayValue, drawIcon, type IconSet } from '@fieldia/widgets';
+import { recordSentence, dayTag, listComma, type Form, type FormState, type Locale, type Page, type RecordPermissions, intlFormat } from '@fieldia/core';
+import { drawIcon, type IconSet } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
-import { livePart } from './viewer-parts';
+import { livePart, withActs } from './viewer-parts';
 import type { ViewerLabels } from './labels';
 
 /** What the save-safety parts need of the viewer that draws them. */
@@ -22,137 +22,32 @@ export interface SaveSafetyContext {
   root(): HTMLElement;
   /** "Discard your changes?", the focus on Cancel: true to let the changes set aside go. */
   discard(): Promise<boolean>;
+  /** Said over the page: a part of it could not load (the acts part, which draws a save over someone else's). */
+  unloaded?(): void;
 }
-
-/** A field's box that takes the focus: one a person types or chooses in, shown. */
-const FIELD_BOX = 'input:not([type="hidden"]):not([hidden]), select:not([hidden]), textarea:not([hidden]), [contenteditable="true"]';
 
 /**
  * The parts of a record that keep a person's work safe, each drawn over the
  * record and hidden until it has something to say:
  *
- * - a save over someone else's: who changed the record and when, what they
- *   changed and what both did, with Reload and Keep mine;
- * - after Reload, the person's own changes set aside, each to put back;
+ * - a save over someone else's, and after Reload the person's changes set
+ *   aside (conflict-banner.ts): drawn by the acts part, which no page draws
+ *   from, the first time either has something to say — at once where it has
+ *   come, else as it does (`withActs`); where it cannot come, the conflict is
+ *   said in plain words, who changed the record, and the page says a part of
+ *   it could not load;
+ * - who else has the record open (the live part's);
  * - a record its source lets the person only read, and why.
  */
-export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[]; update(state: FormState): void } {
-  const { el, form, labels, fill } = context;
-  const fieldLabel = (name: string) => context.page.fields[name]?.label ?? name;
-  /** A field's label as `template` puts it at `key`: small inside the sentence where the page asks (`lowerLabels`). */
-  const labelIn = (template: string, key: string) => (name: string) => labelAt(template, key, context.page.lowerLabels, context.locale)(fieldLabel(name));
+export function saveSafety(context: SaveSafetyContext): { readonly elements: HTMLElement[]; update(state: FormState): void } {
+  const { el, form, labels } = context;
   const list = listWords(context.tag ?? context.locale);
 
-  /**
-   * After a button here that hid itself, or the part it was in: the focus to the first of these fields shown, so a
-   * screen reader says where the person is; else the form's first field; never left on the page's body.
-   */
-  function focusOn(names: readonly string[]) {
-    const root = context.root();
-    const shown = (element: Element) => !element.closest('[hidden], [aria-hidden="true"]');
-    // A box that will not take the focus — disabled, hidden by its look, kept from the keyboard — is passed over for the next.
-    const took = (box: HTMLElement) => {
-      if (box.getAttribute('tabindex') === '-1') return false;
-      box.focus();
-      return context.doc.activeElement === box;
-    };
-    for (const name of names) {
-      const boxes = [...root.querySelectorAll<HTMLElement>(`.fd-field[data-field="${name}"]`)].filter(shown).flatMap((wrapper) => [...wrapper.querySelectorAll<HTMLElement>(FIELD_BOX)].filter(shown));
-      if (boxes.some(took)) return;
-    }
-    if ([...root.querySelectorAll<HTMLElement>(FIELD_BOX)].filter(shown).some(took)) return;
-    if (!root.hasAttribute('tabindex')) root.tabIndex = -1;
-    root.focus();
-  }
-  /** Whether the focus went nowhere: to the page's body, or with an element now hidden or gone. */
-  const focusLost = () => {
-    const active = context.doc.activeElement;
-    return !active || active === context.doc.body || !active.isConnected || !!active.closest('[hidden]');
-  };
-
-  // ---- someone else saved first --------------------------------------------------------------------
-  const title = el('strong', { class: 'fd-conflict-title' });
-  const changed = el('span', { class: 'fd-conflict-fields' });
-  const choice = el('span', { class: 'fd-conflict-hint' }, labels.conflictChoice);
-  // Keep mine could not read their version: nothing was saved over it, said before the choice.
-  const unreadWords = el('strong', { class: 'fd-conflict-unread' });
-  // Its words are said as it shows, the choice of buttons with them.
-  const words = el('div', { class: 'fd-conflict-words', role: 'alert' });
-  const reload = el('button', { type: 'button', class: 'fd-button' }, labels.reload);
-  const keep = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.keepMine);
-  const icon = drawIcon(context.doc, 'warning', context.icons);
-  const conflict = el('div', { class: 'fd-conflict', hidden: '' }, ...(icon ? [el('span', { class: 'fd-conflict-icon', 'aria-hidden': 'true' }, icon)] : []), words, el('div', { class: 'fd-conflict-actions' }, reload, keep));
-  /** One answer at a time: the buttons busy while it runs. */
-  const answer = async (run: () => Promise<boolean>) => {
-    if (conflict.hasAttribute('aria-busy')) return;
-    conflict.setAttribute('aria-busy', 'true');
-    try {
-      return await run();
-    } finally {
-      conflict.removeAttribute('aria-busy');
-    }
-  };
-  reload.addEventListener('click', () =>
-    void answer(async () => {
-      const before = form.getState();
-      const changedNow = [...(before.conflict?.changed ?? []), ...before.dirty];
-      const done = await form.reloadTheirs();
-      if (!done) return false;
-      // The changes set aside take the focus, so the person hears what was kept for them; with none, the first field
-      // that changed does, and they are told it reloaded.
-      if (form.getState().setAside) asideTitle.focus();
-      else {
-        focusOn(changedNow);
-        context.announce(recordSentence(context.page.records, labels.reloadedNoun, labels.reloaded, context.locale));
-      }
-      return true;
-    })
-  );
-  keep.addEventListener('click', () =>
-    void answer(async () => {
-      const unread = form.getState().conflict?.unread === true;
-      const mine = [...form.getState().dirty];
-      const done = await form.keepMine();
-      // Their version still unread: the banner's words are the same, so they are said again.
-      if (!done && unread && form.getState().conflict?.unread) context.announce(form.getState().saveProblem?.message ?? '');
-      // The banner gone with the button that had the focus: to the first of the person's changes, kept.
-      if (focusLost()) focusOn(mine);
-      return done;
-    })
-  );
-
-  // ---- the person's changes, set aside by Reload ---------------------------------------------------------
-  const asideTitle = el('p', { class: 'fd-set-aside-title', tabindex: '-1' }, labels.setAside);
-  const rows = el('ul', { class: 'fd-set-aside-list' });
-  const all = el('button', { type: 'button', class: 'fd-button' }, labels.putAllBack);
-  // Every change put back, the list goes: the focus to the first of them.
-  all.addEventListener('click', () => {
-    const names = Object.keys(form.getState().setAside ?? {});
-    form.putBack();
-    focusOn(names);
-  });
-  const dismiss = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': labels.dismiss, title: labels.dismiss }, '×');
-  // Letting them go is a discard, asked as every other is: Cancel keeps them, and the focus here.
-  let asking = false;
-  dismiss.addEventListener('click', async () => {
-    if (asking) return;
-    asking = true;
-    const names = Object.keys(form.getState().setAside ?? {});
-    // The changes set aside on the record shown as it was asked: never another's.
-    const shown = form.recordShown();
-    try {
-      if (!(await context.discard()) || !shown()) return;
-    } finally {
-      asking = false;
-    }
-    form.discardSetAside();
-    focusOn(names);
-  });
-  const asideId = `fd-set-aside-${++drawn}`;
-  asideTitle.id = `${asideId}-title`;
-  // Named by its words only while shown: hidden, its "not saved" must not answer for a field's label ("No").
-  const aside = el('section', { class: 'fd-set-aside', hidden: '' }, el('div', { class: 'fd-set-aside-head' }, asideTitle, dismiss), rows, all);
-  let shownAside: Readonly<Values> | null = null;
+  // ---- someone else saved first, and the changes Reload set aside: the acts part's, asked for as they first are --------
+  let banners: { elements: HTMLElement[]; update(state: FormState): void } | null = null;
+  let asked = false;
+  /** Where the acts part could not come, and only then: the conflict in plain words. */
+  let plain: HTMLElement | null = null;
 
   // ---- who else has it open (the data source's `presence`): drawn by the live part, once someone else is ------
   // Hidden while nobody else is: an empty band is no part of the form.
@@ -165,66 +60,27 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
   const note = el('div', { class: 'fd-read-only-note', role: 'status', hidden: '' }, ...(lock ? [el('span', { class: 'fd-read-only-icon', 'aria-hidden': 'true' }, lock)] : []), noteWords);
 
   function update(state: FormState) {
-    // Someone else saved first: their name and time, and what each changed, while the person chooses.
-    const found = state.conflict;
-    setHidden(conflict, !found);
-    if (found) {
-      const name = found.version.by || labels.someoneElse;
-      const time = found.version.at ? timeWords(found.version.at, context.tag, context.locale) : '';
-      const said = (noun: string | undefined, words: string, values?: Record<string, string | number>) => recordSentence(context.page.records, noun, words, context.locale, values);
-      setText(title, time ? said(labels.conflictAtNoun, labels.conflictAt, { name, time }) : said(labels.conflictSinceNoun, labels.conflictSince, { name }));
-      const theirs = found.changed.length ? fill(labels.conflictChanged, { fields: list(found.changed.map(labelIn(labels.conflictChanged, 'fields'))) }) : '';
-      const both = found.both.length ? fill(labels.conflictBoth, { fields: list(found.both.map(labelIn(labels.conflictBoth, 'fields'))) }) : '';
-      setText(changed, [theirs, both].filter(Boolean).join(' '));
-      setText(unreadWords, found.unread ? (state.saveProblem?.message ?? '') : '');
-      // Written once each time it shows, so a screen reader says it whole: again when Keep mine could not read theirs.
-      const key = `${found.version.token}${found.unread ? ' unread' : ''}`;
-      if (!words.firstChild || words.getAttribute('data-for') !== key) {
-        words.replaceChildren(title, ' ', changed, ' ', ...(found.unread ? [unreadWords, ' '] : []), choice);
-        words.setAttribute('data-for', key);
-      }
-    } else if (words.firstChild) {
-      words.replaceChildren();
-      words.removeAttribute('data-for');
-    }
-
-    // The changes set aside, drawn again when they change: each with what it held, what the record holds now, and Put back.
-    if (state.setAside !== shownAside) {
-      shownAside = state.setAside;
-      const names = Object.keys(shownAside ?? {});
-      rows.replaceChildren(
-        ...names.map((name) => {
-          const def = context.page.fields[name] as LineField | undefined;
-          const shown = (value: unknown) => (def ? displayValue(def, value as Values[string], state.values as Values, context.locale) : String(value ?? ''));
-          const mine = shown((shownAside as Values)[name]);
-          const now = shown(state.values[name]);
-          const put = el('button', { type: 'button', class: 'fd-button fd-button-link', 'aria-label': fill(labels.putBackField, { label: labelIn(labels.putBackField, 'label')(name) }) }, labels.putBack);
-          put.addEventListener('click', () => {
-            form.putBack(name);
-            // The focus stays in the list while it has more, else goes to the field put back.
-            const next = rows.querySelector<HTMLButtonElement>('button');
-            if (next) next.focus();
-            else focusOn([name]);
-          });
-          // The words wrap on a phone; Put back keeps to the row's end, beside the change it puts back.
-          return el(
-            'li',
-            {},
-            el(
-              'span',
-              { class: 'fd-set-aside-what' },
-              el('span', { class: 'fd-set-aside-label' }, fieldLabel(name)),
-              el('bdi', { class: 'fd-set-aside-mine' }, mine || '—'),
-              // What it holds now, the value in its own direction: a phone number among Arabic words keeps its order.
-              ...(now !== mine ? [el('span', { class: 'fd-set-aside-now' }, ...labels.nowIs.split(/(\{value\})/).map((part) => (part === '{value}' ? el('bdi', {}, now || '—') : part)))] : [])
-            ),
-            put
-          );
-        })
+    if (banners) banners.update(state);
+    else if (!asked && (state.conflict || state.setAside)) {
+      asked = true;
+      void withActs((part) => part.conflictBanners(context), context.doc).then(
+        (made) => {
+          banners = made;
+          presence.after(...made.elements);
+          made.update(form.getState());
+        },
+        () => {
+          plain = el('div', { class: 'fd-conflict', role: 'alert', hidden: '' });
+          presence.after(plain);
+          context.unloaded?.();
+          update(form.getState());
+        }
       );
-      setHidden(all, names.length < 2);
-      setHidden(aside, names.length === 0);
-      setAttr(aside, 'aria-labelledby', names.length ? asideTitle.id : null);
+    }
+    if (plain) {
+      const found = state.conflict;
+      setHidden(plain, !found);
+      setText(plain, found ? recordSentence(context.page.records, labels.conflictSinceNoun, labels.conflictSince, context.locale, { name: found.version.by || labels.someoneElse }) : '');
     }
 
     // Others with the record open: the live part's strip, asked for the first time someone else is.
@@ -240,10 +96,13 @@ export function saveSafety(context: SaveSafetyContext): { elements: HTMLElement[
     setAttr(note, 'data-reason', readOnly && can?.reason ? '' : null);
   }
 
-  return { elements: [presence, conflict, aside, note], update };
+  return {
+    get elements() {
+      return [presence, ...(banners?.elements ?? (plain ? [plain] : [])), note];
+    },
+    update,
+  };
 }
-
-let drawn = 0;
 
 /**
  * When someone saved, as the page writes a time: the hour alone the same day,
@@ -259,7 +118,7 @@ export function timeWords(at: string, tag: string | undefined, locale: Locale, n
 }
 
 /** Names in a list, as the language joins them: "Stage, Budget", "المرحلة، الميزانية". */
-function listWords(tag: string): (names: string[]) => string {
+export function listWords(tag: string): (names: string[]) => string {
   const separator = listComma(tag);
   return (names) => names.join(separator);
 }

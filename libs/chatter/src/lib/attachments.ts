@@ -1,4 +1,4 @@
-import { DOWNLOAD_URL, fill, formatBytes, PICTURE_URL, safeUrl, type FileValue } from '@fieldia/core';
+import { answerOf, DOWNLOAD_URL, fill, formatBytes, PICTURE_URL, safeUrl, type FileValue } from '@fieldia/core';
 import { drawIcon, filesPart, WIDGET_LABELS, type Going, type GoingItem, type ShrinkOptions } from '@fieldia/widgets';
 import type { ChatterContext } from './chatter';
 import type { Attachment } from './source';
@@ -97,13 +97,14 @@ export function composerFiles(context: ChatterContext, onProblem: (message: stri
     Object.assign(pending, { status: 'uploading', sent: 0, total: null, error: undefined, stop: () => stop.abort() });
     show(pending);
     try {
-      const stored = await source.upload(record, pending.file, {
+      // The source's answer handled as it is given (`answerOf`), never a microtask late as this function's own await.
+      const stored = await answerOf(source.upload(record, pending.file, {
         signal: stop.signal,
         onProgress: (sent, total) => {
           Object.assign(pending, { sent, total });
           show(pending);
         },
-      });
+      }));
       if (!going.includes(pending)) return;
       going = going.filter((p) => p !== pending);
       pending.item.element.remove();

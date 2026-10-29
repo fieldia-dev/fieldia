@@ -1,4 +1,5 @@
 import type { Locale } from '@fieldia/core';
+import { adopt } from './adopt';
 import { getJson, pathOf, type Fetch } from './answers';
 import { addressLine } from './address-line';
 import type { AddressParts } from './address-parts';
@@ -213,7 +214,7 @@ function photonPlaces(found: unknown, locale: Locale, parts?: (properties: unkno
  * which answers as people type, or Nominatim's.
  */
 export function openStreetMap(options: OpenStreetMapOptions = {}): MapProvider {
-  const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
+  const fetchWith = adopt(options.fetch) ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
   const photon = (options.photonUrl ?? 'https://photon.komoot.io').replace(/\/$/, '');
   const osrm = (options.osrmUrl ?? 'https://router.project-osrm.org').replace(/\/$/, '');
   const base = {
@@ -308,10 +309,10 @@ const AZURE_TILESET: Record<BaseMap | 'traffic', string> = { road: 'microsoft.ba
 /** Microsoft Azure Maps: road, dark and satellite map images, live traffic, credits for the view, and address search. */
 export function azureMaps(options: AzureMapsOptions): MapProvider {
   if (!options.key && !options.token) throw new Error('azureMaps needs a key or a token');
-  const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
+  const fetchWith = adopt(options.fetch) ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
   const auth = options.key ? `&subscription-key=${encodeURIComponent(options.key)}` : '';
   const headers = async (): Promise<Record<string, string>> =>
-    options.key ? {} : { Authorization: `Bearer ${await options.token!()}`, ...(options.clientId ? { 'x-ms-client-id': options.clientId } : {}) };
+    options.key ? {} : { Authorization: `Bearer ${await adopt(options.token!)()}`, ...(options.clientId ? { 'x-ms-client-id': options.clientId } : {}) };
   const ask = async (path: string, params: Record<string, string | number | undefined>, locale?: Locale, signal?: AbortSignal) =>
     getJson(fetchWith, `https://atlas.microsoft.com/${path}?${query(params)}${auth}`, {
       signal,
@@ -384,7 +385,7 @@ const GOOGLE_MAP_TYPE: Partial<Record<BaseMap | 'traffic', string>> = { road: 'r
  * restricted to the app's sites.
  */
 export function googleMaps(options: GoogleMapsOptions): MapProvider {
-  const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
+  const fetchWith = adopt(options.fetch) ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
   const key = encodeURIComponent(options.key);
   const sessions = new Map<string, Promise<{ session: string; expiry: number }>>();
   function session(kind: BaseMap | 'traffic', locale: Locale) {
@@ -529,7 +530,7 @@ export interface MapboxOptions {
 
 /** Mapbox: its styles as map images, its credits and wordmark, and its address search as people type. */
 export function mapbox(options: MapboxOptions): MapProvider {
-  const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
+  const fetchWith = adopt(options.fetch) ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
   const token = encodeURIComponent(options.token);
   const styles: Record<BaseMap, string> = {
     road: options.style ?? 'mapbox/streets-v12',

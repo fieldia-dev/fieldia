@@ -1,12 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { lowestFormat, needOf, stampPage } from './stamp';
+import { lowestFormat, needOf, stampPage, stampProblem } from './stamp';
 import { checkPage } from './check-page';
 import { wholeCheck } from './check-whole';
 import { validatePage } from './validate';
 import { upgradePage } from './upgrade';
 import { FORMAT_VERSION, FORMAT_VERSIONS } from './version';
 import * as Viewer030 from './test-version-0.30';
+import * as Viewer036 from './test-version-0.36';
 import type { Page } from './page';
 
 /**
@@ -17,6 +18,8 @@ import type { Page } from './page';
  */
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
 const read030 = (page: { fieldia?: unknown }) => Viewer030.formatProblem(upgradePage(page, { versions: Viewer030.FORMAT_VERSIONS, steps: [] }).fieldia, Viewer030.FORMAT_VERSIONS);
+/** The 0.36 viewer's format check, the last that reads format 0.13 (test-version-0.36.ts, held to its release). */
+const read036 = (page: { fieldia?: unknown }) => Viewer036.formatProblem(upgradePage(page, { versions: Viewer036.FORMAT_VERSIONS, steps: [] }).fieldia, Viewer036.FORMAT_VERSIONS);
 const page = (fields: Record<string, unknown>, more: Record<string, unknown> = {}): Page =>
   ({
     fieldia: FORMAT_VERSION,
@@ -54,6 +57,67 @@ describe('a page stamped with the lowest format it needs', () => {
     expect(lowestFormat(lines)).toBe('0.7');
   });
 
+  it('saying what a copy does not keep, or a filter’s group, is stamped 0.14, which the 0.36 viewer refuses with its words — and a page saying neither stays as 0.36 read it', () => {
+    const bill = page({ state: { type: 'selection', label: 'Status', default: 'draft', options: [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }] } }, { data: { kind: 'record', model: 'account.move' } });
+    expect(lowestFormat(bill)).toBe('0.1');
+    expect(read036(stampPage(bill))).toBeNull();
+    const fields = bill.fields as unknown as Record<string, Record<string, unknown>>;
+    fields['state']['copy'] = false;
+    expect(lowestFormat(bill)).toBe('0.14');
+    expect(read036(stampPage(bill))).toBe('this page is in format 0.14, newer than this Fieldia reads (0.13): update Fieldia to show it');
+    // Said true, as a copy keeps it anyway: the same key, the same format.
+    fields['state']['copy'] = true;
+    expect(lowestFormat(bill)).toBe('0.14');
+    // A table's line field says it too.
+    const lines = page({ items: { type: 'one2many', label: 'Items', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, lot: { type: 'char', label: 'Lot', copy: false } } } });
+    expect(lowestFormat(lines)).toBe('0.14');
+    const filters = [
+      { id: 'late', label: 'Late', filter: [{ field: 'state', op: '=', value: 'posted' }] },
+      { id: 'draft', label: 'Draft', filter: [{ field: 'state', op: '=', value: 'draft' }] },
+    ];
+    const list = { fieldia: FORMAT_VERSION, id: 'bills', data: { kind: 'record', model: 'account.move' }, fields: { state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }] } }, layout: { type: 'list', id: 'l', columns: ['state'], filters } } as unknown as Page;
+    expect(lowestFormat(list)).toBe('0.1');
+    const grouped = { ...list, layout: { ...list.layout, filters: [{ ...filters[0], group: 'when' }, filters[1]] } } as unknown as Page;
+    expect(lowestFormat(grouped)).toBe('0.14');
+    expect(read036(stampPage(grouped))).toBe('this page is in format 0.14, newer than this Fieldia reads (0.13): update Fieldia to show it');
+    // Said 0.13, it is under-stamped: refused from 0.37 (format.under-stamped), as the next test shows.
+    expect(stampProblem({ ...grouped, fieldia: '0.13' }, needOf(upgradePage(grouped)))).toMatchObject({ path: 'layout.filters[0].group' });
+  });
+
+  it('a page saying 0.13 that uses `copy` or a filter’s `group` is under-stamped: refused by validatePage and by the whole check every viewer runs once the page is drawn, at that setting — and passed stamped 0.14 (0.37)', () => {
+    const SAID = Symbol.for('fieldia.deprecations.said');
+    delete (globalThis as { [SAID]?: Set<string> })[SAID];
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const words = 'this came in format 0.14, but the page says it is in format 0.13, which a Fieldia reading 0.13 would read without it: write "fieldia": "0.14" — lowestFormat(page) gives the lowest a page needs';
+    const options = [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }];
+    const bill = page({ state: { type: 'selection', label: 'Status', default: 'draft', copy: false, options } }, { data: { kind: 'record', model: 'account.move' } });
+    const lines = page({ items: { type: 'one2many', label: 'Items', relation: 'line', fields: { name: { type: 'char', label: 'Name' }, lot: { type: 'char', label: 'Lot', copy: false } } } });
+    const filters = [
+      { id: 'late', label: 'Late', group: 'when', filter: [{ field: 'state', op: '=', value: 'posted' }] },
+      { id: 'draft', label: 'Draft', filter: [{ field: 'state', op: '=', value: 'draft' }] },
+    ];
+    const list = { fieldia: FORMAT_VERSION, id: 'bills', data: { kind: 'record', model: 'account.move' }, fields: { state: { type: 'selection', label: 'Status', options } }, layout: { type: 'list', id: 'l', columns: ['state'], filters } } as unknown as Page;
+    for (const [given, path] of [
+      [bill, 'fields.state.copy'],
+      [lines, 'fields.items.fields.lot.copy'],
+      [list, 'layout.filters[0].group'],
+    ] as const) {
+      const said013 = { ...given, fieldia: '0.13' };
+      const refused = { ok: false, issues: [{ path, message: words }] };
+      expect(validatePage(said013)).toEqual(refused);
+      expect(wholeCheck(said013)).toEqual(refused);
+      // The check before the draw reads no setting's format: the page is drawn, then taken down as the whole check runs.
+      expect(checkPage(said013).ok).toBe(true);
+      // Stamped as it needs: passed, by both.
+      expect(stampPage(said013).fieldia).toBe('0.14');
+      expect(validatePage(stampPage(said013))).toMatchObject({ ok: true });
+      expect(wholeCheck(stampPage(said013)).ok).toBe(true);
+    }
+    // Refused, never warned of: format.under-stamped is changed (0.37).
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
   it('relying on a default a later format changed needs that format: its step says so (`uses`), as the train makes a changed default', () => {
     // A format whose step writes the old default into older pages: a page left to the new default needs it.
     const step = { to: '0.13', changes: 'A box shows its hint inside it', upgrade: (old: Record<string, unknown>) => old, example: { before: {}, after: {} }, uses: (given: Record<string, unknown>) => (given['fields'] as Record<string, { hint?: unknown }>)['name']?.hint === undefined };
@@ -73,25 +137,27 @@ describe('a page stamped with the lowest format it needs', () => {
 
 describe('a page read by its stamp', () => {
   const SAID = Symbol.for('fieldia.deprecations.said');
-  it('says an older format than a setting it uses came in: in 0.36 warned of by validatePage and the whole check, at the setting, with the format to write — refused from 0.37', () => {
+  it('says an older format than a setting it uses came in: refused by validatePage and the whole check, at the setting, with the format to write (0.37; warned of in 0.36)', () => {
     delete (globalThis as { [SAID]?: Set<string> })[SAID];
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     const wrong = { ...page({ pin: { type: 'char', label: 'PIN', secret: true } }), fieldia: '0.10' };
     const words = 'this came in format 0.13, but the page says it is in format 0.10, which a Fieldia reading 0.10 would read without it: write "fieldia": "0.13" — lowestFormat(page) gives the lowest a page needs';
-    expect(validatePage(wrong)).toMatchObject({ ok: true, warnings: [{ path: 'fields.pin.secret', message: words }] });
+    const refused = { ok: false, issues: [{ path: 'fields.pin.secret', message: words }] };
+    expect(validatePage(wrong)).toEqual(refused);
+    // The whole check every viewer runs as soon as a page is drawn refuses it the same; the check before the draw, which
+    // reads no setting's format, passes it.
+    expect(wholeCheck(wrong)).toEqual(refused);
     expect(checkPage(wrong).ok).toBe(true);
-    // Said once in the page, as a deprecation is: format.under-stamped, refused from 0.37.
-    const said = `Fieldia: fields.pin.secret: ${words} — read as it is now, refused from 0.37 — deprecated, it changes in 0.37 (format.under-stamped; https://fieldia.dev/promises/#deprecations).`;
-    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([said]);
-    // The whole check a viewer runs after the first draw says it too, in a page not told yet; the check before the draw,
-    // which reads no setting's format, says nothing.
-    delete (globalThis as { [SAID]?: Set<string> })[SAID];
-    warn.mockClear();
-    expect(wholeCheck(wrong).ok).toBe(true);
-    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([said]);
-    // Stamped with what it needs, or later: nothing said.
-    for (const fieldia of ['0.13', FORMAT_VERSION]) expect(validatePage({ ...wrong, fieldia }).warnings).toBeUndefined();
-    expect(validatePage(stampPage(wrong)).warnings).toBeUndefined();
+    // Refused, never warned of: format.under-stamped is changed (0.37).
+    expect(warn).not.toHaveBeenCalled();
+    // Stamped with what it needs, or later: passed, nothing said.
+    for (const fieldia of ['0.13', FORMAT_VERSION]) expect(validatePage({ ...wrong, fieldia })).toMatchObject({ ok: true });
+    expect(validatePage(stampPage(wrong))).toMatchObject({ ok: true });
+    expect(wholeCheck(stampPage(wrong)).ok).toBe(true);
+    // What the names and conditions find is said first: the stamp's, where they find nothing.
+    const broken = { ...wrong, layout: { ...wrong.layout, children: [{ type: 'field', id: 'f-pin', field: 'pins' }] } };
+    expect(validatePage(broken)).toMatchObject({ ok: false, issues: [{ path: 'layout.children[0].field' }] });
+    expect(wholeCheck(broken)).toMatchObject({ ok: false, issues: [{ path: 'layout.children[0].field' }] });
     warn.mockRestore();
   });
 

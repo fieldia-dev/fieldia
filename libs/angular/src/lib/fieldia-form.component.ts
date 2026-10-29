@@ -158,6 +158,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly records = input<ViewerOptions['records']>(undefined);
   /** The trail to this record, for the breadcrumbs over it. */
   readonly breadcrumbs = input<ViewerOptions['breadcrumbs']>(undefined);
+  /** While the app is being made: a refused page shows what is wrong under its visitor's words (ViewerOptions.development). */
+  readonly development = input<boolean | undefined>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -346,6 +348,7 @@ export class FieldiaFormComponent implements OnDestroy {
         onOpenRecord: (id) => this.openRecord.emit(id),
         records: this.records(),
         breadcrumbs: this.breadcrumbs(),
+        development: this.development(),
       });
     } catch {
       // A page the viewer refused: it said why where the form would be and told `partError` (refused.ts in

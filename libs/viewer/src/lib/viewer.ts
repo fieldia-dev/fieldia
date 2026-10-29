@@ -4,9 +4,10 @@ import {
   safeUrl,
   createForm,
   callsPartFunctions,
+  askAfterCheck,
+  askForCheck,
   checkPage,
-  checkPageWhole,
-  pageInvalid,
+  pageCheckPart,
   functionsPart,
   isRightToLeft,
   localizePage,
@@ -24,9 +25,9 @@ import {
   type Form,
   type FormOptions,
   type FormState,
-  type JsonValue,
   type LayoutNode,
   type Page,
+  type PageValidation,
   type Skin,
   type Theme,
   type RecordId,
@@ -67,11 +68,11 @@ import {
   type SignedBy,
 } from '@fieldia/core';
 import { overFirstPaint } from './first-paint-over';
-import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses } from '@fieldia/widgets';
+import { afterPress, browserPreferences, createWidget, dateOrderOf, displayValue, drawIcon, installStyles, quietPart, readsAsText, readText, settleParts, themesPart, useStyleNonce, wearQuiet, wearsQuiet, wearTheme, WIDGET_LABELS, type IconSet, type Part, type PreferenceStore, type WidgetContext, type WidgetFactory, watchPresses, pressWait } from '@fieldia/widgets';
 import { letFailureGo, loadingOver, loadingPart, loadingSettings, loadingWay, startLoading, type Loading, type LoadingEvent, type LoadingOptions, type Wait } from '@fieldia/widgets';
 import type { SentenceWords } from './sentence-value';
 import { brokenBox, describeFailure, focusHeld, reportFailure, type ErrorHandler, type FailureStage, type PartFailure } from '@fieldia/widgets';
-import { onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
+import { answerOf, formActsPart, onWordsCame, recomputeInFull, relatedInTab, upgradePage, wordsComing, wordsReady, wordsVersion, workCounts, zonedPage } from '@fieldia/core';
 import { later } from './later';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { nameFieldOf } from './name-field';
@@ -82,19 +83,18 @@ import type { MapPartFactory } from './map-part';
 import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
-import { openPage } from './open';
 import { sayer } from './say';
 import { earlyList, type EarlyList } from './list-early';
 import { tabStrip } from './tab-strip';
 import { valueWords, type ValueWriter } from './value-words';
+import type { Furniture, SheetKit } from './sheet-furniture';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { recordBar, type Breadcrumb, type RecordPager } from './record-bar';
-import { attachmentPreview } from './attachment-preview';
 import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHeading, type HeadKit } from './section-head';
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, type HeadPart, type UndoPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, withActs, actsPart, askActs, waitedFor, asksActs, furnished, sheetPart, type SheetPart, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import { missingJoin } from './join-missing';
@@ -112,8 +112,8 @@ export type { Skin };
 
 import { ownLocale, VIEWER_LABELS, viewerWords, type ViewerLabels } from './labels';
 import { inOwnWords } from './in-own-words';
-import { showRefused } from './refused';
-import { keepTabIn } from './focus-trap';
+import { showRefused, type PageRefused } from './refused';
+import { heldWrites } from './held-writes';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 export type { PageFinder, PageRequest } from './related';
 
@@ -169,11 +169,18 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * Told when a part of the page throws as it is drawn, brought up to date, focused or taken away: a field's widget
    * (the app's own or Fieldia's), a slot, a map, any other part. The part is then a small box that names it ("This
    * field could not be shown: Price"), and the rest of the form goes on working, saving included. The console is told
-   * either way. `where` says which part, its field, and what was being done. Told too of a page drawn whose whole check
-   * found mistakes `validatePage` refuses (`stage: "check"`, `part: "page"`, `warning: true`; the error a `PageInvalid`,
-   * its `issues` on it): drawn in 0.36, refused from 0.37 (`page.invalid`).
+   * either way. `where` says which part, its field, and what was being done. Told too of a refused page, the error a
+   * `PageRefused` with its `issues`: `stage: "draw"` for what the check before the draw refuses (as 0.35 refused it),
+   * `stage: "check"` for what the whole check finds once the page is drawn, the page taken down (0.37). And, as a warning
+   * (`stage: "check"`, `warning: true`), of a page whose whole check's part could not come: drawn, not fully checked.
    */
   onError?: (error: unknown, where: PartFailure) => void;
+  /**
+   * While the app is being made: a page the viewer refuses shows, under the words its visitor reads ("This form is not
+   * available right now…"), what is wrong with it — each problem by its path — as the console and `onError` say it. Off,
+   * a visitor reads only those words, never a check's (0.37). The designer's Try it turns it on.
+   */
+  development?: boolean;
   /**
    * The page's language, as a language tag (`ar`, `es`, `pt-BR`): the page's
    * own words in it when the page keeps them, and the viewer's labels,
@@ -366,6 +373,15 @@ export interface ViewerHandle {
    * mistake there rejects this with what the mount throws for the rest, and nothing is drawn.
    */
   readonly drawn: Promise<void>;
+  /**
+   * Settled once the page's whole check has run — `validatePage`'s verdict, in a part of its own, run as soon as the page
+   * is drawn (0.37) — with the `PageRefused` where it refused the page, the page then taken down: its form replaced by
+   * why, `onError` told (`stage: "check"`). Null where it passed, where its part could not come (the page drawn, said as
+   * not fully checked), or where the viewer was taken away first. A page refused before it was drawn throws at the mount,
+   * or rejects `drawn`, and settles this with the same error. Until it settles, nothing is written through the page: a
+   * save, a send, an upload, a server draft asked for meanwhile waits for it, and is refused with the page.
+   */
+  readonly refused: Promise<PageRefused | null>;
   destroy(): void;
 }
 
@@ -458,6 +474,8 @@ interface Scope {
 }
 
 let mounts = 0;
+/** Whether this page's console has heard that a page could not be fully checked (its whole check's part never came): said once. */
+let uncheckedSaid = false;
 
 /** The inputs nothing is typed in: their change says a choice, never text to take. */
 const NOT_TYPED = new Set(['checkbox', 'radio', 'file', 'button', 'submit', 'reset', 'image', 'color', 'range', 'hidden']);
@@ -482,10 +500,17 @@ function typeBack(box: HTMLInputElement | HTMLTextAreaElement, text: string) {
   box.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-/** Once the browser has nothing else to do (a moment at the most where it cannot say: WebKit has no requestIdleCallback). */
-function whenIdle(doc: Document): Promise<void> {
-  const view = doc.defaultView as (Window & { requestIdleCallback?(run: () => void, options?: { timeout: number }): number }) | null;
-  return new Promise((resolve) => (view?.requestIdleCallback ? view.requestIdleCallback(() => resolve(), { timeout: 2000 }) : setTimeout(resolve, 0)));
+/** Once the frame now being drawn is painted: the task after it (a moment, where the page paints no frame: out of sight). */
+function afterPaint(doc: Document): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, 100);
+    doc.defaultView?.requestAnimationFrame?.(() =>
+      setTimeout(() => {
+        clearTimeout(timer);
+        resolve();
+      }, 0)
+    );
+  });
 }
 
 /**
@@ -494,10 +519,14 @@ function whenIdle(doc: Document): Promise<void> {
  * Refuses a page the check before the draw refuses (`checkPage`, as 0.35's viewer
  * refused it): says so where the form would be, its problems under "What is
  * wrong", tells `onError` (`part: "page"`), and throws the error, its `issues` on
- * it (`PageRefused`). After the first draw, the whole check (`checkPageWhole`,
- * `validatePage`'s verdict, a part of its own asked for once the browser is idle):
- * what it finds is said once in the console and to `onError` as a warning
- * (`stage: "check"`), the page left drawn — refused from 0.37 (`page.invalid`).
+ * it (`PageRefused`). The whole check (`checkPageWhole`, `validatePage`'s verdict,
+ * a part of its own asked for as the page is mounted — as the one-tag script
+ * starts there) runs as soon as the page is drawn, never delaying the draw: a page
+ * it refuses is taken down — its form replaced by why, `onError` told (`stage:
+ * "check"`), `refused` settled with the `PageRefused` (0.37, `page.invalid`) — and
+ * nothing is written through the page before it has run (`heldWrites`). Where its
+ * part cannot come, the page stays drawn, said once in the console, to `onError`
+ * as a warning and over the page; its writes go on.
  */
 export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHandle {
   // Its own copy: setTokens changes what the dialogs it opens later wear, never the app's object.
@@ -509,6 +538,12 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const checked = checkPage(options.page, checks);
   // Refused: why, where the form would be — never a blank area — onError told, and thrown (refused.ts).
   if (!checked.ok) throw showRefused(host, options, checked.issues);
+  /** The whole check's run, once it is asked for: settled as it passes (or cannot come), rejected with the page's refusal. */
+  let checkSettled: Promise<void> | null = null;
+  /** What the whole check said: nothing yet; passed (or its part could not come: `unchecked`); refused, with its error. */
+  let verdict: { refused: PageRefused | null } | null = null;
+  let refusedNow!: (error: PageRefused | null) => void;
+  const refused = new Promise<PageRefused | null>((resolve) => (refusedNow = resolve));
   // The page's own words in its language first; the app's translator over what is left.
   const tag = options.locale ?? checked.page.language;
   const localized = tag ? localizePage(checked.page, tag) : checked.page;
@@ -531,7 +566,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   const preferences = options.preferences ?? browserPreferences(undefined, options.user?.id);
   // What it opens — dialogs, panels, a page in its place — taken away with it (`destroy()`).
   const owned = new AbortController();
-  const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone), owned.signal);
+  // Words with Retry (a press's dialog whose part could not come) are the viewer's own, as a press's steps' are.
+  const dialogs = pageDialogs(options, (message, tone, act) => (act ? say(message, tone, undefined, act) : actionHost.say(message, tone)), owned.signal);
   const ownsForm = !options.form;
   // Read as each word is drawn: a part's words are there once it has come (the one-tag script's).
   const labels: ViewerLabels = viewerWords(locale, options.labels);
@@ -549,8 +585,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * made elsewhere (`form`) keeps the host it was made with.
    */
   const actionHost: ActionHost = {
+    // A page opened in a dialog, a panel or this form's place: the acts part's (open.ts), as the run that asks is.
     open: (request) =>
-      openPage(
+      withActs((part) => part.openPage(
         {
           options,
           place: host,
@@ -564,12 +601,14 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
           leave: () => form.leave(),
           leaveNow: () => form.leaveNow(),
           signal: owned.signal,
+          mount: mountViewer,
         },
         request
-      ),
+      ), doc),
     say: (message, tone, undo) => say(message, tone, undo),
     // A question that lets the person's work go is the viewer's own, worded Discard, the focus on Cancel.
-    ask: (message, how) => (how?.discard ? letGoAsked(message) : confirm(message, how)),
+    // The app's confirm answered as it is given (`answerOf`): every question the viewer asks goes through here.
+    ask: (message, how) => (how?.discard ? letGoAsked(message) : answerOf(confirm(message, how))),
     show: (target) => {
       const show = tabs.get(target);
       if (!show?.()) throw new Error(`No tab "${target}" can be shown here`);
@@ -628,7 +667,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // Every request this viewer makes of its source — its record's load, its lists' rows, a map's places, its sends —
   // under one deadline (`timeout`, 30 s unless the app says, 0 for none: deadline.ts in @fieldia/core), its form's and
   // its lists' the same source: a request past it ends its wait as failed, with Retry.
-  const dataSource = withDeadlines(options.dataSource, options.timeout, (options.messages ?? MESSAGES[locale]).noAnswer, options.scheduler);
+  // Every write through the page — a save, a send, an upload, a server draft — held until its whole check has run, refused
+  // with the page where it refuses it (held-writes.ts).
+  const dataSource = withDeadlines(heldWrites(options.dataSource, () => checkedNow()), options.timeout, (options.messages ?? MESSAGES[locale]).noAnswer, options.scheduler);
   const formOptions: FormOptions = {
     ...options,
     ...(dataSource ? { dataSource } : {}),
@@ -727,7 +768,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * "Discard your changes?", or the form's words for it: Discard to let the person's work go, the focus on Cancel. One
    * at a time: every way out taken while it is asked gets its answer; one taken after it is answered asks again.
    */
-  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, { yes: labels.discard, ended: () => (discarding = null) }));
+  const letGoAsked = (message = sentence(labels.discardChangesNoun, labels.discardChanges)) => (discarding ??= dialogConfirm(message, { yes: labels.discard, discard: true, ended: () => (discarding = null) }));
   const say = sayer(root, el, labels);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
@@ -740,24 +781,33 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
    * A press runs its steps one run at a time: the button busy meanwhile, and
    * not pressed again. What earlier presses said goes as it starts: its own
    * words speak for what is done now. A check or a save that stops it takes
-   * the focus to the first problem, and says which fields, as Save does.
+   * the focus to the first problem, and says which fields, as Save does. Steps
+   * whose engine could not come (the acts part) did nothing: said with Retry,
+   * which presses it again.
    */
   async function press(button: HTMLElement, run: () => Promise<RunResult>) {
     if (button.hasAttribute('aria-busy')) return;
     say.clear();
+    pressing++;
     // Its wait (`action`): the button busy, its ring drawn after the delay and kept its minimum — or over the form, as
     // the page says, the button busy all the same.
     const wait = startAction(button);
     const ownBusy = !wait || acting !== 'button';
     if (ownBusy) button.setAttribute('aria-busy', 'true');
     button.setAttribute('aria-disabled', 'true');
+    // Its steps' engine on its way (the acts part): no quick answer, so its ring turns at once, as every press's that
+    // waits on a part (`pressWait`); and a press of what draws no ring of its own (a stat button) waits as they do.
+    const parted = formActsPart.loaded && button.classList.contains('fd-button') ? null : pressWait(button);
     try {
-      const { reason } = await run();
+      const { reason, message } = await run();
       if (reason === 'check' || reason === 'save') {
         if (!form.getState().saveProblem) announce(checkText(form.getState()), true);
         focusFirstProblem();
       }
+      if (reason === 'cannot' && !formActsPart.loaded) say(message ?? '', 'warning', undefined, { label: labels.retry, run: () => void press(button, run) });
     } finally {
+      pressing--;
+      parted?.();
       if (ownBusy) button.removeAttribute('aria-busy');
       button.removeAttribute('aria-disabled');
       endAction(wait);
@@ -765,6 +815,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   }
   /** The wait of a save or of a button's steps going on: one at a time. */
   let actionWait: Wait | null = null;
+  /** The presses going: a run of theirs that could not get its engine is said by the press, with Retry. */
+  let pressing = 0;
   /** The wait for the page and its record, then for each load of it (`first`, `refresh`): made as the viewer goes. */
   let recordWait: Wait | null = null;
   /** A save's or a button's steps' wait: on the button pressed, or over the form where the page draws it there. */
@@ -1875,7 +1927,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
               ? async (model, request) => {
                   // The page's id, else the model's name — as where the app gives none, so where its page cannot come.
                   const asked = { ...request, page: (await Promise.resolve(findPage(options, { model })).catch(() => null))?.id ?? model };
-                  return (options.host?.open ? options.host.open(asked) : options.onOpen?.(asked)) ?? null;
+                  return answerOf((options.host?.open ? options.host.open(asked) : options.onOpen?.(asked)) ?? null);
                 }
               : undefined,
           recordsOf: modelRecords,
@@ -2252,7 +2304,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   });
 
   // Save safety, over the record: someone else's save first (Reload, Keep mine), the changes Reload set aside, a record only to read.
-  const safety = saveSafety({ doc, el, form, page, labels, locale, tag, icons: options.icons, fill, announce, root: () => root, discard: () => letGoAsked() });
+  const safety = saveSafety({ doc, el, form, page, labels, locale, tag, icons: options.icons, fill, announce, root: () => root, discard: () => letGoAsked(), unloaded: partUnloaded });
   updaters.push(safety.update);
   // Possible duplicates (`duplicates`): records like this one, asked of the source as it is typed and saved, said under
   // the fields they matched on — in a part of their own, asked for where the page names fields and its source can
@@ -2645,85 +2697,11 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       setHidden(discard, !dirty);
     });
     const header = el('div', { class: 'fd-header' }, actions);
-    const underTitle = node.statusbar?.position === 'title';
-    if (node.statusbar && !underTitle) header.append(statusbar(node.statusbar));
-
-    const card = el('div', { class: 'fd-card' });
-    const ribbons = [...(node.ribbon ? [node.ribbon] : []), ...(node.ribbons ?? [])];
-    if (ribbons.length) {
-      // The ribbons are clipped to the card's corner by their own frame, so the card itself never clips: lists open past it.
-      const frame = el('div', { class: 'fd-ribbon-frame' });
-      const drawn = ribbons.map((ribbon) => {
-        const element = el('div', { class: `fd-ribbon fd-tone-${ribbon.tone ?? 'muted'}`, 'data-node': ribbon.id, title: plainWords(ribbon.tooltip) }, plainWords(ribbon.label));
-        frame.append(element);
-        return { ribbon, element };
-      });
-      // One corner, one ribbon: the first whose condition holds; its words from a field when the field holds any.
-      updaters.push((state) => {
-        let shown = false;
-        for (const { ribbon, element } of drawn) {
-          const show: boolean = !shown && !form.node(ribbon.id).invisible;
-          shown ||= show;
-          setHidden(element, !show);
-          if (!show) continue;
-          const from = ribbon.labelField ? displayValue(page.fields[ribbon.labelField] as LineField, state.values[ribbon.labelField], state.values, locale) : '';
-          setText(element, from || plainWords(ribbon.label));
-        }
-      });
-      card.append(frame);
-    }
-    if (node.statButtons?.length) {
-      const stats = el('div', { class: 'fd-stats' });
-      /** A field's value as the field shows it: money with its currency, a date, a count grouped. */
-      const shownValue = (name: string | undefined, values: Values) =>
-        name && page.fields[name] ? displayValue(page.fields[name] as LineField, values[name], values, locale) : '';
-      for (const stat of node.statButtons) {
-        const value = el('span', { class: 'fd-stat-value' });
-        const label = el('span', { class: 'fd-stat-label' }, plainWords(stat.label));
-        // A second value with words of its own: the two one over the other, each after its words.
-        const second = stat.secondField && stat.secondLabel !== undefined ? { value: el('span', { class: 'fd-stat-value' }), label: el('span', { class: 'fd-stat-label' }, plainWords(stat.secondLabel)) } : null;
-        const icon = drawIcon(doc, stat.icon, options.icons);
-        const words = second
-          ? el('span', { class: 'fd-stat-words fd-stat-pair' }, el('span', { class: 'fd-stat-row' }, label, value), el('span', { class: 'fd-stat-row' }, second.label, second.value))
-          : el('span', { class: 'fd-stat-words' }, value, label);
-        // Its help, as Flectra's help=: its tooltip, and its description for a screen reader — never its name.
-        const helpId = stat.help ? uid(`${stat.id}-help`) : undefined;
-        const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id, title: plainWords(stat.help) || undefined, 'aria-describedby': helpId }, ...(icon ? [icon, words] : [words]));
-        if (helpId) stats.append(el('span', { class: 'fd-sr-only', id: helpId }, plainWords(stat.help as string)));
-        button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
-        updaters.push((state) => {
-          setHidden(button, form.node(stat.id).invisible);
-          const values = state.values as Values;
-          const unit = shownValue(stat.unitField, values) || plainWords(stat.unit) || '';
-          const first = shownValue(stat.field, values);
-          const other = shownValue(stat.secondField, values);
-          if (second) {
-            setText(value, first);
-            setText(second.value, [other, unit].filter(Boolean).join(' '));
-          } else setText(value, [[first, other].filter(Boolean).join(' / '), first || other ? unit : ''].filter(Boolean).join(' '));
-          setText(label, shownValue(stat.labelField, values) || plainWords(stat.label));
-        });
-        stats.append(button);
-      }
-      // No empty row while every button is hidden, as with the badges.
-      updaters.push(() => {
-        setHidden(stats, [...stats.querySelectorAll<HTMLElement>(':scope > .fd-stat')].every((stat) => stat.hidden));
-      });
-      card.append(stats);
-    }
-    card.append(...alertBoxes(node), ...(approvalBand ? [approvalBand] : []));
-    if (node.badges?.length) {
-      const badges = el('div', { class: 'fd-badges' });
-      for (const badge of node.badges) {
-        const chip = el('span', { class: `fd-badge fd-tone-${badge.tone ?? 'muted'}`, 'data-node': badge.id }, ...withIcon(badge.icon, plainWords(badge.label)));
-        hideWhen(chip, badge.id);
-        badges.append(chip);
-      }
-      // Their row with them: shown or hidden as their conditions say, when they are (shownAsItsCondition).
-      const all = node.badges;
-      updaters.push(() => hiddenAfterPress(badges, () => all.every((badge) => form.node(badge.id).invisible)));
-      card.append(badges);
-    }
+    // Its furniture's places — the statusbar in the header bar or under the title, the ribbons and stat buttons at the
+    // card's top, its alerts, its badges, the attachment beside it: drawn by the sheet part (`furnish`).
+    const at = furniturePlaces();
+    header.append(at.header);
+    const card = el('div', { class: 'fd-card' }, at.top, at.alerts, ...(approvalBand ? [approvalBand] : []), at.badges);
     if (node.title) {
       const title = el('div', { class: 'fd-title' });
       // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
@@ -2753,8 +2731,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       }
       card.append(row);
     }
-    if (node.statusbar && underTitle) card.append(el('div', { class: 'fd-title-statusbar' }, statusbar(node.statusbar)));
-    card.append(grid(node.children, 1, top(false)));
+    card.append(at.underTitle, grid(node.children, 1, top(false)));
     if (own) card.append(own);
     if (atFoot && options.showActions !== false) {
       card.append(foot);
@@ -2763,15 +2740,9 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
       });
     }
 
-    const layout = el('div', { class: 'fd-sheet-layout' }, card);
-    if (node.attachmentPreview) {
-      // Beside the sheet on a wide form, the side panel then under the sheet; under the sheet on a narrow one.
-      const preview = attachmentPreview({ doc, el, form, page, node: node.attachmentPreview, dataSource, labels, fill, unloaded: () => partUnloaded() });
-      layout.classList.add('fd-has-preview');
-      layout.append(preview.element);
-      updaters.push(preview.update);
-      cleanups.push(preview.destroy);
-    }
+    const layout = el('div', { class: 'fd-sheet-layout' }, card, at.beside);
+    // Beside the sheet on a wide form, the side panel then under the sheet; under the sheet on a narrow one.
+    if (node.attachmentPreview) layout.classList.add('fd-has-preview');
     if (node.sidePanel) {
       layout.classList.add('fd-has-side');
       if (node.sidePanelBeside) layout.setAttribute('data-side-beside', node.sidePanelBeside);
@@ -2781,40 +2752,56 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     // AI help's Fill from text among the record's buttons, the review of what it proposed over the card.
     if (assistKit) actions.append(assistKit.fill);
     pageBox.append(...(bar ? [bar] : []), header, ...(assistKit ? [assistKit.bar] : []), layout);
+    furnish(node, at);
     return pageBox;
   }
 
-  /** The sheet's alerts: its words with the values they name, or a field's words while it holds any; its buttons after them, as links unless styled. */
-  function alertBoxes(node: SheetNode): HTMLElement[] {
-    return (node.alerts ?? []).map((alert) => {
-      const words = valueWords(doc, page.fields, alert.message, locale, answersPart.loaded && asSaid);
-      const message = el('span', { class: 'fd-alert-message' }, ...words.nodes);
-      let fromField = false;
-      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, message);
-      if (alert.buttons?.length) box.append(el('span', { class: 'fd-alert-actions' }, ...alert.buttons.map((button) => buttonItem({ ...button, style: button.style ?? 'link' }))));
-      updaters.push((state) => {
-        words.update(state.values);
-        const from = alert.messageField ? state.values[alert.messageField] : null;
-        const said = typeof from === 'string' ? from.trim() : '';
-        if (said) setText(message, said);
-        else if (fromField) message.replaceChildren(...words.nodes);
-        fromField = !!said;
-      });
-      if (alert.dismissible) {
-        // Closed, it stays closed while the page is open, whatever its condition does.
-        let dismissed = false;
-        const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': labels.dismiss }, '×');
-        close.addEventListener('click', () => {
-          dismissed = true;
-          box.hidden = true;
-        });
-        box.append(close);
-        updaters.push(() => {
-          setHidden(box, dismissed || form.node(alert.id).invisible);
-        });
-      } else hideWhen(box, alert.id);
-      return box;
-    });
+  /** Where a sheet's furniture goes, each place marked until it is drawn there (`furnish`). */
+  const furniturePlaces = (): Record<keyof Furniture, Text> => ({ header: doc.createTextNode(''), top: doc.createTextNode(''), alerts: doc.createTextNode(''), badges: doc.createTextNode(''), underTitle: doc.createTextNode(''), beside: doc.createTextNode('') });
+  /** What a sheet's furniture is drawn with: the viewer's own, as a record's head's is. */
+  const sheetKit = (): SheetKit => ({
+    doc,
+    el,
+    form,
+    page,
+    labels,
+    locale,
+    icons: options.icons,
+    dataSource,
+    uid,
+    fill,
+    withIcon,
+    press,
+    buttonItem,
+    hideWhen,
+    hiddenAfterPress,
+    watch: (update) => updaters.push(update),
+    cleanups,
+    asSaid: () => (answersPart.loaded ? asSaid : undefined),
+    widget: (node, id) => createWidget({ form, name: node.field, field: page.fields[node.field], node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report }, options.widgets),
+    locked: () => locked,
+    unloaded: () => partUnloaded(),
+  });
+  /**
+   * A sheet's furniture (sheet-furniture.ts), the sheet part's, in its places: at once where the part has come — a page
+   * that waits for other parts waits for it with them, drawn whole — else as it comes (a page that waits for no other part
+   * is drawn at once without it: `DRAWN_IN_PLACE`). Where it cannot come, the sheet works without it, said over the page.
+   */
+  function furnish(node: SheetNode, at: Record<keyof Furniture, Text>) {
+    if (!furnished(node)) return;
+    const put = (part: SheetPart) => {
+      const furniture = node.head ? { alerts: part.sheetAlerts(sheetKit(), node) } : part.sheetFurniture(sheetKit(), node);
+      for (const [where, mark] of Object.entries(at) as [keyof Furniture, Text][]) mark.replaceWith(...((furniture as Partial<Furniture>)[where] ?? []));
+    };
+    if (sheetPart.loaded) return put(sheetPart.loaded);
+    void sheetPart.load().then(
+      (part) => {
+        if (gone) return;
+        put(part);
+        if (pageDrawn) renderNow();
+      },
+      () => void (!gone && partUnloaded())
+    );
   }
 
   /**
@@ -2861,32 +2848,15 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     } finally {
       headNow = null;
     }
-    const body = el('div', { class: 'fd-head-body' }, ...alertBoxes(node), ...(approvalBand ? [approvalBand] : []), parts);
+    // Its alerts, the sheet part's (`furnish`).
+    const at = furniturePlaces();
+    const body = el('div', { class: 'fd-head-body' }, at.alerts, ...(approvalBand ? [approvalBand] : []), parts);
     // The side panel beside the body on a wide page; a dialog leaves it to the full page.
     const side = node.sidePanel ? el('aside', { class: 'fd-side' }, slotItem(node.sidePanel)) : null;
     const bar = topBar(node.toolbar ? { ...node.toolbar, menu: undefined } : undefined);
     pageBox.append(...(bar ? [bar] : []), head.element, side ? el('div', { class: 'fd-head-layout' }, body, side) : body);
+    furnish(node, at);
     return pageBox;
-  }
-
-  /** The sheet header's statusbar: the same widget a form can place anywhere. */
-  function statusbar(config: NonNullable<SheetNode['statusbar']>): HTMLElement {
-    const def = page.fields[config.field];
-    const barOptions: { [key: string]: JsonValue } = { clickable: config.clickable === true };
-    if (config.visibleStates) barOptions['visibleStates'] = config.visibleStates;
-    for (const key of ['durationsField', 'fold', 'saves'] as const) if (config[key] !== undefined) barOptions[key] = config[key];
-    const node: FieldNode = { type: 'field', id: '#statusbar', field: config.field, widget: 'statusbar', options: barOptions };
-    const widget = createWidget(
-      { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale, dialogs, onError: report },
-      options.widgets
-    );
-    if (widget.destroy) cleanups.push(() => widget.destroy?.());
-    updaters.push((state) => {
-      // Hidden while its own condition holds, or from people outside its roles.
-      setHidden(widget.element, form.node('#statusbar').invisible);
-      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly || locked, required: false, invalid: false });
-    });
-    return widget.element;
   }
 
   let wizardForward: (() => Promise<void>) | null = null;
@@ -3033,12 +3003,88 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     for (let now = checkPage(options.page, checks); ; now = checkPage(options.page, checks)) {
       if (!now.ok) {
         root.remove();
-        throw showRefused(host, options, now.issues);
+        const error = showRefused(host, options, now.issues);
+        refusedNow(error);
+        throw error;
       }
       const owed = owedParts(now.later).filter((part) => !asked.has(part));
       if (!owed.length || gone) return;
       for (const part of owed) asked.add(part);
       await settleParts(owed);
+    }
+  }
+  /** The page's whole check, run once: what every write through the page waits for (held-writes.ts). */
+  function wholeChecked(): Promise<void> {
+    return (checkSettled ??= runWholeCheck());
+  }
+  /**
+   * What a write through the page waits for: nothing once the whole check has passed (or its part could not come); the
+   * page's refusal where it refused it; else the check, run at once where it can be — the page drawn, its part in — so a
+   * write goes in the same turn, as ever, on a page that passes; or waited for.
+   */
+  function checkedNow(): Promise<void> | null {
+    if (!verdict && pageDrawn && !gone && pageCheckPart.loaded) judge(pageCheckPart.loaded.wholeCheck(options.page, checks));
+    if (verdict) return verdict.refused ? Promise.reject(verdict.refused) : null;
+    return wholeChecked();
+  }
+  /** The whole check's verdict, once: a page it refuses taken down — why in its place, onError told, `refused` settled. */
+  function judge(whole: PageValidation): void {
+    if (verdict || gone) return;
+    if (whole.ok) {
+      verdict = { refused: null };
+      refusedNow(null);
+      return;
+    }
+    takeAway();
+    const error = showRefused(host, options, whole.issues, 'check');
+    verdict = { refused: error };
+    refusedNow(error);
+  }
+  /**
+   * The whole check (`validatePage`'s verdict, its part `fieldia.check.js` or a chunk of its own), once the page is drawn
+   * — a page refused before it was drawn is refused so — taking down a page it refuses (`judge`), and every write held
+   * meanwhile refused with it. Where its part cannot come, the page stays drawn, said, and its writes go on: the checks
+   * the main script carries — every safety check among them — passed.
+   */
+  async function runWholeCheck(): Promise<void> {
+    // Never within the mount: its drawing first, as the mount left it.
+    await Promise.resolve();
+    const before = await drawn.then(
+      () => null,
+      (error: PageRefused) => error
+    );
+    if (before) throw before;
+    if (gone) return;
+    let part: Awaited<ReturnType<typeof pageCheckPart.load>>;
+    try {
+      part = await pageCheckPart.load();
+    } catch {
+      if (!gone && !verdict) {
+        verdict = { refused: null };
+        unchecked();
+      }
+      refusedNow(null);
+      return;
+    }
+    judge(part.wholeCheck(options.page, checks));
+    if (verdict?.refused) throw verdict.refused;
+  }
+  /**
+   * The whole check's part could not come (the network, or bytes not those it was built with): the page stays drawn on
+   * the checks fieldia.js carries — its outline, every name and condition, and every address, file and bound, checked as
+   * it is used — said once in the console, to `onError` as a warning, and over the page as any part that could not load,
+   * with its reload. What only the whole check finds is authoring's mistakes, which `validatePage` and the designer find
+   * where pages are made: an availability failure takes no form down.
+   */
+  function unchecked(): void {
+    partUnloaded();
+    const error = new Error('This page could not be fully checked: fieldia.check.js could not be loaded. It is drawn on the checks fieldia.js carries.');
+    if (!uncheckedSaid) console.warn(`[Fieldia] ${error.message}`);
+    uncheckedSaid = true;
+    try {
+      options.onError?.(error, { stage: 'check', part: 'page', warning: true });
+    } catch (thrown) {
+      console.error('[Fieldia] onError threw', thrown);
     }
   }
   /** What needs the page drawn — a list's rows to open or ask for again — at once when it is, else once it is. */
@@ -3047,7 +3093,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // The parts its check owes (the one-tag script's), with the page's own: the check runs again once they came.
   // The app's own functions are called through the functions part: a page whose formulas call one waits for it.
   const appCalls = options.functions && callsPartFunctions(page, Object.keys(options.functions)) ? [functionsPart] : [];
-  const owed = [...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded);
+  // A part the page can be drawn without, drawing itself in place as it comes, waited for only beside others (`waitedFor`).
+  const owed = waitedFor([...new Set([...partsFor(page, options.widgets, options.slots), ...(options.resume && !page.limits && !page.continueLater ? [limitsPart] : []), ...appCalls, ...owedParts(checked.later)])].filter((part) => !part.loaded), page);
   // The loading part — a skeleton, the bars, the spinners — with the page's own parts where it waits for any and will
   // then wait for its data drawn from it (its record, a list's rows, a related list's, a map's, a saved form's), so that
   // wait is drawn as it says: asked for alongside them, it delays none. And where the app's own way names a look of its.
@@ -3100,23 +3147,20 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // (look-parts.ts in @fieldia/widgets): what the handle says is drawn settles once they have come too.
   const worn = [...(theme ? [themesPart] : []), ...(root.getAttribute('data-fd-skin') === 'quiet' ? [quietPart] : [])].filter((part) => !part.loaded && !awaited.includes(part));
   const dressed = worn.length ? Promise.all([drawn, settleParts(worn)]).then(() => void (worn.some((part) => !part.loaded) && partUnloaded())) : drawn;
-  // The whole check after the first draw, never before it (page-check.ts): its part asked for once the browser is idle,
-  // what it finds said — once in the console, to onError as a warning — and the page left drawn, as 0.35 drew it.
-  // A part that cannot come says nothing: the page was checked as 0.35 checked it.
-  drawn.then(() => whenIdle(doc)).then(
-    async () => {
-      if (gone) return;
-      const whole = await checkPageWhole(options.page, checks);
-      if (whole.ok || gone) return;
-      const error = pageInvalid(whole.issues);
-      try {
-        options.onError?.(error, { stage: 'check', part: 'page', warning: true });
-      } catch (thrown) {
-        console.error('[Fieldia] onError threw', thrown);
-      }
-    },
-    () => undefined
-  ).catch(() => undefined);
+  // ---- the whole check, as soon as the page is drawn (0.37: page-check.ts) ---------------------------------------------
+  // Asked for as soon as no page waits for its parts (askForCheck: the one-tag script asked as it started, where none did),
+  // run once the page is drawn and painted — never delaying the draw — or sooner where a write asks first, which waits
+  // for it (held-writes.ts).
+  if (awaited.length) askForCheck(drawn);
+  else queueMicrotask(() => askForCheck());
+  // And right after it, what no page draws from: its dialogs, a page opened, its questions (the acts part).
+  askAfterCheck(askActs);
+  // Sooner, with its parts, where it keeps its sends without signal and acts (`asksActs`): never waited for.
+  if (asksActs(page)) void actsPart.load().catch(() => undefined);
+  void drawn
+    .then(() => afterPaint(doc))
+    .then(() => wholeChecked())
+    .catch(() => undefined);
   // On paper, the app's logo and words, the record's title and the day over the page, its footer under it — its look
   // the print part's, as a person shows they mean to print (print.ts).
   const paper = paperFor({
@@ -3373,47 +3417,22 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   // ---- confirmation dialog -----------------------------------------------------
 
   /**
-   * A question with Cancel and its Yes, or with `how.alone` a notice with OK
-   * alone. A question opens with the focus on Cancel — a button's `confirm`,
-   * an `ask` step, Archive, Delete and "Discard your changes?" alike — so an
-   * Enter meant for the form, or a second press of the key that asked, never
-   * answers Yes by itself; a notice, on OK. `how.yes` words Yes as what it
-   * does (the button's own words, Archive, Discard), OK without it;
-   * `how.ended` is told the moment it is answered, before the promise settles.
+   * A question with Cancel and its Yes, or with `how.alone` a notice with OK alone: the viewer's own box (ask-box.ts), the
+   * acts part's — asked at once once it has come, else once it does (`withActs`). Where it cannot come, nothing is done
+   * unasked: "Discard your changes?" is asked by the browser's own question, the one thing left that can ask (a frame
+   * that may not ask answers Cancel: the work is kept); any other question is answered No, the press said not done; a
+   * notice is said in words.
    */
   function dialogConfirm(message: string, how: AskHow & { alone?: boolean; ended?: () => void } = {}): Promise<boolean> {
-    const withCancel = !how.alone;
-    return new Promise((resolve) => {
-      const text = el('p', { id: `${prefix}-confirm` }, message);
-      const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
-      const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, how.yes || labels.ok);
-      const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
-      const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
-      const doc = root.ownerDocument;
-      const opener = doc.activeElement as HTMLElement | null;
-      const close = (answer: boolean) => {
-        backdrop.remove();
-        // Back to what had focus when it asked; or, when that let go of it — Save hides while it saves — to Save, shown again.
-        const shown = (e: HTMLElement | null) => !!e && e !== doc.body && e.isConnected && !e.closest('[hidden]');
-        const back = shown(opener) ? opener : root.querySelector<HTMLElement>('button[type="submit"]:not([hidden])');
-        back?.focus();
-        how.ended?.();
-        resolve(answer);
-      };
-      cancel.addEventListener('click', () => close(false));
-      ok.addEventListener('click', () => close(true));
-      // Its keys are its own: Escape answers No here, and closes no dialog or panel under it.
-      backdrop.addEventListener('keydown', (event) => {
-        event.stopPropagation();
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          close(false);
-        } else keepTabIn(dialog, event);
-      });
-      // Asked where it is seen: over a page opened in this one's place (its breadcrumb leaving this record), in that one.
-      const over = root.hidden ? [...(root.parentElement?.children ?? [])].reverse().find((child): child is HTMLElement => child !== root && child.matches('form.fd-form') && !(child as HTMLElement).hidden) : undefined;
-      (over ?? root).append(backdrop);
-      (withCancel ? cancel : ok).focus();
+    const asking = { root, el, labels, prefix };
+    // Come: asked in this turn, answered as it is.
+    if (actsPart.loaded) return actsPart.loaded.askBox(asking, message, how);
+    return withActs((part) => part.askBox(asking, message, how), doc).catch(() => {
+      const words = options.messages ?? MESSAGES[locale] ?? MESSAGES.en;
+      how.ended?.();
+      if (how.alone) say(message, 'danger');
+      else if (!how.discard) say(fill(words.guardNotDone, { part: words.guardSteps, again: againWords(formActsPart) }), 'warning');
+      return how.discard ? doc.defaultView?.confirm(message) === true : !!how.alone;
     });
   }
 
@@ -3528,6 +3547,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   cleanups.push(
     form.on('run', ({ result }) => {
       if (result.reason === 'cannot' && result.message !== undefined && result.message === form.getState().loadProblem?.message) return;
+      if (result.reason === 'cannot' && !formActsPart.loaded && pressing) return;
       if (result.reason === 'cannot' || (result.reason === 'app' && result.error !== undefined)) actionHost.say(result.message ?? '', result.reason === 'app' ? 'danger' : 'warning');
     })
   );
@@ -3569,7 +3589,7 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     for (const [start, event] of early) tell(start, event);
   });
 
-  return {
+  const handle: ViewerHandle = {
     form,
     element: root,
     setSkin(skin) {
@@ -3631,21 +3651,30 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
     run: (steps, context) => form.run(steps, context),
     print: () => afterDrawing(() => paper.print()),
     drawn: dressed,
+    refused,
     destroy() {
-      gone = true;
-      owned.abort();
-      unsubscribe();
-      for (const cleanup of cleanups) {
-        try {
-          cleanup();
-        } catch (error) {
-          report(error, { stage: 'remove', part: 'page' });
-        }
-      }
-      root.remove();
-      if (ownsForm) form.dispose();
+      takeAway();
+      // Taken away before its whole check ran: refused by none.
+      refusedNow(null);
     },
   };
+  /** The viewer taken away: what it listens to, draws and holds let go, its element out of the page. */
+  function takeAway(): void {
+    if (gone) return;
+    gone = true;
+    owned.abort();
+    unsubscribe();
+    for (const cleanup of cleanups) {
+      try {
+        cleanup();
+      } catch (error) {
+        report(error, { stage: 'remove', part: 'page' });
+      }
+    }
+    root.remove();
+    if (ownsForm) form.dispose();
+  }
+  return handle;
 }
 
 /** What a field is worked with: where its access key is said. */

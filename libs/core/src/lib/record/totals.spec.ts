@@ -130,6 +130,27 @@ describe('a period in a list’s search, counted again each time it asks', () =>
     ]);
   });
 
+  it('joins named filters of two groups, each group’s any of which hold, and both groups', async () => {
+    const grouped: ListNode = { ...list, filters: list.filters!.map((filter) => ({ ...filter, group: filter.id === 'cairo' ? 'where' : 'when' })) };
+    const facets: Facet[] = [{ kind: 'filters', ids: ['this_month', 'cairo', 'overdue'], labels: ['This month', 'Cairo', 'Overdue'] }];
+    const filter = facetsToFilter(facets, grouped, on('2026-10-14'));
+    expect(filter).toEqual([
+      {
+        any: [
+          { all: [{ field: 'date', op: '>=', value: '2026-10-01' }, { field: 'date', op: '<', value: '2026-11-01' }] },
+          { all: [{ field: 'city', op: '!=', value: 'Giza' }, { field: 'due', op: '<', value: '2026-10-14' }] },
+        ],
+      },
+      { field: 'city', op: '=', value: 'Cairo' },
+    ]);
+    // This month or overdue, and in Cairo: INV/002 alone (INV/001 is September's and not yet due).
+    const found = await source().totals({ model: 'invoice', filter, totals: { amount: ['sum'] }, currencies: { amount: 'currency_id' } });
+    expect(found).toMatchObject({ count: 1, totals: { amount: { sum: 2500 } } });
+    // The same filters naming no group: any of them, as before.
+    const any = await source().totals({ model: 'invoice', filter: facetsToFilter(facets, list, on('2026-10-14')), totals: { amount: ['sum'] } });
+    expect(any.count).toBe(4);
+  });
+
   it('counts a custom filter’s period again, as a favourite kept from last month is this month', () => {
     const lastMonth: ResolvedFilter[] = [{ field: 'date', op: '>=', value: '2026-09-01' }, { field: 'date', op: '<', value: '2026-10-01' }];
     const kept: Facet = { kind: 'custom', label: 'Date: This month', period: { field: 'date', is: 'thisMonth' }, filter: lastMonth };

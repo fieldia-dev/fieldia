@@ -155,6 +155,7 @@ export const es: WidgetLabels = {
   recordingNow: 'Grabando…',
   recordStarting: 'Iniciando la grabación…',
   recordNothing: 'No se grabó nada: la grabación aún no había empezado. Pulse Iniciar grabación para intentarlo de nuevo.',
+  recordTooShort: 'No se guardó nada: la grabación fue demasiado corta. Pulse Iniciar grabación para intentarlo de nuevo.',
   recordStoppedAt: 'Se detuvo en {time}, la duración máxima de una grabación aquí.',
   recordStoppedSize: 'Se detuvo: la grabación alcanzó el tamaño máximo de archivo que admite este campo.',
   recordDone: 'Grabación de {time}. Reprodúzcala y luego úsela o vuelva a grabar.',

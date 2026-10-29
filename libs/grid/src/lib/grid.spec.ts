@@ -261,6 +261,23 @@ describe('a line in a dialog', () => {
     expect(formLines(form)[1].values).toEqual(expect.objectContaining({ product_id: { id: 3, label: 'Monitor arm' }, price: 749 }));
   });
 
+  it('is titled as one line, as its card names it: by its words, else by its place — never by the table’s plural', async () => {
+    const unnamed = lines.map((line, i) => (i === 1 ? { ...line, values: { ...line.values, product_id: null } } : line));
+    const { box } = await mount(order, unnamed);
+    const title = () => dialogBox()?.querySelector('.fd-form-dialog-title')?.textContent;
+    (box.querySelector('.ag-row[row-index="0"] button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    // The 0.36 walk: a sales order's line was titled "Order lines".
+    expect(title()).toBe('Office chair');
+    footButton('Discard').click();
+    await frames();
+    (box.querySelector('.ag-row[row-index="1"] button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(title()).toBe('Line 2');
+    footButton('Discard').click();
+    await frames();
+  });
+
   it('Discard leaves the line as it was', async () => {
     const { box, form } = await mount();
     (box.querySelector('.ag-row[row-index="0"] button[aria-label="Open line"]') as HTMLButtonElement).click();
@@ -811,6 +828,39 @@ describe('a line being dragged', () => {
     carded.layout.children[0].children[1].cards = 'always';
     const { box } = await mount(carded);
     expect([...box.querySelectorAll('.fd-line-card-title')].map((t) => t.textContent)).toEqual(['Office chair', 'Desk lamp']);
+  });
+
+  it('opens from its card in a dialog titled as the card is: a section by its words, a line just added by what added it', async () => {
+    const carded = JSON.parse(JSON.stringify(ordered));
+    carded.layout.children[0].children[1].cards = 'always';
+    carded.fields['line_ids'].lineKinds = { field: 'display_type', text: 'name' };
+    carded.fields['line_ids'].fields.display_type = { type: 'selection', label: 'Line type', options: [{ value: 'section', label: 'Section' }, { value: 'note', label: 'Note' }] };
+    const section: Line = { key: 's1', values: { display_type: 'section', name: 'Workstations', product_id: null, qty: null, price: null, delivery: null, taxed: false } };
+    const { box } = await mount(carded, [section, ...lines]);
+    const title = () => document.querySelector('.fd-form-dialog .fd-form-dialog-title')?.textContent;
+    const discard = async () => {
+      ([...document.querySelectorAll('.fd-form-dialog-foot button')].find((b) => b.textContent === 'Discard') as HTMLButtonElement).click();
+      await frames();
+    };
+    const cardTitles = () => [...box.querySelectorAll<HTMLButtonElement>('.fd-line-card-title')];
+    cardTitles()[1].click();
+    await frames();
+    expect(title()).toBe('Office chair');
+    await discard();
+    cardTitles()[0].click();
+    await frames();
+    expect(title()).toBe('Workstations');
+    await discard();
+    // Added on a phone, a line opens at once in its own form, titled by the button that added it while it holds no words
+    // yet — never by its place (the 0.37 walk: "Line 11" for Add a question); a section the same.
+    (box.querySelector('button[data-add="line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(title()).toBe('Add a line');
+    await discard();
+    (box.querySelector('button[data-add="section"]') as HTMLButtonElement).click();
+    await frames();
+    expect(title()).toBe('Add a section');
+    await discard();
   });
 
   it('moves as a card by its ↑ and ↓ — a phone has no handle to drag and no Alt key — the focus kept on it, where it went said', async () => {

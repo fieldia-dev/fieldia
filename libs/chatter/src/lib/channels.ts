@@ -1,4 +1,4 @@
-import { fill } from '@fieldia/core';
+import { answerOf, fill } from '@fieldia/core';
 import { drawIcon, fieldiaStyle } from '@fieldia/widgets';
 import type { ChatterContext } from './chatter';
 import type { Channel, ChatterChange, ChatterMessage, Delivery, RecordRef, ReplyChannel } from './source';
@@ -262,7 +262,8 @@ export function liveConversation(context: ChatterContext, options: LiveOptions) 
     const record = context.record();
     if (!record || options.busy() || options.drawn() !== record) return false;
     const still = context.shown();
-    const answer = await source.messages(record);
+    // The source's answer handled as it is given (`answerOf`); one refused changed nothing (`tick`).
+    const answer = await answerOf(source.messages(record));
     if (!still() || options.busy()) return false;
     const before = JSON.stringify(options.messages());
     arrived(merge(answer));

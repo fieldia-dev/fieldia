@@ -1,5 +1,6 @@
 import type { Alert, Badge, ButtonNode, FieldNode, Form, MenuItem, Page, Ribbon, SheetNode, StatButton } from '@fieldia/core';
 import { createWidget, type Widget } from '@fieldia/widgets';
+import { installSheetStyles } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer, HeaderPartKind } from './designer';
 import { builtinKind, wordsOf, type HeaderPart, type MenuItemKind } from './header-commands';
@@ -39,6 +40,8 @@ export interface CanvasHeader {
 
 export function canvasHeader(options: { el: ElementFactory; doc: Document; designer: Designer }): CanvasHeader {
   const { el, doc, designer } = options;
+  // The counters', ribbons' and badges' looks are the sheet part's, as the viewer's sheet wears them (sheet-styles.ts).
+  void installSheetStyles(doc);
   const w = designer.words.canvas;
   const d = designer.words.defaults;
   const NEW_WORDS: Record<HeaderPartKind, string> = { button: d.newButton, stat: d.counter, badge: d.badge, ribbon: d.ribbon, alert: d.alert, menu: d.newMenuAction };

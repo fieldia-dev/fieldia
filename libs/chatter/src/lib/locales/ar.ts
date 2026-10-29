@@ -64,6 +64,7 @@ export const ar: ChatterLabels = {
   search: 'بحث…',
   noOneFound: 'لم يُعثر على أحد',
   couldNotSend: 'لم يُرسل: {reason}',
+  notDone: 'لم يتم: {reason}',
   sendingAfterFile: 'ملف واحد ما زال يُرفع. سيُرسل عند انتهائه.',
   sendingAfterFiles: 'ما زالت الملفات تُرفع: {n}. سيُرسل عند انتهائها.',
   notSentFile: 'لم يُرسل: لم يُرفع {name}. أعد المحاولة أو أزله.',

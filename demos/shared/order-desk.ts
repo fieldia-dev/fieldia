@@ -25,8 +25,8 @@ export function answerAction(request: ActionRequest, locale?: string, told?: Tol
 }
 
 function answerOf(request: ActionRequest, locale?: string): Promise<ActionResult | undefined> | undefined {
-  // The vendor bill's gear menu: a debit note made, a bill printed.
-  const billed = request.id.startsWith('m-') ? answerBill(request) : undefined;
+  // The vendor bill's gear menu: a debit note made, a bill printed; its Confirm, a draft numbered.
+  const billed = request.id.startsWith('m-') || request.action === 'number_bill' ? answerBill(request) : undefined;
   if (billed) return Promise.resolve(billed);
   // The real pages' own actions: each lane's answers (shared/real/).
   // The business widgets' task: its timer's Start and Stop.

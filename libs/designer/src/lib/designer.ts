@@ -301,6 +301,8 @@ export interface QuestionPatch {
   inputmode?: InputMode | '';
   /** Never kept in a draft (the field's `secret`): a PIN, an ID number. A field of the app's model keeps its own. */
   secret?: boolean;
+  /** Kept by a copy of the record (false: the field's `copy: false`, a status, a number). A field of the app's model keeps its own. */
+  copy?: boolean;
 }
 
 /** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
@@ -991,7 +993,10 @@ export function createDesigner(options: {
       // a brace that names no field, said as whose words name what (brace-refusals.ts).
       const refused = draft;
       const braces = checked.issues.map((issue) => braceRefused(refused, issue));
-      issues = checked.issues.map((issue, i) => settingRefusal(issue.path, words) ?? (braces[i] ? braceWords(page, braces[i] as BraceRefused, words) : words.refusals.invalid(issue.path, issue.message)));
+      // Whose words, as they stood before this typing began (the edits a person types merge into one): never the words
+      // half typed on the way to the brace (the 0.37 walk: "Your name (as on the {customer's words name {customer}").
+      const named = merge && merge === mergeKey && past.length ? past[past.length - 1] : page;
+      issues = checked.issues.map((issue, i) => settingRefusal(issue.path, words) ?? (braces[i] ? braceWords(named, braces[i] as BraceRefused, words) : words.refusals.invalid(issue.path, issue.message)));
       refusedEdit = { texts: issues, draft: refused, braces: braces.filter((one): one is BraceRefused => one !== null) };
       notify();
       return false;
@@ -1224,6 +1229,11 @@ export function createDesigner(options: {
           if (patch.secret !== undefined) {
             if (patch.secret) field.secret = true;
             else delete field.secret;
+          }
+          // Copied unless it says not: true leaves nothing written.
+          if (patch.copy !== undefined) {
+            if (patch.copy) delete field.copy;
+            else field.copy = false;
           }
           if (patch.required !== undefined) {
             if (patch.required) field.required = true;

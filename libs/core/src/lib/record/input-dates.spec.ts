@@ -17,7 +17,7 @@ import { MESSAGES } from './messages';
 /** One question on a page of its own, as the form checks it. */
 function ask(field: Record<string, unknown>, node: Partial<FieldNode> = {}, locale: keyof typeof MESSAGES = 'en') {
   const page = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 't',
     data: { kind: 'responses' },
     fields: { x: { label: 'Arrival', ...field } as Field },
@@ -71,7 +71,7 @@ describe('stars and a scale', () => {
 describe('a range’s end', () => {
   function range(end: Record<string, unknown> = {}, type: 'date' | 'datetime' = 'date', required = false) {
     const page = {
-      fieldia: '0.1',
+      fieldia: '0.13',
       id: 'stay',
       data: { kind: 'responses' },
       fields: { from_day: { type, label: 'From' }, to_day: { type, label: 'To', ...end } },
@@ -163,7 +163,7 @@ describe('a date from outside', () => {
 
 describe('the page’s order for dates', () => {
   it('is day, month, year unless the page says month first or year first', () => {
-    const page = { fieldia: '0.1', id: 't', data: { kind: 'responses' }, fields: {}, layout: { type: 'sections', id: 'r', children: [] } } as unknown as Page;
+    const page = { fieldia: '0.13', id: 't', data: { kind: 'responses' }, fields: {}, layout: { type: 'sections', id: 'r', children: [] } } as unknown as Page;
     for (const dateOrder of ['dmy', 'mdy', 'ymd']) expect(validatePage({ ...page, look: { dateOrder } }).ok).toBe(true);
     expect(validatePage({ ...page, look: { dateOrder: 'ydm' } }).ok).toBe(false);
   });
