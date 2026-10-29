@@ -80,6 +80,13 @@ export type UndoPart = typeof UndoModule;
 export const actsPart: Part<ActsPart> = partWith(lazyPart('acts', () => import('./acts-part')), formActsPart);
 /** The viewer's half asked for as the form's is, right after the whole check (`askAfterCheck`): by each viewer as it mounts. */
 export const askActs = (): unknown => actsPart.load();
+/**
+ * Whether a page keeps its sends without signal (`outbox`) and runs steps or asks anywhere — its sends' own
+ * (`on.beforeSave`), a moment's, a button's, a menu item's: a step, the app's action, a question. Its acts part is then
+ * asked for with its parts, while the signal is there — never by the first press, with none, nor once the whole check
+ * came, which may be too late —, its tag written with theirs (`partFiles`); nothing is drawn from it, so none waits for it.
+ */
+export const asksActs = (page: Page): boolean => !!page.outbox && /"(do|action|confirm)":/.test(JSON.stringify([page.on, page.layout]));
 
 /**
  * THE rule for what the acts part draws: at once where it has come, in the same turn; until then the control that asked
@@ -524,7 +531,7 @@ export function phoneColumns(page: Page, list: { columns?: unknown; cells?: unkn
  * the one-tag script's `partTags(page)` gives each with what its own tag carries.
  */
 export function partFiles(page: Page, widgets?: Record<string, WidgetFactory>, slots?: Record<string, { readonly parts?: readonly Part[] }>, loading?: PageLoading): string[] {
-  return withLoadingPart(page, waitedFor(partsFor(page, widgets, slots), page), loading).map((part) => `fieldia.${part.name}.js`);
+  return [...withLoadingPart(page, waitedFor(partsFor(page, widgets, slots), page), loading), ...(asksActs(page) ? [actsPart] : [])].map((part) => `fieldia.${part.name}.js`);
 }
 
 /** A page's parts, the loading part among them where the viewer asks for it with them (`loadingWithParts`): a record's page waits for its record. */

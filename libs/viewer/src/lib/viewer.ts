@@ -94,7 +94,7 @@ import { applyTracks, helpBox, keepTools, loneFieldTools, wordsWithLinks, workHe
 import { installRecordStyles } from './record-styles';
 import type { RecordHead } from './record-head';
 import { isRichButton, nothingToUndo } from './button-parts';
-import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, withActs, actsPart, askActs, waitedFor, furnished, sheetPart, type SheetPart, type HeadPart, type UndoPart } from './viewer-parts';
+import { answersPart, approvalsPart, asksAssist, assistPart, duplicatesPart, headPart, joinDrawings, limitsPart, listPart, loadingWithParts, owedParts, SAID_IN_PLACE, waitsDrawnFromLoading, partsFor, surveyFlowPart, type AssistPart, templatesPart, undoPart, withActs, actsPart, askActs, waitedFor, asksActs, furnished, sheetPart, type SheetPart, type HeadPart, type UndoPart } from './viewer-parts';
 import { undoKeys } from './undo-keys';
 import type { PageJoin } from './joins';
 import { missingJoin } from './join-missing';
@@ -3155,6 +3155,8 @@ export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHand
   else queueMicrotask(() => askForCheck());
   // And right after it, what no page draws from: its dialogs, a page opened, its questions (the acts part).
   askAfterCheck(askActs);
+  // Sooner, with its parts, where it keeps its sends without signal and acts (`asksActs`): never waited for.
+  if (asksActs(page)) void actsPart.load().catch(() => undefined);
   void drawn
     .then(() => afterPaint(doc))
     .then(() => wholeChecked())
