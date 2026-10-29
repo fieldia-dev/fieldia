@@ -87,9 +87,9 @@ export function installZonePromises(): { said: unknown[]; restore(): void } {
           if (value instanceof ZonePromise) {
             own.settled = true;
             (value as ZonePromise<T>).then(
-              (kept) => {
+              (given) => {
                 own.settled = false;
-                yes(kept);
+                yes(given);
               },
               (reason) => {
                 own.settled = false;
