@@ -20,16 +20,21 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "@nx/jest:jest": {
+    "test": {
       "cache": true,
       "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js", "{workspaceRoot}/jest.selectors.js"],
-      "options": {
-        "passWithNoTests": false
-      },
       "configurations": {
         "ci": {
-          "ci": true,
-          "codeCoverage": true
+          "args": "--ci --coverage"
+        }
+      }
+    },
+    "test-angular": {
+      "cache": true,
+      "inputs": ["default", "^production", "{workspaceRoot}/jest.preset.js", "{workspaceRoot}/jest.selectors.js"],
+      "configurations": {
+        "ci": {
+          "args": "--ci --coverage"
         }
       }
     },

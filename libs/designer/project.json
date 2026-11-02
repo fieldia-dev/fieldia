@@ -64,12 +64,12 @@
       }
     },
     "test": {
-      "executor": "@nx/jest:jest",
+      "executor": "nx:run-commands",
       "outputs": [
         "{workspaceRoot}/coverage/{projectRoot}"
       ],
       "options": {
-        "jestConfig": "libs/designer/jest.config.cjs"
+        "command": "jest --config libs/designer/jest.config.cjs"
       },
       "dependsOn": [
         "test-angular"
@@ -92,12 +92,12 @@
       }
     },
     "test-angular": {
-      "executor": "@nx/jest:jest",
+      "executor": "nx:run-commands",
       "outputs": [
         "{workspaceRoot}/coverage/libs/designer-angular"
       ],
       "options": {
-        "jestConfig": "libs/designer/jest.angular.config.cjs"
+        "command": "jest --config libs/designer/jest.angular.config.cjs"
       }
     }
   }
