@@ -42,6 +42,8 @@ export const bar: DesignerWords['bar'] = {
   keepEditing: 'ترمیم جاری رکھیں',
   publishVersion: (version) => `ورژن ${version} شائع کریں`,
   publishFailed: 'اسے شائع نہیں کیا جا سکا۔',
+  notPublished: (version) => `ورژن ${version} شائع نہیں کیا جا سکا`,
+  notSaved: 'آپ کی تبدیلیاں محفوظ نہیں کی جا سکیں',
   close: 'بند کریں',
   publishQuestion: (version) => `ورژن ${version} شائع کریں؟`,
   changesSince: (n, version) => `ورژن ${version} کے بعد سے ${plural('ur', n, { one: '# تبدیلی', other: '# تبدیلیاں' })}:`,

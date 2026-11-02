@@ -6,6 +6,8 @@ import { pageChanges, type PageCheck } from './page-checks';
 import { DATE_TAGS, type DesignerWords } from './designer-words';
 import { speakLike } from './chrome-language';
 import { intlFormat, nameShowing } from '@fieldia/core';
+import { reasonOf } from './look-hub';
+import { Refusal } from './refusal';
 
 /**
  * The bar's part in publishing: Checks, a count of what people would trip
@@ -181,8 +183,11 @@ export function openPublishDialog(el: ElementFactory, designer: Designer, root: 
       await designer.publish();
       close();
     } catch (error) {
+      // The designer's own refusal as it says it; the store's in the designer's words, with its own after them — and the
+      // button, Try again.
       failed.hidden = false;
-      failed.textContent = error instanceof Error ? error.message : w.publishFailed;
+      failed.replaceChildren(el('bdi', {}, error instanceof Refusal ? error.message : designer.words.looks.failed(w.notPublished(next), reasonOf(error))));
+      publish.textContent = designer.words.looks.tryAgain;
       publish.disabled = false;
     }
   });

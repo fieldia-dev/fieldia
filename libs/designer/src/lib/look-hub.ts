@@ -1,4 +1,4 @@
-import { intlFormat } from '@fieldia/core';
+import { answerOf, intlFormat } from '@fieldia/core';
 import type { LookStore, SavedLook } from './designer';
 import { wellMadeLooks } from './look-store';
 
@@ -93,12 +93,13 @@ export function looksHub(store: LookStore): LooksHub {
     },
     reload: list,
     async save(look) {
-      await store.save(look);
+      // The store's answer handled as it is given (`answerOf`): one refused at once is the Look row's to say, the zone's never.
+      await answerOf(store.save(look));
       const kept = { ...look, look: { ...look.look } };
       change((all) => [...all.filter((l) => l.id !== look.id), kept]);
     },
     async remove(id) {
-      await store.remove(id);
+      await answerOf(store.remove(id));
       change((all) => all.filter((l) => l.id !== id));
     },
   };

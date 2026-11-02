@@ -83,6 +83,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-publish-dialog .fd-form-dialog-foot { margin: 0; padding: 12px 18px 16px; }
 .fd-designer .fd-spacer { flex: 1; }
 .fd-designer-issues { white-space: pre-line; }
+.fd-designer-unsaved { flex-wrap: wrap; align-items: baseline; gap: 2px 10px; overflow-wrap: anywhere; }
+.fd-designer-unsaved .fd-button { min-height: 24px; padding: 0 4px; }
 .fd-designer-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr); gap: 20px; align-items: start; }
 .fd-survey-body { grid-template-columns: 228px minmax(0, 1fr); gap: 16px; }
 .fd-survey-body > .fd-designer-editor { max-width: none; }

@@ -42,6 +42,8 @@ export const bar: DesignerWords['bar'] = {
   keepEditing: 'ادامهٔ ویرایش',
   publishVersion: (version) => `منتشر کردن نسخهٔ ${version}`,
   publishFailed: 'انتشار ممکن نشد.',
+  notPublished: (version) => `انتشار نسخهٔ ${version} ممکن نشد`,
+  notSaved: 'ذخیرهٔ تغییرات شما ممکن نشد',
   close: 'بستن',
   publishQuestion: (version) => `نسخهٔ ${version} منتشر شود؟`,
   changesSince: (n, version) => `${plural('fa', n, { one: '# تغییر', other: '# تغییر' })} از نسخهٔ ${version}:`,
