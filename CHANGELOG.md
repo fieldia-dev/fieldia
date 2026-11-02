@@ -158,6 +158,29 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   refused is said under the chatter's bar, "Not done: " and the source's words,
   and goes at the next press; what the chatter asked of itself keeps what it
   drew, asked again at the next refresh.
+- **The designer handles every answer of the app's as it is given, too.** Its
+  page store's — a page opened (`createDesigner.open`, which asked for it in a
+  `Promise.all` beside the designer's words), a publish, the saved forms it lists
+  (the toolbox's menu, a placed saved form's panel, a step that opens a page) —
+  and its looks store's save and remove were awaited as the designer's own code
+  came to them, a microtask late: in an Angular app one the store refused at
+  once reached `NgZone.onError`, and so did a page's load it had refused before.
+  A draft's save the store refused — after an edit, Undo, a template, a version
+  made the draft again — was let go without a word: the editor looked saved and
+  was not; one thrown as it was asked stopped every later save. A publish it
+  refused said only the store's words. Saved forms it would not list left the
+  toolbox's tile doing nothing and a step's pages never asked for again; a saved
+  form it would not give was taken for one it has not got — "cannot be found", a
+  must-fix holding back Publish — and one drawn already was dropped. Now each
+  answer is taken as it is given (`answerOf`). A draft's save the store refused
+  is said under the bar, "Your changes could not be saved: " and the store's
+  words, with Try again, and the next edit saves the draft too; a publish,
+  "Version 3 could not be published: …", the dialog's button then Try again; the
+  saved forms not listed, in the toolbox's menu, asked for again at the next
+  press. A saved form the store would not give keeps what was drawn of it, and is
+  asked for again a few seconds later, as the canvas or the checks next need it
+  — never in a loop of draws. The assistant's answer, the looks store's list and
+  Try it's lists from the app's data source were taken as given already.
 - **A page that keeps its sends without signal and runs steps asks for their part
   with its own** (`outbox`; 0.37's acts part was asked for once the whole check
   came, or by the first press, with no signal by then): where it runs steps or
@@ -395,6 +418,19 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   - (adds) The chatter's words have `notDone`, "Not done: {reason}": a language
     of the app's own (`ChatterLabels`) adds it, or the chatter says it in
     English. `ChatterContext` has `notDone()`, which a chatter's parts call.
+  - (adds) The designer's state has `notSaved`: why the page store refused the
+    draft's last save, in its words ('' where it gave none), null once a save
+    went. `designer.saveAgain()` saves the draft again, as the bar's Try again
+    does, and resolves as `settled()` does — which resolves where the store
+    refused, as before.
+  - (fix) A saved form the page store refused to give is `undefined` in
+    `designer.savedForm(id)` — still to come, the Checks saying nothing of it —
+    or as it was loaded before, never `null` ("the store has none"); it is asked
+    for again a few seconds later. `loadSavedForm(id)` keeps what was loaded
+    while it loads afresh, where it went `undefined` meanwhile.
+  - (fix) `designer.savedForms()` rejects with the store's own refusal as
+    before, the store's answer handled as it was given; the editor's callers say
+    it or ask again.
 - *Tests and CSS:*
   - A unit test that mounts a page and at once expects a write to reach its data
     source awaits the handle's `refused` first, or `loadParts()` before the mount,
@@ -432,7 +468,16 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
     the app gave Fieldia — a page, a call, a confirm, a store's, a map's —
     where Fieldia says it in the page: a test that counted one there sees none.
     Nor one the chatter's source gave it; a change it refused is said in
-    `.fd-chatter-failed` (`role="alert"`, under the chatter's bar).
+    `.fd-chatter-failed` (`role="alert"`, under the chatter's bar). Nor one the
+    designer's page store or looks store gave it.
+  - (adds) A draft's save the page store refused is said in
+    `.fd-designer-unsaved` (`role="alert"`, under the designer's bar, after
+    `.fd-designer-issues`), its Try again a button in it.
+  - (fix) A publish the page store refused reads, in `.fd-publish-failed`,
+    "Version 1 could not be published: " and the store's words, where it read
+    the store's words alone, and the dialog's button reads "Try again" in place
+    of "Publish version 1". The toolbox's "A saved form" opens its menu where the
+    store would not list them, its note saying why, where it opened nothing.
   - (fix) A line's dialog is named by its line, not its table: a test that finds
     it by the table's label (`{ name: 'Order lines' }`) finds it by the line's
     words — a card's line too — by "Line 3", by its card's title where it holds
@@ -462,7 +507,10 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   (`formUnavailable`, new) and the line over what is wrong (`pageUnshown`,
   changed) — and a recording too short to keep (`recordTooShort`, new). (adds)
   So is the chatter's "Not done: {reason}" (`notDone`) in ar, de, es, fa, fr, tr
-  and ur.
+  and ur. (adds) So are the designer's "Your changes could not be saved"
+  (`bar.notSaved`), "Version 3 could not be published" (`bar.notPublished`) and
+  "The saved forms could not be listed" (`savedForms.couldNotList`) in ar, es,
+  fa, tr and ur.
 
 **Size:** `fieldia.js` 588.9 KB, 198.00 gzipped (0.36.1: 588.2, 197.26): +0.74
 KB gzipped, under the owner's 200, all of it what a page must carry from its
@@ -561,6 +609,12 @@ its tags, which name the sheet part again, 2288 → 2340 and 2395 → 2479.
 the acts part is there: a page that keeps its sends without signal and acts asks
 for it with its own (+0.05), and a save whose steps wait for it says so (+0.07).
 The parts are as they were; the chatter, in no script, is an npm package's.
+
+**Size, the designer's answers (p37-designer-answers):** `fieldia.js` and every
+part and add-on byte for byte as they were — the designer is in no script. From
+the npm packages, the designer's first load 586.2 → 586.6 / 823.5 → 823.9 KB
+gzipped (+399 B, its three new words and the lines that say a refusal; 85 / 97
+files as before); a record form's, in Arabic and a list's the same to the byte.
 
 ## 0.36.1 — 2026-10-28
 
