@@ -58,7 +58,13 @@ async function pressAndLook(page: Page, pressed: Locator, control: Locator = pre
           const ring = holder.querySelector(':scope > .fd-pressing');
           const style = ring ? getComputedStyle(ring) : getComputedStyle(element, '::after');
           const at = holder.getBoundingClientRect();
-          const box = (ring ?? holder).getBoundingClientRect();
+          // The ring as it is laid out, whatever its turn: a turning square's bounds grow as it turns — looked at a
+          // frame late on a busy machine (WebKit, 60 of 96 at 24 at once), its corners reached 3 px past an icon
+          // button's edge — while the round ring drawn in them never moves. Its middle is where its bounds' is.
+          const turned = (ring ?? holder).getBoundingClientRect();
+          const [width, height] = ring instanceof HTMLElement ? [ring.offsetWidth, ring.offsetHeight] : [turned.width, turned.height];
+          const [x, y] = [turned.left + turned.width / 2, turned.top + turned.height / 2];
+          const box = { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2, width, height };
           w.looked = {
             busy: element.getAttribute('aria-busy'),
             ring: !!ring || style.content !== 'none',
