@@ -7,7 +7,7 @@ import type { Page } from '@fieldia/core';
  * the tabs Details, History and Links in the head. Invented.
  */
 export const BUG = {
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'bug',
   title: 'Bug',
   data: { kind: 'record', model: 'work.item' },

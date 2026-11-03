@@ -307,7 +307,8 @@ for (const variant of VARIANTS) {
       // The table's row never draws a question's answers.
       await expect(node(page, 'f-questions').locator('.ag-header-cell[col-id="suggested_answer_ids"]')).toHaveCount(0);
       await node(page, 'f-questions').locator('.ag-row[row-index="2"] .fd-line-open').click();
-      const dialog = page.getByRole('dialog', { name: 'Sections and Questions' });
+      // Titled as the one question it is, never the table's plural (the 0.36 walk).
+      const dialog = page.getByRole('dialog', { name: 'Overall, how satisfied are you with our service?' });
       await expect(dialog).toBeVisible();
       await expect(dialog.locator('[data-node="question-title"] input')).toHaveValue('Overall, how satisfied are you with our service?');
       // Its answers, in its own form; no scoring on the survey (the parent): no Correct, no Score.

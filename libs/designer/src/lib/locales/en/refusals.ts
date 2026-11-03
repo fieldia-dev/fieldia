@@ -232,6 +232,7 @@ export const refusals = {
   pageSize: 'A page of the list holds 1 to 500 rows',
   filterName: 'A filter needs a name people will recognise, such as Active',
   filterCondition: 'A filter needs a condition',
+  filterGroup: 'A filter’s group is one word, such as when',
   buttonWords: 'A button needs words',
   listButtonAction: 'A button needs the name of its action, such as archive',
   cellWidth: 'A column is 1 to 200 characters wide, or 8 to 4000 pixels',

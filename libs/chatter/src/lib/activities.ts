@@ -1,4 +1,4 @@
-import { dayIn, dayWords, fill, instantsAt, isOwnZone, wallClock, wallDay, wallOf, wallTime, zoneOffset } from '@fieldia/core';
+import { answerOf, dayIn, dayWords, fill, instantsAt, isOwnZone, wallClock, wallDay, wallOf, wallTime, zoneOffset } from '@fieldia/core';
 import { drawIcon, zoneName } from '@fieldia/widgets';
 import type { ChatterContext } from './chatter';
 import type { Activity, ActivityType, Person } from './source';
@@ -77,6 +77,18 @@ export function activitiesPart(context: ChatterContext, afterChange: () => Promi
   const list = el('ul', { class: 'fd-activity-list' });
   const element = el('section', { class: 'fd-activities', 'aria-label': labels.activities }, list);
   const canSchedule = !!(source.schedule && source.activityTypes && source.people);
+  /**
+   * A change a person asked for, each answer of the source's handled as it is given (`answerOf`): what was said of the
+   * last goes as it is asked; one the source refuses is said, with why (`notDone`), and asked again at the next press.
+   */
+  const asked = async (change: () => Promise<unknown>) => {
+    context.notDone?.();
+    try {
+      await change();
+    } catch (error) {
+      context.notDone?.(error);
+    }
+  };
   /** An hour on the page's clock, its zone named where it is not the browser's own: "15:30 EEST"; with its day, "20 Oct 2026, 15:30 EEST". */
   const timeText = (due: Due) => clockWords(context, due.at as number, true);
   const dayAndTime = (due: Due) => momentWords(context, due.at as number, true);
@@ -116,24 +128,28 @@ export function activitiesPart(context: ChatterContext, afterChange: () => Promi
         finishing.hidden = !finishing.hidden;
         if (!finishing.hidden) feedback.focus();
       });
-      confirm.addEventListener('click', async () => {
-        const record = context.record();
-        if (!record || !source.markDone) return;
-        await source.markDone(record, activity.id, feedback.value.trim() || undefined);
-        await load();
-        await afterChange();
-      });
+      confirm.addEventListener('click', () =>
+        asked(async () => {
+          const record = context.record();
+          if (!record || !source.markDone) return;
+          await answerOf(source.markDone(record, activity.id, feedback.value.trim() || undefined));
+          await load();
+          await afterChange();
+        })
+      );
       actions.append(done);
       row.append(actions, finishing);
     }
     if (source.cancel) {
       const cancel = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.cancelActivity);
-      cancel.addEventListener('click', async () => {
-        const record = context.record();
-        if (!record || !source.cancel) return;
-        await source.cancel(record, activity.id);
-        await load();
-      });
+      cancel.addEventListener('click', () =>
+        asked(async () => {
+          const record = context.record();
+          if (!record || !source.cancel) return;
+          await answerOf(source.cancel(record, activity.id));
+          await load();
+        })
+      );
       actions.append(cancel);
       if (!row.contains(actions)) row.append(actions);
     }
@@ -147,7 +163,13 @@ export function activitiesPart(context: ChatterContext, afterChange: () => Promi
       return;
     }
     const still = context.shown();
-    const found = await source.activities(record);
+    let found: Activity[];
+    try {
+      found = await answerOf(source.activities(record));
+    } catch {
+      // Not given: the list as it was, asked again with the conversation.
+      return;
+    }
     if (!still()) return;
     // Late first, the longest late at the top; then today's, a day alone before those at an hour; then those ahead.
     const now = context.now().getTime();
@@ -194,9 +216,11 @@ export function activitiesPart(context: ChatterContext, afterChange: () => Promi
   due.addEventListener('change', () => (dueChosen = true));
 
   const button = canSchedule ? el('button', { type: 'button', class: 'fd-button' }, labels.scheduleActivity) : null;
-  button?.addEventListener('click', async () => {
+  button?.addEventListener('click', () => void asked(openForm));
+  /** Schedule activity's form, with the source's types and the people to give one to: both asked at once. */
+  async function openForm() {
     if (!source.activityTypes || !source.people) return;
-    [types, people] = await Promise.all([source.activityTypes(), source.people('')]);
+    [types, people] = await Promise.all([answerOf(source.activityTypes()), answerOf(source.people(''))]);
     type.replaceChildren(...types.map((t) => el('option', { value: String(t.id) }, t.name)));
     assignee.replaceChildren(...people.map((p) => el('option', { value: String(p.id) }, p.name)));
     summary.value = '';
@@ -206,20 +230,22 @@ export function activitiesPart(context: ChatterContext, afterChange: () => Promi
     form.hidden = false;
     element.hidden = false;
     type.focus();
-  });
+  }
   cancelForm.addEventListener('click', () => {
     form.hidden = true;
     void load();
   });
-  schedule.addEventListener('click', async () => {
-    const record = context.record();
-    const chosenType = types.find((t) => String(t.id) === type.value);
-    const person = people.find((p) => String(p.id) === assignee.value);
-    if (!record || !source.schedule || !chosenType || !person || !due.value) return;
-    await source.schedule(record, { typeId: chosenType.id, summary: summary.value.trim() || undefined, due: time.value ? dueInstant(due.value, time.value, zone) : due.value, assigneeId: person.id });
-    form.hidden = true;
-    await load();
-  });
+  schedule.addEventListener('click', () =>
+    asked(async () => {
+      const record = context.record();
+      const chosenType = types.find((t) => String(t.id) === type.value);
+      const person = people.find((p) => String(p.id) === assignee.value);
+      if (!record || !source.schedule || !chosenType || !person || !due.value) return;
+      await answerOf(source.schedule(record, { typeId: chosenType.id, summary: summary.value.trim() || undefined, due: time.value ? dueInstant(due.value, time.value, zone) : due.value, assigneeId: person.id }));
+      form.hidden = true;
+      await load();
+    })
+  );
   element.prepend(form);
 
   return { button, element, load };

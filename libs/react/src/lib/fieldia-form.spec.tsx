@@ -86,16 +86,44 @@ describe('<FieldiaForm>', () => {
     const app = (shown: Page) => (
       <main>
         <h1>The app</h1>
-        <FieldiaForm page={shown} onError={(_, where) => told.push(where)} />
+        <FieldiaForm page={shown} development onError={(_, where) => told.push(where)} />
       </main>
     );
     const { rerender } = render(app(broken));
     // The app round it is still there: the viewer's refusal never unmounts it.
     expect(screen.getByRole('heading', { name: 'The app' })).toBeTruthy();
-    expect(screen.getByRole('alert').textContent).toMatch(/^This form cannot be shown: its page has mistakes/);
+    // Its visitor's words; what is wrong under them, the app being made (`development`).
+    expect(screen.getByRole('alert').textContent).toBe('This form is not available right now. Please try again later, or contact whoever sent it to you.');
     expect([...document.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['layout.children[0].field']);
     expect(told).toEqual([{ stage: 'draw', part: 'page' }]);
     // A page that passes, given next, is drawn in the words' place.
+    rerender(app(good));
+    expect(document.querySelector('.fd-unshown')).toBeNull();
+    expect(screen.getByLabelText('Note')).toBeTruthy();
+    quiet.mockRestore();
+  });
+
+  it('a page its whole check refuses is drawn, then taken down: its words in its place, onError told, the app kept — and goes with it', async () => {
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const told: unknown[] = [];
+    const good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
+    // Drawn by 0.35, said by 0.36, taken down by 0.37 as its whole check runs (page.invalid).
+    const invalid = { ...good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page;
+    let ready: ViewerHandle | null = null;
+    const app = (shown: Page) => (
+      <main>
+        <h1>The app</h1>
+        <FieldiaForm page={shown} development onError={(_, where) => told.push(where)} onReady={(handle) => (ready = handle)} />
+      </main>
+    );
+    const { rerender } = render(app(invalid));
+    expect(screen.getByLabelText('Note')).toBeTruthy();
+    await act(async () => void (await (ready as ViewerHandle | null)?.refused));
+    expect(screen.getByRole('heading', { name: 'The app' })).toBeTruthy();
+    expect([...document.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['fields.note.required']);
+    expect(document.querySelector('.fd-field')).toBeNull();
+    expect(told).toEqual([{ stage: 'check', part: 'page' }]);
+    // The next page, in the words' place.
     rerender(app(good));
     expect(document.querySelector('.fd-unshown')).toBeNull();
     expect(screen.getByLabelText('Note')).toBeTruthy();

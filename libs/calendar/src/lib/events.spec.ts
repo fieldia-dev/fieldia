@@ -10,7 +10,7 @@ import { colourOf, eventsOf, moved, sideBySide, whereTo, type CalendarEvent } fr
  */
 
 const page: Page = {
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'appointments',
   data: { kind: 'record', model: 'clinic.appointment' },
   fields: {

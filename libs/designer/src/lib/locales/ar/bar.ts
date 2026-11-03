@@ -37,6 +37,8 @@ export const bar: DesignerWords['bar'] = {
   keepEditing: 'متابعة التعديل',
   publishVersion: (version) => `نشر الإصدار ${version}`,
   publishFailed: 'تعذّر النشر.',
+  notPublished: (version) => `تعذّر نشر الإصدار ${version}`,
+  notSaved: 'تعذّر حفظ تغييراتك',
   close: 'إغلاق',
   publishQuestion: (version) => `نشر الإصدار ${version}؟`,
   changesSince: (n, version) =>

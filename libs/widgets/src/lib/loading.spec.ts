@@ -224,7 +224,8 @@ describe('a wait, on its clock', () => {
     expect(LOADING_PART_CSS).toContain(`[data-fd-way="spinner"] > :not(.fd-loader, ${open}) { opacity`);
     // A field holding one is marked so by the wait (`data-fd-open`, below): a :has() asked of every field made each change
     // in a form lay it all out again (0.35.1).
-    expect(LOADING_PART_CSS).toContain('[data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size');
+    expect(LOADING_PART_CSS).toContain('[data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label))) { min-block-size');
+    expect(LOADING_PART_CSS).toContain('[data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) { border-color: transparent');
     expect(LOADING_CSS).toContain('[data-fd-coming="boxes"] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label))');
     expect(LOADING_PART_CSS).toContain('.fd-loader[data-moment="refresh"][data-way="spinner"] { pointer-events: none; }');
   });

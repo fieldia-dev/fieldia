@@ -1,4 +1,4 @@
-import { fill, plainPart, type FileValue, type Form, type FormApproval, type FormState, type Locale, type RecordRequest, type Value } from '@fieldia/core';
+import { answerOf, fill, plainPart, type FileValue, type Form, type FormApproval, type FormState, type Locale, type RecordRequest, type Value } from '@fieldia/core';
 import { displayValue, textPart, type Part, type TextReference } from '@fieldia/widgets';
 import { mountChatter, textToHtml, wantsChannels, type ChatterHandle, type ChatterOptions } from './chatter';
 import { chatterLabels, type ChatterLabels } from './labels';
@@ -129,7 +129,9 @@ export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement
     // Words a step or the app posts go in the conversation as a message or a note.
     const unpost = form.on('post', ({ message }) => {
       const record = recordOf(form.getState());
-      if (record) void options.source.post(record, { kind: message.kind, body: message.body }).then(() => chatter.refresh());
+      // The source's answer handled as it is given (`answerOf`), never by a `then` of the page's own made of it: the
+      // conversation fetched again once it went; refused, it is as the source keeps it.
+      if (record) void answerOf(options.source.post(record, { kind: message.kind, body: message.body })).then(() => chatter.refresh(), () => undefined);
     });
     return () => {
       unsubscribe();
@@ -147,7 +149,8 @@ export function chatterSlot(options: ChatterSlotOptions): ((element: HTMLElement
  */
 export function chatterAttachments(source: ChatterSource): (request: RecordRequest) => Promise<FileValue[]> {
   return async ({ model, id }) => {
-    const messages = await source.messages({ model, id });
+    // The source's answer handled as it is given (`answerOf`); refused, refused to the one that asked.
+    const messages = await answerOf(source.messages({ model, id }));
     return messages.flatMap((message) => message.attachments ?? []).flatMap((file) => (file.url ? [{ name: file.name, type: file.type, size: file.size, url: file.url }] : []));
   };
 }

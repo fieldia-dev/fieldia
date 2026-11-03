@@ -55,10 +55,12 @@
     <main id="app"></main>
     <script nonce="__CSP_NONCE__" src="../script/fieldia.js"></script>
     <script nonce="__CSP_NONCE__">
-      // A visit with a day, a choice, its rooms as lines, and a formatted note with its own looks (centred, a colour):
-      // the date, lines and text parts each come as the page first draws them.
+      // A visit's record sheet with a day, a choice, its rooms as lines, and a formatted note with its own looks (centred,
+      // a colour): the date, lines and text parts each come as the page first draws them, its furniture — a ribbon, a
+      // badge, an alert, a stat button — with the sheet part, its toolbar with the html part. Mark visited runs a
+      // button's steps, and the Rooms stat button opens a room's page in a dialog: the acts part, once the page is drawn.
       const page = {
-        fieldia: '0.13',
+        fieldia: '0.14',
         id: 'site-visit',
         title: 'Site visit',
         data: { kind: 'record', model: 'site.visit' },
@@ -71,15 +73,20 @@
           rooms: { type: 'one2many', label: 'Rooms', relation: 'site.room', fields: { room: { type: 'char', label: 'Room' }, size: { type: 'float', label: 'Size (m²)' } } },
         },
         layout: {
-          type: 'sections',
-          id: 'sections',
+          type: 'sheet',
+          id: 'sheet',
+          title: { field: 'name' },
+          buttons: [{ type: 'button', id: 'b-visited', label: 'Mark visited', steps: [{ do: 'set', field: 'area', value: "'north'" }, { do: 'say', message: 'Marked as visited' }] }],
+          ribbon: { id: 'r-new', label: 'New', tone: 'info' },
+          statButtons: [{ id: 's-rooms', label: 'Rooms', steps: [{ do: 'open', page: 'site-room', as: 'dialog', title: 'A room' }] }],
+          badges: [{ id: 'g-visit', label: 'Site visit', tone: 'info' }],
+          alerts: [{ id: 'a-plan', message: 'Bring the floor plan.', tone: 'info' }],
           children: [
             {
               type: 'section',
               id: 'visit',
               columns: 2,
               children: [
-                { type: 'field', id: 'name', field: 'name' },
                 { type: 'field', id: 'day', field: 'day' },
                 { type: 'field', id: 'area', field: 'area', widget: 'radio' },
                 { type: 'field', id: 'budget', field: 'budget' },
@@ -90,10 +97,19 @@
           ],
         },
       };
+      // A room, opened by the Rooms stat button in a dialog.
+      const room = {
+        fieldia: '0.14',
+        id: 'site-room',
+        title: 'Room',
+        data: { kind: 'record', model: 'site.room' },
+        fields: { room: { type: 'char', label: 'Room' }, size: { type: 'float', label: 'Size (m²)' } },
+        layout: { type: 'sections', id: 'room', children: [{ type: 'field', id: 'r-room', field: 'room' }, { type: 'field', id: 'r-size', field: 'size' }] },
+      };
       const dataSource = Fieldia.createMemoryDataSource({
         records: { 'site.visit': { 1: { name: 'Nile Traders', note: '<p style="text-align: center;">Bring the <span style="color: rgb(19, 101, 217);">floor plan</span></p>', rooms: [{ key: 'hall', id: 11, values: { room: 'Hall', size: 24 } }] } } },
       });
-      const handle = Fieldia.mountViewer(document.getElementById('app'), { page, dataSource, recordId: 1, skin: 'outlined' });
+      const handle = Fieldia.mountViewer(document.getElementById('app'), { page, dataSource, recordId: 1, skin: 'outlined', pages: { 'site-room': room } });
       window.fieldiaDemo = { handle };
     </script>
   </body>

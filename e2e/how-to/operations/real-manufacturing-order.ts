@@ -74,7 +74,7 @@ export const replay: DemoReplay = {
           // A card holds a line's chosen columns: each opened, its Start and End.
           for (const name of ['Cutting', 'Assembly', 'Finishing']) {
             await press(orders.getByRole('button', { name, exact: true }));
-            const order = page.getByRole('dialog', { name: 'Work Orders' });
+            const order = page.getByRole('dialog', { name });
             await see(order.getByRole('textbox', { name: /^Start/ })).toHaveValue(/\d{4}, \d{2}:\d{2}/);
             await see(order.getByRole('textbox', { name: /^End/ })).toHaveValue(/\d{4}, \d{2}:\d{2}/);
             await press(order.getByRole('button', { name: 'Close' }).first());

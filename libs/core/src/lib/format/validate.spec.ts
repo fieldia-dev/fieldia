@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { validatePage, FORMAT_VERSION } from '../../index';
+import { compareFormats, validatePage, FORMAT_VERSION, FORMAT_VERSIONS } from '../../index';
+import { lowestFormat } from './stamp';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
 
@@ -30,15 +31,21 @@ describe('validatePage — the example pages', () => {
   });
 
   it('returns the page unchanged, and it survives a JSON round trip', () => {
-    const input = example('customer');
+    const input = { ...example('customer'), fieldia: FORMAT_VERSION };
     const result = validatePage(input);
     if (!result.ok) throw new Error(messages(input).join('\n'));
     expect(result.page).toEqual(input);
     expect(JSON.parse(JSON.stringify(result.page))).toEqual(result.page);
   });
 
-  it('declares the format version it reads', () => {
-    expect(example('customer')['fieldia']).toBe(FORMAT_VERSION);
+  it('declares a format this Fieldia reads, never older than a setting it uses came in', () => {
+    for (const name of EXAMPLE_NAMES) {
+      const page = example(name);
+      expect({ name, format: (FORMAT_VERSIONS as readonly string[]).includes(page['fieldia']) }).toEqual({ name, format: true });
+      expect({ name, under: (compareFormats(page['fieldia'], lowestFormat(page)) ?? -1) >= 0 }).toEqual({ name, under: true });
+    }
+    // A page that uses nothing format 0.14 brought keeps the format it was written in.
+    expect(example('customer')['fieldia']).toBe('0.13');
   });
 });
 

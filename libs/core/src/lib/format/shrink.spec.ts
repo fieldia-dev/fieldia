@@ -9,7 +9,7 @@ import { pageJsonSchema, validatePage, type Page } from '../../index';
 
 function page(field: Record<string, unknown>): Page {
   return {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'listing',
     data: { kind: 'record', model: 'listing' },
     fields: { photos: { label: 'Photos', ...field } },

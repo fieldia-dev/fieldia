@@ -1,6 +1,7 @@
 import { formLanguagesPart, formUploadsPart, type Field, type FieldNode, type Page, type Value } from '@fieldia/core';
 import { lazyPart, type Part } from './parts';
 import type * as TextModule from './text-part';
+import type * as HtmlModule from './html-part';
 import type * as PathModule from './path-part';
 import type * as ChoiceModule from './choice-part';
 import type * as DateModule from './date-part';
@@ -27,6 +28,8 @@ import type { TypedText, Widget, WidgetContext, WidgetFactory, WidgetState } fro
 
 /** The text part: a work item's formatted text editor (rich and Markdown), Markdown both ways, its menus and the links box. */
 export type TextPart = typeof TextModule;
+/** The html part: the classic formatted text's toolbar, and its paste put in plain. */
+export type HtmlPart = typeof HtmlModule;
 /** The path part: a path picker, with its suggestions and its tree; a checkbox tree of several records of a tree. */
 export type PathPart = typeof PathModule;
 /** The choice part: a choice in Fieldia's own list, a long one searched as it is typed, and several chosen as tags. */
@@ -81,6 +84,11 @@ export type DecodePart = typeof DecodeModule;
 
 /** A work item's formatted text, loaded the first time a page shows one: `await textPart.load()` gives its editor. */
 export const textPart: Part<TextPart> = lazyPart('text', () => import('./text-part'));
+/**
+ * The classic formatted text's toolbar, loaded with a page's parts where it shows one: its box drawn plainly until it
+ * comes (`htmlBox`, extras.ts) — its words cleaned, typed in place — and where it cannot.
+ */
+export const htmlPart: Part<HtmlPart> = lazyPart('html', () => import('./html-part'));
 /** A path picker, loaded the first time a page shows one. */
 export const pathPart: Part<PathPart> = lazyPart('path', () => import('./path-part'));
 /** A choice in Fieldia's own list, a long one searched as it is typed, or several chosen as tags, loaded the first time a page shows one. */

@@ -1,4 +1,4 @@
-import { FIELD_NAME, type FormNode, type Page } from '@fieldia/core';
+import { answerOf, FIELD_NAME, type FormNode, type Page } from '@fieldia/core';
 import { containers } from './page-tree';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
@@ -15,8 +15,16 @@ import type { PageCheck } from './page-checks';
  * The designer reaches the app's saved forms through its PageStore: `list()`
  * names those that can be placed, and `load()` gives each one's versions. What
  * it has loaded is kept here, so a canvas, a panel and the checks ask for one
- * at once, and are told when it has come.
+ * at once, and are told when it has come. One the store refuses to give is
+ * none of that: what was loaded of it is kept, and it is asked for again a
+ * while later (`ASK_AGAIN_MS`).
  */
+
+/**
+ * How long a saved form the store refused to give waits before it is asked for again, by the next that asks for it (a
+ * draw, the checks): never in a loop of draws, each asking the store once more.
+ */
+const ASK_AGAIN_MS = 5_000;
 
 /** A saved form the app's store lists: by its id, and the title people know it by. */
 export interface SavedFormRef {
@@ -108,11 +116,14 @@ export function updateFormPart(page: Page, id: string, patch: FormPartPatch): vo
  * asked for that it has not; `changed` is called each time one comes.
  */
 export interface SavedFormsCache {
-  /** A saved form's published versions, newest last; undefined while it loads, null when the store has none. */
+  /**
+   * A saved form's published versions, newest last; undefined while it loads — or until the store, which refused it,
+   * gives it — and null when the store has none.
+   */
   versions(id: string): Version[] | null | undefined;
   /** The page placed: the version kept to, or the latest. Undefined while it loads, null when there is none. */
   page(id: string, version?: number): Page | null | undefined;
-  /** Load a saved form afresh, and every saved form it places. */
+  /** Load a saved form afresh, and every saved form it places: what the store refuses to give stays as it was. */
   load(id: string): Promise<void>;
   /**
    * The way round, by title, when placing this saved form here would place
@@ -125,28 +136,40 @@ export interface SavedFormsCache {
 export function savedFormsCache(source: FormSource | undefined, changed: () => void): SavedFormsCache {
   const known = new Map<string, Version[] | null>();
   const loading = new Map<string, Promise<void>>();
+  /** When the store last refused each, by id: asked for again once `ASK_AGAIN_MS` has passed. */
+  const refused = new Map<string, number>();
+
+  /** Its versions, null when the store has none, undefined when it refused to say. */
+  async function ask(id: string): Promise<Version[] | null | undefined> {
+    try {
+      // The store's answer handled as it is given (`answerOf`): one refused at once is never the zone's to say.
+      const found = source ? await answerOf(source.load(id)) : { versions: [] };
+      return found.versions.length ? found.versions : null;
+    } catch {
+      return undefined;
+    }
+  }
 
   function fetch(id: string): Promise<void> {
     const running = loading.get(id);
     if (running) return running;
-    // Known, and no longer loading, in one step: a load asked for after it starts afresh.
-    const done = (source ? source.load(id) : Promise.resolve({ versions: [] }))
-      .then(
-        (found) => (found.versions.length ? found.versions : null),
-        () => null
-      )
-      .then((found) => {
-        loading.delete(id);
-        known.set(id, found);
-        changed();
-      });
+    // Known, and no longer loading, in one step: a load asked for after it starts afresh. Refused, what was known is
+    // kept, and nothing changed is told.
+    const done = ask(id).then((found) => {
+      loading.delete(id);
+      if (found === undefined) return void refused.set(id, Date.now());
+      refused.delete(id);
+      known.set(id, found);
+      changed();
+    });
     loading.set(id, done);
     return done;
   }
 
   const versions = (id: string) => {
     if (known.has(id)) return known.get(id) as Version[] | null;
-    void fetch(id);
+    const at = refused.get(id);
+    if (at === undefined || Date.now() - at >= ASK_AGAIN_MS) void fetch(id);
     return undefined;
   };
 
@@ -169,7 +192,7 @@ export function savedFormsCache(source: FormSource | undefined, changed: () => v
         const pages = (known.get(at) ?? []).map((v) => v.page);
         await Promise.all(pages.flatMap((p) => formParts(p).map((part) => walk(part.page))));
       };
-      known.delete(id);
+      // What is known of it stays drawn while it loads afresh, and stays where the store refuses it.
       await walk(id);
     },
     cycle(from, self) {

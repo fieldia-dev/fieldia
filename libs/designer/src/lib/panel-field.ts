@@ -114,6 +114,10 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const secret = el('input', { type: 'checkbox', 'aria-label': w.secret, 'data-secret': '' }) as HTMLInputElement;
   secret.addEventListener('change', () => designer.updateQuestion(id, { secret: secret.checked }));
   const secretRow = onTab(el('div', { class: 'fd-prop' }, el('label', { class: 'fd-q-required' }, secret, el('span', {}, w.secret)), el('p', { class: 'fd-properties-hint fd-set-hint' }, w.secretHint)), 'rules', 'Never kept in a draft');
+  // Kept by a copy of the record (`copy`): ticked off, the copy starts it as a new record does — a status, a number.
+  const copied = el('input', { type: 'checkbox', 'aria-label': w.copied, 'data-copied': '' }) as HTMLInputElement;
+  copied.addEventListener('change', () => designer.updateQuestion(id, { copy: copied.checked }));
+  const copiedRow = onTab(el('div', { class: 'fd-prop' }, el('label', { class: 'fd-q-required' }, copied, el('span', {}, w.copied)), el('p', { class: 'fd-properties-hint fd-set-hint' }, w.copiedHint)), 'data', 'Copied with the record');
   // Required, or read-only, only when a rule holds.
   const requiredWhen = conditionEditor(el, designer, id, 'question', 'required');
   const requiredOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when', 'aria-label': w.requiredOnlyWhen }, w.onlyWhen);
@@ -181,7 +185,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     changes.element,
     ...table.rows,
     setting(el, 'data', 'Field name', name, { hint: nameHint, words: w.fieldName }),
-    setting(el, 'data', 'Stored as', stored, { hint: fromModelNote, words: w.storedAs })
+    setting(el, 'data', 'Stored as', stored, { hint: fromModelNote, words: w.storedAs }),
+    copiedRow
   );
 
   return {
@@ -253,6 +258,9 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       secret.checked = (def as { secret?: boolean }).secret === true;
       // A field of the app's model keeps its own definition: what it keeps secret is the model's to say.
       secretRow.hidden = fromModel;
+      // So is what a copy keeps; and only a record is copied.
+      copied.checked = (def as { copy?: boolean }).copy !== false;
+      copiedRow.hidden = fromModel || page.data.kind !== 'record';
       const others = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && n.id !== id && choicesOf(page.fields[n.field]) !== null));
       requiredWhen.update(page, others, found.node.required);
       requiredOnly.hidden = required.checked || !requiredWhen.element.hidden || !requiredWhen.canStart();

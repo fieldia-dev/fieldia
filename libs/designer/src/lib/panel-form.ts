@@ -25,10 +25,14 @@ export function formContent(el: ElementFactory, designer: Designer, id: string):
   // ---- which saved form: the store's, loaded once; the one placed stays even when the store no longer has it ----
   const which = el('select', { class: 'fd-input fd-select', 'aria-label': w.savedForm }) as HTMLSelectElement;
   let listed: { id: string; title: string }[] | null = null;
-  void designer.savedForms().then((found) => {
-    listed = found;
-    draw(designer.getPage());
-  });
+  // Refused, the one placed is what it shows, as before they come: asked again the next time the panel shows it.
+  void designer.savedForms().then(
+    (found) => {
+      listed = found;
+      draw(designer.getPage());
+    },
+    () => undefined
+  );
   which.addEventListener('change', async () => {
     const chosen = which.value;
     // Loaded first, with what it places: one that would hold this page is refused, saying why.

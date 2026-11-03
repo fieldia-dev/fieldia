@@ -1,3 +1,4 @@
+import { answerOf } from '@fieldia/core';
 import type { ChatterContext } from './chatter';
 import type { Person } from './source';
 
@@ -55,7 +56,15 @@ export function mentions(context: ChatterContext, box: HTMLTextAreaElement) {
     const at = source.people ? mentionAt(box.value, box.selectionStart ?? box.value.length) : null;
     if (!at || !source.people) return close();
     const mine = ++asking;
-    const people = await source.people(at.query);
+    let people: Person[];
+    try {
+      // The source's answer handled as it is given (`answerOf`).
+      people = await answerOf(source.people(at.query));
+    } catch {
+      // Not given: no one suggested, asked again as the next letter is typed.
+      if (mine === asking) close();
+      return;
+    }
     if (mine !== asking) return; // a newer question is on its way
     found = people.slice(0, 8);
     active = 0;

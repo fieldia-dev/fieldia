@@ -39,7 +39,7 @@ import {
   type TabsNode,
   type PageLoading,
 } from '@fieldia/core';
-import { comparable, FIELD_NAME, FORMAT_VERSION, pageCheckPart, upgradePage } from '@fieldia/core';
+import { answerOf, comparable, FIELD_NAME, FORMAT_VERSION, pageCheckPart, upgradePage } from '@fieldia/core';
 import { produce, sameJson } from './draft';
 import { keepUnchanged } from './keep-unchanged';
 import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
@@ -80,6 +80,7 @@ import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
 import { LOOK_PRESETS, wholeLook, type LookValues } from './look-presets';
 import { browserLooks } from './look-store';
+import { reasonOf } from './look-hub';
 import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
 import { pageSchemaPart } from './schema-part';
@@ -203,7 +204,12 @@ export interface PublishedVersion {
   page: Page;
 }
 
-/** Where pages are kept. An app implements this for its own storage. */
+/**
+ * Where pages are kept. An app implements this for its own storage. Each answer is taken as it is given (`answerOf`):
+ * one refused at once, or refused already, is never left for an Angular zone to say. A draft's save or a publish the
+ * store refuses is said in the editor, in its words, with Try again (`notSaved`, `saveAgain`); a read it refuses — the
+ * saved forms it lists, or one of them — keeps what the editor drew, and is asked again later.
+ */
 export interface PageStore {
   load(id: string): Promise<{ draft: Page | null; versions: PublishedVersion[] }>;
   saveDraft(page: Page): Promise<void>;
@@ -284,6 +290,11 @@ export interface DesignerState {
   /** The draft differs from the last published version. */
   unpublished: boolean;
   versions: readonly PublishedVersion[];
+  /**
+   * Why the store refused the draft's last save — an edit's, a version made the draft again — in its words ('' when it
+   * gave none): said under the bar, with Try again (`saveAgain`). Null once a save went.
+   */
+  notSaved: string | null;
 }
 
 export interface QuestionPatch {
@@ -301,6 +312,8 @@ export interface QuestionPatch {
   inputmode?: InputMode | '';
   /** Never kept in a draft (the field's `secret`): a PIN, an ID number. A field of the app's model keeps its own. */
   secret?: boolean;
+  /** Kept by a copy of the record (false: the field's `copy: false`, a status, a number). A field of the app's model keeps its own. */
+  copy?: boolean;
 }
 
 /** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
@@ -599,8 +612,10 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   fixCheck(check: PageCheck): boolean;
   /** Make a published version the draft again. Undoable. */
   revertTo(version: number): boolean;
-  /** Resolves once every draft save started so far has finished. */
+  /** Resolves once every draft save started so far has finished: saved, or refused (`notSaved`). */
   settled(): Promise<void>;
+  /** Save the draft again, as Try again under the bar does once the store refused it; resolves as `settled` does. */
+  saveAgain(): Promise<void>;
   // translations lane
   /** A language to translate the page into, by tag (`ar`, `pt-BR`). Not the page's own language. */
   addLanguage(tag: string): boolean;
@@ -859,8 +874,10 @@ export function createDesigner(options: {
   let versions: PublishedVersion[] = clone(options.versions ?? []);
   const listeners = new Set<(state: DesignerState) => void>();
   let saving: Promise<void> = Promise.resolve();
-  let saveAgain = false;
+  let again = false;
   let saveRunning = false;
+  /** Why the store refused the draft's last save, in its words; null once one went (`notSaved`). */
+  let notSaved: string | null = null;
 
   const published = () => versions[versions.length - 1]?.page ?? null;
   // The draft shares what it has of the version published last, as the pages an edit makes share what it left alone:
@@ -918,6 +935,7 @@ export function createDesigner(options: {
     issues,
     unpublished: unpublished(),
     versions,
+    notSaved,
   });
   const notify = () => {
     const snapshot = state();
@@ -927,16 +945,29 @@ export function createDesigner(options: {
   function saveDraft() {
     if (!store) return;
     if (saveRunning) {
-      saveAgain = true;
+      again = true;
       return;
     }
     saveRunning = true;
     saving = (async () => {
+      let why: string | null;
       do {
-        saveAgain = false;
-        await store.saveDraft(clone(page)).catch(() => undefined);
-      } while (saveAgain);
+        again = false;
+        why = null;
+        try {
+          // The store's answer handled as it is given (`answerOf`), never a microtask late as this function's await; one
+          // thrown as it is asked, or no promise at all, taken as the store's too.
+          await answerOf(store.saveDraft(clone(page)));
+        } catch (error) {
+          why = reasonOf(error);
+        }
+      } while (again);
       saveRunning = false;
+      // The last save says where the draft stands: it held the page as it is now. A refused one is said, with Try again.
+      if (why !== notSaved) {
+        notSaved = why;
+        notify();
+      }
     })();
   }
 
@@ -991,7 +1022,10 @@ export function createDesigner(options: {
       // a brace that names no field, said as whose words name what (brace-refusals.ts).
       const refused = draft;
       const braces = checked.issues.map((issue) => braceRefused(refused, issue));
-      issues = checked.issues.map((issue, i) => settingRefusal(issue.path, words) ?? (braces[i] ? braceWords(page, braces[i] as BraceRefused, words) : words.refusals.invalid(issue.path, issue.message)));
+      // Whose words, as they stood before this typing began (the edits a person types merge into one): never the words
+      // half typed on the way to the brace (the 0.37 walk: "Your name (as on the {customer's words name {customer}").
+      const named = merge && merge === mergeKey && past.length ? past[past.length - 1] : page;
+      issues = checked.issues.map((issue, i) => settingRefusal(issue.path, words) ?? (braces[i] ? braceWords(named, braces[i] as BraceRefused, words) : words.refusals.invalid(issue.path, issue.message)));
       refusedEdit = { texts: issues, draft: refused, braces: braces.filter((one): one is BraceRefused => one !== null) };
       notify();
       return false;
@@ -1224,6 +1258,11 @@ export function createDesigner(options: {
           if (patch.secret !== undefined) {
             if (patch.secret) field.secret = true;
             else delete field.secret;
+          }
+          // Copied unless it says not: true leaves nothing written.
+          if (patch.copy !== undefined) {
+            if (patch.copy) delete field.copy;
+            else field.copy = false;
           }
           if (patch.required !== undefined) {
             if (patch.required) field.required = true;
@@ -2212,12 +2251,14 @@ export function createDesigner(options: {
       // A setting still typed is read first, as leaving its box reads it: what is published is what the boxes show.
       for (const read of [...readers]) read();
       const checked = schema.validatePage(page, { functions });
-      if (!checked.ok) throw new Error(words.refusals.cannotPublish);
+      // The designer's own refusal, in its words (the dialog says it as it is); the store's is its own error.
+      if (!checked.ok) throw new Refusal(words.refusals.cannotPublish);
       // Stored stamped with the lowest format its settings need: every Fieldia that reads that format reads it. Its
       // schema is the whole check's, a part of its own (`pageCheckPart`): fetched as a page is published, never before
       // the designer's first paint.
       const stamping = store ? (pageCheckPart.loaded ?? (await pageCheckPart.load())) : null;
-      const version = store && stamping ? await store.publish(stamping.stampPage(clone(page))) : versions.length + 1;
+      // The store's answer handled as it is given (`answerOf`): one refused at once is this call's to say, the zone's never.
+      const version = store && stamping ? await answerOf(store.publish(stamping.stampPage(clone(page)))) : versions.length + 1;
       // The page itself, as it is never written: the draft shares it until it is edited.
       versions = [...versions, { version, publishedAt: new Date().toISOString(), page }];
       notify();
@@ -2247,6 +2288,10 @@ export function createDesigner(options: {
 
     async settled() {
       await saving;
+    },
+    saveAgain() {
+      saveDraft();
+      return designer.settled();
     },
     // translations lane
     ...translationCommands({ apply, getPage: () => page }),
@@ -2363,7 +2408,8 @@ export function createDesigner(options: {
     regionSets: () => options.regionSets ?? [],
     async savedForms() {
       if (!store?.list) return [];
-      return (await store.list()).filter((ref) => ref.id !== page.id);
+      // The store's answer handled as it is given (`answerOf`); refused, it is the caller's to say, or to ask again later.
+      return (await answerOf(store.list())).filter((ref) => ref.id !== page.id);
     },
     savedForm(id, version) {
       const all = forms.versions(id);
@@ -2416,7 +2462,17 @@ createDesigner.open = async (
   store: PageStore,
   options: { model?: Record<string, Field>; lists?: AppList[]; functions?: FunctionsKnown; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void; locale?: DesignerLocale | (string & {}); regionSets?: readonly RegionSet[] } = {}
 ): Promise<Designer> => {
-  const [{ draft, versions }] = await Promise.all([store.load(id), designerWordsReady(options.locale)]);
+  // The store's answer handled as it is given (`answerOf`), asked beside the designer's words on their way — never left
+  // for a `Promise.all` of the page's, refused in its zone before an await here comes to it. The words' own failure kept
+  // as an answer, so neither is left unhandled while the other is awaited.
+  const loading = answerOf(store.load(id));
+  const words = designerWordsReady(options.locale).then(
+    () => null,
+    (error: unknown) => ({ error })
+  );
+  const { draft, versions } = await loading;
+  const failed = await words;
+  if (failed) throw failed.error;
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
   return createDesigner({ page, store, versions, model: options.model, lists: options.lists, functions: options.functions, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale, regionSets: options.regionSets });

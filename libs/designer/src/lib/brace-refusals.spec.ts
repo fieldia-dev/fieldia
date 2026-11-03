@@ -13,7 +13,8 @@ import { tryIt } from './try-it';
 function surveyWithName() {
   const designer = createDesigner({ page: blankPage('survey', 'Visit feedback') });
   const id = designer.addQuestion('short-answer') as string;
-  designer.updateQuestion(id, { label: 'Your name' });
+  // Named, then left: what is typed in it next begins anew (an edit that is not typing ends one).
+  designer.updateQuestion(id, { label: 'Your name', required: false });
   return { designer, id };
 }
 const labelOf = (designer: ReturnType<typeof createDesigner>, id: string) => {
@@ -28,6 +29,15 @@ describe('words whose braces name no field', () => {
     expect(designer.updateQuestion(id, { label: 'Your name (as on the {customer} line)' })).toBe(false);
     expect(designer.getState().issues).toEqual(['Your name’s words name {customer}, which is no field']);
     expect(designer.getState().issues.join(' ')).not.toMatch(/fields\.|no field "/);
+  });
+
+  it('typed key by key, name the question by its words before the typing began — never the words half typed', () => {
+    const { designer, id } = surveyWithName();
+    const typed = 'Your name (as on the {customer} line)';
+    // Each key one edit, as a person types in the question's box: the words with a brace still open pass ("…{customer"),
+    // its closing brace is refused.
+    for (let at = 'Your name'.length + 1; at <= typed.length; at++) designer.updateQuestion(id, { label: typed.slice(0, at) });
+    expect(designer.getState().issues).toEqual(['Your name’s words name {customer}, which is no field']);
   });
 
   it('are listed by Checks, with Show the braces as written, which keeps the words with their braces as words', () => {

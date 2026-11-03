@@ -131,6 +131,9 @@ function closureOf(outputs, file) {
  */
 function filesFor({ workspace, metafile, outdir, parts, already }, file, names) {
   const outputs = metafile.outputs;
+  // The whole check is the one-tag script's part alone (`partFiles` names it for every page, 0.37): an app's bundle carries
+  // it with the viewer, so these, an app's own builds, preload none of it.
+  names = names.filter((name) => name !== 'check');
   const byEntry = new Map(Object.entries(outputs).filter(([, info]) => info.entryPoint).map(([output, info]) => [info.entryPoint, output]));
   const skip = new Set(already.map((one) => relative(workspace, join(outdir, one))));
   const roots = [file && byEntry.get(file), ...names.flatMap((part) => (parts[part] ?? []).map((module) => byEntry.get(module)))].filter(Boolean);

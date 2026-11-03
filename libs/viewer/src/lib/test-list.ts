@@ -2,7 +2,7 @@ import { createMemoryDataSource, type Page } from '@fieldia/core';
 
 /** Customers as a list: four of them, two to a page. */
 export const customers: Page = {
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'customers',
   title: 'Customers',
   data: { kind: 'record', model: 'partner' },

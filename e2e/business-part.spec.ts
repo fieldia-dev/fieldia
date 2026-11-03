@@ -59,9 +59,9 @@ function scripts(page: Page) {
   const requested: string[] = [];
   page.on('request', (request) => requested.push(new URL(request.url()).pathname));
   // The demo's memory source's members come in a part of their own as it is first asked, and Ctrl+Z's as a form is
-  // first entered (script.spec), and the whole check as every page is drawn (page-check.spec): the source's and every
-  // form's, not the page's.
-  return () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path) && !/\/fieldia\.(memory|undo|check)\.js$/.test(path)).sort();
+  // first entered (script.spec), and the whole check as every page is drawn (page-check.spec), then what no page draws from (the acts part,
+  // acts-part.spec): the source's and every form's, not the page's.
+  return () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path) && !/\/fieldia\.(memory|undo|check|acts)\.js$/.test(path)).sort();
 }
 
 test.describe('the business widgets in a part of their own', () => {
@@ -86,11 +86,14 @@ test.describe('the business widgets in a part of their own', () => {
     await expect(page.locator('#app .fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Quotation Sent');
     await expect(page.locator('[data-node="f-priority"] .fd-priority-star.fd-on')).toHaveCount(1);
     await expect(page.locator('[data-node="f-hours"] input')).toHaveValue('02:30');
-    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for.
-    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.js', '/script/fieldia.loading.js']);
-    // Its stylesheet first of the parts', where its rules stood in Fieldia's: the statusbar's steps drawn as arrows.
+    // The loading part beside the page's own: its skeleton while they come — asked for, never waited for. And the sheet
+    // part, which puts its statusbar in the header, beside them (0.37).
+    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.js', '/script/fieldia.loading.js', '/script/fieldia.sheet.js']);
+    // Its stylesheet first of the parts' but a sheet's furniture's, where its rules stood in Fieldia's: the statusbar's
+    // steps drawn as arrows.
     expect(await page.evaluate(() => [...document.head.querySelectorAll('style[id^="fieldia"]')].map((style) => style.id))).toEqual([
       'fieldia-styles',
+      'fieldia-sheet-styles',
       'fieldia-business-styles',
       'fieldia-styles-looks',
     ]);
@@ -98,7 +101,7 @@ test.describe('the business widgets in a part of their own', () => {
     // A step clicked moves the record, as before.
     await page.locator('.fd-statusbar button', { hasText: 'Sales Order' }).click();
     await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Sales Order');
-    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.js', '/script/fieldia.loading.js']);
+    expect(asked()).toEqual(['/script/fieldia.business.js', '/script/fieldia.js', '/script/fieldia.loading.js', '/script/fieldia.sheet.js']);
     expect(problems).toEqual([]);
   });
 

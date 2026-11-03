@@ -221,7 +221,7 @@ class FunctionsHostComponent {
 
 @Component({
   imports: [FieldiaFormComponent],
-  template: `<main><h1>The app</h1><fieldia-form [page]="page()" (partError)="told.push($event.where)" /></main>`,
+  template: `<main><h1>The app</h1><fieldia-form [page]="page()" [development]="true" (partError)="told.push($event.where)" /></main>`,
 })
 class RefusedHostComponent {
   static readonly good: Page = { fieldia: '0.13', id: 'note', data: { kind: 'responses' }, fields: { note: { type: 'char', label: 'Note' } }, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-note', field: 'note' }] } };
@@ -248,10 +248,25 @@ describe('<fieldia-form> for Angular', () => {
     const el = fixture.nativeElement as HTMLElement;
     // The app round it is still there: the viewer's refusal never tears it down.
     expect(el.querySelector('h1')?.textContent).toBe('The app');
-    expect(el.querySelector('[role="alert"]')?.textContent).toMatch(/^This form cannot be shown: its page has mistakes/);
+    // Its visitor's words; what is wrong under them, the app being made (`development`).
+    expect(el.querySelector('[role="alert"]')?.textContent).toBe('This form is not available right now. Please try again later, or contact whoever sent it to you.');
     expect([...el.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['layout.children[0].field']);
     expect(fixture.componentInstance.told).toEqual([{ stage: 'draw', part: 'page' }]);
     // A page that passes, given next, is drawn in the words' place.
+    fixture.componentInstance.page.set(RefusedHostComponent.good);
+    await fixture.whenStable();
+    expect(el.querySelector('.fd-unshown')).toBeNull();
+    expect(el.querySelector('input')).not.toBeNull();
+    // Drawn, then taken down as its whole check runs (0.37, page.invalid): told as the whole check's.
+    fixture.componentInstance.told.length = 0;
+    fixture.componentInstance.page.set({ ...RefusedHostComponent.good, fields: { note: { type: 'char', label: 'Note', required: 'yes' } } } as unknown as Page);
+    await fixture.whenStable();
+    expect(el.querySelector('input')).not.toBeNull();
+    for (let i = 0; i < 100 && !el.querySelector('.fd-unshown'); i++) await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(el.querySelector('h1')?.textContent).toBe('The app');
+    expect([...el.querySelectorAll('.fd-unshown li code')].map((code) => code.textContent)).toEqual(['fields.note.required']);
+    expect(el.querySelector('.fd-field')).toBeNull();
+    expect(fixture.componentInstance.told).toEqual([{ stage: 'check', part: 'page' }]);
     fixture.componentInstance.page.set(RefusedHostComponent.good);
     await fixture.whenStable();
     expect(el.querySelector('.fd-unshown')).toBeNull();

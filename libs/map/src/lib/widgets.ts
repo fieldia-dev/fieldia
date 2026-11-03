@@ -1,5 +1,6 @@
 import { createWidget, partFactory, type WidgetFactory } from '@fieldia/widgets';
 import { mapWidgetsPart } from './map-parts';
+import { adoptedSettings } from './adopt';
 import type { MapSettings } from './settings';
 
 /**
@@ -19,7 +20,9 @@ import type { MapSettings } from './settings';
  * has come, as every part is; one made before it came, by something that did not wait for it, is Fieldia's own box for
  * its field until it comes.
  */
-export function mapWidgets(settings: MapSettings): Record<string, WidgetFactory> {
+export function mapWidgets(given: MapSettings): Record<string, WidgetFactory> {
+  // Every answer the app gives the maps handled as it is given (adopt.ts).
+  const settings = adoptedSettings(given);
   const plain: WidgetFactory = (context) => createWidget(context, {});
   let made: { place: WidgetFactory; area: WidgetFactory; address: WidgetFactory } | null = null;
   const real = (module: NonNullable<typeof mapWidgetsPart.loaded>) => (made ??= { place: module.placeWidget(settings), area: module.areaWidget(settings), address: module.addressSearchWidget(settings) });

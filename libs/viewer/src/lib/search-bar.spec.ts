@@ -1,4 +1,4 @@
-import type { Page } from '@fieldia/core';
+import type { ListNode, Page } from '@fieldia/core';
 import { memoryPreferences, type PreferenceStore } from '@fieldia/widgets';
 import { customers, partners, until } from './test-list';
 import { mountViewer, type ViewerHandle } from './viewer';
@@ -17,6 +17,21 @@ async function mount(preferences: PreferenceStore = memoryPreferences(), page: P
   await until(() => host.querySelector('.fd-list-row'));
   return host;
 }
+/** The customers' filters in two groups: a status, and a country. */
+// Filters in groups came in format 0.14: a page that uses them says so, or the viewer takes it down as under-stamped.
+const grouped = {
+  ...customers,
+  fieldia: '0.14',
+  layout: {
+    ...customers.layout,
+    filters: [
+      { id: 'active', label: 'Active', filter: [{ field: 'state', op: '=', value: 'active' }], group: 'state' },
+      { id: 'egypt', label: 'Egypt', filter: [{ field: 'country_id', op: '=', value: 1 }], group: 'country' },
+      { id: 'blocked', label: 'Blocked', filter: [{ field: 'state', op: '=', value: 'blocked' }], group: 'state' },
+      { id: 'jordan', label: 'Jordan', filter: [{ field: 'country_id', op: '=', value: 2 }], group: 'country' },
+    ],
+  },
+} as Page;
 const input = (host: Element) => host.querySelector('.fd-search-input') as HTMLInputElement;
 const names = (host: Element) => [...host.querySelectorAll('.fd-list-row')].map((row) => row.querySelectorAll('td')[1].textContent);
 const chips = (host: Element) => [...host.querySelectorAll('.fd-facet .fd-facet-text')].map((chip) => chip.textContent);
@@ -116,6 +131,65 @@ describe('the search bar', () => {
     toggle.click();
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
     expect(panel.hidden).toBe(true);
+  });
+
+  it('keeps filters of a group apart from another’s: a line between them in the menu, a chip each whose × takes its group off, and every group holding', async () => {
+    const host = await mount(memoryPreferences(), grouped);
+    button(host, 'Search options').click();
+    const panel = host.querySelector('.fd-search-panel') as HTMLElement;
+    // The menu: each group's filters together, in the order the groups first come, a separator between them.
+    const menu = panel.querySelector('[data-group-kind="filters"]') as HTMLElement;
+    expect([...menu.querySelectorAll('.fd-search-option[data-filter], [role="separator"]')].map((part) => (part.getAttribute('role') === 'separator' ? '—' : part.textContent))).toEqual(['Active', 'Blocked', '—', 'Egypt', 'Jordan']);
+    button(panel, 'Active').click();
+    button(panel, 'Egypt').click();
+    // Active, and in Egypt.
+    expect(chips(host)).toEqual(['Active', 'Egypt']);
+    await shows(host, ['Nile Traders']);
+    button(panel, 'Blocked').click();
+    button(panel, 'Jordan').click();
+    expect(chips(host)).toEqual(['Active or Blocked', 'Egypt or Jordan']);
+    await shows(host, ['Nile Traders', 'Petra Tours']);
+    // A chip's × takes its own group's filters off, and the menu says so.
+    button(host, 'Remove Egypt or Jordan').click();
+    expect(chips(host)).toEqual(['Active or Blocked']);
+    // The focus in the box, the menu gave way: opened again, it says so.
+    button(host, 'Search options').click();
+    expect(button(panel, 'Egypt').getAttribute('aria-pressed')).toBe('false');
+    expect(button(panel, 'Active').getAttribute('aria-pressed')).toBe('true');
+    await until(() => total(host) === '1–2 / 3');
+    // Backspace takes the last chip away: the last group.
+    button(panel, 'Egypt').click();
+    expect(chips(host)).toEqual(['Active or Blocked', 'Egypt']);
+    type(host, '');
+    press(host, 'Backspace');
+    expect(chips(host)).toEqual(['Active or Blocked']);
+    // The same filters naming no group: one chip, any of them, as before.
+    const plain = await mount(memoryPreferences(), { ...grouped, layout: { ...grouped.layout, filters: (grouped.layout as ListNode).filters!.map(({ group: _, ...filter }) => filter) } } as Page);
+    button(plain, 'Search options').click();
+    const panelPlain = plain.querySelector('.fd-search-panel') as HTMLElement;
+    expect(panelPlain.querySelectorAll('[role="separator"]')).toHaveLength(0);
+    button(panelPlain, 'Active').click();
+    button(panelPlain, 'Egypt').click();
+    expect(chips(plain)).toEqual(['Active or Egypt']);
+    await shows(plain, ['Amira Clinics', 'Nile Traders']);
+    // Both pages' whole check passed: each stays, never taken down after the test has read it.
+    for (const one of handles) expect(await one.refused).toBeNull();
+  });
+
+  it('counts each filter as if it alone of its group were on, the other groups’ kept', async () => {
+    const host = await mount(memoryPreferences(), { ...grouped, layout: { ...grouped.layout, filterCounts: true } } as Page);
+    button(host, 'Search options').click();
+    const panel = host.querySelector('.fd-search-panel') as HTMLElement;
+    const counts = () => ['Active', 'Blocked', 'Egypt', 'Jordan'].map((name) => `${name} ${panel.querySelector(`[data-filter="${name.toLowerCase()}"] .fd-filter-count`)?.textContent ?? '-'}`);
+    await until(() => counts().every((said) => !said.endsWith('-')));
+    expect(counts()).toEqual(['Active 2', 'Blocked 1', 'Egypt 2', 'Jordan 1']);
+    panel.querySelector<HTMLButtonElement>('[data-filter="active"]')!.click();
+    // Active on: its own group counts as before; Egypt and Jordan count the active ones.
+    await until(() => counts()[2] === 'Egypt 1');
+    expect(counts()).toEqual(['Active 2', 'Blocked 1', 'Egypt 1', 'Jordan 1']);
+    panel.querySelector<HTMLButtonElement>('[data-filter="jordan"]')!.click();
+    await until(() => counts()[0] === 'Active 1');
+    expect(counts()).toEqual(['Active 1', 'Blocked 0', 'Egypt 1', 'Jordan 1']);
   });
 
   it('builds a filter of its own: a field, a condition that suits it, and a value', async () => {

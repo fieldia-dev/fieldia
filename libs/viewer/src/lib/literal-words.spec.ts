@@ -158,7 +158,8 @@ async function drawn(page: Page, every: boolean): Promise<string[]> {
       if (line) {
         press(line);
         await now(8);
-        press(document.querySelector('[role="dialog"] .fd-button-primary'));
+        // Its own Save & Close, at its foot: never a button of the page in it, shown or hidden (Keep mine, Restore).
+        press(document.querySelector('[role="dialog"] .fd-form-dialog-foot .fd-button-primary'));
         await now(8);
         escape();
         await flush();

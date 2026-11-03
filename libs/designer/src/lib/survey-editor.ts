@@ -218,7 +218,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const body = el('div', { class: 'fd-designer-body fd-survey-body' }, side.element, editor);
   const sheet = toolsSheet({ el, doc, root, side: side.element, words: designer.words });
   const json = jsonView({ el, doc, designer, trial, body });
-  root.append(bar.element, bar.issues, body, trial.element, json.element);
+  root.append(bar.element, bar.issues, bar.unsaved, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
   const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });

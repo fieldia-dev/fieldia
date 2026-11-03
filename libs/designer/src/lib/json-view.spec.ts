@@ -1,4 +1,4 @@
-import type { FieldNode, Page, WizardNode } from '@fieldia/core';
+import { FORMAT_VERSION, type FieldNode, type Page, type WizardNode } from '@fieldia/core';
 import { elementFactory } from './chrome';
 import { blankPage, createDesigner } from './designer';
 import { jsonView, type JsonView } from './json-view';
@@ -93,7 +93,7 @@ describe('the JSON view', () => {
     const { designer, button, box, type, named, rows } = setup();
     button('json').click();
     const page = designer.getPage();
-    const text = box().value.replace('"fieldia": "0.13",', '"fieldia": "0.13"');
+    const text = box().value.replace(`"fieldia": "${FORMAT_VERSION}",`, `"fieldia": "${FORMAT_VERSION}"`);
     type(text);
     expect(rows()).toEqual(['Line 3Cannot applyA comma is missing before this']);
     expect([...(view?.element.querySelectorAll('.fd-json-mark') ?? [])].map((m) => m.getAttribute('data-line'))).toEqual(['3']);

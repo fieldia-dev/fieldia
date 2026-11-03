@@ -4,7 +4,7 @@ import { gridWidgets } from './grid';
 
 /** The grid's buttons besides those on each line: lines chosen with a tick and a bar of buttons for them, buttons beside Add a line, and a copy of a line. */
 const page = {
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'mo',
   data: { kind: 'record', model: 'mrp.production' },
   fields: {
@@ -55,11 +55,11 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function mount(state = 'progress') {
+async function mount(state = 'progress', shown = page) {
   const asked: ActionRequest[] = [];
   const host = document.createElement('div');
   document.body.append(host);
-  handle = mountViewer(host, { page, widgets: gridWidgets, values: { state, workorder_ids: lines } as never, onAction: (request) => void asked.push(request) });
+  handle = mountViewer(host, { page: shown, widgets: gridWidgets, values: { state, workorder_ids: lines } as never, onAction: (request) => void asked.push(request) });
   await frames();
   const grid = host.querySelector('[data-node="f-wo"] .fd-grid-lines') as HTMLElement;
   return { grid, asked, form: handle.form };
@@ -119,11 +119,24 @@ describe('the grid’s buttons beside Add a line, and a line copied', () => {
     expect(now.map((l) => l.values['name'])).toEqual(['Assembly', 'Cut', 'Cut', 'Glue']);
     expect(now[2].id).toBeUndefined();
   });
+
+  it('starts a line field that says copy: false in the copy as a new line starts it — its default, else empty', async () => {
+    const table = page.fields['workorder_ids'] as { fields: Record<string, unknown> };
+    // A field a copy does not keep came in format 0.14: the page says so, or the viewer takes it down as under-stamped.
+    const own = { ...page, fieldia: '0.14', fields: { ...page.fields, workorder_ids: { ...table, fields: { ...table.fields, hours: { type: 'float', label: 'Hours', copy: false, default: 1 } } } } } as unknown as Page;
+    const { grid, form } = await mount('progress', own);
+    (grid.querySelector('.ag-row[row-index="1"] button.fd-line-copy') as HTMLButtonElement).click();
+    await frames();
+    const now = form.getState().values['workorder_ids'] as Line[];
+    expect(now.map((l) => [l.values['name'], l.values['hours']])).toEqual([['Assembly', null], ['Cut', 2], ['Cut', 1], ['Glue', 1]]);
+    // Its whole check passed: the page stays.
+    expect(await handle?.refused).toBeNull();
+  });
 });
 
 describe('a grid’s line opening its own record’s page', () => {
   const matter = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'matter',
     data: { kind: 'record', model: 'legal.matter' },
     fields: {
@@ -132,7 +145,7 @@ describe('a grid’s line opening its own record’s page', () => {
     layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-h', field: 'hearing_ids', widget: 'grid', lineOpens: 'record' }] },
   } as unknown as Page;
   const hearing = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'hearing',
     data: { kind: 'record', model: 'legal.hearing' },
     fields: { court: { type: 'char', label: 'Court' }, judge: { type: 'char', label: 'Presiding judge' } },
@@ -166,7 +179,7 @@ describe('a grid’s line opening its own record’s page', () => {
 
 describe('the grid on a phone', () => {
   const order = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'order',
     data: { kind: 'record', model: 'sale.order' },
     fields: {

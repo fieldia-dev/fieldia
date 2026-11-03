@@ -4,12 +4,15 @@ import { checkPage } from './check-page';
 import { wholeCheck } from './check-whole';
 import { validatePage } from './validate';
 import { stampPage } from './stamp';
+import * as Viewer036 from './test-version-0.36';
 
 /**
  * docs/agents.md, the guide for AI agents writing pages, says what the checks say: each mistake of its table refused
- * by `validatePage` and the whole check alike, in the very words the guide quotes; what a 0.36 viewer does with it —
- * refuses it before the draw (`checkPage`), or draws it and says it — as its table says; and its worked example answered
- * as it shows: the first page's four problems, the one a viewer refuses it for, the second page passing, stamped "0.3".
+ * by `validatePage` and the whole check alike, in the very words the guide quotes; what a 0.37 viewer does with it —
+ * refuses it before the draw as 0.35's did (`checkPage`), or takes it down as its whole check runs (0.36 drew it) — as
+ * its table says; and
+ * its worked example answered as it shows: the first page's four problems, the one the check before the draw refuses it
+ * for, the second page passing, stamped "0.3".
  */
 const GUIDE = readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'docs', 'agents.md'), 'utf8');
 const base = () => ({
@@ -63,12 +66,12 @@ const MISTAKES: [string, Page][] = [
   [`fields.topic.options[2].value: "sales" is the value of an option before it: each option's value once`, made((p) => (fields(p)['topic']['options'] as unknown[]).push({ value: 'sales', label: 'Sales again' }))],
   ['layout.columns[1]: "name" is a column before it: each column once', { ...(base() as Page), data: { kind: 'record', model: 'contact' }, layout: { type: 'list', id: 'list', columns: ['name', 'name'] } } as unknown as Page],
   ['layout.children[1].options.countries: countries is "list" (Fieldia’s own, found by typing) or "native" (the browser’s own list)', made((p) => Object.assign(parts(p)[1], { widget: 'phone', options: { countries: 'all' } }))],
-  ['fieldia: "fieldia" says which format the page is written in: "0.13" for this Fieldia', made((p) => delete (p as Record<string, unknown>)['fieldia'])],
-  ['fieldia: this page is in format 0.99, newer than this Fieldia reads (0.13): update Fieldia to show it', made((p) => (p.fieldia = '0.99'))],
+  ['fieldia: "fieldia" says which format the page is written in: "0.14" for this Fieldia', made((p) => delete (p as Record<string, unknown>)['fieldia'])],
+  ['fieldia: this page is in format 0.99, newer than this Fieldia reads (0.14): update Fieldia to show it', made((p) => (p.fieldia = '0.99'))],
 ];
 
 describe('docs/agents.md says what the checks say', () => {
-  it.each(MISTAKES)('"%s": quoted in the guide, said by validatePage, refused by the whole check, a 0.36 viewer as it says', (words, page) => {
+  it.each(MISTAKES)('"%s": quoted in the guide, said by validatePage, refused by the whole check, a 0.37 viewer as it says', (words, page) => {
     expect(GUIDE).toContain(`\`${words}\``);
     const validated = validatePage(page);
     expect(validated.ok).toBe(false);
@@ -76,16 +79,38 @@ describe('docs/agents.md says what the checks say', () => {
     // The guide may end a long one with "…": what it quotes is the start of what the check says.
     expect(said).toContain(words.replace(/, …$/, ''));
     expect(wholeCheck(page).ok).toBe(false);
-    // Its row says what a 0.36 viewer does: refuses it before the draw, or draws it and says it (refused from 0.37).
+    // Its row says what a 0.37 viewer does: refuses it as 0.35's did, or takes it down as its whole check runs.
     const row = GUIDE.split('\n').find((line) => line.startsWith('| ') && line.includes(`\`${words}\``)) ?? '';
     const viewer = row.split(/(?<!\\)\|/)[3]?.trim();
-    expect(viewer).toBe(checkPage(page).ok ? 'draws it, says it' : 'refuses it');
+    expect(viewer).toBe(checkPage(page).ok ? 'takes it down (0.36 drew it)' : 'refuses it, as 0.35 did');
   });
 
   it('every row of its table is one of these', () => {
     const table = GUIDE.split('## The mistakes the checks catch')[1].split('\n## ')[0];
     const rows = table.split('\n').filter((line) => /^\| [^-|]/.test(line) && !line.startsWith('| Mistake'));
     expect(rows.length).toBe(MISTAKES.length);
+  });
+
+  it('what a copy keeps and filters in groups: each as the guide writes it, stamped 0.14, refused by a 0.36 viewer and by the checks as it quotes', () => {
+    const section = GUIDE.split('## What a copy keeps, and filters in groups')[1].split('\n## ')[0];
+    const bill = { ...base(), fieldia: '0.14', data: { kind: 'record', model: 'account.move' }, fields: { ...base().fields, state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }], default: 'draft', copy: false } } };
+    expect(section).toContain('"state": { "type": "selection", …, "default": "draft", "copy": false }');
+    expect(validatePage(bill)).toMatchObject({ ok: true });
+    expect(stampPage(bill).fieldia).toBe('0.14');
+    // Still saying "0.13": refused as stamped older than a setting it uses, by validatePage and the whole check (0.37).
+    expect(section).toContain('but still says `"fieldia": "0.13"` is refused as stamped older than a setting it uses');
+    for (const check of [validatePage, wholeCheck]) expect(check({ ...bill, fieldia: '0.13' })).toMatchObject({ ok: false, issues: [{ path: 'fields.state.copy' }] });
+    const list = (group: string) => ({ ...base(), fieldia: '0.14', data: { kind: 'record', model: 'lead' }, layout: { type: 'list', id: 'leads', columns: ['name'], filters: [{ id: 'late', label: 'Late', filter: [{ field: 'seats', op: '>', value: 1 }], group }] } });
+    expect(section).toContain('"group": "when"');
+    expect(validatePage(list('when'))).toMatchObject({ ok: true });
+    expect(stampPage(list('when')).fieldia).toBe('0.14');
+    const refused = validatePage(list('due date'));
+    const words = 'layout.filters[0].group: a filter’s group is named by one word, such as "when"';
+    expect(section).toContain(`\`${words}\``);
+    expect(refused.ok ? [] : refused.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual([words]);
+    expect(wholeCheck(list('due date')).ok).toBe(false);
+    // The words an older viewer says: the 0.36 viewer's own check, as it was released.
+    expect(section).toContain(`\`${Viewer036.formatProblem('0.14', Viewer036.FORMAT_VERSIONS)}\``);
   });
 
   it('its worked example: the first page answered as the guide shows, the second passing, stamped "0.3"', () => {
@@ -95,7 +120,7 @@ describe('docs/agents.md says what the checks say', () => {
     expect(blocks.length).toBeGreaterThan(3);
     const refused = validatePage(JSON.parse(first));
     expect(refused.ok ? [] : refused.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(answer.split('\n'));
-    // A viewer refuses it before the draw, for the one mistake the guide names; fixed alone, it draws it and says the rest.
+    // The check before the draw refuses it for the one mistake the guide names; fixed alone, the whole check the rest.
     const before = checkPage(JSON.parse(first));
     expect(before.ok ? [] : before.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual(['fields.email: a field needs a type Fieldia knows and a label']);
     expect(example).toContain('`fields.email: a field needs a type Fieldia knows and a label`');

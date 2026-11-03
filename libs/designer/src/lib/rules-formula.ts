@@ -1,4 +1,4 @@
-import { ANY_FUNCTION, compileModifier, createForm, foldDigits, functionTable, kindProblems, parseExpression, type Field, type FunctionsKnown, type FunctionTable, type KindProblem, type Page } from '@fieldia/core';
+import { ANY_FUNCTION, compileModifier, createForm, FORMAT_VERSION, foldDigits, functionTable, kindProblems, parseExpression, type Field, type FunctionsKnown, type FunctionTable, type KindProblem, type Page } from '@fieldia/core';
 import { uncalled } from './uncalled';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
@@ -360,7 +360,7 @@ function samplesFor(page: Page, reads: string[]): Record<string, unknown> {
  * functions are known, never called: on made-up values one gives nothing.
  */
 function settled(fields: Page['fields'], values: Record<string, unknown>, functions?: FunctionsKnown): Record<string, unknown> | null {
-  const trial: Page = { fieldia: '0.1', id: 'sample', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children: [] } };
+  const trial: Page = { fieldia: FORMAT_VERSION, id: 'sample', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children: [] } };
   const known = uncalled(functions);
   try {
     return createForm({ page: trial, values: values as never, ...(known ? { functions: known } : {}) }).getState().values;

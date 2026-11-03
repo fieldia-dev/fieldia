@@ -42,6 +42,10 @@ export const bar = {
   keepEditing: 'Keep editing',
   publishVersion: (version: number) => `Publish version ${version}`,
   publishFailed: 'It could not be published.',
+  /** A publish the app's store refused: said with its words after it, and Try again. */
+  notPublished: (version: number) => `Version ${version} could not be published`,
+  /** A save of the draft the app's store refused: said under the bar with its words after it, and Try again. */
+  notSaved: 'Your changes could not be saved',
   close: 'Close',
   publishQuestion: (version: number) => `Publish version ${version}?`,
   changesSince: (n: number, version: number) => `${plural('en', n, { one: '# change', other: '# changes' })} since version ${version}:`,

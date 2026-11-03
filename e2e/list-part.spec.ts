@@ -55,9 +55,9 @@ test.describe('the list screen in a part of its own', () => {
     const requested: string[] = [];
     page.on('request', (request) => requested.push(new URL(request.url()).pathname));
     // The demo's memory source's members come in a part of their own as it is first asked, and Ctrl+Z's as a form is
-  // first entered (script.spec), and the whole check as every page is drawn (page-check.spec): the source's and every
-  // form's, not the page's.
-    const scripts = () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path) && !/\/fieldia\.(memory|undo|check)\.js$/.test(path)).sort();
+  // first entered (script.spec), and the whole check as every page is drawn (page-check.spec), then what no page draws from (the acts part,
+  // acts-part.spec): the source's and every form's, not the page's.
+    const scripts = () => requested.filter((path) => /\/fieldia(\.\w+)?\.js$/.test(path) && !/\/fieldia\.(memory|undo|check|acts)\.js$/.test(path)).sort();
     await page.goto('/script/');
     await expect(page.locator('.fd-form')).toBeVisible();
     await page.waitForLoadState('networkidle');

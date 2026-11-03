@@ -123,6 +123,12 @@
       "label": "Bedrooms",
       "min": 0
     },
+    "greeting": {
+      "type": "char",
+      "label": "Greeting",
+      "help": "Your reply opens with these words, then the buyer’s first name, where the agency’s template says \\{customer}. A space at their end is kept.",
+      "default": "Dear "
+    },
     "reply": {
       "type": "text",
       "label": "Your reply"
@@ -229,6 +235,14 @@
         "id": "answer",
         "title": "Your reply",
         "children": [
+          {
+            "type": "field",
+            "id": "f-greeting",
+            "field": "greeting",
+            "options": {
+              "trim": false
+            }
+          },
           {
             "type": "field",
             "id": "f-reply",

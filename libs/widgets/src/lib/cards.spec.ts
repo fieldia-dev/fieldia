@@ -141,6 +141,13 @@ describe('a repeating group’s cards moved and copied', () => {
     expect(shown(el).every((card) => button(card, `Copy ${card.querySelector('.fd-repeat-title')?.textContent}`).hidden)).toBe(true);
   });
 
+  it('starts a line field that says copy: false in the copy as a new card starts it — its default, else empty', () => {
+    const { el, value, form } = mountKind({ ...GUESTS, fields: { ...GUESTS.fields, team: { type: 'char', label: 'Team', copy: false, default: 'Guests' }, room: { type: 'char', label: 'Room', copy: false } } }, { widget: 'cards', options: { itemLabel: 'Person' } });
+    form.addLine('x', { name: 'Sara', team: 'Sales', room: '12' });
+    button(shown(el)[0], 'Copy Person 1').click();
+    expect(lines(value()).map((line) => [line.values['name'], line.values['team'], line.values['room']])).toEqual([['Sara', 'Sales', '12'], ['Sara', 'Guests', null]]);
+  });
+
   it('offers no moving or copying when read-only', () => {
     const { el, refresh } = three();
     refresh({ readonly: true });

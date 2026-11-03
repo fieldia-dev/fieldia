@@ -207,7 +207,7 @@ export function numberProblems(doc, workspace = WORKSPACE) {
   return problems;
 }
 
-/** The deprecations table is the list, entry for entry: its id, since, changesIn and who. */
+/** The deprecations table is the list, entry for entry: its id, since, changesIn and who, and whether it is changed. */
 export function deprecationProblems(doc, deprecations) {
   const problems = [];
   const table = tablesOf(doc).find((rows) => rows[0][0] === 'Id' && rows[0].includes('Changes in'));
@@ -217,6 +217,8 @@ export function deprecationProblems(doc, deprecations) {
     const row = rows.get(one.id);
     if (!row) problems.push(`${one.id} is deprecated (libs/core/src/lib/deprecations.ts) and not in the table`);
     else if (row[1] !== one.since || row[2] !== one.changesIn || row[3] !== one.who) problems.push(`${one.id}: the table says ${row.slice(1, 4).join(', ')}; the list ${one.since}, ${one.changesIn}, ${one.who}`);
+    // Changed by its minor (`changed`): the row says so first, as the console says it no more; a row not changed never does.
+    else if (!!one.changed !== (row[4] ?? '').startsWith(`Changed in ${one.changesIn}:`)) problems.push(`${one.id}: ${one.changed ? `the list says it is changed: its row starts "Changed in ${one.changesIn}:"` : 'the list says it is not changed yet: its row does not say it is'}`);
   }
   for (const id of rows.keys()) if (!deprecations.some((one) => one.id === id)) problems.push(`${id} is in the table and not in the list`);
   return problems;

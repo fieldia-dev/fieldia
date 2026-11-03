@@ -3,7 +3,6 @@ import { shapeCheck } from './shape-check';
 import { compareFormats, FORMAT_VERSIONS, type FormatVersion } from './version';
 import { PAGE_UPGRADES, upgradePage, type PageJson, type PageUpgrade } from './upgrade';
 import type { PageIssue } from './references';
-import { deprecated } from '../deprecations';
 
 /**
  * The lowest format a page's settings need (the audit's R-M7): the newest format any setting it uses came in — a key,
@@ -39,7 +38,7 @@ export function needOf(page: unknown, found: { need: number; needAt: string } = 
 /**
  * Why a page says a format lower than one a setting it uses came in — an older Fieldia reading it would not know that
  * setting — or null: the page is read by its stamp. `given`, the page as it was given, before it was brought up to date.
- * In 0.36 the checks warn of it (`warnUnderStamped`); from 0.37 they refuse it (DEPRECATIONS: `format.under-stamped`).
+ * `validatePage` and the whole check refuse it (0.37; warned of in 0.36: DEPRECATIONS, `format.under-stamped`).
  */
 export function stampProblem(given: unknown, need: { index: number; at: string }): PageIssue | null {
   const stamp = (given as { fieldia?: unknown } | null)?.fieldia;
@@ -49,14 +48,4 @@ export function stampProblem(given: unknown, need: { index: number; at: string }
     path: need.at,
     message: `this came in format ${needed}, but the page says it is in format ${stamp}, which a Fieldia reading ${stamp} would read without it: write "fieldia": "${needed}" — lowestFormat(page) gives the lowest a page needs`,
   };
-}
-
-/**
- * A page stamped lower than it needs, said once in the page's console (`format.under-stamped`): read as it is in 0.36,
- * refused from 0.37. Returns the problem, for `validatePage` to give among its warnings.
- */
-export function warnUnderStamped(given: unknown, need: { index: number; at: string }): PageIssue | null {
-  const problem = stampProblem(given, need);
-  if (problem) deprecated('format.under-stamped', `${problem.path}: ${problem.message} — read as it is now, refused from 0.37`, '0.37');
-  return problem;
 }

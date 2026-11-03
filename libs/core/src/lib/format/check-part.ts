@@ -1,8 +1,8 @@
 /**
  * The whole check of a page (check-whole.ts) — the format's schema and its rules, read without the validation library,
- * and the settings held to themselves — in a part of its own: what `checkPageWhole` fetches, and the viewer after a
- * page's first draw (page-check.ts). Every page drawn asks for it then; none waits for it to be drawn (0.36). From 0.37,
- * which refuses what it finds, it is to be asked for as the script starts, beside the page's own parts.
+ * and the settings held to themselves — in a part of its own: what `checkPageWhole` fetches, and every viewer as a page is
+ * mounted, running it as soon as the page is drawn (page-check.ts); the one-tag script asks for it as it starts. None
+ * waits for it to be drawn.
  */
 export { wholeCheck } from './check-whole';
 // A page stamped with the lowest format its settings need, read from the same schema: where pages are saved (the

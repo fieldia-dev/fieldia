@@ -59,7 +59,7 @@ const RULES = [
     pattern: /\.(inner|outer)HTML\s*=(?!=)(?!\s*(?:heldHtml\(|['"`]|[A-Z][A-Z_]*\b))|insertAdjacentHTML\(\s*[^,]+,(?!\s*(?:heldHtml\(|['"`]))/,
     // A drawing of Fieldia's own, its shapes written in the code.
     allow: [
-      { file: 'libs/widgets/src/lib/extras.ts', has: 'button.innerHTML = icon;' },
+      { file: 'libs/widgets/src/lib/html-classic.ts', has: 'button.innerHTML = icon;' },
       { file: 'libs/widgets/src/lib/icons.ts', has: 'svg.innerHTML = inside;' },
       { file: 'libs/widgets/src/lib/text-tools.ts', has: "svg.innerHTML = tool === 'emoji' ? drawing" },
       { file: 'libs/chatter/src/lib/channels.ts', has: 'svg.innerHTML = two ?' },

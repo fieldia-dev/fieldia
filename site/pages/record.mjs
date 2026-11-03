@@ -36,7 +36,7 @@ ${code(
   <thead><tr><th>Built-in</th><th>What it does</th></tr></thead>
   <tbody>
     <tr><td>${c('archive')} · ${c('unarchive')}</td><td>Asks first, then archives through your data source's ${c('archive')}, or your app's action ${c('archive')}; the record is loaded again. Archive shows while the record's ${c('active')} is not false, Unarchive while it is.</td></tr>
-    <tr><td>${c('duplicate')}</td><td>Saves what changed, copies the record through ${c('copy')} — or your action ${c('duplicate')}, answering with the copy's ${c('record')} — and shows the copy.</td></tr>
+    <tr><td>${c('duplicate')}</td><td>Saves what changed, copies the record through ${c('copy')} — or your action ${c('duplicate')}, answering with the copy's ${c('record')} — and shows the copy: every value but those <a href="#copy">a copy does not keep</a>.</td></tr>
     <tr><td>${c('delete')}</td><td>Asks first, then deletes through ${c('delete')}, or your action ${c('delete')}. The pager moves to the next record; with none left, the breadcrumbs go back; else the form starts a new one.</td></tr>
     <tr><td>${c('print')}</td><td>Under Print, as <em>This record</em> (<em>This invoice</em> where the page names its records): the record on paper, alone, as <a href="#print">the page prints</a>.</td></tr>
   </tbody>
@@ -50,6 +50,20 @@ ${code(
 )}
 <p>Give a built-in steps of its own and they run instead, without its question: Flectra's employee form, whose Archive opens the departure wizard, is ${c('{ "id": "m-archive", "builtin": "archive", "steps": [{ "do": "open", "page": "hr-departure-wizard", "record": "id" }] }')}. The same steps — ${c('archive')}, ${c('unarchive')}, ${c('duplicate')}, ${c('delete')} — run from any button or moment, as <a href="/actions/#steps">Actions</a> says.</p>
 <p>Where the record's data source says the person may not archive, duplicate or delete it (${c('can')}, see <a href="/data/#permissions">what this person may do</a>), those items are not in the menu, nor the buttons whose steps would do it; the menu's foot says why, and the steps refuse if run from elsewhere.</p>
+
+<h2 id="copy">What a copy keeps</h2>
+<p>Duplicate copies every value but a field's that says ${c('"copy": false')}, as Odoo's ${c('copy=False')}: the copy starts it as a new record does — its ${c('default')}, or what its ${c('defaultFrom')} works out — else empty. A posted bill's copy is a draft to change and confirm on its own, never a second posted bill:</p>
+${code(
+  'json',
+  `
+"state": {
+  "type": "selection", "label": "Status",
+  "options": [{ "value": "draft", "label": "Draft" }, { "value": "posted", "label": "Posted" }],
+  "default": "draft",
+  "copy": false
+}`
+)}
+<p>Your data source makes the copy and applies it: its ${c('copy')} is given the page's ${c('fields')}, and the copy it answers with is shown as it is — Fieldia writes nothing to it after. The memory source applies it; an Odoo or Flectra server applies its own ${c('copy=False')}. On a table's line field, a line's own copy (its ⧉, a card's Copy) starts the field as a new line does, the record's ${c('lineDefaults')} too, and the memory source's copy of a record does the same in each of its lines; a table that says ${c('"copy": false')} is copied with no lines. A field is copied unless it says false — a status bar's field too; the designer's <em>Copied with the record</em> starts off for a status it adds. ${c('copy')} came in format 0.14: a page that uses it says ${c('"fieldia": "0.14"')}, which ${c('stampPage')} writes.</p>
 
 <h2 id="head">A work item's head</h2>
 <p>A sheet's ${c('head')} draws the record as a work tracker draws a bug: its kind's strip of colour along the start edge and a badge — the kind's icon, its name in capitals, the record's number — over the title; the number before the title, with Copy title at its end while it is pointed at or focused — a long title wrapping onto more lines where it is too long for its line, read from its start and never cut, its words whole — only a word longer than the line, a web address, is broken — one line all the same (Enter adds none); a row of people and counts under it, the record's buttons at its end; then a band of fields, their labels beside them, “Updated by” and the tabs at its end. The classic header bar, statusbar, badges and stat buttons give way to it; the gear menu is its ⋮.</p>

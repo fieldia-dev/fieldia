@@ -29,6 +29,15 @@ afterEach(() => {
 });
 
 describe('a record’s header on the canvas', () => {
+  it('wears the sheet’s furniture’s look, the viewer’s sheet part’s: its counters, ribbons and badges as a record draws them', () => {
+    document.head.replaceChildren();
+    setup();
+    const sheet = document.getElementById('fieldia-sheet-styles');
+    expect(sheet?.textContent).toContain('.fd-stats');
+    expect(sheet?.textContent).toContain('.fd-ribbon');
+    expect(sheet?.textContent).toContain('.fd-badges');
+  });
+
   it('offers to add each part where it goes, and nothing for a screen of sections', () => {
     const { q } = setup();
     expect(q('.fd-canvas-header').hidden).toBe(false);

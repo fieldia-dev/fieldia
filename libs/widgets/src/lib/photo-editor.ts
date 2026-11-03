@@ -142,6 +142,12 @@ export interface PhotoEditing {
   home: Element;
   /** Reads a picture's pixels: the files part's (`readPicture`). */
   read(blob: Blob, doc: Document): Promise<Picture>;
+  /**
+   * Encodes the picture made: the files part's (`encodeSoon`), which a photo set passes — the browser's `toBlob`, or at
+   * once where it has not answered within a moment, so Apply never waits seconds. Without it, `toBlob` alone, which
+   * Chromium encodes in idle time and may answer seconds late on a busy machine.
+   */
+  encode?(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null>;
 }
 
 /** What came of it: the new picture and what was done to the original, the original put back, or nothing (Cancel, Escape, ×). */
@@ -301,15 +307,20 @@ export function editPhoto(editing: PhotoEditing): Promise<Edited> {
     if (!picture) return;
     const edit: PhotoEdit = { turn, crop: { ...crop } };
     const made = drawEdited(doc, picture, edit);
-    // A PNG or a WebP stays one, a picture that may be clear in places; the rest are written as a JPEG.
+    // A PNG or a WebP stays one, a picture that may be clear in places; the rest are written as a JPEG. By the set's own
+    // encoder where it gives one (`encode`): never waited for seconds.
     const type = /^image\/(png|webp)$/.test(from.type) ? from.type : 'image/jpeg';
-    const blob = made ? await new Promise<Blob | null>((resolve) => {
-      try {
-        made.toBlob(resolve, type, 0.92);
-      } catch {
-        resolve(null);
-      }
-    }) : null;
+    const blob = !made
+      ? null
+      : editing.encode
+        ? await editing.encode(made, type, 0.92)
+        : await new Promise<Blob | null>((resolve) => {
+            try {
+              made.toBlob(resolve, type, 0.92);
+            } catch {
+              resolve(null);
+            }
+          });
     if (!blob) return setText(said, words.photoNotMade);
     const name = blob.type === from.type ? from.name : `${from.name.replace(/\.[^./]*$/, '')}.${blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg'}`;
     done({ file: new File([blob], name, { type: blob.type }), edit });

@@ -142,6 +142,35 @@ describe('screen editor — a list page', () => {
     expect(host.querySelectorAll('.fd-search .fd-facet')).toHaveLength(0);
   });
 
+  it('puts a named filter in a group by a word — of one group any, of two both — or in none, refusing two words', () => {
+    const designer = customers();
+    designer.select(null);
+    const { host } = mount(designer);
+    const filters = () => list(designer).filters ?? [];
+    const add = (name: string, value: string) => {
+      button(host, 'Add a filter')?.click();
+      const row = [...host.querySelectorAll<HTMLElement>('.fd-list-filter')].at(-1) as HTMLElement;
+      type(field(row, 'Filter name') as HTMLInputElement, name);
+      choose(field(row, 'Filter field'), 'state');
+      choose(field(row, 'Filter value'), value);
+      return row;
+    };
+    const active = add('Active', 'active');
+    add('Blocked', 'blocked');
+    // No group: one group, as before.
+    expect(filters().map((f) => f.group)).toEqual([undefined, undefined]);
+    typeAndLeave(field(active, 'Filter group') as HTMLInputElement, 'state');
+    expect(filters().map((f) => f.group)).toEqual(['state', undefined]);
+    expect(designer.getState().issues).toEqual([]);
+
+    // One word, or none: two refused, with what to write.
+    typeAndLeave(field(active, 'Filter group') as HTMLInputElement, 'due date');
+    expect(designer.getState().issues).toEqual(['A filter’s group is one word, such as when']);
+    expect(filters()[0].group).toBe('state');
+    typeAndLeave(field(active, 'Filter group') as HTMLInputElement, '');
+    expect(filters()[0]).not.toHaveProperty('group');
+  });
+
   it('gives the list buttons for the rows chosen: added on the canvas, named where they stand', () => {
     const designer = customers();
     const { host } = mount(designer);

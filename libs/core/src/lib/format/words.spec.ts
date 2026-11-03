@@ -100,17 +100,23 @@ describe('the one reader of a page’s words', () => {
     }
   });
 
-  it('reads every example page’s and template’s words as 0.35.1 did', () => {
+  it('reads every example page’s and template’s words as 0.35.1 did, but the one that quotes a brace on purpose', () => {
     const root = join(__dirname, '../../../../../examples');
     const files = ['pages', 'templates'].flatMap((folder) => readdirSync(join(root, folder)).filter((name) => name.endsWith('.json')).map((name) => join(root, folder, name)));
     expect(files.length).toBeGreaterThan(100);
     let read = 0;
+    const quoting: string[] = [];
     for (const file of files) {
       const page = JSON.parse(readFileSync(file, 'utf8'));
       if (!page.fields || !page.layout) continue;
       for (const { path, words } of wordsAt(page)) {
-        // None of them escapes a brace: each reads exactly as before.
-        expect(`${file}: ${path}: ${/\\\{/.test(words)}`).toBe(`${file}: ${path}: false`);
+        // Words that quote a brace on purpose — the gallery's, named below — read it as written, the backslash gone.
+        if (/\\\{/.test(words)) {
+          quoting.push(`${file.split('/').slice(-2).join('/')}: ${path}`);
+          expect(plainWords(words)).not.toMatch(/\\\{/);
+          continue;
+        }
+        // Every other reads exactly as before.
         expect(fillValues(words, shown)).toBe(old.fillValues(words, shown));
         expect(splitValues(words)).toEqual(old.splitValues(words));
         expect(plainWords(words)).toBe(words);
@@ -118,6 +124,8 @@ describe('the one reader of a page’s words', () => {
       }
     }
     expect(read).toBeGreaterThan(3000);
+    // The one example that quotes a brace (0.37: the gallery shows `\{customer}`), and no other unawares.
+    expect(quoting).toEqual(['pages/enquiry-reply.page.json: fields.greeting.help']);
   });
 });
 

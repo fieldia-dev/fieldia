@@ -1,4 +1,4 @@
-import { checkPage, pageWarnings, validatePage, type Page } from '../../index';
+import { checkPage, FORMAT_VERSION, pageWarnings, validatePage, type Page } from '../../index';
 
 /**
  * The page's checks read every function an expression calls: Fieldia's own
@@ -8,7 +8,7 @@ import { checkPage, pageWarnings, validatePage, type Page } from '../../index';
 
 function page(fields: Record<string, unknown>, more: Record<string, unknown> = {}): Page {
   return {
-    fieldia: '0.13',
+    fieldia: FORMAT_VERSION,
     id: 'patient',
     data: { kind: 'record', model: 'clinic.patient' },
     fields: {

@@ -72,8 +72,10 @@ describe('the print part’s sheet', () => {
   });
 
   it('goes right after the main sheet, before every other part’s: where its rules stood in it', () => {
-    expect(PART_RANK.print).toBe(0);
-    expect(Math.min(...Object.values(PART_RANK).filter((rank) => rank !== PART_RANK.print))).toBeGreaterThan(PART_RANK.print);
+    // After a sheet's furniture's alone (0.37), whose rules stood inside the main sheet, before its print rules.
+    expect(PART_RANK.sheet).toBe(0);
+    expect(PART_RANK.print).toBe(1);
+    expect(Math.min(...Object.values(PART_RANK).filter((rank) => rank !== PART_RANK.print && rank !== PART_RANK.sheet))).toBeGreaterThan(PART_RANK.print);
     const lines = document.createElement('style');
     lines.id = 'fieldia-lines-styles';
     lines.setAttribute('data-fd-rank', String(PART_RANK.lines));

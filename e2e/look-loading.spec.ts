@@ -40,10 +40,11 @@ function watch(page: Page) {
   const requested: string[] = [];
   page.on('request', (request) => requested.push(new URL(request.url()).pathname));
   /**
-   * The scripts asked for: the main one and its parts — Ctrl+Z's aside, asked for as a form is first entered, and the
-   * whole check, as every page is drawn (page-check.spec): every form's, not the look's.
+   * The scripts asked for: the main one and its parts — Ctrl+Z's aside, asked for as a form is first entered, the whole
+   * check, as every page is drawn (page-check.spec), and what no page draws from right after it (acts-part.spec): every
+   * form's, not the look's.
    */
-  const scripts = () => requested.filter((path) => /\/fieldia(\.[a-z]+)?\.js$/.test(path) && !/\/fieldia\.(undo|check)\.js$/.test(path)).sort();
+  const scripts = () => requested.filter((path) => /\/fieldia(\.[a-z]+)?\.js$/.test(path) && !/\/fieldia\.(undo|check|acts)\.js$/.test(path)).sort();
   return { problems, scripts };
 }
 

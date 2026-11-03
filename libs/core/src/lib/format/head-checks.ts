@@ -1,7 +1,8 @@
 import type { ActionStep } from './actions';
 import type { Field, LineField } from './field';
 import type { ButtonNode, FieldNode, LayoutNode, MenuItem, RelatedNode, RootLayout, SheetNode, TabNode, TabsNode } from './layout';
-import { checkMenuOpener, checkSheetHead } from './sheet-head-checks';
+// The head part's checks, through their stand-ins: owed until they are in (owed-checks.ts).
+import { checkMenuOpener, checkSheetHead } from './owed-checks';
 
 /**
  * The checks of a record's head (`SheetHead`) and of the parts it brought to

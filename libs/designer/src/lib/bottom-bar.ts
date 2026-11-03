@@ -1,3 +1,5 @@
+import { afterPress, watchPresses } from '@fieldia/widgets';
+
 /** The air left between a control and the bar at the foot of the screen. */
 const AIR = 8;
 
@@ -11,11 +13,18 @@ const AIR = 8;
  * is scrolled to its end. Where the bar is not at the foot (sticky no longer: a wide screen's rail beside its card),
  * nothing is moved.
  *
+ * Focused by a press, it is moved once the press is over (`afterPress`), its click handled: moved between the press's
+ * down and its up, it left from under the pointer and the click went to what came there — a panel's tab beside the +
+ * at the foot, focused and never chosen, in every engine that focuses what it presses.
+ *
  * No `scroll-margin-bottom` on what is focused: an element taller than the room between the bars would then be
  * aligned by its end as the engine scrolls to it — walking up by Shift+Tab, its top under the top bar.
  */
 export function keepClearOfBar(bar: HTMLElement, area: HTMLElement): () => void {
-  const view = bar.ownerDocument.defaultView;
+  const doc = bar.ownerDocument;
+  const view = doc.defaultView;
+  // Presses watched from now: the one that focuses a control here is seen going on.
+  watchPresses(doc);
   /** Whether the bar has been in the page: once taken out of it (a new drawer in its place), the watch ends. */
   let placed = false;
   const measure = () => {
@@ -29,10 +38,13 @@ export function keepClearOfBar(bar: HTMLElement, area: HTMLElement): () => void 
   const onFocus = (event: FocusEvent) => {
     const control = event.target as HTMLElement | null;
     if (!control?.getBoundingClientRect || !view) return;
-    // After the engine's own scroll on focus, which comes after the focus event.
-    view.requestAnimationFrame(() => {
-      if (barRoom(area) && view.document.activeElement === control) clearOfBar(bar, control);
-    });
+    // Once the press that focused it is over (by the keys, at once); then after the engine's own scroll on focus, which
+    // comes after the focus event.
+    afterPress(doc, area, () =>
+      view.requestAnimationFrame(() => {
+        if (barRoom(area) && view.document.activeElement === control) clearOfBar(bar, control);
+      })
+    );
   };
   area.addEventListener('focusin', onFocus);
   const ResizeWatcher = (view as (Window & { ResizeObserver?: typeof ResizeObserver }) | null)?.ResizeObserver;

@@ -184,8 +184,9 @@ describe('a part that guards a send, never come', () => {
     const start = source.indexOf('async function guardsIn(');
     const body = source.slice(start, source.indexOf('\n  }\n', start));
     const asked = new Set([...source.matchAll(/(\w+Part)\.load\(/g)].map((found) => found[1]));
-    // Ctrl+Z's own part: a change is kept until it comes, and a send never waits for an undo.
-    const guardsNothing = new Set(['pressUndoPart']);
+    // Ctrl+Z's own part: a change is kept until it comes, and a send never waits for an undo. The steps' own (the acts
+    // part): a send waits for it only through its page's beforeSave steps, whose run stops the save where it cannot come.
+    const guardsNothing = new Set(['pressUndoPart', 'formActsPart']);
     expect([...asked].filter((part) => !guardsNothing.has(part) && !body.includes(part))).toEqual([]);
     // The parts that join the form: every one whose `joinGate` names it, the same way.
     expect(body).toContain('joinGate(part, page, options)');

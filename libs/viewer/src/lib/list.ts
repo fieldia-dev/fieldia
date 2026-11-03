@@ -1,5 +1,6 @@
 import {
   addDays,
+  answerOf,
   dayStarts,
   facetsToFilter,
   firstWeekday,
@@ -589,7 +590,8 @@ export function listView(context: ListContext): ListView {
       const index = top && win && windowing() ? win.index(top.at) : null;
       keepPlace(doc, placeKey, { facets, keys, offset, reach: endless ? held() : pageSize, ...top, ...(index === null ? {} : { index }), open: String(id) });
     }
-    const answer = context.onOpenRecord?.(id, name);
+    // The app's answer handled as it is given (`answerOf`), never as the await below comes to it, a microtask late.
+    const answer = answerOf(context.onOpenRecord?.(id, name));
     if (!isPromise(answer)) return;
     keepPlace(doc, placeKey, null);
     if (lit) openId = id;
@@ -1622,7 +1624,8 @@ export function listView(context: ListContext): ListView {
   const create = newRecord
     ? async (values: Values) => {
         try {
-          await newRecord(values);
+          // Handled as it is given (`answerOf`), never as this await comes to it, a microtask late.
+          await answerOf(newRecord(values));
         } catch {
           // The app's own trouble: the records are asked for again all the same.
         }

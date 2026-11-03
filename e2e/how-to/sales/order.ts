@@ -25,7 +25,8 @@ export const replay: DemoReplay = {
           // On a phone the lines are cards: a card opens its line in a dialog, where Quantity is a box of its own —
           // emptied, then typed in, as a person types a new number.
           await press(lines(page).getByRole('button', { name: 'Desk lamp, LED', exact: true }));
-          const dialog = page.getByRole('dialog', { name: 'Order lines' });
+          // Titled as the card it opened from: the one line, never the table's plural (the 0.36 walk).
+          const dialog = page.getByRole('dialog', { name: 'Desk lamp, LED' });
           await type(box(dialog, 'Quantity'), '20', { clear: true });
           await see(box(dialog, 'Quantity')).toHaveValue('20');
           await see(box(dialog, 'Subtotal')).toHaveValue('7,600.00');
@@ -129,7 +130,7 @@ export const replay: DemoReplay = {
       async run({ page, phone, press, see }) {
         if (phone) await press(lines(page).getByRole('button', { name: 'Office chair, ergonomic', exact: true }));
         else await press(cell(page, CHAIR, '__open').getByRole('button', { name: 'Open line' }));
-        const dialog = page.getByRole('dialog', { name: 'Order lines' });
+        const dialog = page.getByRole('dialog', { name: 'Office chair, ergonomic' });
         await see(dialog).toBeVisible();
         await see(dialog.getByRole('combobox', { name: 'Product' })).toHaveValue('Office chair, ergonomic');
         await see(box(dialog, 'Description')).toHaveValue('Black mesh back');

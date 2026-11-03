@@ -81,7 +81,7 @@ jobs:
       # makes the browser restyle all round each element put in a page (tools/style-siblings.mjs). And the flake log's
       # own tool (tools/flake-log.mjs), and a minor refused until a real iPhone and Android phone were checked for it
       # (tools/real-devices.mjs).
-      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/intl-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-train.test.mjs tools/format-since.test.mjs tools/schema-words.test.mjs tools/promises.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs tools/demo-sizes.test.mjs tools/style-siblings.test.mjs tools/flake-log.test.mjs tools/real-devices.test.mjs
+      - run: node --test tools/release-notes.test.mjs tools/format-shape.test.mjs tools/part-words.test.mjs tools/ci-scope.test.mjs tools/csp-source.test.mjs tools/intl-source.test.mjs tools/release-env.test.mjs tools/release-guards.test.mjs tools/release-train.test.mjs tools/format-since.test.mjs tools/schema-words.test.mjs tools/promises.test.mjs tools/release-publish.test.mjs tools/release-audit.test.mjs tools/script-tags.test.mjs tools/workflows.test.mjs tools/demo-sizes.test.mjs tools/style-siblings.test.mjs tools/flake-log.test.mjs tools/real-devices.test.mjs tools/demo-pages.test.mjs
       # The tools themselves, linted as the packages are (`nx lint` reads the packages alone): four errors hid there in 0.31.
       - run: npx eslint tools eslint.config.mjs
       # `build` ends in tools/dual-build.mjs, which fails when a package's

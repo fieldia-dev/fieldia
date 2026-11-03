@@ -135,6 +135,37 @@ describe('screen editor — the panel', () => {
     expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1)[0])).not.toHaveProperty('secret');
   });
 
+  it('says whether a copy of the record keeps the field: copied unless ticked off, a status a copy does not keep from the start', () => {
+    const { designer, ids } = visitReport({ stage: { type: 'selection', label: 'Stage', options: [{ value: 'new', label: 'New' }] } });
+    const { host } = mount(designer, { mode: 'advanced' });
+    card(host, ids['next']).click();
+    openTab(host, 'Data');
+    const copied = () => field(host, 'Copied with the record');
+    expect(copied()?.checked).toBe(true);
+    copied()?.click();
+    expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1)[0])).toMatchObject({ copy: false });
+    expect(copied()?.checked).toBe(false);
+    copied()?.click();
+    expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1)[0])).not.toHaveProperty('copy');
+    // A status the designer adds is not copied: a copy of a posted bill starts as a new one does.
+    designer.select(null);
+    tile(host, 'kind:status').click();
+    const status = designer.getState().selected as string;
+    expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1).find((node) => node.id === status) as FieldNode)).toMatchObject({ copy: false });
+    openTab(host, 'Data');
+    expect(copied()?.checked).toBe(false);
+    // A field of the app's model keeps its own definition; a page that sends responses has no record to copy.
+    tile(host, 'model:stage').click();
+    openTab(host, 'Data');
+    expect(copied()).toBeUndefined();
+    const sends = createDesigner({ page: { ...blankPage('screen', 'Visit feedback'), data: { kind: 'responses' } } });
+    const asked = sends.addQuestion('short-answer', { parent: 'section-1' }) as string;
+    const { host: sendsHost } = mount(sends, { mode: 'advanced' });
+    sends.select(asked);
+    openTab(sendsHost, 'Data');
+    expect(field(sendsHost, 'Copied with the record')).toBeUndefined();
+  });
+
   it('offers a model field only the kinds that fit it, and says why', () => {
     const { designer } = visitReport({ credit_limit: { type: 'monetary', label: 'Credit limit', currency: 'EGP' } });
     const { host } = mount(designer, { mode: 'advanced' });

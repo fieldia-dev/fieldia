@@ -233,6 +233,29 @@ const CHECKS_IN_PARTS = {
   templates: { file: 'libs/core/src/lib/format/templates-checks.ts', names: ['checkTemplates'] },
 };
 const LATER_CHECKS_FILE = join(WORKSPACE, 'libs/core/src/lib/format/later-checks.ts');
+// The packages call each of these checks through its stand-in (owed-checks.ts), which runs it where its part put it in
+// and owes it where not: the same table, name for name, part for part — else a check would be owed for ever, or run twice.
+{
+  const standIns = [...readFileSync(join(WORKSPACE, 'libs/core/src/lib/format/owed-checks.ts'), 'utf8').matchAll(/^export const (\w+) = owed<[^>]+>\('([a-z]+)', '(\w+)'\);$/gm)].map(([, name, part, real]) => `${part}.${name}${name === real ? '' : `≠${real}`}`).sort();
+  const here = Object.entries(CHECKS_IN_PARTS).flatMap(([part, { names }]) => names.map((name) => `${part}.${name}`)).sort();
+  if (standIns.join() !== here.join()) throw new Error(`owed-checks.ts stands in for ${standIns.join(', ')}; CHECKS_IN_PARTS carries ${here.join(', ')}`);
+}
+
+/**
+ * The checks a part carries come each with its part here: none put in by a reference check as it is made (all-checks.ts
+ * stood in by an empty table — the runtime's `checkPage` owes them until each part came, as it did). The whole check
+ * (check-whole.ts) is the check part's, fieldia.check.js, which the script asks for as it starts (script-entry.ts) and a
+ * viewer runs once a page is drawn.
+ */
+const ALL_CHECKS_APART = { 'libs/core/src/lib/format/all-checks.ts': 'export const ALL_CHECKS = {};\nexport const wholeChecks = () => undefined;' };
+const wholeCheckApart = {
+  name: 'all-checks-apart',
+  setup(builder) {
+    for (const [file, contents] of Object.entries(ALL_CHECKS_APART)) {
+      builder.onLoad({ filter: new RegExp(`${file.replace(/[./]/g, (c) => `\\${c}`)}$`) }, () => ({ contents, resolveDir: WORKSPACE, loader: 'js' }));
+    }
+  },
+};
 const checksLater = {
   name: 'checks-later',
   setup(builder) {
@@ -327,7 +350,7 @@ const mainScript = async (table, hashes = {}) => {
     // are built, then the main script built once more with them.
     define: { ...common.define, __FIELDIA_PART_HASHES__: JSON.stringify(hashes) },
     entryPoints: [join(WORKSPACE, 'tools/script-entry.ts')],
-    plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, weekInParts, asksForParts(table, parts)],
+    plugins: [minifiedStyles, englishOnly, noFirstPaint, partWordsOut, checksLater, wholeCheckApart, weekInParts, asksForParts(table, parts)],
     globalName: 'Fieldia',
     banner: { js: `/*! Fieldia ${version} · MIT · https://fieldia.dev */` },
     outfile: OUT,
@@ -409,7 +432,7 @@ const partScript = (part, inMain, table, needs) =>
   build({
     ...common,
     stdin: { contents: partEntry(part), resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
-    plugins: [minifiedStyles, englishOnly, zxingReaders, takesShared(inMain, table, needs)],
+    plugins: [minifiedStyles, englishOnly, wholeCheckApart, zxingReaders, takesShared(inMain, table, needs)],
     globalName: 'part',
     // It hands itself to the main script (tools/script-parts.ts), or waits for it in the queue.
     banner: { js: `/*! Fieldia ${version} · ${part} · MIT · https://fieldia.dev${NOTICES[part] ?? ''} */\n(globalThis.FieldiaParts = globalThis.FieldiaParts || []).push([${JSON.stringify(part)}, ${JSON.stringify(version)}, function (__fieldia) {` },
@@ -427,7 +450,7 @@ const partNeeds = async (part, inMain) => {
     sourcemap: false,
     write: false,
     stdin: { contents: partEntry(part), resolveDir: WORKSPACE, sourcefile: `fieldia.${part}.ts`, loader: 'ts' },
-    plugins: [minifiedStyles, englishOnly, zxingReaders, takesShared(inMain, null)],
+    plugins: [minifiedStyles, englishOnly, wholeCheckApart, zxingReaders, takesShared(inMain, null)],
     outfile: join(BUNDLE, `fieldia.${part}.mjs`),
   });
   return namesUsed(outputFiles[0].text);
@@ -1617,13 +1640,51 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // choice's options in place, a line's dialog of its columns, a required field's star, a drop judged where it lands, a
 // box's ends kept) — 601,581; a tab asked for again after another in one frame brought into sight (tab-strip.ts) +16:
 // 601,597, to 587.5.
+// 0.37 (p37-refuse), the whole check run as soon as a page is drawn, never before (the coordinator's 28 Oct): a page it
+// refuses taken down, `refused` settled; every write through the page held until it ran (held-writes.ts, its members'
+// names 0.48 KB of it); the words and onError's warning where its part cannot come; the part asked for as the script
+// starts — less 0.36's check at idle and its warning; the checks a part carries called through one table of stand-ins
+// (owed-checks.ts) where 28 copies of one were made; a write on a page whose check passed (or whose part is in) going in
+// the same turn, as ever, and the app's answer to a held one handled as it is made; the whole check asked for once the
+// page is parsed and no page waits for its parts (askForCheck); a linked record's page the app is still fetching, asked
+// for to know a link opens, never left failing unhandled (related.ts `canOpen`, +47): 601,597 measured before, 602,204
+// after (+607), to 588.1.
+// 0.37 (p37-format): format 0.14 among the formats every page's check reads before its first draw (+7: version.ts), and
+// a list's named filters in their groups — `facetsToFilter`, this script's own, any of a group and every group, and
+// `filterGroups` beside it (search.ts) +202; a line's copy and the search bar's chips are the lines and list parts' —
+// 601,597 measured before, 601,806 after (+209), to 587.8.
+// 0.37 merged, set once from the merged build: 601,597 bytes, p37-refuse's +607 and p37-format's +209, each measured
+// alone above, joined to the byte — 602,413 (+816 on 0.36.0), to 588.3.
 // 0.36.1 (patch-0361), set from its build: 0.36.0's 601,597 bytes; a link's page asked for as the link is drawn, its
 // failure handled where it is asked (related.ts) +55; a page or a record the app cannot give said in the viewer's words,
 // never left failing unhandled — a link's Open, a related list's rows and New, the app's own way to open one, a saved
 // form, the pager's next record — each answer known by its `then` (related.ts, viewer.ts, record-bar.ts) +331; a part
 // said where its send is never said over the page too (viewer.ts) +33 — 602,016; a linked record's page the viewer
 // refuses opened in a box that × and Escape close, its opener told no record (dialog.ts) +250 — 602,266, to 588.2.
-const BUDGET_KB = 588.2;
+// 0.37 merged with 0.36.1, set once from the merged build: 0.37's 602,413 bytes and 0.36.1's +669 measured alone above —
+// 603,082 — less 42 where 0.37's `canOpen` lines gave way to 0.36.1's `later()` (related.ts): 603,040, to 589.0.
+// 0.37 (size-parts), the main script back near 184 KB gzipped, no page drawn later (the coordinator's 28 Oct, from the
+// size map): what no page draws from in parts of their own — a page's steps run, its dialogs (a page in a dialog or a
+// panel, a page opened by a step, a link's and a line's, Search more…), the viewer's own question, a save over someone
+// else's answered and its banners, in the acts part, asked for right after the whole check; the classic formatted
+// text's toolbar in the html part; a sheet's furniture (ribbons, stat buttons, badges, alerts, statusbar, attachment,
+// their look) in the sheet part — those two drawn in place as they come, waited for only beside a page's other parts —
+// each part's own words with it. What stays to say a part could not come — a run that did nothing, a question the
+// browser asks, a conflict in plain words — and to hold a press until it comes: 603,040 measured before, 559,395 after
+// (−43,645), to 546.3.
+// 0.37 (p37-walk-fix), the 0.37 walk's fixes, each needed from a page's first press or its draw: a control a press waits
+// on busy where it was pressed, its ring and the one rule that finds it in every engine (press.ts), a second press of it
+// asking nothing more, the dialog that shows ending it, and a press whose part cannot come said with Retry (related.ts,
+// say.ts); the classic formatted text's toolbar's room held over its box (extras.ts, its three text styles' names back
+// from the html part's words); a sheet's furniture that takes room waited for, and a record's attachment's files part
+// with the page's (viewer-parts.ts); a refused page's words to its visitor, what is wrong only in `development`
+// (refused.ts); under a name pressed (a card's head, a stat button), a bar along its foot where its end is another
+// control's: 559,345 measured before, 563,507 after (+4,162), to 550.4.
+// 0.37 (p37-tail), each needed before the acts part is there: a page that keeps its sends without signal and acts asks
+// for that part with its own, its tag written with theirs (viewer-parts.ts `asksActs`, viewer.ts) +133; a save whose
+// beforeSave steps wait for it says so, saving, its Submit busy — never a press that waits in silence (form.ts) +174:
+// 563,507 measured before, 563,814 after (+307), to 550.6.
+const BUDGET_KB = 550.6;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2006,9 +2067,29 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // +0.28 — 196.89, to 196.9: under the owner's 200 (+2.98 on 0.35.3's 193.91).
 // 0.36 merged with p3-found, set once from the merged build (listed with the raw budget above): 196.89 and p3-found's
 // +0.12 — 197.01; the tab strip's +0.01 — 197.02, to 197.1: under the owner's 200 (+3.11 on 0.35.3's 193.91).
+// 0.37 (p37-refuse), listed with the raw budget above: the whole check run as soon as a page is drawn, a page it refuses
+// taken down, every write held until it ran (0.20 of it, the writes' names most), a write going at once once it passed,
+// the words where its part cannot come, the part asked for as the script starts, less 0.36's check at idle; the 28
+// checks a part carries through one table of stand-ins, not 28 copies (−0.15): 197.02 measured before, 197.57 after
+// (+0.55), to 197.6; the whole check asked for once no page waits for its parts (page-check.ts `askForCheck`, +0.09) —
+// 197.66; `canOpen`'s failure handled (+0.02) — 197.68, to 197.7: under the owner's 200.
+// 0.37 (p37-format), format 0.14 and a list's filters in their groups (listed with the raw budget above): 197.02
+// measured before, 197.10 after (+0.08), to 197.2: under the owner's 200.
+// 0.37 merged, set once from the merged build (listed with the raw budget above): 197.02, p37-refuse's +0.66 and
+// p37-format's +0.08 — 197.76 (+0.74 on 0.36.0), to 197.8: under the owner's 200.
 // 0.36.1 (patch-0361), set from its build (listed with the raw budget above): 197.02 to 197.26 (+0.24), to 197.3: under
 // the owner's 200 (+3.35 on 0.35.3's 193.91).
-const GZIP_BUDGET_KB = 197.3;
+// 0.37 merged with 0.36.1, set once from the merged build (listed with the raw budget above): 0.37's 197.76 and 0.36.1's
+// +0.24 — 198.03 (+1.01 on 0.36.0's 197.02, +0.77 on 0.36.1's 197.26), to 198.1: under the owner's 200.
+// 0.37 (size-parts), listed with the raw budget above, each move measured after the one before: a page's dialogs, a
+// page opened, the viewer's question and the step engine in the acts part 198.03 → 191.00; save safety's two banners
+// with them 189.82; the classic formatted text's toolbar in the html part 188.18, and their words with them 187.99; a
+// sheet's furniture and its look in the sheet part 185.72; Reload, Keep mine and Put back with the acts 185.44; a link's
+// and a line's dialogs with them 184.66 — 13.36 less, to 184.7: under the owner's 200.
+// 0.37 (p37-walk-fix), listed with the raw budget above: 184.64 → 186.00 (+1.36: 189,075 → 190,464 B), to 186.1.
+// 0.37 (p37-tail), listed with the raw budget above: 186.00 → 186.12 (+0.12: 190,464 → 190,587 B; the viewer's +51, the
+// form's +72), to 186.2: under the owner's 200.
+const GZIP_BUDGET_KB = 186.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -2405,7 +2486,18 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // 22.0; German 61.30 and 18.77, 61.50 and 18.81, to 61.5 and 18.9; French 62.32 and 18.75, 62.56 and 18.79, to 62.6;
 // Turkish 69.43 and 19.09, 69.65 and 19.13, to 69.7 and 19.2; Persian 170.67 and 23.53, 171.14 and 23.57, to 171.2;
 // Urdu 173.51 and 23.64, 174.17 and 23.69, to 174.2; Spanish 59.35 and 18.53, 59.53 and 18.57, to 59.6.
-const ADD_ON_BUDGET_KB = { ar: [137.7, 22.0], de: [61.5, 18.9], fr: [62.6, 18.8], tr: [69.7, 19.2], fa: [171.2, 23.6], ur: [174.2, 23.7], es: [59.6, 18.6] };
+// 0.37 (size-parts), a run of steps whose engine could not come said ("{part} could not load, so nothing was done.",
+// "This action"): two words in each — Arabic 137.66 and 21.94 measured before, 137.92 and 21.97 after, to 138.0; German
+// 61.50 and 18.81, 61.62 and 18.83, to 61.7; French 62.56 and 18.79, 62.67 and 18.81, to 62.7 and 18.9; Turkish 69.65
+// and 19.13, 69.78 and 19.15, to 69.8; Persian 171.14 and 23.57, 171.42 and 23.59, to 171.5; Urdu 174.17 and 23.69,
+// 174.45 and 23.71, to 174.5 and 23.8; Spanish 59.53 and 18.57, 59.64 and 18.59, to 59.7.
+// 0.37 (p37-walk-fix), a refused page's words to its visitor (formUnavailable, and pageUnshown said again for whoever
+// made it), a recording too short to keep (recordTooShort), and the text styles' names a formatted text's toolbar room
+// holds — Arabic 137.92 and 21.97 measured before, 138.64 and 22.06 after, to 138.7 and 22.1; German 61.62 and 18.83,
+// 61.92 and 18.91, to 62.0 and 19.0; French 62.67 and 18.81, 62.97 and 18.88, to 63.0; Turkish 69.78 and 19.15, 70.10
+// and 19.22, to 70.2 and 19.3; Persian 171.42 and 23.59, 172.29 and 23.69, to 172.3 and 23.7; Urdu 174.45 and 23.71,
+// 175.45 and 23.83, to 175.5 and 23.9; Spanish 59.64 and 18.59, 59.92 and 18.65, to 60.0 and 18.7.
+const ADD_ON_BUDGET_KB = { ar: [138.7, 22.1], de: [62.0, 19.0], fr: [63.0, 18.9], tr: [70.2, 19.3], fa: [172.3, 23.7], ur: [175.5, 23.9], es: [60.0, 18.7] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
@@ -3242,15 +3334,63 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // to the byte (586.45 KB); gzipped 196.59 to 196.60, only the record part's and the add-ons' hashes it carries changed.
 // 0.36 merged with p3-found, from the merged build: its slots, choice, filters and rows as it measured them; the list
 // part with both lines in it 159.13 and 52.07, to 159.2 and 52.1; survey 36.44 and 12.51, to 12.6, as p3-found had it.
+// 0.37 (p37-format), each measured before and after: list 159.13 and 52.07 → 160.00 and 52.36 (a chip for each group of
+// named filters on, a line between groups in the menu, each counted as alone of its group, the printout's words by
+// group: search-bar.ts, list-print.ts), to 160.1 and 52.4; lines 47.59 → 47.63 (a line's copy starts a field that says
+// copy: false as a new line's: line-moves.ts), to 47.7; memory 25.22 and 9.12 → 26.14 and 9.46 (its copy starts such a
+// field as a new record's: copied-values.ts), to 26.2 and 9.5; check 65.21 → 65.30 (the format's shape with copy and
+// group), to 65.4.
+// 0.37 merged, set once from the merged build: list 160.00 and 52.36, lines 47.63 and 16.47, memory 26.14 and 9.46, inside
+// p37-format's budgets; check 65.15 and 17.22 (p37-format's shape with copy and group, p37-refuse's under-stamped
+// warning's words gone), to 65.2, inside 17.3. Every other part within 0.01 of 0.36.0's.
+// 0.37, a photo's picture never waited for long (encode-now.ts): toBlob, which Chromium encodes in idle time and on a
+// busy machine answered 1 s or 6.7 s late, a crop's Apply left open, raced by an encode at once after 200 ms — files
+// 52,120 and 19,429 B → 52,472 and 19,545 (`encodeSoon`, `encodeNow`, shrinkPhoto's too), to 51.3 and 19.1; photos
+// 31,906 → 31,959 (the editor given it), to 31.3.
 // 0.36.1 (patch-0361), from its build: filters 23.39 and 8.04 (a sheet's look through its style object; Show counting
 // nothing while a range is refused), to 23.4 and 8.1; import 38.96 and 15.31 (its look through its style object), to
 // 15.4; scan 20.62 and 8.58 (the same), to 20.7; lines 47.88 and 16.53 (a card moved by a tap kept in sight), to 47.9 and
 // 16.6; photos 31.36 and 11.67 and survey 36.63 and 12.58 (the same), to 31.4 and 36.7; list 159.20 and 52.08 (the
 // arrows reach a tree's Show more), to 159.3; rows 19.71 and 7.43 (a Show more's arrows), to 19.8 and 7.5; prefill 4.12
 // and 2.00 (a link's day held to the form's clock), to 4.2. Every other part within its budget.
-const PART_BUDGET_KB = { head: [42.5, 13.0], text: [73.1, 24.7], path: [22.4, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [159.3, 52.1], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [47.9, 16.6], business: [32.7, 12.0], files: [50.9, 19.0], evidence: [9.3, 4.2], photos: [31.4, 11.7], record: [13.4, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.1, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [25.3, 9.2], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.2, 4.8], loading: [9.1, 3.1], check: [65.3, 17.3] };
+// 0.37 merged with 0.36.1, set once from the merged build, each part's budget the larger of the two sides' where it fits:
+// lines 47.93 and 16.54 (0.37's line copy, 0.36.1's card kept in sight), to 48.0; photos 31.41 and 11.69 (0.37's
+// encoder given to the editor, 0.36.1's cover kept in sight), to 31.5; list 160.07 and 52.38, files 51.24 and 19.09,
+// memory 26.14 and 9.46, check 65.15 and 17.22, filters, import, scan, rows, survey and prefill as 0.36.1 measured
+// them, each inside its budget.
+// 0.37 (p37-walk-rest), a line's dialog titled as one line (the 0.36 walk: "Order lines" over one order line): a
+// table's line named by its first column holding words — its dialog, its ↑ and ↓ and its move said aloud alike — else
+// "Line 3", and a card's dialog by the card's title — lines 49,078 and 16,938 B measured before, 49,355 and 17,028
+// after, to 48.3 and 16.7. fieldia.js 12 B smaller (603,040 → 603,028; 202,778 → 202,762 gzipped): the dialog takes
+// its title from the widget that opens it, reads the record's state once, and asks once whether the record is shown.
+// 0.37 (p37-walk-rest), every promise the app gives handled the moment it is given (FU2 on 0.36.1: a linked page whose
+// request had failed already when Open was pressed reached Angular's NgZone.onError) — `answerOf` with the values
+// every module reads (values.ts), so what takes an app's answer finds it in a module it reads already, in the parts' table
+// as in an app's bundle (an npm app's first load the same 65 and 73 files): list 163,913 and 53,634 B measured before,
+// 163,946 and 53,647 after (a row's onOpenRecord and a view's onNewRecord), to 160.2; outbox 11,434 → 11,514 (its
+// store's answers, its refreshes on their own heard), to 11.3; pay 8,018 → 8,046, inside 7.9.
+// fieldia.js 603,028 → 603,000 and 202,762 → 202,753 gzipped, smaller: held writes take a write's answer through
+// `answerOf` where they made a promise of their own for it, and the pager's id is `answerOf`'s, no `then()` of its own.
+// 0.37 (size-parts), three parts of their own, set from the build: acts 34.02 and 12.39 (a page's steps run, its dialogs,
+// a page opened, the viewer's question, a save over someone else's answered and its banners, and their words), to 34.1
+// and 12.4; html 6.49 and 2.73 (the classic formatted text's toolbar, its paste put in plain, its words), to 6.5 and
+// 2.8; sheet 11.33 and 4.28 (a sheet's furniture, its look, the attachment's words), to 11.4 and 4.3. The words a moved
+// part shares with others are each one's own now: text 73.19 and 24.73 (Search more…'s "No results" and the toolbar's
+// Formatting, Apply and Remove link), to 73.2 and 24.8; path 22.40 and relations 21.12 ("No results"), to 22.5 and 21.2;
+// choice 12.03 and 4.78, inside 12.1 and 4.8.
+// 0.37 (size-parts, merged with p37-walk-rest): acts 34,906 and 12,706 B, its step engine's open, call, file and print
+// and its question taking the app's answer as it is given (`answerOf`), to 12.5.
+// 0.37 (p37-walk-fix), each measured before and after: acts 34.09 and 12.41 → 34.22 and 12.46 (a dialog that shows ends
+// the press that asked for it; a line's dialog's fields drawn with their columns' widgets), to 34.3; lines 48.20 and
+// 16.63 → 48.31 and 16.67 (a card's dialog named by its words as a table's line is), to 48.4; record 13.34 and 5.46 →
+// 13.46 and 5.50 (a recording too short to keep, said), to 13.5; loading 9.10 and 3.06 → 9.20 and 3.08 (a skeleton's
+// shapes never shorter than their boxes), to 9.3; html 6.49 → 6.47 (its text styles' names in the main script).
+const PART_BUDGET_KB = { acts: [34.3, 12.5], html: [6.5, 2.8], sheet: [11.4, 4.3], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.2, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.4, 16.7], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.5, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.3, 4.8], loading: [9.3, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
+  acts: ['createRunner', 'reloadTheirs', 'keepMine', 'putBack', 'openFormDialog', 'openFormPanel', 'openSearchDialog', 'openPage', 'linkDialogs', 'askBox', 'conflictBanners'],
+  html: ['classicHtml'],
+  sheet: ['sheetFurniture', 'sheetAlerts', 'installSheetStyles'],
   head: ['recordHead', 'richButton', 'submenus', 'sectionHeading', 'wireMaximise', 'wireGrip', 'installHeadStyles', 'installGroupStyles'],
   text: ['modernHtml', 'linksWidget', 'formattedText', 'decorateLinks', 'markdownToHtml', 'htmlToMarkdown', 'markdownLoses', 'textMenu', 'cleanPasted', 'pasteHtml', 'putHtml'],
   path: ['pathPickerWidget', 'checkTreeWidget'],
@@ -3307,7 +3447,7 @@ const PART_GIVES = {
   outbox: ['join', 'draw', 'watchOutbox', 'installOutboxStyles', 'memoryOutbox', 'indexedOutbox'],
 };
 // The Fieldia object each part is reached through, as the packages ask for it.
-const PART_OF = { head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', check: 'pageCheckPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
+const PART_OF = { acts: 'actsPart', html: 'htmlPart', sheet: 'sheetPart', head: 'headPart', text: 'textPart', path: 'pathPart', choice: 'choicePart', filters: 'filtersPart', date: 'datePart', months: 'monthsPart', typed: 'typedPart', list: 'listPart', cards: 'cardsPart', columns: 'columnsPart', import: 'importPart', editable: 'editablePart', views: 'viewsPart', rows: 'rowsPart', themes: 'themesPart', quiet: 'quietPart', lines: 'linesPart', business: 'businessPart', files: 'filesPart', evidence: 'evidencePart', photos: 'photosPart', record: 'recordPart', codes: 'codesPart', pins: 'pinsPart', survey: 'surveyPart', phone: 'phonePart', slots: 'slotsPart', schedule: 'schedulePart', relations: 'relationsPart', duplicates: 'duplicatesPart', answers: 'answersPart', limits: 'limitsPart', approvals: 'approvalsPart', templates: 'templatesPart', live: 'livePart', undo: 'pressUndoPart', print: 'printPart', memory: 'memoryPart', functions: 'functionsPart', options: 'optionRulesPart', mapchecks: 'mapChecksPart', check: 'pageCheckPart', languages: 'languagesPart', assist: 'assistPart', scan: 'scanPart', decode: 'decodePart', surveyflow: 'surveyFlowPart', element: 'elementPart', loading: 'loadingPart' };
 /**
  * A part's handle in a page's `Fieldia`: its own export (PART_OF) — or, for the parts that join a form (the fields a
  * link fills, proof by a code, a payment, an outbox: 0.30), named on no export of their own, the one of that name among
@@ -3441,7 +3581,8 @@ for (const part of PARTS) {
   const view = dom.window.Fieldia.mountViewer(host, { page: wrong, dataSource: { list: async () => ({ records: [], total: 0 }) } });
   const said = await view.drawn.then(() => null, (error) => error.message);
   // Refused: nothing of the page drawn, why said where it would be (refused.ts, 0.36), and taken away for the next.
-  const refusedOnly = () => host.childElementCount === 1 && host.firstElementChild?.classList.contains('fd-unshown') && host.querySelector('[role="alert"]')?.textContent.startsWith('This form cannot be shown');
+  // Its visitor's words alone (0.37 walk): what is wrong is the console's and the error's, never the page's.
+  const refusedOnly = () => host.childElementCount === 1 && host.firstElementChild?.classList.contains('fd-unshown') && host.querySelector('[role="alert"]')?.textContent.startsWith('This form is not available right now') && !host.querySelector('details');
   if (!said?.startsWith('This page cannot be shown') || !said.includes('layout.groupBy[0]: no field "nowhere"') || !refusedOnly()) throw new Error(`in a page, a list page whose own checks came with its part is drawn, or not refused in words: ${said}`);
   host.replaceChildren();
   // A list of homes on a map whose pins' photo is words: the list part's checks, in already, owe the map's, asked for
@@ -3454,6 +3595,102 @@ for (const part of PARTS) {
 }
 console.log(`parts: ${partSizes.join('; ')}`);
 console.log("a part's checks: a list page's own owed to the list part until it came, a list's cells changed in place to the editable part, a map's to theirs, then run as the packages' check runs them — in a page, one that finds a mistake draws nothing, and its drawn rejects with the mount's words");
+
+/**
+ * In a page, the whole check's part (0.37): asked for as the script starts; a page mounted before it came is drawn at
+ * once all the same — the page that passes and the one it will refuse alike — and a write through either waits for it.
+ * Once it came, the page that passes sends what was held; the one it refuses is taken down, its words in its place,
+ * onError told (`stage: "check"`), `refused` settled, its held send refused and nothing sent. And where it cannot come
+ * (refused by the network here), the page stays drawn, said over it as a part that could not load, once in the console
+ * and to onError as a warning, and its sends go on. The browsers' own runs of it: e2e/page-check.spec.ts and the
+ * part-failure matrix.
+ */
+{
+  const { JSDOM, VirtualConsole } = await import('jsdom');
+  const { createServer } = await import('node:http');
+  // The bundle's folder served over HTTP — a page's parts come from an address, as from a CDN — fieldia.check.js held
+  // until a page lets it go (`checkHeld`), or refused (`checkRefused`), as the network does.
+  let checkHeld = null;
+  let checkRefused = false;
+  const server = createServer(async (request, response) => {
+    const path = join(BUNDLE, decodeURIComponent(new URL(request.url, 'http://x').pathname));
+    if (!path.startsWith(BUNDLE + '/') || !existsSync(path)) return response.writeHead(404).end();
+    if (/\/fieldia\.check\.js$/.test(path)) {
+      if (checkRefused) return response.destroy();
+      await checkHeld;
+    }
+    response.writeHead(200, { 'content-type': path.endsWith('.js') ? 'text/javascript' : 'text/html' }).end(readFileSync(path));
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  const pageWith = (refuse) => {
+    let release;
+    checkHeld = new Promise((done) => (release = done));
+    checkRefused = refuse;
+    const warned = [];
+    const virtualConsole = new VirtualConsole();
+    virtualConsole.on('warn', (message) => warned.push(String(message)));
+    const dom = new JSDOM('<!doctype html><html><head><script src="fieldia.js"></script></head><body><div id="a"></div><div id="b"></div></body></html>', { url: `http://127.0.0.1:${server.address().port}/page.html`, runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true, virtualConsole });
+    // Once fieldia.js ran (the page's load waits for the part held too).
+    const ran = async () => {
+      for (let turn = 0; turn < 500 && !dom.window.Fieldia; turn++) await new Promise((done) => setTimeout(done, 10));
+    };
+    return { dom, release, warned, loaded: ran() };
+  };
+  const page = JSON.parse(readFileSync(join(WORKSPACE, 'examples/pages/delivery.page.json'), 'utf8'));
+  const [name] = Object.keys(page.fields);
+  const invalid = { ...page, fields: { ...page.fields, [name]: { ...page.fields[name], required: 'yes' } } };
+  const filled = (view) => view.form.setValue(name, 'Hana Fouad');
+  {
+    const { dom, release, loaded } = pageWith(false);
+    await loaded;
+    const { Fieldia: inPage, document: doc } = dom.window;
+    // Asked for once the page was parsed, a task on, no page waiting for its parts.
+    for (let turn = 0; turn < 200 && !inPage.pageCheckPart.coming; turn++) await new Promise((done) => setTimeout(done, 10));
+    if (!inPage.pageCheckPart.coming) throw new Error('in a page, the whole check is not on its way once the page was parsed');
+    const told = [];
+    const goodSource = inPage.createMemoryDataSource();
+    const badSource = inPage.createMemoryDataSource();
+    const good = inPage.mountViewer(doc.getElementById('a'), { page, dataSource: goodSource });
+    const bad = inPage.mountViewer(doc.getElementById('b'), { page: invalid, dataSource: badSource, onError: (error, where) => told.push(where) });
+    // Before it came: both drawn at once, never waiting for it.
+    if (!doc.querySelector('#a .fd-field') || !doc.querySelector('#b .fd-field') || good.element.hasAttribute('aria-busy') || told.length) throw new Error('in a page, a page mounted before its whole check came waited for it to be drawn');
+    filled(good);
+    filled(bad);
+    const sentGood = good.form.save();
+    const sentBad = bad.form.save();
+    await new Promise((done) => dom.window.setTimeout(done, 200));
+    // Held: nothing sent through either while the check is on its way.
+    if (goodSource.responses.length || badSource.responses.length) throw new Error('in a page, a send went through a page before its whole check came');
+    release();
+    const [refusedGood, refusedBad] = await Promise.all([good.refused, bad.refused]);
+    await Promise.all([sentGood, sentBad].map((sent) => sent.catch(() => false)));
+    if (refusedGood !== null || goodSource.responses.length !== 1 || !doc.querySelector('#a .fd-field')) throw new Error('in a page, a page its whole check passes did not send what was held');
+    if (!refusedBad?.message?.includes(`fields.${name}.required`) || badSource.responses.length || doc.querySelector('#b .fd-field') || !doc.querySelector('#b > .fd-unshown [role="alert"]') || told.length !== 1 || told[0].stage !== 'check' || told[0].warning) throw new Error(`in a page, a page its whole check refuses was not taken down, or sent what was held: ${refusedBad?.message} ${badSource.responses.length} ${JSON.stringify(told)}`);
+    dom.window.close();
+  }
+  {
+    const { dom, warned, loaded } = pageWith(true);
+    await loaded;
+    const { Fieldia: inPage, document: doc } = dom.window;
+    const told = [];
+    const source = inPage.createMemoryDataSource();
+    const shown = inPage.mountViewer(doc.getElementById('a'), { page: invalid, dataSource: source, onError: (error, where) => told.push({ message: error.message, where }) });
+    const again = inPage.mountViewer(doc.getElementById('b'), { page, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ message: error.message, where }) });
+    filled(shown);
+    const sent = shown.form.save();
+    if ((await shown.refused) !== null || (await again.refused) !== null) throw new Error('in a page, a page whose whole check could not come was refused');
+    await sent.catch(() => false);
+    // Drawn on the checks fieldia.js carries — a mistake only the whole check finds not looked for — said, and sent.
+    if (!doc.querySelector('#a .fd-field') || !doc.querySelector('#b .fd-field') || doc.querySelector('.fd-unshown')) throw new Error('in a page, a page whose whole check could not come is not drawn');
+    if (source.responses.length !== 1) throw new Error('in a page, a send through a page whose whole check could not come was held for ever');
+    if (told.length !== 2 || told.some((one) => one.where.stage !== 'check' || one.where.warning !== true || !one.message.startsWith('This page could not be fully checked'))) throw new Error(`in a page, a page whose whole check could not come does not tell onError so, as a warning: ${JSON.stringify(told)}`);
+    if (warned.filter((words) => words.includes('could not be fully checked')).length !== 1) throw new Error(`in a page, a page whose whole check could not come is not said once in the console: ${JSON.stringify(warned)}`);
+    if (!doc.querySelector('#a .fd-parts-unloaded:not([hidden])')?.textContent.startsWith('Part of this page could not load')) throw new Error('in a page, a page whose whole check could not come does not say so over it');
+    dom.window.close();
+  }
+  await new Promise((done) => server.close(done));
+}
+console.log('the whole check in a page: asked for as the script starts, a page mounted before it came drawn at once, its sends held — sent once it passed, taken down and nothing sent where it refused — and one it could not come for drawn, said and sending');
 
 /**
  * In a page, as a browser runs it: the main script, from an address of its own, asks for nothing while a page uses no
@@ -3482,9 +3719,22 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   });
   await new Promise((done) => dom.window.addEventListener('load', done));
   const { Fieldia: inPage, document: doc } = dom.window;
-  // The memory part is a data source's, never a page's, and the whole check every page drawn asks for once the browser
-  // idles: each said apart below.
-  const loaded = () => PARTS.filter((part) => part !== 'memory' && part !== 'check' && handleIn(inPage, part).loaded).join(', ');
+  // The whole check (0.37): asked for once the page was parsed, no page waiting for its parts — in, or on its way, by the
+  // time a page is mounted later; no page waits for it. Let come here, so what follows reads the same on every run (a page
+  // mounted before it came: above, apart).
+  for (let turn = 0; turn < 200 && !inPage.pageCheckPart.loaded && !inPage.pageCheckPart.coming; turn++) await new Promise((done) => dom.window.setTimeout(done, 10));
+  if (!inPage.pageCheckPart.loaded && !inPage.pageCheckPart.coming) throw new Error('in a page, the whole check was not asked for once the page was parsed');
+  await inPage.pageCheckPart.load();
+  // What no page draws from (the acts part: steps run, dialogs, a page opened, questions): asked for right after the whole
+  // check came, never beside it — every page's, after its draw, as the check is.
+  for (let turn = 0; turn < 200 && !inPage.formActsPart.loaded && !inPage.formActsPart.coming; turn++) await new Promise((done) => dom.window.setTimeout(done, 10));
+  if (!inPage.formActsPart.loaded && !inPage.formActsPart.coming) throw new Error('in a page, the acts part was not asked for once the whole check came');
+  await inPage.formActsPart.load();
+  // One script, both halves: the viewer's in with the form's, nothing asked again.
+  await inPage.actsPart.load();
+  // The memory part is a data source's, never a page's, and the whole check and the acts part every page's, after its
+  // draw: each said apart.
+  const loaded = () => PARTS.filter((part) => part !== 'memory' && part !== 'check' && part !== 'acts' && handleIn(inPage, part).loaded).join(', ');
   /** The parts in after a step, every one so far — as one run of this check found them, each part's first use clear. */
   const hasIn = (step, want) => {
     const now = loaded();
@@ -3524,26 +3774,27 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const plain = inPage.mountViewer(host, { page: read('delivery.page.json'), dataSource: inPage.createMemoryDataSource() });
   if (!host.querySelector('.fd-field')) throw new Error('in a page, a page using no part is not drawn at once');
   await plain.drawn;
-  // The whole check (0.36): never asked for before a page is drawn — it waits for the browser to idle after the draw.
-  if (inPage.pageCheckPart.loaded || inPage.pageCheckPart.coming) throw new Error('in a page, the whole check was asked for before its page was drawn');
   hasIn('a page of plain parts', '');
   // On paper, its printout's head: in every form, hidden, its rules for paper in this script's sheet.
   if (!host.querySelector('.fd-form .fd-print-head[aria-hidden="true"]')) throw new Error("in a page, a form carries no printout's head");
   plain.destroy();
   gone('plain');
-  // A page 0.35 drew whose whole check finds a mistake validatePage refuses: drawn, then — its part come, after the draw —
-  // said to onError as a warning, the page left drawn (`page.invalid`, refused from 0.37).
+  // A page 0.35 drew whose whole check finds a mistake validatePage refuses (`page.invalid`, 0.37): drawn at once, its
+  // check in — then, the page painted, taken down: its words in its place, onError told (`stage: "check"`), `refused`
+  // settled, the mount never thrown.
   {
     const page = read('delivery.page.json');
     const [name] = Object.keys(page.fields);
     const told = [];
-    const invalid = inPage.mountViewer(host, { page: { ...page, fields: { ...page.fields, [name]: { ...page.fields[name], required: 'yes' } } }, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ error, where }) });
-    if (!host.querySelector('.fd-field')) throw new Error('in a page, a page 0.35 drew that validatePage refuses is not drawn');
-    await invalid.drawn;
-    if (!(await until(() => told.length > 0)) || told[0].where.stage !== 'check' || told[0].where.warning !== true || told[0].error.issues?.[0]?.path !== `fields.${name}.required`) throw new Error(`in a page, the whole check did not say a page's mistake after its draw: ${JSON.stringify(told.map((one) => one.where))}`);
-    if (!inPage.pageCheckPart.loaded || !host.querySelector('.fd-field') || host.querySelector('.fd-unshown')) throw new Error('in a page, a page the whole check found a mistake in was not left drawn');
-    invalid.destroy();
-    gone('invalid');
+    const before = problems.length;
+    const shown = inPage.mountViewer(host, { page: { ...page, fields: { ...page.fields, [name]: { ...page.fields[name], required: 'yes' } } }, dataSource: inPage.createMemoryDataSource(), onError: (error, where) => told.push({ error, where }) });
+    if (!host.querySelector('.fd-field')) throw new Error('in a page, a page only the whole check refuses is not drawn at once');
+    const error = await shown.refused;
+    if (error?.issues?.[0]?.path !== `fields.${name}.required` || told.length !== 1 || told[0].where.stage !== 'check' || told[0].where.warning || host.querySelector('.fd-field') || !host.querySelector('.fd-unshown [role="alert"]')) throw new Error(`in a page, a page only the whole check refuses is not taken down in words: ${JSON.stringify(told.map((one) => one.where))}`);
+    // The console told why, once, as a refused page says it (refused.ts): the one line this page logs.
+    const said = problems.splice(before);
+    if (said.length !== 1 || !said[0].startsWith('[Fieldia] This page cannot be shown:')) throw new Error(`in a page, a refused page's console said ${JSON.stringify(said)}`);
+    host.replaceChildren();
   }
   // A form whose phones are read the world over (its page's phone): the phone part, the page drawn once it came,
   // its phone's country before the number (a button opening the countries found by typing), its sheet in — and its
@@ -3635,10 +3886,11 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   account.destroy();
   gone('account');
   // A theme the app gives: the page drawn at once with no theme, which it wears once its part came — then another at once.
+  // Its formatted text drawn at once too, plainly, its toolbar's part asked for as it is (the html part: drawn in place).
   const themed = inPage.mountViewer(host, { page: read('new-customer.page.json'), dataSource: inPage.createMemoryDataSource(), theme: 'material' });
   if (!host.querySelector('.fd-field') || themed.element.hasAttribute('data-fd-theme')) throw new Error('in a page, a theme the app gives held the page back, or was worn before its part came');
   await themed.drawn;
-  hasIn('a theme the app gives', 'cards, columns, import, list, loading, phone, print, relations, themes');
+  hasIn('a theme the app gives', 'cards, columns, html, import, list, loading, phone, print, relations, themes');
   if (themed.element.getAttribute('data-fd-theme') !== 'material' || !doc.getElementById('fieldia-theme-styles')) throw new Error('in a page, a theme the app gives is not worn from its part');
   themed.setTheme('odoo');
   if (themed.element.getAttribute('data-fd-theme') !== 'odoo') throw new Error('in a page, a theme switched to is not worn at once once its part is in');
@@ -3649,16 +3901,17 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const order = inPage.mountViewer(host, { page: read('rules.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(order, 'a page with a table of lines');
   await order.drawn;
-  hasIn('an order with a table of lines', 'cards, columns, import, lines, list, loading, phone, print, relations, themes');
+  hasIn('an order with a table of lines', 'cards, columns, html, import, lines, list, loading, phone, print, relations, themes');
   if (!host.querySelector('.fd-lines .fd-lines-table') || host.querySelector('.fd-lines-plain')) throw new Error('in a page, a table of lines is not drawn from its part');
   order.destroy();
   gone('order');
   // A customer's sheet: its statusbar's part, the business widgets', its photo's, the files part, and its table of
-  // contacts', the lines part — the page drawn once they came, nothing of it before.
+  // contacts', the lines part — and its furniture's, the sheet part, beside them — the page drawn once they came,
+  // nothing of it before.
   const customer = inPage.mountViewer(host, { page: read('customer.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(customer, 'a sheet with a statusbar and a photo');
   await customer.drawn;
-  hasIn("a customer's sheet", 'business, cards, columns, files, import, lines, list, loading, phone, print, relations, themes');
+  hasIn("a customer's sheet", 'business, cards, columns, files, html, import, lines, list, loading, phone, print, relations, sheet, themes');
   if (!host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')) throw new Error('in a page, a statusbar is not drawn from its part');
   if (!host.querySelector('.fd-file.fd-file-image .fd-file-pick')) throw new Error('in a page, a customer\'s photo is not drawn from its part');
   customer.destroy();
@@ -3667,7 +3920,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const bug = inPage.mountViewer(host, { page: read('work-item-bug.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(bug, "a work item's bug");
   await bug.drawn;
-  hasIn("a work item's bug", 'business, cards, choice, columns, files, head, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
+  hasIn("a work item's bug", 'business, cards, choice, columns, files, head, html, import, lines, list, loading, path, phone, print, quiet, relations, sheet, text, themes');
   if (!host.querySelector('.fd-head') || !host.querySelector('.fd-path') || !host.querySelector('.fd-text') || !host.querySelector('.fd-own-box') || !host.querySelector('.fd-field[data-quiet]') || bug.element.getAttribute('data-fd-theme') !== 'fluent' || bug.element.hasAttribute('aria-busy')) throw new Error('in a page, a work item\'s bug is not drawn from its parts');
   for (const id of ['fieldia-head-styles', 'fieldia-editor-styles', 'fieldia-path-styles', 'fieldia-choice-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles']) if (doc.getElementById(id)?.nextElementSibling === null) throw new Error(`in a page, ${id} is not before the page's own looks`);
   bug.destroy();
@@ -3675,7 +3928,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   // Its backlog: the filter bar's part too.
   const backlog = inPage.mountViewer(host, { page: read('backlog.page.json'), dataSource: inPage.createMemoryDataSource() });
   await backlog.drawn;
-  hasIn('a backlog', 'business, cards, choice, columns, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
+  hasIn('a backlog', 'business, cards, choice, columns, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, sheet, text, themes');
   if (!host.querySelector('.fd-filter-bar')) throw new Error("in a page, a backlog's filter bar is not drawn from its part");
   backlog.destroy();
   gone('backlog');
@@ -3684,7 +3937,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const signup = inPage.mountViewer(host, { page: read('signup.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(signup, 'a page with a date');
   await signup.drawn;
-  hasIn('a sign-up with a date and a bot check', 'business, cards, choice, columns, date, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, text, themes');
+  hasIn('a sign-up with a date and a bot check', 'business, cards, choice, columns, date, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, sheet, text, themes');
   if (!host.querySelector('.fd-date-pick .fd-calendar-button')) throw new Error('in a page, a date is not drawn from its part');
   if (!host.querySelector('.fd-trap[inert] input[name="website"]')) throw new Error("in a page, a public page's bot check has no hidden box");
   signup.destroy();
@@ -3693,7 +3946,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const survey = inPage.mountViewer(host, { page: read('survey.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(survey, 'a survey');
   await survey.drawn;
-  hasIn('a survey with a matrix', 'business, cards, choice, columns, date, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, survey, text, themes');
+  hasIn('a survey with a matrix', 'business, cards, choice, columns, date, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, sheet, survey, text, themes');
   if (!host.querySelector('.fd-matrix-table')) throw new Error('in a page, a matrix is not drawn from its part');
   survey.destroy();
   gone('survey');
@@ -3705,7 +3958,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   waits(drive, 'a test drive');
   await drive.drawn;
   await tick(0);
-  hasIn("a test drive's slots", 'business, cards, choice, columns, date, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes');
+  hasIn("a test drive's slots", 'business, cards, choice, columns, date, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, sheet, slots, survey, text, themes');
   if (!host.querySelector('.fd-slots .fd-slots-days') || !asked.length) throw new Error('in a page, booking slots are not drawn from their part');
   drive.destroy();
   gone('drive');
@@ -3716,7 +3969,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const card = inPage.mountViewer(host, { page: read('customer-card.page.json'), dataSource: inPage.createMemoryDataSource({ duplicates: like }), values: { email: 'orders@niletraders.example' } });
   if (!host.querySelector('.fd-field[data-path="email"]')) throw new Error('in a page, possible duplicates kept the card from being drawn');
   if (!(await until(() => host.querySelector('.fd-field[data-path="email"] .fd-duplicates')))) throw new Error('in a page, a possible duplicate is not said under its field');
-  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
+  hasIn("a customer's card and its possible duplicates", 'business, cards, choice, columns, date, duplicates, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, sheet, slots, survey, text, themes, undo');
   if (!doc.getElementById('fieldia-duplicates-styles')) throw new Error("in a page, possible duplicates' sheet was never put in");
   card.destroy();
   gone('card');
@@ -3727,7 +3980,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const kinds = inPage.mountViewer(host, { page: read('kinds.page.json'), dataSource: inPage.createMemoryDataSource() });
   await kinds.drawn;
   await tick(0);
-  hasIn("a survey's plain signature", 'business, cards, choice, columns, date, duplicates, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
+  hasIn("a survey's plain signature", 'business, cards, choice, columns, date, duplicates, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, sheet, slots, survey, text, themes, undo');
   if (!host.querySelector('.fd-signature .fd-signature-pad') || host.querySelector('.fd-signature-evidence')) throw new Error("in a page, a plain signature is not the files part's alone");
   kinds.destroy();
   gone('kinds');
@@ -3740,7 +3993,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const consent = inPage.mountViewer(host, { page: consentPage, recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.consent': { 1: signedRecord } } }) });
   waits(consent, 'a consent whose signature signs its answers');
   await consent.drawn;
-  hasIn('a consent signed, its evidence', 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, print, quiet, relations, slots, survey, text, themes, undo');
+  hasIn('a consent signed, its evidence', 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, print, quiet, relations, sheet, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('.fd-signature-state:not([hidden])')?.textContent === '✓The answers are as they were signed.')) || !host.querySelector('.fd-signature-who')?.textContent.startsWith('Signed by Mona Adel, 14 Oct 2026')) throw new Error(`in a page, a consent's evidence is not said under its signature: ${host.querySelector('.fd-signature-evidence')?.textContent ?? 'none'}`);
   if (!host.querySelector('[data-node="f-treatment"] select')?.disabled) throw new Error("in a page, a consent's signed answer is not locked");
   // Its parts come by script tags of their own, asked for anew once one failed: what offers to try again may.
@@ -3757,12 +4010,12 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   await siteVisit.drawn;
   await tick(0);
   // Its floor plan's snags are pins on a picture: the pins part comes with the page.
-  hasIn("a site visit's Record", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, pins, print, quiet, relations, slots, survey, text, themes, undo');
+  hasIn("a site visit's Record", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, pins, print, quiet, relations, sheet, slots, survey, text, themes, undo');
   const recordVoice = [...host.querySelectorAll('[data-node="f-voice"] .fd-file-record')];
   if (recordVoice.map((button) => button.textContent).join() !== 'Record a voice note' || host.querySelector('[data-node="f-clips"] .fd-file-record')?.textContent !== 'Record a video') throw new Error("in a page, a site visit's fields offer no Record");
   recordVoice[0].click();
   if (!(await until(() => host.querySelector('.fd-recorder .fd-recorder-said')?.textContent === 'Ready. Press Start recording.'))) throw new Error(`in a page, Record opens no recorder: ${host.querySelector('.fd-recorder')?.textContent ?? 'none'}`);
-  hasIn("a site visit's Record pressed", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a site visit's Record pressed", 'business, cards, choice, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   [...host.querySelectorAll('.fd-recorder button')].find((button) => button.textContent === 'Cancel').click();
   if (host.querySelector('.fd-recorder')) throw new Error('in a page, Cancel leaves the recorder open');
   siteVisit.destroy();
@@ -3772,14 +4025,14 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const ticket = inPage.mountViewer(host, { page: read('event-ticket.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'event.ticket': { 1: { attendee: 'Mona Adel', reference: 'TKT-2026-0042', ticket_link: 'https://tickets.example/t/TKT-2026-0042', badge_number: 20261105 } } } }) });
   waits(ticket, "a ticket's codes");
   await ticket.drawn;
-  hasIn("a ticket's codes", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a ticket's codes", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('[data-node="f-link"] svg[role="img"]')?.getAttribute('aria-label') === 'QR code: https://tickets.example/t/TKT-2026-0042')) || host.querySelector('[data-node="f-reference"] svg')?.getAttribute('aria-label') !== 'Barcode: TKT-2026-0042') throw new Error(`in a page, a ticket's codes are not drawn: ${host.querySelector('.fd-code')?.outerHTML.slice(0, 200) ?? 'none'}`);
   ticket.destroy();
   gone('ticket');
   // A treatment's face chart (0.31): the pins part — in since the site visit's floor plan — draws each pin, named.
   const chart = inPage.mountViewer(host, { page: read('face-chart.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.chart': { 1: { patient: 'Hana Fouad', injections: [{ x: 0.4, y: 0.29, note: 'Botox, 4 units' }] } } } }) });
   await chart.drawn;
-  hasIn("a treatment's face chart", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a treatment's face chart", 'business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, html, import, lines, list, loading, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('[data-node="f-injections"] .fd-pin')?.getAttribute('aria-label') === 'Pin 1, top, 40% across, 29% down: Botox, 4 units'))) throw new Error(`in a page, a face chart's pins are not drawn: ${host.querySelector('.fd-pins')?.outerHTML.slice(0, 200) ?? 'none'}`);
   chart.destroy();
   gone('face chart');
@@ -3789,8 +4042,8 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const closed = inPage.mountViewer(host, { page: { ...read('event-signup.page.json'), limits: { closes: '2020-01-31' } }, dataSource: inPage.createMemoryDataSource() });
   waits(closed, 'a sign-up that closed');
   await closed.drawn;
-  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
-  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, import, limits, lines, list, loading, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, html, import, limits, lines, list, loading, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
+  hasIn("an event's sign-up, closed", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, head, html, import, limits, lines, list, loading, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   if (!host.querySelector('.fd-closed:not([hidden]) .fd-closed-title')?.textContent?.startsWith('This form closed on')) throw new Error("in a page, a closed form's words are not said in place of its questions");
   if ([...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]')) || !host.querySelector('.fd-page-title')?.closest('.fd-content:not([hidden])')) throw new Error("in a page, a closed form's questions are shown, or its title is not");
   if (!doc.getElementById('fieldia-limits-styles')) throw new Error("in a page, the limits part's sheet was never put in");
@@ -3802,8 +4055,8 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const visit = inPage.mountViewer(host, { page: read('visit-feedback.page.json'), dataSource: inPage.createMemoryDataSource(), values: { birth_date: '1990-10-20' }, now: () => new dom.window.Date('2026-10-20T12:00:00Z') });
   waits(visit, 'a page whose formula counts an age');
   await visit.drawn;
-  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
-  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, html, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
+  hasIn("a visit's feedback counting an age", 'answers, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, html, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   if (visit.form.getState().values.age_now !== 36 || Object.keys(visit.form.getState().asked).length) throw new Error(`in a page, an age is not worked out once the functions part came: ${visit.form.getState().values.age_now}`);
   visit.destroy();
   gone('visit');
@@ -3821,7 +4074,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   });
   waits(approving, 'a purchase order waiting for approval');
   await approving.drawn;
-  hasIn('a purchase order waiting for approval', 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn('a purchase order waiting for approval', 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, evidence, files, filters, functions, head, html, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('.fd-approval:not([hidden]) .fd-approval-title')?.textContent === 'Waiting for Finance: Mona Adel'))) throw new Error(`in a page, a purchase order waiting for approval does not say so: ${host.querySelector('.fd-approval')?.textContent ?? 'none'}`);
   if (!host.querySelector('[data-node="f-requested"] input')?.readOnly || host.querySelector('[data-node="f-notes"] textarea')?.readOnly) throw new Error('in a page, a purchase order waiting for approval does not lock its fields but the one it leaves open');
   if (!doc.getElementById('fieldia-approvals-styles')) throw new Error("in a page, the approvals part's sheet was never put in");
@@ -3832,7 +4085,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const prices = inPage.mountViewer(host, { page: read('service-prices.page.json'), dataSource: inPage.createMemoryDataSource({ records: { 'clinic.service': { 1: { name: 'Hydrafacial', category: 'skin', minutes: 60, price: 2800, active: true } } } }) });
   waits(prices, 'a list whose cells change in place');
   await prices.drawn;
-  hasIn("a price list changed in place", 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a price list changed in place", 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   if (!(await until(() => host.querySelector('.fd-list-row td[data-edit][data-col="price"]'))) || !host.querySelector('.fd-list-add')) throw new Error("in a page, a list's cells changed in place are not drawn from their part");
   if (doc.getElementById('fd-list-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles' && doc.getElementById('fd-list-columns-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles' && doc.getElementById('fd-list-cards-styles')?.nextElementSibling?.id !== 'fd-list-editable-styles') throw new Error(`in a page, the editable part's sheet is not after the list's own: ${[...doc.head.querySelectorAll('style[id]')].map((style) => style.id).join(', ')}`);
   prices.destroy();
@@ -3843,7 +4096,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const bilingual = inPage.mountViewer(host, { page: read('listing-languages.page.json'), dataSource: inPage.createMemoryDataSource() });
   waits(bilingual, 'a listing in Arabic and English');
   await bilingual.drawn;
-  hasIn('a listing in Arabic and English', 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn('a listing in Arabic and English', 'answers, approvals, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   const switched = [...host.querySelectorAll('[data-node="f-title"] [role="tab"]')].map((tab) => tab.getAttribute('lang')).join();
   if (switched !== 'en,ar' || host.querySelector('[data-node="f-title"] [role="tabpanel"][lang="ar"]')?.getAttribute('dir') !== 'rtl') throw new Error(`in a page, a text in Arabic and English is not a switch between them, the reader's first: ${switched}`);
   bilingual.destroy();
@@ -3855,7 +4108,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const filled = inPage.mountViewer(host, { page: read('customer-from-email.page.json'), dataSource: inPage.createMemoryDataSource({ assist }), values: { comment: 'met them' } });
   waits(filled, 'a customer filled from an e-mail');
   await filled.drawn;
-  hasIn('a customer filled from an e-mail', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn('a customer filled from an e-mail', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   if (!host.querySelector('.fd-assist-fill:not([hidden])') || !host.querySelector('.fd-field[data-path="comment"] .fd-assist-tool:not([hidden])')) throw new Error("in a page, AI help's Fill from an e-mail or a text field's Polish is not drawn with the page");
   if ((await filled.propose({ city: 'Amman' })) !== 1 || !host.querySelector('.fd-field[data-path="city"] .fd-proposal') || filled.form.getState().values.city) throw new Error('in a page, a value proposed is not laid under its field, or is written before it is accepted');
   if (!doc.getElementById('fieldia-assist-styles')) throw new Error("in a page, AI help's sheet was never put in");
@@ -3868,7 +4121,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const listing = inPage.mountViewer(host, { page: read('listing-photo-set.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'agent.listing': { 1: { name: 'Garden flat', photos: [shot('Kitchen.png'), shot('Hall.png')] } } } }) });
   waits(listing, 'a listing whose photos are a set');
   await listing.drawn;
-  hasIn("a listing's photo set", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, slots, survey, text, themes, undo');
+  hasIn("a listing's photo set", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, sheet, slots, survey, text, themes, undo');
   // Each tile kept by its photo's file, named by its place (never its file's name).
   const covers = [...host.querySelectorAll('.fd-photo')].map((tile) => `${tile.getAttribute('data-key')?.split('\u0000')[0]}: ${tile.querySelector('.fd-photo-open')?.getAttribute('aria-label')}${tile.querySelector('.fd-photo-cover')?.hidden ? '' : ' (cover)'}`);
   if (covers.join('; ') !== 'Kitchen.png: The cover, photo 1 of 2 (cover); Hall.png: Photo 2 of 2') throw new Error(`in a page, a listing's photo set is not drawn in its order, its cover first: ${covers.join('; ')}`);
@@ -3885,7 +4138,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const treatment = inPage.mountViewer(host, { page: read('clinic-treatment.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: clinic }) });
   waits(treatment, "a treatment's fields scanned into");
   await treatment.drawn;
-  hasIn("a clinic's treatment scanned into", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, scan, slots, survey, text, themes, undo');
+  hasIn("a clinic's treatment scanned into", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, scan, sheet, slots, survey, text, themes, undo');
   const scanButton = host.querySelector('[data-node="f-patient"] .fd-scan > .fd-scan-button');
   if (scanButton?.textContent !== 'Scan' || scanButton.getAttribute('aria-label') !== 'Scan a code into Patient') throw new Error(`in a page, a field scanned into has no Scan button beside its box: ${scanButton?.outerHTML ?? 'none'}`);
   (await inPage.scanPart.load()).useCodeReader({ detect: async () => [{ rawValue: 'P-1043', format: 'qr_code' }] });
@@ -3901,7 +4154,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const queue = inPage.mountViewer(host, { page: read('leads-queue.page.json'), dataSource: inPage.createMemoryDataSource({ records: { lead: { 1: { name: 'Omar Nabil', stage: 'new' } } }, views: { 'leads-queue': [{ id: 't1', name: 'New ones', shared: true, by: 'Mona Adel', state: { facets: [] } }] } }) });
   await queue.drawn;
   if (!(await until(() => host.querySelector('.fd-list-row')))) throw new Error('in a page, a list whose source keeps views draws no row');
-  hasIn('a queue keeping its views on its server', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, scan, slots, survey, text, themes, undo, views');
+  hasIn('a queue keeping its views on its server', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, scan, sheet, slots, survey, text, themes, undo, views');
   if (!(await until(() => host.querySelector('.fd-view-whose')))?.textContent.includes('Mona Adel') || !doc.getElementById('fd-list-views-styles')) throw new Error("in a page, a list's views are not drawn from their part");
   queue.destroy();
   gone('queue');
@@ -3910,7 +4163,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const reviewed = inPage.mountViewer(host, { page: read('orders-review.page.json'), dataSource: inPage.createMemoryDataSource({ records: { 'sale.order': { 1: { name: 'S00118', state: 'sent', amount_total: 100, line_ids: [{ key: 'l1', id: 11, values: { sequence: 10, name: 'Oak top', qty: 2, price: 50, subtotal: 100 } }] } } } }) });
   waits(reviewed, 'a list whose rows open in place');
   await reviewed.drawn;
-  hasIn('orders opened in place', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, text, themes, undo, views');
+  hasIn('orders opened in place', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, sheet, slots, survey, text, themes, undo, views');
   const opener = await until(() => host.querySelector('.fd-list-row .fd-list-detail-toggle'));
   if (!opener || !doc.getElementById('fd-list-rows-styles')) throw new Error("in a page, a list's rows that open in place are not drawn from their part");
   opener.click();
@@ -3924,7 +4177,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const lease = inPage.mountViewer(host, { page: read('lease.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { lease: { 1: { name: 'Olaya Tower', tenant: 'Faisal Al-Harbi', starts_on: '2026-10-13' } } } }) });
   waits(lease, 'a lease of Hijri days and a month alone');
   await lease.drawn;
-  hasIn('a lease, its Hijri days, a month alone, masks and a code', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, text, themes, typed, undo, views');
+  hasIn('a lease, its Hijri days, a month alone, masks and a code', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, sheet, slots, survey, text, themes, typed, undo, views');
   if (!(await until(() => host.querySelector('[data-node="f-starts"] input[data-kind="hijri"]')?.value === '2 Jumada I 1448 AH'))) throw new Error(`in a page, a Hijri date is not shown beside its day: ${host.querySelector('[data-node="f-starts"] input[data-kind="hijri"]')?.value ?? 'no box'}`);
   if (host.querySelector('[data-node="f-first-rent"] input')?.placeholder !== 'mm/yyyy') throw new Error("in a page, a month alone is not typed as one");
   if (host.querySelector('[data-node="f-national-id"] input')?.placeholder !== '_ ___ ___ ___' || host.querySelectorAll('[data-node="f-code"] .fd-code-cell').length !== 6) throw new Error('in a page, a mask or a one-time code is not drawn from its part');
@@ -3946,7 +4199,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const timed = inPage.mountViewer(host, { page: read('training-check.page.json'), dataSource: inPage.createMemoryDataSource(), seed: 'candidate-17' });
   waits(timed, 'a timed training check');
   await timed.drawn;
-  hasIn('a timed training check', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, views');
+  hasIn('a timed training check', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, path, phone, photos, pins, print, quiet, record, relations, rows, scan, sheet, slots, survey, surveyflow, text, themes, typed, undo, views');
   if (!host.querySelector('.fd-time-start:not([hidden])') || [...host.querySelectorAll('.fd-field')].some((field) => !field.closest('[hidden]'))) throw new Error("in a page, a timed form's Start is not said in place of its questions");
   if (JSON.stringify(timed.form.getState().order) !== JSON.stringify(inPage.formSurveyPart.loaded.drawOrder(read('training-check.page.json'), 'candidate-17'))) throw new Error("in a page, a training check's bank is not drawn for its respondent's seed");
   if (!doc.getElementById('fieldia-surveyflow-styles')) throw new Error("in a page, the survey flow's sheet was never put in");
@@ -3957,7 +4210,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const enquiry = inPage.mountViewer(host, { page: read('unit-enquiry.page.json'), dataSource: inPage.createMemoryDataSource(), url: '?unit=B-12&agent=mona&utm_source=whatsapp' });
   waits(enquiry, 'a page filled from its link');
   await enquiry.drawn;
-  hasIn("an enquiry from a broker's link", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
+  hasIn("an enquiry from a broker's link", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, sheet, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
   const linked = enquiry.form.getState().values;
   if (linked.unit !== 'B-12' || linked.agent_code !== 'mona' || linked.utm_source !== 'whatsapp' || enquiry.form.getState().dirty.length) throw new Error(`in a page, the fields a link fills are not where the form starts once the prefill part came: ${JSON.stringify(linked)}`);
   if (host.querySelector('[data-field="agent_code"]')) throw new Error('in a page, a hidden field the link fills is drawn');
@@ -3982,7 +4235,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const ready = new Promise((done) => element.addEventListener('fieldia-ready', done));
   host.append(element);
   await ready;
-  hasIn('a <fieldia-form> put on a page', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
+  hasIn('a <fieldia-form> put on a page', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, sheet, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
   if (!element.querySelector('.fd-form [data-node="f-name"]') || element.handle?.form.page.id !== 'unit-enquiry') throw new Error('in a page, a <fieldia-form> draws no form');
   element.remove();
   if (element.handle || element.querySelector('.fd-form')?.isConnected === false) throw new Error('in a page, a <fieldia-form> taken off the page keeps its form');
@@ -3993,7 +4246,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const viewing = inPage.mountViewer(host, { page: read('viewing-report.page.json'), dataSource: inPage.createMemoryDataSource({ offline: () => off }), values: { unit: 'B-12', condition: 'ready' } });
   waits(viewing, 'a page with an offline outbox');
   await viewing.drawn;
-  hasIn('a viewing report with an outbox', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
+  hasIn('a viewing report with an outbox', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, sheet, slots, survey, surveyflow, text, themes, typed, undo, verify, views');
   if (!host.querySelector('.fd-outbox[hidden]') || !doc.getElementById('fieldia-outbox-styles')) throw new Error("in a page, a page with an outbox draws no bar over its questions, or its sheet was never put in");
   if (!(await viewing.save()) || !viewing.form.getState().outbox?.kept || viewing.form.getState().outbox?.waiting !== 1) throw new Error(`in a page, a send without signal is not kept on the device: ${JSON.stringify(viewing.form.getState().outbox)}`);
   off = false;
@@ -4007,7 +4260,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const course = inPage.mountViewer(host, { page: read('treatment-course.page.json'), recordId: 1, dataSource: inPage.createMemoryDataSource({ records: { 'clinic.course': { 1: { patient: 'Mona Adel', state: 'running', first_session: '2026-11-03', sessions: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;COUNT=3' } } } }) });
   waits(course, "a treatment course's repeat rule and templates");
   await course.drawn;
-  hasIn("a treatment course's repeat rule and templates", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, import, languages, limits, lines, list, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, schedule, slots, survey, surveyflow, templates, text, themes, typed, undo, verify, views');
+  hasIn("a treatment course's repeat rule and templates", 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, schedule, sheet, slots, survey, surveyflow, templates, text, themes, typed, undo, verify, views');
   if (!(await until(() => host.querySelector('.fd-repeat-words')?.textContent === 'Every 2 weeks on Tuesday, 3 times')) || !host.querySelector('.fd-templates-button')) throw new Error(`in a page, a course's repeat rule or its templates are not drawn from their parts: ${host.querySelector('.fd-repeat-words')?.textContent ?? 'none'}`);
   course.destroy();
   gone('course');
@@ -4024,7 +4277,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   await watched.drawn;
   liveSource.arrive('clinic.course', 1, { id: 9, name: 'Mona Adel' });
   if (!(await until(() => host.querySelector('.fd-presence-words')?.textContent === 'Also here: Mona Adel'))) throw new Error(`in a page, who else has a record open is not said: ${host.querySelector('.fd-presence')?.textContent ?? 'none'}`);
-  hasIn('a course someone else has open', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, import, languages, limits, lines, list, live, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, schedule, slots, survey, surveyflow, templates, text, themes, typed, undo, verify, views');
+  hasIn('a course someone else has open', 'answers, approvals, assist, business, cards, choice, codes, columns, date, duplicates, editable, element, evidence, files, filters, functions, head, html, import, languages, limits, lines, list, live, loading, months, options, outbox, path, pay, phone, photos, pins, prefill, print, quiet, record, relations, rows, scan, schedule, sheet, slots, survey, surveyflow, templates, text, themes, typed, undo, verify, views');
   liveSource.changeElsewhere('clinic.course', 1, { price: 10000 }, { by: 'Mona Adel' });
   if (!(await until(() => watched.form.getState().values.price === 10000))) throw new Error('in a page, a change made elsewhere is not laid on the record');
   watched.destroy();
@@ -4044,8 +4297,10 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   const ranks = ranked.map((style) => Number(style.getAttribute('data-fd-rank')));
   const inside = ranked.every((style) => ids.indexOf(style.id) > ids.indexOf('fieldia-styles') && ids.indexOf(style.id) < ids.indexOf('fieldia-styles-looks'));
   if (!inside || ranks.some((rank, i) => i > 0 && rank < ranks[i - 1])) throw new Error(`in a page, the parts' sheets are out of their places: ${ids.join(', ')}`);
-  // The print part's first of them all (rank 0), right after Fieldia's own: its rules stood at that sheet's end.
-  if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
+  // A sheet's furniture's first of them all (rank 0), right after Fieldia's own, among whose rules it stood; the print
+  // part's next (rank 1), as right after Fieldia's own as the furniture lets it: its rules stood at that sheet's end.
+  if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-sheet-styles') throw new Error(`in a page, a sheet's furniture's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
+  if (ids[ids.indexOf('fieldia-sheet-styles') + 1] !== 'fieldia-print-styles') throw new Error(`in a page, the print part's sheet is not right after Fieldia's own and a sheet's furniture's: ${ids.join(', ')}`);
   for (const id of ['fieldia-lines-styles', 'fieldia-business-styles', 'fieldia-survey-styles', 'fieldia-files-styles', 'fieldia-evidence-styles', 'fieldia-phone-styles', 'fieldia-slots-styles', 'fieldia-import-styles', 'fieldia-duplicates-styles', 'fieldia-limits-styles', 'fieldia-approvals-styles', 'fieldia-assist-styles', 'fieldia-photos-styles', 'fieldia-languages-styles', 'fieldia-months-styles', 'fieldia-typed-styles', 'fieldia-record-styles', 'fieldia-codes-styles', 'fieldia-pins-styles', 'fieldia-verify-styles', 'fieldia-pay-styles', 'fieldia-outbox-styles', 'fieldia-schedule-styles', 'fieldia-theme-styles', 'fieldia-quiet-styles', 'fieldia-survey-looks', 'fieldia-scan-styles']) if (!ids.includes(id)) throw new Error(`in a page, ${id} was never put in`);
   // Each part's own words in Fieldia's English once it came, the main script having carried none of them.
   for (const part of PARTS) {
@@ -4054,7 +4309,7 @@ console.log("a part's checks: a list page's own owed to the list part until it c
   }
   if (problems.length) throw new Error(`in a page: ${problems.join('; ')}`);
   dom.window.close();
-  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; a site visit's floor plan's pins and its recorder, the recorder only once Record is pressed; a ticket's QR code and barcode; a treatment's face chart; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part; a treatment's patient scanned by her card, never with the decode part where the app reads codes; a queue's views kept on its server; orders opened in place; a lease's Hijri days, a month alone, its masks and its code; a lead's areas as a checkbox tree; an enquiry filled from a broker's link, by the prefill part, its mobile asking for a code, by the verify part, its fee, by the pay part; a <fieldia-form> put on a page, by the element part; a viewing report kept without signal, by the outbox part; a course's repeat rule and its templates, a branch's opening hours, someone else with a course open and their change — each as first used, each sheet in its place; each part's own words in once it came");
+  console.log("in a page: a memory source's members as it is first asked, never for an app's own source; nothing but the whole check asked for by a page of plain parts, its printout's head in it; a phone read the world over, and a link to another record; a list's screen, its phones, its totals, its Export, Edit and Print only where asked, the print part fetched for invoices meant for paper and run for none, its Import's part when Import is pressed, its cards and the columns a person shapes where asked, a gallery; a customer's invoices listed inside it, a card in each row for a phone; a theme the app gives, worn as it came; an order's table of lines; a customer's statusbar and photo; a bug's head, text, path picker, own lists, attachments and quiet look; a backlog's filter bar; a sign-up's date box and bot check; a survey's matrix; a test drive's slots; a customer's possible duplicates; a consent's signature evidence, never a plain signature's; a site visit's floor plan's pins and its recorder, the recorder only once Record is pressed; a ticket's QR code and barcode; a treatment's face chart; an event's sign-up closed; a visit's age and its follow-up's treatments, by the form's functions and options parts; a purchase order waiting for approval; a price list's cells changed in place; a listing in Arabic and English; a customer filled from an e-mail, AI help drawn with it and a proposal laid; a listing's photo set, with the files part; a treatment's patient scanned by her card, never with the decode part where the app reads codes; a queue's views kept on its server; orders opened in place; a lease's Hijri days, a month alone, its masks and its code; a lead's areas as a checkbox tree; an enquiry filled from a broker's link, by the prefill part, its mobile asking for a code, by the verify part, its fee, by the pay part; a <fieldia-form> put on a page, by the element part; a viewing report kept without signal, by the outbox part; a course's repeat rule and its templates, a branch's opening hours, someone else with a course open and their change — each as first used, each sheet in its place; each part's own words in once it came");
 }
 
 /**
@@ -4122,7 +4377,9 @@ for (const first of ['menu', 'keys']) {
     if (!ctrlP() || prints.length !== 2 || !prints[1].laidOut || form.hasAttribute('data-fd-print')) throw new Error(`on paper, Ctrl+P once the print part was in did not print the whole look at once: ${JSON.stringify(prints)}`);
   }
   const ids = [...doc.head.querySelectorAll('style[id]')].map((style) => style.id);
-  if (ids[ids.indexOf('fieldia-styles') + 1] !== 'fieldia-print-styles' || doc.getElementById('fieldia-print-styles').getAttribute('data-fd-rank') !== '0') throw new Error(`on paper, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
+  // Right after Fieldia's own, or after a sheet's furniture's where a sheet drew it (rank 0).
+  const firstPart = ids[ids.indexOf('fieldia-styles') + 1] === 'fieldia-sheet-styles' ? 2 : 1;
+  if (ids[ids.indexOf('fieldia-styles') + firstPart] !== 'fieldia-print-styles' || doc.getElementById('fieldia-print-styles').getAttribute('data-fd-rank') !== '1') throw new Error(`on paper, the print part's sheet is not right after Fieldia's own: ${ids.join(', ')}`);
   view.destroy();
   if (problems.length) throw new Error(`on paper: ${problems.join('; ')}`);
   dom.window.close();

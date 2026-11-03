@@ -1,7 +1,7 @@
 import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
 import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
-import { keepInSight } from './lines-table';
-import { moveLineTo } from './line-moves';
+import { keepInSight, namingWords } from './lines-table';
+import { lineCopy, moveLineTo } from './line-moves';
 import { lineForm, openLineDialog } from './lines';
 import { installCardsStyles } from './styles-cards';
 import type { createWidget, Widget, WidgetFactory } from './widgets';
@@ -79,11 +79,13 @@ export const cardsWidget =
     };
     const at = () => lines().findIndex((l) => l.key === line.key);
     const tools = [tool('↑', 'moveUp', () => move(line.key, at() - 1)), tool('↓', 'moveDown', () => move(line.key, at() + 1)), tool('⧉', 'copy', () => copy(line.key))];
-    // Its own form (lineForm), its own page or every field (lineOpens), in a dialog — the card is named by its title, so ↗ need not repeat it.
+    // Its own form (lineForm), its own page or every field (lineOpens), in a dialog — the card is named by its title, so ↗ need not repeat it;
+    // the dialog is titled as a table's line is: by its words ("Rania Fawzy"), else as the card is ("Contact 2"), never
+    // by the table's plural (the 0.37 walk: "Contact 2" over Rania Fawzy's card).
     const open = dialogs && (node.lineOpens || node.lineForm) ? make('button', { type: 'button', class: 'fd-repeat-tool fd-line-open', 'aria-label': words.openLine, title: words.openLine }, '↗') : null;
     open?.addEventListener('click', () => {
       const now = lines().find((l) => l.key === line.key);
-      if (now && dialogs) void openLineDialog(form, name, node, now, dialogs, readonly);
+      if (now && dialogs) void openLineDialog(form, name, node, now, dialogs, readonly, (read) => namingWords(form, name, node, read, names, locale) || (title.textContent ?? ''));
     });
     const body = make('div', { class: 'fd-repeat-fields' });
     const cardElement = make('div', { class: 'fd-repeat-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-repeat-head' }, title, ...tools.map(([b]) => b), ...(open ? [open] : []), remove), body);
@@ -135,9 +137,8 @@ export const cardsWidget =
     const all = lines();
     const at = all.findIndex((l) => l.key === key);
     if (readonly || at < 0 || all.length >= max) return;
-    const values = { ...all[at].values };
-    if (def.sequenceField) delete values[def.sequenceField];
-    const made = form.addLine(name, values);
+    // A line field that says copy: false starts as a new card's does (lineCopy).
+    const made = form.addLine(name, lineCopy(def, all[at].values));
     moveLineTo(form, name, def, made, at + 1);
     cards.get(made)?.fields[0]?.widget.focus();
   }

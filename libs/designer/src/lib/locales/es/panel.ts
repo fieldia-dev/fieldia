@@ -20,6 +20,7 @@ const NAMES: Record<string, string> = {
   Required: 'Obligatorio',
   'Read-only': 'Solo lectura',
   'Never kept in a draft': 'Nunca se guarda en un borrador',
+  'Copied with the record': 'Se copia con el registro',
   'When it shows': 'Cuándo se muestra',
   'Field name': 'Nombre del campo',
   'Stored as': 'Se guarda como',
@@ -623,6 +624,8 @@ export const panel: DesignerWords['panel'] = {
   scanHint: 'Un botón Escanear junto al cuadro lee con la cámara un código de barras, un QR o un código DataMatrix. Una pistola lectora escribe en el cuadro como siempre.',
   secret: 'Nunca se guarda en un borrador',
   secretHint: 'Su respuesta va con el guardado, pero nunca se guarda en un borrador, ni en este dispositivo ni en su servidor: un PIN, un número de identidad.',
+  copied: 'Se copia con el registro',
+  copiedHint: 'Una copia del registro conserva su valor. Desactivado, la copia lo empieza como un registro nuevo: su primer valor, o vacío; un estado, un número.',
   scanCodeField: 'Código guardado en',
   scanCodeFieldHint: 'El campo de los registros vinculados que contiene su código, como el código de barras. Si se deja vacío, el código se busca como un nombre.',
   keyboards: {

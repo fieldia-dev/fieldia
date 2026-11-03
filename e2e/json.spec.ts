@@ -2,6 +2,7 @@ import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { cardOf, doubleLines, inBar, watch } from './designer-support';
 import { expectNoSidewaysScroll, open, screen } from './support';
+import { FORMAT_VERSION } from '../libs/core/src/lib/format/version';
 
 /**
  * The page as JSON, as a person uses it: open it beside Design and Try it,
@@ -58,7 +59,7 @@ test.describe('the JSON view of the screen editor', () => {
   test('marks broken JSON on its line, and a click puts the cursor there', async ({ page }) => {
     await page.getByRole('button', { name: 'JSON', exact: true }).click();
     const text = await box(page).inputValue();
-    const broken = text.replace('"fieldia": "0.13",', '"fieldia": "0.13"');
+    const broken = text.replace(`"fieldia": "${FORMAT_VERSION}",`, `"fieldia": "${FORMAT_VERSION}"`);
     await box(page).fill(broken);
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first()).toContainText('Line 3');

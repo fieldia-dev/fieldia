@@ -3,6 +3,9 @@ import type { El } from './dom';
 import type { ViewerLabels } from './labels';
 import { undoPart } from './viewer-parts';
 
+/** Words said with a button: Retry, which does it again; `gone`, told as they go unpressed. */
+export type SayAct = { label: string; run(): void; gone?(): void };
+
 /** How long words stay before they go by themselves: a warning or a danger stays longer. */
 const STAY_MS = 6000;
 const STAY_LONG_MS = 10000;
@@ -21,13 +24,21 @@ const MOST = 4;
  *
  * Words a one-tap press said with `undo` carry **Undo** for a few seconds: drawn by the undo part (undo-toast.ts), which
  * the press that offers it has brought; said plainly where it cannot come. Words with `act` carry its button — a
- * failed wait's Retry (loading.ts) — which does it and lets the words go.
+ * failed wait's Retry (loading.ts) — which does it and lets the words go; let go unpressed (their ×, their time, newer
+ * words in their place, or cleared), its `gone` is told.
  */
-export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message: string, tone: Tone, undo?: SayUndo, act?: { label: string; run(): void }) => void) & { clear(): void } {
+export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message: string, tone: Tone, undo?: SayUndo, act?: SayAct) => void) & { clear(): void } {
   // There before anything is said, so a screen reader hears what comes into it.
   const region = el('div', { class: 'fd-says', role: 'status', 'aria-live': 'polite' });
   root.append(region);
-  const say = (message: string, tone: Tone, undo?: SayUndo, act?: { label: string; run(): void }) => {
+  /** Each toast's act's `gone`, told as it goes unpressed. */
+  const gone = new Map<Element, () => void>();
+  const letGo = (toast: Element) => {
+    const told = gone.get(toast);
+    gone.delete(toast);
+    told?.();
+  };
+  const say = (message: string, tone: Tone, undo?: SayUndo, act?: SayAct) => {
     if (undo) return void undoPart.load().then((part) => part.undoToast(region, el, words, message, tone, undo), () => say(message, tone));
     const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': words.dismiss }, '×');
     const button = act ? el('button', { type: 'button', class: 'fd-button fd-button-link' }, act.label) : null;
@@ -39,13 +50,16 @@ export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message
     const go = () => {
       hold();
       toast.remove();
+      letGo(toast);
     };
+    if (act?.gone) gone.set(toast, act.gone);
     const wait = () => {
       hold();
       timer = setTimeout(go, tone === 'warning' || tone === 'danger' ? STAY_LONG_MS : STAY_MS);
     };
     close.addEventListener('click', go);
     button?.addEventListener('click', () => {
+      gone.delete(toast);
       go();
       act?.run();
     });
@@ -54,11 +68,20 @@ export function sayer(root: HTMLElement, el: El, words: ViewerLabels): ((message
     toast.addEventListener('mouseleave', wait);
     toast.addEventListener('focusout', wait);
     region.append(toast);
-    while (region.children.length > MOST) region.firstElementChild?.remove();
+    while (region.children.length > MOST) {
+      const oldest = region.firstElementChild as Element;
+      oldest.remove();
+      letGo(oldest);
+    }
     echo(region, el, message);
     wait();
   };
-  return Object.assign(say, { clear: () => region.replaceChildren() });
+  return Object.assign(say, {
+    clear: () => {
+      region.replaceChildren();
+      for (const toast of [...gone.keys()]) letGo(toast);
+    },
+  });
 }
 
 /** The words again, unseen, in a live region of the topmost modal dialog the region is not in. */

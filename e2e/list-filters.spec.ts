@@ -265,3 +265,37 @@ test.describe('a sales team’s queue', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('invoices, their filters in two groups', () => {
+  type Invoice = { invoice_date: string; due_date: string; state: string };
+  const INVOICES = `page=invoices&skin=underline&${NOW}`;
+  const thisYear = (invoice: Invoice) => invoice.invoice_date.startsWith(TODAY.slice(0, 4));
+  const overdue = (invoice: Invoice) => invoice.state === 'sent' && invoice.due_date < TODAY;
+
+  test('Overdue with This year on is this year’s overdue invoices: a chip for each group, a line between them in the menu', async ({ page }) => {
+    const { problems } = await open(page, 'plain', INVOICES);
+    const all = Object.values(await page.evaluate(() => (window as any).fieldiaDemo.dataSource.records.invoice)) as Invoice[];
+    const chips = page.locator('.fd-facet .fd-facet-text');
+    await expect(chips).toHaveText(['This year']);
+    await page.getByRole('button', { name: 'Search options' }).click();
+    const menu = page.locator('.fd-search-group[data-group-kind="filters"]');
+    // Overdue in a group of its own, the periods in another: a line between them.
+    // Each with how many it finds (`filterCounts`, 0.37 walk: a gallery list shows counts with groups).
+    await expect(menu.locator('.fd-search-option[data-filter], [role="separator"]')).toHaveText([/^Overdue\s*\d/, '', /^This month\s*\d/, /^Last month\s*\d/, /^This year\s*\d/]);
+    // Pressed, a filter's name starts with its tick (✓), its count after it: found by its words.
+    await menu.getByRole('button', { name: /Overdue, / }).click();
+    await expect(menu.getByRole('button', { name: /Overdue, / })).toHaveAttribute('aria-pressed', 'true');
+    await expect(menu.getByRole('button', { name: /This year, / })).toHaveAttribute('aria-pressed', 'true');
+    await expect(chips).toHaveText(['This year', 'Overdue']);
+    // Both hold: this year's invoices sent and not paid by their due date — fewer than every overdue one.
+    const found = all.filter((invoice) => thisYear(invoice) && overdue(invoice));
+    expect(found.length, 'this year has overdue invoices on 14 October').toBeGreaterThan(0);
+    expect(found.length, 'some overdue invoices are last year’s').toBeLessThan(all.filter(overdue).length);
+    await expect(page.locator('.fd-pager-text')).toHaveText(`1–${Math.min(10, found.length)} of ${found.length} invoices`);
+    await screen(page, 'list-filters-groups', { viewport: true });
+    // A chip's × takes its own group off: This year stays.
+    await page.getByRole('button', { name: 'Remove Overdue' }).click();
+    await expect(chips).toHaveText(['This year']);
+    expect(problems).toEqual([]);
+  });
+});

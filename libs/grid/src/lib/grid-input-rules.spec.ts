@@ -11,7 +11,7 @@ import { gridApiOf, gridWidgets } from './grid';
  */
 
 const order: Page = {
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'order',
   title: 'Sales order',
   data: { kind: 'record', model: 'sale.order' },

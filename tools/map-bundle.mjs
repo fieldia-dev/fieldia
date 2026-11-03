@@ -184,7 +184,13 @@ const OUT = join(WORKSPACE, 'tmp/map-bundle');
 // 0.36 merged with 0.35.3, set once from the merged build: 0.35.3's answers of the app's source the engine's own at the
 // embed's door (embed.ts) beside 0.36's map — with the page 12,018, 13,739 and 10,963 bytes (0.35.3: 11,932, 13,649
 // and 10,879), to 11.8, 13.5 and 10.8; the parts as they were.
-const BUDGET = { fields: 11.8, all: 13.5, embed: 10.8, leaflet: 47, routes: 2 };
+// 0.37 (p37-walk-rest), every answer the app gives the maps handled the moment it is given (adopt.ts, `answerOf`): its
+// provider's members, its own search, naming, routes, reachable areas, count of an area and borders it loads, taken at
+// the door (`mapWidgets`, `mapParts`, `mapListViews`), and its own fetch and token in the providers Fieldia makes — so an
+// Angular zone never says one unhandled that the maps await a microtask late (FU2 on 0.36.1) — with the page 12,016,
+// 13,735 and 10,961 bytes measured before, 12,198, 13,925 and 11,001 after, to 12.0 and 13.7, inside 10.8; the parts
+// as they were.
+const BUDGET = { fields: 12.0, all: 13.7, embed: 10.8, leaflet: 47, routes: 2 };
 // 0.36 merged with 0.35.2, and a zoom under way from its press (map-core.ts): a list's map 22,943 bytes, to 22.5; a
 // form's 20,479, to 20.1; the fields' 19,021, inside 18.6.
 // 0.36's merge, set once from the merged build (deps-maint's names beside p3-real-tests' map fixes): a list's map 22,973

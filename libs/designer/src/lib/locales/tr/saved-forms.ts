@@ -10,6 +10,7 @@ export const savedForms: DesignerWords['savedForms'] = {
   copy: (n) => (n === 1 ? 'Kayıtlı form' : `Kayıtlı form ${n}`),
   tile: 'Kayıtlı form',
   tileTip: 'Kayıtlı form: uygulamanın kayıtlı formlarından birini yerleştirin, örneğin bir adres',
+  couldNotList: 'Kayıtlı formlar listelenemedi',
   menuNote: (any) =>
     any ? 'Bütün olarak yerleştirilir, yanıtları ayrı tutulur; kendi sayfasında değiştirilir.' : 'Uygulamada yerleştirilecek kayıtlı form henüz yok: önce bir form yayımlayın.',
   add: 'Kayıtlı form ekle',
