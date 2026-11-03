@@ -46,6 +46,11 @@ updates:
       # The Node the tools run on is .nvmrc's: @types/node's major moves with it, by hand (tools/workflows.test.mjs).
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # TypeScript is the one the workspace's Angular asks for (@angular/compiler-cli's peer range; typescript-eslint
+      # and ts-jest name theirs too): a new major moves by hand. Offered one past those ranges, Dependabot's npm runs
+      # out of time and fails the whole update (tools/workflows.test.mjs).
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
   # The newest Angular the bindings support, and the TypeScript it asks for: CI's angular-newest job runs them on it.
   - package-ecosystem: npm
     directory: /tools/angular-newest
@@ -58,6 +63,11 @@ updates:
       angular-newest:
         patterns:
           - '*'
+    ignore:
+      # Its TypeScript is the one this Angular's compiler asks for (@angular/compiler-cli's peer range, >=6.0 <6.1 for
+      # 22): a new TypeScript major waits for the Angular whose range admits it, and moves by hand with it.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:

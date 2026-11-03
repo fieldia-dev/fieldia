@@ -67,12 +67,12 @@
       }
     },
     "test": {
-      "executor": "@nx/jest:jest",
+      "executor": "nx:run-commands",
       "outputs": [
         "{workspaceRoot}/coverage/{projectRoot}"
       ],
       "options": {
-        "jestConfig": "libs/viewer/jest.config.cjs"
+        "command": "jest --config libs/viewer/jest.config.cjs"
       }
     },
     "typecheck": {

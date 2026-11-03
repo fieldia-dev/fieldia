@@ -174,12 +174,14 @@ test('Dependabot keeps npm and the actions up to date, weekly, grouped', () => {
   }
 });
 
-/** The workspace's npm block in .github/dependabot.yml: what it leaves to a person. */
-const workspaceIgnores = () => {
+/** An npm block in .github/dependabot.yml, by its directory: the majors it leaves to a person. */
+const ignoredMajors = (directory) => {
   const text = readFileSync(join(WORKSPACE, '.github/dependabot.yml'), 'utf8');
-  const npm = text.split(/^ {2}- package-ecosystem:\s*/m).find((block) => /^npm\n\s+directory: \/\n/.test(block)) ?? '';
+  const npm = text.split(/^ {2}- package-ecosystem:\s*/m).find((block) => block.startsWith(`npm\n    directory: ${directory}\n`)) ?? '';
   return [...npm.matchAll(/- dependency-name: '([^']+)'\n\s+update-types: \['version-update:semver-major'\]/g)].map(([, name]) => name);
 };
+/** The workspace's npm block: what it leaves to a person. */
+const workspaceIgnores = () => ignoredMajors('/');
 
 test('the workspace builds the Angular bindings with the oldest Angular they support; a new major goes to tools/angular-newest', () => {
   // The bindings are built by the workspace's Angular, and an app's linker refuses a declaration newer than itself.
@@ -193,6 +195,36 @@ test('the workspace builds the Angular bindings with the oldest Angular they sup
   }
   assert.ok(major(newest['@angular/core']) > major(root['@angular/core']), 'tools/angular-newest is not newer than the workspace');
   assert.match(readFileSync(join(WORKFLOWS, 'ci.yml'), 'utf8'), /\n {6}- run: node tools\/angular-newest\.mjs\n/, 'CI does not run the bindings on the newest Angular');
+});
+
+/** Whether a version is in a range of comparators as Angular writes its peer ranges (">=6.0 <6.1", "a || b"). */
+const inRange = (version, range) => {
+  const parts = (v) => v.split('-')[0].split('.').map(Number);
+  const compare = (a, b) => {
+    const [x, y] = [parts(a), parts(b)];
+    for (let i = 0; i < 3; i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) - (y[i] ?? 0);
+    return 0;
+  };
+  const holds = { '>=': (c) => c >= 0, '>': (c) => c > 0, '<=': (c) => c <= 0, '<': (c) => c < 0, '=': (c) => c === 0, '': (c) => c === 0 };
+  return range.split('||').some((alternative) =>
+    alternative.trim().split(/\s+/).every((comparator) => {
+      const [, op, bound] = /^(>=|<=|>|<|=)?\s*v?([\d.]+)$/.exec(comparator) ?? assert.fail(`cannot read "${comparator}" in ${range}`);
+      return holds[op ?? ''](compare(version, bound));
+    }));
+};
+
+test("TypeScript is the one each install's Angular asks for; a new major moves by hand, with the Angular that admits it", () => {
+  // Angular's compiler names the TypeScript it supports (@angular/compiler-cli's peer range, `>=6.0 <6.1` for 22): one
+  // outside it fails the build (TypeScript 7 removed `baseUrl`), and Dependabot's npm, asked for one past the workspace's
+  // ranges, ran for 15 minutes and failed the update (2 Nov). So neither install takes a TypeScript major from it.
+  for (const [directory, lockFile] of [['/', 'package-lock.json'], ['/tools/angular-newest', 'tools/angular-newest/package-lock.json']]) {
+    const lock = JSON.parse(readFileSync(join(WORKSPACE, lockFile), 'utf8')).packages;
+    const typescript = lock['node_modules/typescript'].version;
+    const range = lock['node_modules/@angular/compiler-cli'].peerDependencies.typescript;
+    assert.ok(inRange(typescript, range), `${lockFile}: TypeScript ${typescript}, where its Angular asks for ${range}`);
+    assert.ok(ignoredMajors(directory).includes('typescript'), `Dependabot would move ${directory}'s TypeScript to a major its Angular (${range}) does not admit`);
+  }
+  assert.ok(inRange('6.0.3', '>=6.0 <6.1') && !inRange('7.0.2', '>=6.0 <6.1') && inRange('5.9.3', '>=5.9 <6.1') && !inRange('6.1.0', '>=5.9 <6.1'));
 });
 
 test("@types/node is the Node the tools run on: .nvmrc's major", () => {
