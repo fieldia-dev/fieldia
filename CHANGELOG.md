@@ -283,6 +283,17 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
 - The designer names a question whose braces it refuses by its words as they stood
   before the typing began, never by the words half typed ("Your name (as on the
   {customer's words name {customer}…").
+- A press beside the designer's bar at the foot of the screen lands where it was
+  aimed (a phone, a tablet held upright, a laptop's window under 1,000 px: the
+  screen designer's +, the survey's bar beside its card, Try it's drawer). A
+  control focused in the band the bar floats over is moved clear of it, and an
+  engine that focuses what it presses focused it on the press's down: moved a
+  frame later, before the up, the control left from under the pointer and the
+  click went to what came there — every press held a moment on a panel's tab,
+  a button or a box there was lost, in all three engines (a busy suite's
+  designer in Arabic, its Rules tab focused and never chosen). The move now
+  waits for the press to end, its click handled first, as what moves the page
+  as a box is left waits (`afterPress`); focused by the keys, it moves at once.
 - Demos: the vendor bill's copy keeps no number and no dates, as Odoo's draft copy
   (`"copy": false` on its number, bill date and due date): its number is a
   draft's, "Draft", until Confirm gives it its number, as a new bill's is. The
@@ -494,6 +505,11 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   - (fix) A recording stopped under half a second after it began says "Nothing
     was kept: the recording was too short." (the new message `recordTooShort`);
     one stopped before it began says what it said.
+  - (fix) In the designer with its bar at the foot (under 1,000 px), a control
+    pressed in the band the bar floats over is clicked, then moved clear of the
+    bar once the press has ended: a test that pressed one there (held, or on a
+    busy machine) found its click lost, and one that reads where it was moved
+    reads it after the click, not at the press's down.
   - (fix) The demos' invoices list counts its filters: a filter's name carries its
     count ("Overdue, 3 invoices"), found by its words' start, not their end. The
     vendor bill's copy has no number — "Draft", a new bill's too, till Confirm
