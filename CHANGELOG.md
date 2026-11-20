@@ -22,7 +22,7 @@ under **Deprecated** in the minor that first warns of it, and cited where it
 changes; each Upgrading item says whether it adds, fixes or changes what was
 deprecated ([the release train](docs/maintainers/release-train.md)).
 
-## 0.37.0 — 2026-10-28
+## 0.37.0 — 2026-11-20
 
 **A page its checks refuse is taken down, and nothing is written through it;
 and page format 0.14.** Every viewer runs the whole check — `validatePage`'s
@@ -528,109 +528,37 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   "The saved forms could not be listed" (`savedForms.couldNotList`) in ar, es,
   fa, tr and ur.
 
-**Size:** `fieldia.js` 588.9 KB, 198.00 gzipped (0.36.1: 588.2, 197.26): +0.74
-KB gzipped, under the owner's 200, all of it what a page must carry from its
-mount. By lane, each measured on 0.36.0: p37-refuse +0.66 — the handle's
-`refused` and the take-down of a refused page, every write held until the check
-ran (0.20 of it, the writes' names most) and let go in the same turn once it
-passed, the words where the check cannot come, the check asked for once nothing
-is waited for — less 0.36's check at idle and its warning, and the 28 checks a
-part carries called through one table of stand-ins, not 28 generated copies
-(−0.15); p37-format +0.08 — format 0.14 among the formats every page's check
-reads before its first draw, and a list's named filters in their groups
-(`facetsToFilter`, the one-tag script's own, and `filterGroups` beside it);
-joined with 0.36.1's +0.24, whose `later()` takes the place of 0.37's own
-handling of a link's page that cannot come; then p37-walk-rest, measured on
-the merged branch, −0.02 (25 B: a line's dialog titled by the widget that opens
-it, the record's state and whether it is shown read once; every app's answer
-handled as it is given, the held writes and the pager taking it through
-`answerOf` where each made a promise of its own). The parts, gzipped
-(0.36.1 → 0.37.0): check 17.26 → 17.22 (the shape with `copy` and `group`, the
-under-stamped warning's words gone); list 52.08 → 52.39 (a chip per group, the
-menu's line, the counts, the printout; a row's and a view's answers of the app
-handled as given); memory 9.12 → 9.46 (its copy applying `copy: false`); lines
-16.53 → 16.63 (a line's own copy; a line's dialog, its ↑ and ↓ named as one
-line); outbox 4.76 → 4.77 and pay 3.46 → 3.47 (the app's answers handled as
-given); files 18.97 → 19.09 and photos 11.67 → 11.69 (a picture's encode never
-waited on for long); every other part and add-on within 0.01. From the npm
-packages, an app's first load (KB gzipped, with the page / to usable): a record
-form 246.2 → 248.0 / 337.0 → 339.2; in Arabic 246.2 → 248.0 / 359.7 → 361.9; a
-list 245.4 → 247.2 / 333.2 → 335.4; the screen designer 593.9 → 596.2 / 823.2 →
-826.0 — the first paint +1.4
-each for `refused`, the take-down and the held writes, +0.4 to +0.8 for the
-filter groups and the copy; the whole check in its chunk as in 0.36.
+**Size:** `fieldia.js` 588.2 → 550.6 KB (602,266 → 563,814 B), 197.26 → 186.12
+gzipped (−11.14), 13.88 under the owner's 200. What a page needs before its
+first draw stayed in it: the page check's take-down of a refused page and the
+writes held until the check passes, format 0.14 and a list's filter groups
+(+0.74); a press that waits shown busy where it was pressed, Retry where its
+part cannot come, the formatted text's toolbar and a sheet's furniture given
+their room, a refused page's words to its visitor (+1.36); and what a page that
+acts needs before the acts part is there (+0.12). What no page needs before its
+first draw moved to three new parts (−13.36): acts 12.46 gzipped (a page's
+dialogs and the pages it opens, the viewer's question, the button steps, save
+safety's banners with Reload, Keep mine and Put back), sheet 4.28 (a sheet's
+furniture and its look) and html 2.72 (the classic formatted text's toolbar).
+Other parts, gzipped (0.36.1 → 0.37.0): list 52.08 → 52.40, memory 9.12 →
+9.46, lines 16.53 → 16.67, files 18.97 → 19.08, record 5.46 → 5.50, photos
+11.67 → 11.69, text 24.70 → 24.73, check 17.26 → 17.22; each language add-on
++0.08 to +0.14 for its new words; the other 47 scripts within 20 bytes. From
+the npm packages, an app's first load (KB gzipped, with the page / to usable): a
+record form 246.2 → 237.5 / 337.0 → 348.8, in Arabic 246.2 → 237.5 / 359.7 →
+371.7, a list 245.4 → 236.7 / 333.2 → 337.9, the screen designer 593.9 → 586.6 /
+823.2 → 823.9 — less before the app's first line, a little more to usable, which
+now counts the acts part's two chunks, asked for after the draw.
 `@fieldia/calendar` and `@fieldia/gantt` within 5 bytes of 0.36.1;
-`@fieldia/map` 0.18 KB more with a place and an area, a list's map and a form's
-(the app's answers to the maps handled as they are given), its parts as they
-were. A valid page's first draw on Slow 4G (1.44 Mbps, 562 ms; 7 runs
-interleaved with 0.36.0, a desktop and a phone's CPU four times slower), for a
-plain form, a fetched page, a record and a list drawn from parts, with and
-without their part tags, measured before 0.36.1 joined: within 10 ms of 0.36.0's
-on a desktop — about what the 0.74 KB more takes on that line — and inside the
-runs' own spread on the phone.
-
-**Size, the parts (size-parts):** `fieldia.js` 588.9 → 546.2 KB, 198.00 →
-184.64 gzipped (−13.36, on the branch merged with p37-walk-rest), each move
-measured after the one before: a page's dialogs, a page opened, the viewer's
-question and the step engine in the acts
-part −7.03; save safety's banners with them −1.18; the classic formatted
-text's toolbar in the html part −1.64, and the words each moved part reads
-alone with it −0.19; a sheet's furniture and its look in the sheet part −2.27;
-Reload, Keep mine and Put back −0.28; a link's and a line's dialogs −0.78. The
-new parts: acts 12.41, html 2.73, sheet 4.28 gzipped; text +0.03 and path,
-choice and relations +0.01 (words they share with a moved part, each one's
-own now); each add-on +0.02 to +0.03 for its two new sentences. From the npm
-packages (with the page / to usable): a record form 248.0 → 236.0 / 339.2 →
-347.2, in Arabic 248.0 → 236.0 / 361.9 → 369.9, a list 247.2 → 235.2 / 335.4 →
-336.3, the designer 596.2 → 584.6 / 826.0 → 821.8 — the acts part's two chunks
-asked for after the draw, so "to usable" carries them. A page's first draw on
-Slow 4G (1.44 Mbps, 562 ms; 7 runs interleaved with `release-0.37` before these
-parts, a desktop and a phone's CPU four times slower), medians in ms: a plain
-form 2301 → 2225 and 2394 → 2319 on the phone; fetched 2869 → 2793 and 2972 →
-2895; a record 2940 → 2857 and 3044 → 2964; the customer's sheet 3430 → 3397
-and 3623 → 3588, with its part tags 3355 → 3264 and 3470 → 3384; a list 3395 →
-3318 and 3538 → 3455; a page whose steps run as it opens 3015 → 3015 (in use
-3236 → 3209) and 3207 → 3186; a sheet with nothing else to wait for 2298 → 2224
-and 2416 → 2339. A press the moment a one-tag page is drawn waits for the acts
-part: its steps ran 0.71 s after it on the desktop, 0.73 s on the phone (0.01
-and 0.04 s before). The acts part lands about 1.3 s after the draw where a page
-was mounted as soon as `fieldia.js` ran (the whole check's round trip, then its
-own), 0.7 s where the app fetched its page.
-
-**Size, the walk's fixes (p37-walk-fix):** `fieldia.js` 546.2 → 550.3 KB
-(559,345 → 563,507 B), 184.64 → 186.00 gzipped (+1.36), all of it what a page
-needs from its draw or its first press: a control a press waits on busy where it
-was pressed, the one rule that finds it in every engine and the ring's look (a
-bar under a name), a second press asking nothing more, and Retry where its part
-cannot come; the classic formatted text's toolbar's room, its three text styles'
-names back from the html part; a sheet's furniture that takes room waited for, and a record's
-attachment's files part with the page's; a refused page's words to its visitor.
-Parts: acts 12.41 → 12.46, lines 16.63 → 16.67, record 5.46 → 5.50, loading
-3.06 → 3.08, html 2.73 → 2.72 gzipped; each add-on +0.06 to +0.12 for the new
-words. From the npm packages (with the page / to usable): a record form 236.0 →
-237.4 / 347.2 → 348.7, in Arabic 236.0 → 237.4 / 369.9 → 371.6, a list 235.2 →
-236.6 / 336.3 → 337.8, the designer 584.6 → 586.1 / 821.8 → 823.3. `@fieldia/map`
-1 B smaller; `@fieldia/calendar` and `@fieldia/gantt` the same. A page's first
-draw on Slow 4G (7 runs interleaved with `release-0.37` before these fixes, a
-desktop and a phone's CPU four times slower), medians in ms: a plain form, a
-record, the customer's sheet, the walk's note whose toolbar comes into its room,
-a page pressed as it is drawn — each within 8 ms, its press waiting as before
-(711 and 731); a sheet whose furniture takes room and that waits for no other
-part, now waiting for it: 2231 → 2857 and 2336 → 2967 on the phone without its
-part tags, in use 3152 → 3160 and 3216 → 3256 — nothing in it moving after; with
-its tags, which name the sheet part again, 2288 → 2340 and 2395 → 2479.
-
-**Size, the tail (p37-tail):** `fieldia.js` 550.3 → 550.6 KB (563,507 →
-563,814 B), 186.00 → 186.12 gzipped (+0.12), all of it what is needed before
-the acts part is there: a page that keeps its sends without signal and acts asks
-for it with its own (+0.05), and a save whose steps wait for it says so (+0.07).
-The parts are as they were; the chatter, in no script, is an npm package's.
-
-**Size, the designer's answers (p37-designer-answers):** `fieldia.js` and every
-part and add-on byte for byte as they were — the designer is in no script. From
-the npm packages, the designer's first load 586.2 → 586.6 / 823.5 → 823.9 KB
-gzipped (+399 B, its three new words and the lines that say a refusal; 85 / 97
-files as before); a record form's, in Arabic and a list's the same to the byte.
+`@fieldia/map` 0.18 KB more (the app's answers to its maps handled as they are
+given). On Slow 4G (1.44 Mbps, 562 ms; 7 runs interleaved, a desktop and a
+phone's CPU four times slower), a page's first draw comes 75–85 ms sooner — a
+plain form 2301 → 2225 ms, a record 2940 → 2857, a list 3395 → 3318 (medians, on
+the desktop) — and a press the moment a page is drawn waits for the acts part,
+0.71 s on the desktop and 0.73 s on the phone, the control shown busy meanwhile.
+A sheet that waits for no other part, and whose furniture takes room, waits for
+the sheet part so that nothing in it moves after: 2231 → 2857 ms (none of the 47
+example sheets is one).
 
 ## 0.36.1 — 2026-10-28
 
