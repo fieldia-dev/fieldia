@@ -45,7 +45,11 @@ export function releaseVersionOf(subject) {
   return /^chore(?:\(release\):|: release) (\d+\.\d+\.\d+)(?=$|[ ,])/.exec(subject)?.[1] ?? null;
 }
 
-/** Every version a release commit set (`releaseVersionOf`), oldest first, with that commit and its date (the first such commit). */
+/**
+ * Every version a release commit set (`releaseVersionOf`), oldest first, with that commit and its date. A version
+ * whose release commit was made again (a held minor dated anew on its day) is its last: that commit, that day, that
+ * place among the others.
+ */
 export function releasedVersions(workspace) {
   // Either subject: git's patterns given twice are either.
   const log = execFileSync('git', ['log', '--reverse', '--date=short', '--format=%H%x09%ad%x09%s', '--grep=^chore(release): [0-9]', '--grep=^chore: release [0-9]'], { cwd: workspace, encoding: 'utf8' });
@@ -53,7 +57,9 @@ export function releasedVersions(workspace) {
   for (const line of log.split('\n').filter(Boolean)) {
     const [commit, date, subject] = line.split('\t');
     const version = releaseVersionOf(subject);
-    if (version && !seen.has(version)) seen.set(version, { version, commit, date });
+    if (!version) continue;
+    seen.delete(version);
+    seen.set(version, { version, commit, date });
   }
   return [...seen.values()];
 }
