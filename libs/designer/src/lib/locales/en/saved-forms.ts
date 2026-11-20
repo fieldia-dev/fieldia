@@ -7,6 +7,8 @@ export const savedForms = {
   copy: (n: number) => (n === 1 ? 'Saved form' : `Saved form ${n}`),
   tile: 'A saved form',
   tileTip: 'A saved form: place one of the app’s saved forms, such as an address',
+  /** The app's store refused to list its saved forms: said in the menu, with its words after it. */
+  couldNotList: 'The saved forms could not be listed',
   menuNote: (any: boolean): string =>
     any ? 'Placed whole, its answers kept apart; it is changed on its own page.' : 'The app has no saved form to place yet: publish one first.',
   add: 'Add a saved form',

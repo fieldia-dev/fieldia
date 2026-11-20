@@ -21,6 +21,7 @@ export interface ShrinkOptions {
 
 /** What a picture field makes its photos, where the data source stores files and the page says nothing. */
 import { SHRINK_DEFAULTS } from './file-shown';
+import { encodeSoon } from './encode-now';
 export { SHRINK_DEFAULTS };
 
 const SHRINKABLE = /^image\/(jpeg|pjpeg|png|webp|heic|heif|avif)$/i;
@@ -91,7 +92,9 @@ export async function shrinkPhoto(file: File, options: ShrinkOptions = {}, doc: 
     context.drawImage(picture.source, 0, 0, canvas.width, canvas.height);
     // A PNG may be clear in places: it stays a PNG. The rest are written as a JPEG, which every browser and store reads.
     const type = file.type === 'image/png' ? 'image/png' : file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+    // The browser's toBlob, or at once where it has not answered within a moment: a busy machine gives Chromium's no idle
+    // time to encode in for seconds (encode-now.ts).
+    const blob = await encodeSoon(canvas, type, quality);
     if (!blob || blob.size >= file.size || blob.type !== type) return file;
     const name = type === 'image/jpeg' && !/\.jpe?g$/i.test(file.name) ? `${file.name.replace(/\.[^./]*$/, '')}.jpg` : file.name;
     return new File([blob], name, { type, lastModified: file.lastModified });

@@ -1,10 +1,10 @@
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { businessPart, choicePart, datePart, evidencePart, filesPart, linesPart, pathPart, photosPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
+import { businessPart, choicePart, datePart, evidencePart, filesPart, htmlPart, linesPart, pathPart, photosPart, quietPart, relationsPart, slotsPart, surveyPart, textPart, themesPart, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog } from './dialog';
 import { BUG, VALUES } from './test-head';
 import { customers, partners } from './test-list';
 import { mountViewer, type ViewerHandle } from './viewer';
-import { filtersPart, headPart, installListStyles, listPart, partsFor } from './viewer-parts';
+import { filtersPart, headPart, installListStyles, listPart, partsFor, sheetPart } from './viewer-parts';
 
 /**
  * Before its parts have come (parts.ts in @fieldia/widgets): a page that uses
@@ -17,7 +17,7 @@ import { filtersPart, headPart, installListStyles, listPart, partsFor } from './
  */
 
 const page = (layout: unknown, fields: Record<string, unknown> = { name: { type: 'char', label: 'Name' } }): Page =>
-  ({ fieldia: '0.1', id: 'p', title: 'P', data: { kind: 'record', model: 'x' }, fields, layout }) as unknown as Page;
+  ({ fieldia: '0.13', id: 'p', title: 'P', data: { kind: 'record', model: 'x' }, fields, layout }) as unknown as Page;
 const sections = (...children: unknown[]) => ({ type: 'sections', id: 's', children });
 const PLAIN = page(sections({ type: 'section', id: 'g', title: 'Group', collapsible: true, children: [{ type: 'field', id: 'f-name', field: 'name' }] }));
 
@@ -66,9 +66,10 @@ describe('the parts a page draws from', () => {
     expect(partsFor(page({ type: 'list', id: 'l', columns: [], search: 'fields', filterFields: [] }))).toEqual([listPart, filtersPart]);
     // A work item's bug: its head (its Changed Date is words in the head's "Updated by", no box), and its quiet skin's look.
     expect(partsFor(BUG)).toEqual([headPart, quietPart]);
-    // The classic formatted text: no part. The plain many2one: its box, the relations part's.
-    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }), fields))).toEqual([]);
-    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }, { type: 'field', id: 'g', field: 'area' }), fields))).toEqual([relationsPart]);
+    // The classic formatted text: its toolbar, the html part's (drawn in place as it comes, waited for only beside
+    // others: drawn-in-place-lazy.spec.ts). The plain many2one: its box, the relations part's.
+    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }), fields))).toEqual([htmlPart]);
+    expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'notes' }, { type: 'field', id: 'g', field: 'area' }), fields))).toEqual([htmlPart, relationsPart]);
     // The app's own widget for the field: no part.
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
     expect(partsFor(page(sections({ type: 'field', id: 'f', field: 'area', widget: 'path' }), fields), { 'many2one.path': own })).toEqual([]);
@@ -180,16 +181,17 @@ describe('the parts a page draws from', () => {
     // A table's lines draw each cell with its column's widget: hours in a column.
     // A table's own part first (the lines part), then its cells'.
     expect(partsFor(page(sections(field('lines', { cells: { hours: { widget: 'duration' } } })), fields))).toEqual([linesPart, businessPart]);
-    // A sheet's statusbar is drawn as a field's with the statusbar widget.
+    // A sheet's statusbar is drawn as a field's with the statusbar widget — in its place by the sheet part, a sheet's
+    // furniture (drawn-in-place-lazy.spec.ts).
     const sheet = (more: Record<string, unknown> = {}) => page({ type: 'sheet', id: 'sheet', title: { field: 'name' }, statusbar: { field: 'state' }, children: [], ...more }, { ...fields, name: { type: 'char', label: 'Name' } });
-    expect(partsFor(sheet())).toEqual([businessPart]);
-    expect(partsFor(sheet({ statusbar: { field: 'stage', clickable: true } }))).toEqual([businessPart]);
+    expect(partsFor(sheet())).toEqual([businessPart, sheetPart]);
+    expect(partsFor(sheet({ statusbar: { field: 'stage', clickable: true } }))).toEqual([businessPart, sheetPart]);
     // None: the same fields plainly (a stage a link's box, the relations part's), a state's dot (the main script's), a sheet
     // with no statusbar, the app's own statusbar, a headed sheet (its state is its head's).
     expect(partsFor(page(sections(field('state'), field('stage'), field('hours'), field('split'), field('lines'), field('state', { widget: 'dot' })), fields))).toEqual([relationsPart, linesPart]);
     expect(partsFor(sheet({ statusbar: undefined }))).toEqual([]);
     const own: WidgetFactory = () => ({ element: document.createElement('div'), update: () => undefined, focus: () => undefined });
-    expect(partsFor(sheet(), { 'selection.statusbar': own })).toEqual([]);
+    expect(partsFor(sheet(), { 'selection.statusbar': own })).toEqual([sheetPart]);
     expect(partsFor(BUG)).toEqual([headPart, quietPart]);
   });
 
@@ -207,9 +209,11 @@ describe('the parts a page draws from', () => {
     expect([...host.querySelectorAll('.fd-header .fd-statusbar li')].map((li) => li.textContent)).toEqual(['Draft', 'Done']);
     expect(host.querySelector('.fd-header .fd-statusbar [aria-current="step"]')?.textContent).toBe('Done');
     expect(host.querySelector('[data-fd-plain]')).toBeNull();
-    // Its stylesheet among Fieldia's, first of the parts', before the page's own looks.
+    // Its stylesheet among Fieldia's, first of the parts' but a sheet's furniture's (the sheet part's, among whose rules
+    // its own once stood), before the page's own looks.
     const sheets = [...document.head.querySelectorAll('style')].map((style) => style.id);
-    expect(sheets.indexOf('fieldia-business-styles')).toBe(sheets.indexOf('fieldia-styles') + 1);
+    expect(sheets.indexOf('fieldia-sheet-styles')).toBe(sheets.indexOf('fieldia-styles') + 1);
+    expect(sheets.indexOf('fieldia-business-styles')).toBe(sheets.indexOf('fieldia-styles') + 2);
     expect(sheets.indexOf('fieldia-business-styles')).toBeLessThan(sheets.indexOf('fieldia-styles-looks'));
   });
 
@@ -489,6 +493,8 @@ describe('the looks in parts of their own: the themes and the quiet look', () =>
     document.head.replaceChildren();
     const { mountViewer: mountFresh } = await import('./viewer');
     const { openFormDialog: openFresh } = await import('./dialog');
+    // A dialog's own code (the acts part) in, as on a page once it is drawn: what comes later here is the look's.
+    await (await import('./viewer-parts')).actsPart.load();
     const widgets = await import('@fieldia/widgets');
     const mountIn = (shown: Page, more: Partial<Parameters<typeof mountViewer>[1]> = {}) => {
       const host = document.createElement('div');

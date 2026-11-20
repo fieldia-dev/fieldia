@@ -83,6 +83,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-publish-dialog .fd-form-dialog-foot { margin: 0; padding: 12px 18px 16px; }
 .fd-designer .fd-spacer { flex: 1; }
 .fd-designer-issues { white-space: pre-line; }
+.fd-designer-unsaved { flex-wrap: wrap; align-items: baseline; gap: 2px 10px; overflow-wrap: anywhere; }
+.fd-designer-unsaved .fd-button { min-height: 24px; padding: 0 4px; }
 .fd-designer-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr); gap: 20px; align-items: start; }
 .fd-survey-body { grid-template-columns: 228px minmax(0, 1fr); gap: 16px; }
 .fd-survey-body > .fd-designer-editor { max-width: none; }
@@ -753,6 +755,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-list-filter-condition { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; }
 .fd-list-filter-value { display: contents; }
 .fd-list-filter-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fd-list-filter-group { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; font-size: 13px; color: var(--fd-muted); }
 .fd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .fd-chips:empty { display: none; }
 .fd-chip { display: inline-flex; align-items: center; gap: 4px; padding-block: 2px; padding-inline: 8px 2px; border-radius: 4px; background: var(--fd-success-soft); color: var(--fd-success); font-size: 13px; }

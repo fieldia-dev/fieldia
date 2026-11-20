@@ -71,6 +71,7 @@ export const ur: ChatterLabels = {
   search: 'تلاش کریں…',
   noOneFound: 'کوئی نہیں ملا',
   couldNotSend: 'نہیں بھیجا گیا: {reason}',
+  notDone: 'نہیں ہوا: {reason}',
   sendingAfterFile: '1 فائل ابھی اپ لوڈ ہو رہی ہے۔ اس کے مکمل ہوتے ہی بھیجا جائے گا۔',
   sendingAfterFiles: '{n} فائلیں ابھی اپ لوڈ ہو رہی ہیں۔ ان کے مکمل ہوتے ہی بھیجا جائے گا۔',
   notSentFile: 'نہیں بھیجا گیا: فائل {name} اپ لوڈ نہیں ہوئی۔ دوبارہ کوشش کریں، یا اسے ہٹا دیں۔',

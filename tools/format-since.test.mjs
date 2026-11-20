@@ -108,6 +108,13 @@ test('the history bites: a place said to come earlier than it did stamps a page 
   assert.equal(readerOf(stamped)({ ...page, fieldia: stamped }), false, 'the format it was stamped with does not read it');
 });
 
+test('the 0.36 viewer\'s format check the core\'s tests stand on is the one 0.36 released, the last of format 0.13', () => {
+  const kept = readFileSync(join(WORKSPACE, 'libs/core/src/lib/format/test-version-0.36.ts'), 'utf8').split('\n');
+  const released = execFileSync('git', ['show', '60d1b8c3ff33:libs/core/src/lib/format/version.ts'], { cwd: WORKSPACE, encoding: 'utf8' });
+  assert.equal(kept.slice(4).join('\n'), released);
+  assert.equal(execFileSync('git', ['log', '-1', '--format=%s', '60d1b8c3ff33'], { cwd: WORKSPACE, encoding: 'utf8' }).trim(), 'chore: release 0.36.0');
+});
+
 test('the 0.30 viewer\'s format check the core\'s tests stand on is the one 0.30 released', () => {
   const kept = readFileSync(join(WORKSPACE, 'libs/core/src/lib/format/test-version-0.30.ts'), 'utf8').split('\n');
   const released = execFileSync('git', ['show', '8a0fa712ea06:libs/core/src/lib/format/version.ts'], { cwd: WORKSPACE, encoding: 'utf8' });

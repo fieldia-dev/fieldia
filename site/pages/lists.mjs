@@ -129,10 +129,29 @@ totals({ model: 'invoice', filter, totals: { amount: ['sum'] }, groupBy: 'city',
 <ul>
   <li><strong>Typing</strong> offers the ways to search it: <em>Search Name for: nile</em> in each text field and link, a choice whose label matches (<em>Status: Active</em>), a number where it is one. <kbd>↑</kbd> <kbd>↓</kbd> and <kbd>Enter</kbd> take one, <kbd>Escape</kbd> puts them away.</li>
   <li><strong>Chips</strong> show what applies. Values searched in one field share a chip, any of them (<em>Name: nile or amira</em>); chips all apply together. <kbd>Backspace</kbd> in the empty box takes the last one away; each has its ×.</li>
-  <li><strong>Filters</strong> turn on and off from the menu, any of the ones on; <em>Add a custom filter</em> builds one from a field, a condition that suits its kind, and a value — for a date, also a period: <em>Invoice date: This month</em>.</li>
+  <li><strong>Filters</strong> turn on and off from the menu, any of the ones on — or, where they are in <a href="#filter-groups">groups</a>, any of each group's and every group; <em>Add a custom filter</em> builds one from a field, a condition that suits its kind, and a value — for a date, also a period: <em>Invoice date: This month</em>.</li>
   <li><strong>Group By</strong> groups by one field, then another inside it: a row for each value, with how many records have it (and their sums), opening into the next field's groups or into its records, a page at a time. A date groups by its year, quarter, month, week or day. A group's heading is a button: a screen reader hears it open or closed, its name and its count in words (<em>Cairo, 12 invoices</em>), and the list stays a table; the arrow keys move from a record's row to a heading and on, <kbd>→</kbd> opens a heading and <kbd>←</kbd> closes it (the other way round right to left).</li>
   <li><strong>Favourites</strong> keep the search on screen by name, one of them used by default when the list opens. They are kept where the viewer keeps a person's choices: its ${c('preferences')} store, the browser's storage unless you give one. Where your data source keeps views (${c('views')}), they are <a href="#views">saved views</a> instead: kept on your server, shared with the team or not, an order and columns kept with the search.</li>
 </ul>
+
+<h2 id="filter-groups">Filters in groups</h2>
+<p>A named filter's ${c('group')} is a word that puts it with others, as Odoo's ${c('<separator/>')} does between filters: the filters on of one group find any of them, the groups find what each finds, with the rest of the search. Overdue in a group of its own and the periods in another make <em>This year</em> with <em>Overdue</em> this year's overdue invoices:</p>
+${code(
+  'json',
+  `
+"filters": [
+  { "id": "overdue", "label": "Overdue", "filter": [{ "field": "state", "op": "=", "value": "sent" }], "period": { "field": "due_date", "is": "overdue" }, "group": "due" },
+  { "id": "this_month", "label": "This month", "period": { "field": "invoice_date", "is": "thisMonth" }, "group": "invoice_date" },
+  { "id": "this_year", "label": "This year", "period": { "field": "invoice_date", "is": "thisYear" }, "group": "invoice_date" }
+]`
+)}
+<ul>
+  <li><strong>The menu</strong> keeps each group's filters together, the groups in the order they first come, a line between them.</li>
+  <li><strong>A chip for each group</strong> on: <em>This year</em>, <em>Overdue</em>; within one, <em>This month or Last month</em>. Its × takes that group's filters off, and <kbd>Backspace</kbd> the last group. Printed, the list says them the same way.</li>
+  <li><strong>Counts</strong> (${c('filterCounts')}): each filter says what it finds as if it alone of its group were on, the other groups' kept.</li>
+  <li>Filters that name no group are one group, so a list whose filters name none finds what any of its filters on finds, as before. Saved views, favourites and ${c('defaultFilters')} keep the filters' ids as they did.</li>
+</ul>
+<p>A group is one word: ${c('"group": "due date"')} is refused. ${c('group')} came in format 0.14: a page that uses it says ${c('"fieldia": "0.14"')}, which ${c('stampPage')} writes. From an Odoo or Flectra screen, ${c('searchViewFilters(arch)')} from ${c('@fieldia/core')} reads its search view: each ${c('<filter>')} with a domain a named filter, each ${c('<separator/>')} starting a group, its Group By and the fields its box searches — and says what it leaves out (a domain worked out on the server, such as ${c('uid')} or today's date; a ${c('!')}; a date's own periods). In the designer, a filter's <em>Group</em> box sets it.</p>
 
 <h2 id="backlog">A backlog: cells, a filter bar, rows under their parent</h2>
 <p>A list can read as a work tracker's backlog. ${c('"search": "fields"')} puts a filter bar over it: <em>Filter by keyword</em> looks in the search fields, and each field of ${c('filterFields')} has a list of its values to tick — a choice's options, yes and no, the records a link or links hold — its button muted until values are ticked, then saying them. <kbd>↓</kbd> opens a list, the arrows move, <kbd>Space</kbd> ticks, <kbd>Escape</kbd> closes; × clears every filter, and the gear chooses which fields the bar offers, kept in the viewer's ${c('preferences')}. A default favourite search starts it with values ticked. Beside it the list says how many records the filters leave — <em>42 homes</em>, in the page's words for its records — in its table, its gallery and on its map alike, as its pager goes under the rows and shows only past a page.</p>

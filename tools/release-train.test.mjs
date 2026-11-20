@@ -163,10 +163,12 @@ export function warningProblems(files, deprecations) {
       warned.add(id);
       const found = deprecations.find((one) => one.id === id);
       if (!found) problems.push(`${path} warns of \`${id}\`, which DEPRECATIONS does not have`);
+      else if (found.changed) problems.push(`${path} warns of \`${id}\`, which DEPRECATIONS says is changed: its use is refused or works the new way now, never warned of`);
       else if (found.changesIn !== changesIn) problems.push(`${path} says \`${id}\` changes in ${changesIn}; DEPRECATIONS says ${found.changesIn}`);
     }
   }
-  for (const one of deprecations.filter((d) => d.warns === 'console' && !warned.has(d.id))) problems.push(`\`${one.id}\` is said in the console (warns: "console"), but nothing calls deprecated('${one.id}', …)`);
+  // A deprecation changed (`changed`) is warned of no more: its use is refused, or works the new way.
+  for (const one of deprecations.filter((d) => d.warns === 'console' && !d.changed && !warned.has(d.id))) problems.push(`\`${one.id}\` is said in the console (warns: "console"), but nothing calls deprecated('${one.id}', …)`);
   return problems;
 }
 
@@ -176,11 +178,19 @@ test('every deprecation the packages warn of is in the list, with its minor, and
   assert.deepEqual(warningProblems(files, await readDeprecations(WORKSPACE)), []);
 });
 
-test('the warnings check bites: an id the list lacks, another minor, a console deprecation never said', () => {
-  const files = { 'libs/viewer/src/lib/a.ts': "deprecated('viewer.old-way', 'the old way', '0.38');\ndeprecated(\n  'viewer.other',\n  `words`,\n  '0.39'\n);" };
-  const said = warningProblems(files, [entry('viewer.other', '0.37', '0.38'), entry('viewer.never', '0.37', '0.38'), entry('viewer.css', '0.37', '0.38', { warns: 'changelog' })]).join('\n');
+test('the warnings check bites: an id the list lacks, another minor, a console deprecation never said, a changed one still said', () => {
+  const files = { 'libs/viewer/src/lib/a.ts': "deprecated('viewer.old-way', 'the old way', '0.38');\ndeprecated(\n  'viewer.other',\n  `words`,\n  '0.39'\n);\ndeprecated('viewer.made', 'made', '0.38');" };
+  const said = warningProblems(files, [entry('viewer.other', '0.37', '0.38'), entry('viewer.never', '0.37', '0.38'), entry('viewer.css', '0.37', '0.38', { warns: 'changelog' }), entry('viewer.made', '0.37', '0.38', { changed: true }), entry('viewer.done', '0.37', '0.38', { changed: true })]).join('\n');
   assert.match(said, /warns of `viewer\.old-way`, which DEPRECATIONS does not have/);
   assert.match(said, /says `viewer\.other` changes in 0\.39; DEPRECATIONS says 0\.38/);
   assert.match(said, /`viewer\.never` is said in the console .* nothing calls deprecated\('viewer\.never'/);
   assert.doesNotMatch(said, /viewer\.css/);
+  // Changed: said no more (`viewer.done` asks for no call), and a call still saying one is refused.
+  assert.match(said, /warns of `viewer\.made`, which DEPRECATIONS says is changed/);
+  assert.doesNotMatch(said, /viewer\.done/);
+});
+
+test('a changed entry is true or left out', () => {
+  assert.match(registryProblems([entry('viewer.made', '0.37', '0.38', { changed: 'yes' })]).join('\n'), /viewer\.made: changed is true/);
+  assert.deepEqual(registryProblems([entry('viewer.made', '0.37', '0.38', { changed: true })]), []);
 });

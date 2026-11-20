@@ -59,7 +59,10 @@ export const LOADING_PART_CSS = /* css */ `
 .fd-sk { display: block; block-size: 0.9em; margin-block: 7px; border-radius: 4px; background-color: var(--fd-skeleton); }
 .fd-loader[data-way="skeleton"] > .fd-sk:nth-child(2) { inline-size: 82%; }
 .fd-loader[data-way="skeleton"] > .fd-sk:nth-child(3) { inline-size: 64%; }
-.fd-form [data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) { min-block-size: 1.6em; border-color: transparent !important; box-shadow: none !important; color: transparent !important; background-color: var(--fd-skeleton) !important; border-radius: max(var(--fd-control-radius), 4px); appearance: none !important; }
+/* A shape at least a line tall, never shorter than its box drawn: its own height is the box's own, so nothing moves as
+   the content comes (the 0.37 walk: a record's boxes 3 px taller, its title 8, once it came). */
+:where(.fd-form [data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label))) { min-block-size: 1.6em; }
+.fd-form [data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) { border-color: transparent !important; box-shadow: none !important; color: transparent !important; background-color: var(--fd-skeleton) !important; border-radius: max(var(--fd-control-radius), 4px); appearance: none !important; }
 .fd-form [data-fd-shaped] .fd-field:not([data-fd-open]) > :is(.fd-label + *, :first-child:not(.fd-label)) * { visibility: hidden; }
 .fd-form [data-fd-look="shimmer"] :is(.fd-sk, .fd-field:not([data-fd-open]) > .fd-label + *, .fd-field:not([data-fd-open]) > :first-child:not(.fd-label)), .fd-loader[data-look="shimmer"] .fd-sk {
   background-image: linear-gradient(90deg, transparent 30%, var(--fd-skeleton-shine) 50%, transparent 70%) !important; background-size: 300% 100% !important; background-position: 100% 0; animation: fd-shimmer var(--fd-shimmer) linear infinite;

@@ -153,6 +153,7 @@ export const fr: WidgetLabels = {
   recordingNow: 'Enregistrement…',
   recordStarting: 'Démarrage de l’enregistrement…',
   recordNothing: 'Rien n’a été enregistré : l’enregistrement n’avait pas encore commencé. Appuyez sur Démarrer l’enregistrement pour réessayer.',
+  recordTooShort: 'Rien n’a été gardé : l’enregistrement était trop court. Appuyez sur Démarrer l’enregistrement pour réessayer.',
   recordStoppedAt: 'Arrêté à {time}, la durée maximale d’un enregistrement ici.',
   recordStoppedSize: 'Arrêté : l’enregistrement a atteint la taille maximale acceptée par ce champ.',
   recordDone: '{time} enregistré. Réécoutez-le, puis utilisez-le ou recommencez.',

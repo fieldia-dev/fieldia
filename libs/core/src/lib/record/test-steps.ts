@@ -10,7 +10,7 @@ import type { ActionHost, OpenRequest, OpenResult } from './run';
 /** An order: tabs Main and More, buttons in its header, a reference asked for once there are five or more. */
 export function orderPage(extra: { on?: PageEvents; buttons?: ButtonNode[]; stats?: StatButton[] } = {}): Page {
   const page: Page = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'order',
     data: { kind: 'record', model: 'sale.order' },
     fields: {
@@ -69,7 +69,7 @@ export function orderPage(extra: { on?: PageEvents; buttons?: ButtonNode[]; stat
 /** A wizard of three steps: About, Usage (only once a name is given), Last; a name asked for on the first. */
 export function wizardPage(on?: PageEvents): Page {
   const page: Page = {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'join',
     data: { kind: 'responses' },
     fields: {

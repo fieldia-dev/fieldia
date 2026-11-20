@@ -296,3 +296,43 @@ test.describe('a tile dragged out of the toolbox’s sheet at a laptop’s width
     expect(problems).toEqual([]);
   });
 });
+
+/**
+ * A press in the band the bar at the foot floats over — beside its +, never under it — lands where it was aimed. A
+ * control focused there is moved clear of the bar (WCAG 2.4.11), and Chromium and Firefox focus a button as it is
+ * pressed: moved within the press, between its down and its up, it left from under the pointer and the click went to
+ * what came there (the designer in Arabic on a phone, its panel's Rules tab focused and never chosen — the busy suite
+ * of 3 Nov). A person's press lasts a tenth of a second or so, frames enough for the move: every such press was lost.
+ * Now the move waits for the press to end, as what moves the page as a box is left does (`afterPress`).
+ */
+test.describe('a press beside the bar at the foot', () => {
+  for (const size of [{ width: 960, height: 720 }, { width: 390, height: 844 }]) {
+    test(`at ${size.width}px, a panel’s tab held a moment there is chosen; then clear of the bar`, async ({ page }) => {
+      const problems = watch(page);
+      await page.setViewportSize(size);
+      await page.goto('/screen/');
+      await page.locator('.fd-canvas-field').first().click();
+      const rules = page.locator('.fd-properties [role="tab"][data-tab="rules"]');
+      await expect(rules).toHaveAttribute('aria-selected', 'false');
+      const plus = page.locator('.fd-foot-bar');
+      const foot = (await plus.boundingBox())!;
+      // The page scrolled so the tab stands in the bar's band, beside the + rather than under it: its foot level with the bar's.
+      const before = (await rules.boundingBox())!;
+      expect(before.x + before.width).toBeLessThan(foot.x);
+      await page.evaluate((by) => window.scrollBy(0, by), before.y + before.height - (foot.y + foot.height - 4));
+      const aimed = centre((await rules.boundingBox())!);
+      expect(aimed.y).toBeGreaterThan(foot.y);
+      // Pressed at a hand's pace: down, held a moment, let go where it went down.
+      await page.mouse.move(aimed.x, aimed.y);
+      await page.mouse.down();
+      await page.waitForTimeout(150);
+      await page.mouse.up();
+      await expect(rules).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('.fd-properties [data-panel="rules"]')).toBeVisible();
+      // Chosen, it is moved clear of the bar where the engine focused it.
+      if ((await rules.evaluate((tab) => tab === document.activeElement)))
+        await expect.poll(async () => { const now = (await rules.boundingBox())!; return now.y + now.height <= (await plus.boundingBox())!.y; }).toBe(true);
+      expect(problems).toEqual([]);
+    });
+  }
+});

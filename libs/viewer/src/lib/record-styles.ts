@@ -46,24 +46,8 @@ export const RECORD_STYLES = /* css */ `
   .fd-breadcrumbs li:nth-last-child(2)::before { content: "‹"; padding-inline: 0 6px; font-size: 20px; color: var(--fd-accent); }
 }
 
-/* The attachment beside the sheet: the sheet and its side panel in the first column, the file in the second. */
-.fd-attachment-preview { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); overflow: hidden; }
-.fd-attachment-preview[hidden] { display: none; }
-.fd-attachment-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; padding-inline: 12px 8px; border-block-end: 1px solid var(--fd-border); min-width: 0; }
+/* The attachment beside the sheet: the sheet part's sheet (sheet-styles.ts); its name's look shared with the chatter's. */
 .fd-attachment-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.fd-attachment-count { color: var(--fd-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.fd-attachment-head [hidden] { display: none; }
-.fd-attachment-body { display: grid; min-height: 0; background: var(--fd-page); }
-.fd-attachment-body > iframe { width: 100%; height: 100%; min-height: 70vh; border: 0; background: #fff; }
-.fd-attachment-body > img { display: block; max-width: 100%; max-height: 80vh; margin: auto; object-fit: contain; }
-.fd-sheet-layout.fd-has-preview:has(> .fd-attachment-preview:not([hidden])) { max-width: none; grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); grid-template-rows: auto 1fr; }
-.fd-sheet-layout.fd-has-preview:has(> .fd-attachment-preview:not([hidden])) > :is(.fd-card, .fd-side) { grid-column: 1; }
-.fd-sheet-layout.fd-has-preview > .fd-attachment-preview { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 8px; height: calc(100vh - 16px); max-height: 1200px; }
-@container (max-width: 1000px) {
-  .fd-sheet-layout.fd-has-preview:has(> .fd-attachment-preview:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
-  .fd-sheet-layout.fd-has-preview > .fd-attachment-preview { grid-column: 1; grid-row: auto; position: static; height: auto; }
-  .fd-attachment-body > iframe { min-height: 60vh; }
-}
 /* A side panel kept beside the sheet: narrower under 1000px, under the sheet only once the form is too narrow for both. */
 @container (max-width: 1000px) { .fd-sheet-layout.fd-has-side[data-side-beside="always"]:not(:has(> .fd-attachment-preview:not([hidden]))) { grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); } }
 @container (max-width: 600px) { .fd-sheet-layout.fd-has-side[data-side-beside="always"]:not(:has(> .fd-attachment-preview:not([hidden]))) { grid-template-columns: minmax(0, 1fr); } }

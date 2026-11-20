@@ -72,6 +72,8 @@ export const LIST_STYLES = `
 .fd-search-option::before { content: ''; width: 14px; flex: none; text-align: center; color: var(--fd-accent); font-weight: 700; }
 .fd-search-option[aria-pressed="true"]::before { content: '✓'; }
 .fd-search-option:hover, .fd-search-option:focus-visible { background: var(--fd-page); }
+/* Between two groups of named filters (ListFilter.group): a line, as Odoo's separator. */
+.fd-search-separator { border-block-start: 1px solid var(--fd-border); margin: 4px 6px; }
 /* How many records a filter finds (filterCounts) — a named filter, a favourite, a filter bar's value: at its end, quieter
    than its words, its digits lined up — "Late 5". */
 .fd-search-count { display: contents; }

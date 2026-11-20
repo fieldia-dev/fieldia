@@ -78,5 +78,5 @@ slot's content, the app's widget, a map — shows a small box that names it, and
 the rest of the form goes on; `(partError)` hears `{ error, where }` (not
 `(error)`, the DOM's own event). A page the viewer refuses says why in the form's
 place, `(partError)` hears it with `{ stage: 'draw', part: 'page' }`, and the app
-goes on; one it draws whose whole check finds mistakes, `{ stage: 'check', part:
-'page', warning: true }` (0.36; refused from 0.37). MIT licensed.
+goes on; one whose whole check refuses it once it is drawn is taken down the same
+way, with `{ stage: 'check', part: 'page' }` (0.37, `page.invalid`). MIT licensed.

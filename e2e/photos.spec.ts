@@ -325,4 +325,25 @@ test.describe('a clinic’s before and after', () => {
     await screen(page, 'photos-clinic-after-turn');
     expect(problems).toEqual([]);
   });
+
+  test('Apply closes once the cap passed, the photo made, with the browser’s own encoder held: never waits on it', async ({ page }) => {
+    // toBlob and convertToBlob never answer here. Chromium encodes them in the page's idle time, and on a busy machine,
+    // which gives it none, answered only after 1 s or 6.7 s, the dialog left open (0.37's CI; 0.36 alike). Past the cap
+    // (200 ms, encode-now.ts) the picture is encoded at once.
+    await page.addInitScript(() => {
+      HTMLCanvasElement.prototype.toBlob = () => undefined;
+      if (typeof OffscreenCanvas !== 'undefined') OffscreenCanvas.prototype.convertToBlob = () => new Promise<Blob>(() => undefined);
+    });
+    const { problems } = await open(page, 'plain', 'page=clinic-before-after&skin=outlined');
+    const side = tile(page, 'Right side', 'f-before');
+    await side.hover();
+    await side.getByRole('button', { name: 'Crop and turn Right side' }).click();
+    const dialog = editor(page);
+    await expect(dialog.locator('.fd-photo-picture')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Turn right' }).click();
+    await dialog.getByRole('button', { name: 'Apply' }).click();
+    await expect(dialog).toBeHidden();
+    await expect.poll(async () => (await photos(page, 'before'))[2].edit?.turn).toBe(90);
+    expect(problems).toEqual([]);
+  });
 });

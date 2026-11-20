@@ -223,6 +223,7 @@ export const refusals: DesignerWords['refusals'] = {
   pageSize: 'هر صفحهٔ فهرست 1 تا 500 ردیف دارد',
   filterName: 'فیلتر به نامی نیاز دارد که افراد بشناسند، مانند «فعال»',
   filterCondition: 'فیلتر به یک شرط نیاز دارد',
+  filterGroup: 'گروه فیلتر یک کلمه است، مانند «زمان»',
   buttonWords: 'دکمه به متن نیاز دارد',
   listButtonAction: 'دکمه به نام اقدام خود نیاز دارد، مانند archive',
   cellWidth: 'پهنای ستون 1 تا 200 نویسه، یا 8 تا 4000 پیکسل است',

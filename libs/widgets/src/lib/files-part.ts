@@ -18,6 +18,7 @@ export { binaryWidget, imageWidget, readFile, viewFiles, takeFiles, preview, INL
 export { showAppFile, type AppFileContext } from './files-app';
 export { goingItem, goingList, goingWords } from './files-going';
 export { shrinkPhoto, shrinkFor, shrinkable, readPicture, SHRINK_DEFAULTS, type Picture } from './shrink';
+export { encodeSoon } from './encode-now';
 export { signatureWidget } from './signature';
 export { pdfWidget } from './pdf';
 export { fileShown, formatOf, shownFile, whenShown, type FileFormat, type Shown, type ShownKind } from './file-formats';

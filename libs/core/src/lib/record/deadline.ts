@@ -1,5 +1,9 @@
 import { saveRefused, type DataSource, type UploadSignal } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
+import { answerOf, OwnPromise } from './values';
+
+// An answer of the app's as the engine's own promise, handled as it is given (values.ts): every request's here.
+export { answerOf };
 
 /**
  * Nothing waits for ever (audit R-M1). Every request Fieldia makes of a data source that a person waits on — a record's
@@ -34,20 +38,6 @@ function later(scheduler: Scheduler, run: () => void, ms: number): unknown {
 /** A request handed its `signal`: kept off what is copied, compared or kept on the device (not enumerable). */
 function signalled<R extends object>(request: R, signal: UploadSignal): R {
   return Object.defineProperty({ ...request }, 'signal', { value: signal, enumerable: false, configurable: true });
-}
-
-/** The engine's own promise, whatever `Promise` is now (an Angular app's zone puts its own in its place): an async function's. */
-const OwnPromise = (async () => undefined)().constructor as PromiseConstructor;
-
-/**
- * An answer of the app's data source as a promise of the engine's own, the app's promise handled at once — its handlers
- * given as it is made: one it refuses at once is never said unhandled by a zone that watches its own promises (Angular's,
- * as `NgZone.onError`) while an `await` of Fieldia's, code Angular did not compile, comes to it a microtask late. One
- * that is the engine's own already, and what is not a promise, as it is: its answer comes not a moment later.
- */
-export function answerOf<T>(answer: T): T {
-  const then = (answer as { then?: unknown } | null | undefined)?.then;
-  return typeof then === 'function' && (answer as object).constructor !== OwnPromise ? (new OwnPromise((resolve, reject) => then.call(answer, resolve, reject)) as T) : answer;
 }
 
 /** A member of the app's source as Fieldia calls it: on the source, each answer the engine's own (`answerOf`). */

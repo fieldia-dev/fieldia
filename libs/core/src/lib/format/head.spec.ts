@@ -64,7 +64,7 @@ const tabs = (over: Json = {}): Json => ({
 });
 
 const page = (sheet: Json = {}, look?: Json): Json => ({
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'bug',
   data: { kind: 'record', model: 'work.item' },
   fields,

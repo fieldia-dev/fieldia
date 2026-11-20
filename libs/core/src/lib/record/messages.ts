@@ -198,6 +198,8 @@ export interface Messages {
    */
   guardNotSent: string;
   guardNotSaved: string;
+  /** A run of steps stopped because their engine could not load (the acts part): nothing was done. */
+  guardNotDone: string;
   guardTryAgain: string;
   guardReload: string;
   /** The parts that guard a send, as those sentences name them. */
@@ -209,6 +211,8 @@ export interface Messages {
   guardOptions: string;
   guardLanguages: string;
   guardLimits: string;
+  /** What `guardNotDone` names: a button's or a moment's steps. */
+  guardSteps: string;
   /**
    * A record that could not be loaded (`{problem}`, the source's words), said with its own Retry; a save of a record
    * that never loaded, refused; a value the source holds that the page cannot show, kept as it is stored.
@@ -366,6 +370,7 @@ const en: Messages = {
   notVerified: '{label} is not confirmed: send a code and type it in',
   guardNotSent: '{part} could not load, so nothing was sent. {again}',
   guardNotSaved: '{part} could not load, so nothing was saved. {again}',
+  guardNotDone: '{part} could not load, so nothing was done. {again}',
   guardTryAgain: 'Try again.',
   guardReload: 'Reload the page and try again.',
   guardPay: 'The payment step',
@@ -376,6 +381,7 @@ const en: Messages = {
   guardOptions: 'The check of the choices',
   guardLanguages: 'The check of each language',
   guardLimits: 'The check of whether this form takes answers',
+  guardSteps: 'This action',
   loadFailed: 'This record could not be loaded: {problem}',
   openFailed: 'Couldn’t open record {id}: {problem}',
   notLoaded: 'This record has not loaded yet, so nothing was saved.',

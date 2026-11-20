@@ -1448,7 +1448,7 @@ export interface FilterPeriod {
 /**
  * A named filter in a list's search bar, such as "Active" or "Big accounts":
  * its conditions, a period ("This month", "Overdue"), or both, which hold
- * together.
+ * together. The filters on are "or" within a group and "and" between groups.
  */
 export interface ListFilter {
   /** Its id, unique in the page: what steps, conditions and the app name it by. */
@@ -1459,6 +1459,12 @@ export interface ListFilter {
   filter?: FilterItem[];
   /** A period a date falls in: "This month", "Overdue". */
   period?: FilterPeriod;
+  /**
+   * The group it is in, by a word: `"when"`. Filters of one group on find what any of them finds ("Late or Today");
+   * groups on find what each finds, as Odoo's filters between separators do ("Overdue", and "This year"). Filters that
+   * name none are one group of their own, so a list whose filters name none finds what any filter on finds.
+   */
+  group?: string;
 }
 
 /**
@@ -2771,6 +2777,9 @@ export const ListGanttSchema = z
   })
   .meta({ id: 'ListGantt' });
 
+/** A named filter's group, by one word: filters of a group are "or", groups "and". */
+const filterGroup = z.string().regex(/^\S+$/, 'a filter’s group is named by one word, such as "when"');
+
 /** A period a date falls in, from the day the list is looked at: "This month", "Overdue". */
 export const FilterPeriodSchema = z.strictObject({ field: fieldName, is: z.enum(DATE_PERIODS) }).meta({ id: 'FilterPeriod' });
 
@@ -2784,7 +2793,7 @@ export const ListNodeSchema = z.strictObject({
   filters: z
     .array(
       // Conditions, a period or both (rules.ts) — and the same for tools that read only the JSON Schema.
-      ruled(z.strictObject({ id, label: z.string(), filter: z.array(FilterItemSchema).min(1).optional(), period: FilterPeriodSchema.optional() }), 'namedFilter').meta({ anyOf: [{ required: ['filter'] }, { required: ['period'] }] })
+      ruled(z.strictObject({ id, label: z.string(), filter: z.array(FilterItemSchema).min(1).optional(), period: FilterPeriodSchema.optional(), group: filterGroup.optional() }), 'namedFilter').meta({ anyOf: [{ required: ['filter'] }, { required: ['period'] }] })
     )
     .optional(),
   defaultFilters: z.array(id).optional(),

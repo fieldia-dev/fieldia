@@ -155,6 +155,7 @@ export const tr: WidgetLabels = {
   recordingNow: 'Kaydediliyor…',
   recordStarting: 'Kayıt başlatılıyor…',
   recordNothing: 'Hiçbir şey kaydedilmedi: kayıt henüz başlamamıştı. Yeniden denemek için Kaydı başlat’a basın.',
+  recordTooShort: 'Hiçbir şey saklanmadı: kayıt çok kısaydı. Yeniden denemek için Kaydı başlat’a basın.',
   recordStoppedAt: '{time} noktasında durduruldu; burada bir kayıt en fazla bu kadar uzun olabilir.',
   recordStoppedSize: 'Durduruldu: kayıt, bu alanın kabul ettiği en büyük dosya boyutuna ulaştı.',
   recordDone: 'Kayıt süresi: {time}. Kaydı oynatın, ardından kullanın veya yeniden kaydedin.',

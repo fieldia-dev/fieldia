@@ -35,6 +35,8 @@ import { startHere } from './templates-start';
 import { dropEcho } from './drop-echo';
 import { closeMenusIn, openMenu } from './menu';
 import { setHidden } from './writes';
+import { reasonOf } from './look-hub';
+import type { SavedFormRef } from './saved-forms';
 
 /**
  * The screen editor: an app screen built where it is seen. On the left, the
@@ -184,7 +186,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   // Nothing a person works on is left under the bar at the foot.
   const unclear = keepClearOfBar(foot, body);
   const json = jsonView({ el, doc, designer, trial, body });
-  root.append(bar.element, bar.issues, body, trial.element, json.element);
+  root.append(bar.element, bar.issues, bar.unsaved, body, trial.element, json.element);
   // The editor in its own language; the screen drawn as the page around it runs, as the form will.
   const followHost = speakIn(root, host, designer, () => [canvas.element, list.element]);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
@@ -253,13 +255,20 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   async function pickSavedForm(where: Where) {
     const anchor = root.querySelector<HTMLElement>('.fd-toolbox [data-tool="form:saved"]');
     if (!anchor) return;
-    const found = await designer.savedForms();
+    // Refused, the menu says why in its place, and the next press asks the store again.
+    let found: SavedFormRef[] = [];
+    let refused: string | null = null;
+    try {
+      found = await designer.savedForms();
+    } catch (error) {
+      refused = reasonOf(error);
+    }
     openMenu({
       el,
       anchor,
       title: designer.words.savedForms.tile,
       items: found.map((form) => ({ id: form.id, label: form.title, icon: 'saved-form' })),
-      note: designer.words.savedForms.menuNote(found.length > 0),
+      note: refused === null ? designer.words.savedForms.menuNote(found.length > 0) : designer.words.looks.failed(designer.words.savedForms.couldNotList, refused),
       onPick: async (id) => {
         // Picked from the toolbox's sheet: the sheet goes with the menu.
         sheet.close(false);

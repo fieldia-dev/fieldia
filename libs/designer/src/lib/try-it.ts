@@ -197,6 +197,8 @@ export function tryIt(options: TryItOptions): TryIt {
       ...(options.listViews ? { listViews: options.listViews } : {}),
       ...(options.maps ? { maps: options.maps, values: madeUpPlaces(page, options.sampleCentre) } : {}),
       ...language.viewerOptions(direction),
+      // The page being made: one the viewer refuses says what is wrong with it under its visitor's words.
+      development: true,
     });
     tryDrawer(el, frame, viewer, designer.words);
   }

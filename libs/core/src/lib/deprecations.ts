@@ -29,24 +29,39 @@ export interface Deprecation {
    * relied on — once per page; `"changelog"` where no use can be seen (a DOM or CSS change), in the CHANGELOG alone.
    */
   warns: 'console' | 'changelog';
+  /**
+   * Made: the minor it changes in has changed it, so its use is no longer warned of (it is refused, or works the new
+   * way). It stays on the list, for that minor's Upgrading item to cite it — checked for every minor released.
+   */
+  changed?: true;
 }
 
-/** Everything deprecated and not yet changed, oldest first. */
+/** Everything deprecated, oldest first: what its minor has changed says so (`changed`), said no more. */
 export const DEPRECATIONS: readonly Deprecation[] = [
   {
     id: 'format.under-stamped',
     since: '0.36',
     changesIn: '0.37',
     who: 'page authors',
-    words: 'A page that says an older format than a setting it uses came in is read as it is in 0.36, and refused from 0.37 — an older Fieldia believing its stamp would read it without that setting. Stamp it with stampPage(page), or write the format lowestFormat(page) gives.',
+    words: 'A page that says an older format than a setting it uses came in is read as it is in 0.36, and refused from 0.37 — by validatePage and by every viewer before the page is drawn — an older Fieldia believing its stamp would read it without that setting. Stamp it with stampPage(page), or write the format lowestFormat(page) gives.',
     warns: 'console',
+    changed: true,
   },
   {
     id: 'page.invalid',
     since: '0.36',
     changesIn: '0.37',
     who: 'page authors',
-    words: 'A page validatePage refuses that the 0.35 viewer drew — a list\'s pageSize past 500, a key the format does not have, a value of another kind, its least more than its most, a first value outside its choices, an option or a column twice — is drawn in 0.36, its mistakes said once in the console and to onError (stage "check"), and refused from 0.37 as a page the check before the draw refuses is: its words where the form would be. Check pages with validatePage or npx fieldia-check before they are stored, and fix what they say.',
+    words: 'A page validatePage refuses that the 0.35 viewer drew — a list\'s pageSize past 500, a key the format does not have, a value of another kind, its least more than its most, a first value outside its choices, an option or a column twice — is drawn in 0.36, its mistakes said once in the console and to onError (stage "check"), and refused from 0.37 as a page the check before the draw refuses is: its words where the form would be, onError told (stage "check"), PageRefused thrown. Check pages with validatePage or npx fieldia-check before they are stored, and fix what they say.',
+    warns: 'console',
+    changed: true,
+  },
+  {
+    id: 'core.page-invalid',
+    since: '0.37',
+    changesIn: '0.38',
+    who: 'app code',
+    words: 'pageInvalid() and the type PageInvalid, the error a 0.36 viewer told onError as a warning, are made by nothing in Fieldia from 0.37 — a viewer refuses such a page and tells onError a PageRefused (stage "check") — and go in 0.38. Use PageRefused from @fieldia/viewer.',
     warns: 'console',
   },
 ];

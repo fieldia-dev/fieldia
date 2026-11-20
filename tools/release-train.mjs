@@ -3,7 +3,8 @@
  * nothing an app, a page or a test relies on changes without a minor's warning first.
  *
  * - Every deprecation is written in `DEPRECATIONS` (libs/core/src/lib/deprecations.ts): its id, the minor that first
- *   warns of it (`since`) and the minor that changes it (`changesIn`, later than `since`), who it touches.
+ *   warns of it (`since`) and the minor that changes it (`changesIn`, later than `since`), who it touches; `changed` once
+ *   that minor's work has made the change (no longer warned of, kept for good for its Upgrading item to cite).
  * - The minor that first warns of one lists it under **Deprecated** in its CHANGELOG section, by its id.
  * - From `TRAIN_FROM` on, every item of a minor's Upgrading part says what it is: `(adds)` — something new an app may
  *   have to follow, a label key, a member a fake adds —, `(fix)` — Fieldia made to do what its docs already said —, or
@@ -72,6 +73,7 @@ export function registryProblems(deprecations) {
     if (!WHO.includes(entry?.who)) problems.push(`deprecation ${name}: who is one of ${WHO.map((w) => `"${w}"`).join(', ')}`);
     if (typeof entry?.words !== 'string' || entry.words.trim().length < 12) problems.push(`deprecation ${name}: words say what changes and what to write instead`);
     if (entry?.warns !== 'console' && entry?.warns !== 'changelog') problems.push(`deprecation ${name}: warns is "console", where a use is seen as Fieldia runs, or "changelog", where none can be`);
+    if (entry?.changed !== undefined && entry.changed !== true) problems.push(`deprecation ${name}: changed is true, once the minor it changes in has made the change, or left out`);
   }
   return problems;
 }

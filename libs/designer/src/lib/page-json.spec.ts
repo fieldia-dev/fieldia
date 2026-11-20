@@ -1,4 +1,4 @@
-import type { Page } from '@fieldia/core';
+import { FORMAT_VERSION, type Page } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
 
 function setup() {
@@ -15,7 +15,7 @@ describe('the page as JSON', () => {
     const { designer } = setup();
     const text = designer.pageJson();
     expect(text).toBe(JSON.stringify(designer.getPage(), null, 2));
-    expect(text.split('\n')[1]).toBe('  "fieldia": "0.13",');
+    expect(text.split('\n')[1]).toBe(`  "fieldia": "${FORMAT_VERSION}",`);
     expect(Object.keys(JSON.parse(text))).toEqual(Object.keys(designer.getPage()));
   });
 

@@ -5,7 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { notesFor, releaseCommands, releasedVersions, releaseVersionOf } from './release-notes.mjs';
 
@@ -89,6 +90,30 @@ test('the history holds the releases made by `chore: release x.y.z` too, 0.21.0 
   const subject = (commit) => execFileSync('git', ['log', '-1', '--format=%s', commit], { cwd: WORKSPACE, encoding: 'utf8' }).trim();
   assert.equal(subject(released[at('0.25.0')].commit), 'chore: release 0.25.0');
   assert.equal(subject(released[at('0.20.0')].commit).startsWith('chore(release): 0.20.0'), true);
+});
+
+test('a release commit made again later is the release: its commit, its day, its place among the others', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fieldia-releases-'));
+  const who = { GIT_AUTHOR_NAME: 'a', GIT_AUTHOR_EMAIL: 'a@example.com', GIT_COMMITTER_NAME: 'a', GIT_COMMITTER_EMAIL: 'a@example.com' };
+  const git = (args, env = {}) => execFileSync('git', args, { cwd: dir, encoding: 'utf8', env: { ...process.env, ...who, ...env } }).trim();
+  const commit = (subject, day) => {
+    git(['commit', '-q', '--allow-empty', '-m', subject], { GIT_AUTHOR_DATE: `${day}T12:00:00Z`, GIT_COMMITTER_DATE: `${day}T12:00:00Z` });
+    return git(['rev-parse', 'HEAD']);
+  };
+  try {
+    git(['init', '-q']);
+    commit('chore: release 0.1.0', '2026-10-01');
+    const first = commit('chore: release 0.2.0', '2026-10-05');
+    commit('feat: a held minor gains a fix', '2026-10-06');
+    commit('chore: release 0.1.1', '2026-10-07');
+    const again = commit('chore: release 0.2.0', '2026-10-20');
+    const released = releasedVersions(dir);
+    assert.deepEqual(released.map(({ version, date }) => `${version} ${date}`), ['0.1.0 2026-10-01', '0.1.1 2026-10-07', '0.2.0 2026-10-20']);
+    assert.equal(released.at(-1).commit, again);
+    assert.notEqual(again, first);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('--history prints the commands for every release, those made by `chore: release` among them', () => {

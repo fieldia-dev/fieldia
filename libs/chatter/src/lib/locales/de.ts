@@ -64,6 +64,7 @@ export const de: ChatterLabels = {
   search: 'Suchen…',
   noOneFound: 'Niemand gefunden',
   couldNotSend: 'Nicht gesendet: {reason}',
+  notDone: 'Nicht erledigt: {reason}',
   sendingAfterFile: '1 Datei wird noch hochgeladen. Gesendet wird, sobald sie fertig ist.',
   sendingAfterFiles: '{n} Dateien werden noch hochgeladen. Gesendet wird, sobald sie fertig sind.',
   notSentFile: 'Nicht gesendet: {name} wurde nicht hochgeladen. Erneut versuchen oder entfernen.',

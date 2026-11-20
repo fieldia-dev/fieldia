@@ -10,7 +10,7 @@ export const CHATTER_STYLES = `
 .fd-composer textarea { resize: vertical; min-height: 64px; font: inherit; }
 .fd-composer-note { background: var(--fd-warning-soft); }
 .fd-composer-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.fd-chatter-problem { margin: 0; color: var(--fd-error); font-size: 13px; }
+.fd-chatter-problem, .fd-chatter-failed { margin: 0; color: var(--fd-error); font-size: 13px; }
 .fd-chatter-messages { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .fd-message { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 10px; padding: 8px; border-radius: var(--fd-radius); }
 .fd-message-note { background: var(--fd-warning-soft); }

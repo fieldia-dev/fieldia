@@ -68,7 +68,7 @@ test.describe('values worked out from the lines wait for a line that does not re
   test('a line opened in its dialog: its Subtotal waits for its Quantity, as its cell in the table does', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=order&skin=underline');
     await cell(page, 'f-lines', 1, '__open').getByRole('button', { name: 'Open line' }).click();
-    const dialog = page.getByRole('dialog', { name: 'Order lines' });
+    const dialog = page.getByRole('dialog', { name: 'Office chair, ergonomic' });
     await expect(dialog.locator('[data-node="values-subtotal"] input')).toHaveValue('21,546.00');
     await dialog.getByLabel('Quantity', { exact: true }).fill('abc');
     await dialog.getByLabel('Unit price', { exact: true }).focus();

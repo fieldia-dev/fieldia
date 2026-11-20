@@ -82,10 +82,13 @@ drawn: the slot then shows its box.
 `mountViewer` checks a page before drawing it (`checkPage`), refusing what 0.35's
 viewer refused: its outline, every name a part or a condition uses, every
 expression. It draws none of a page it refuses. Its form's place says so
-instead, never a blank area: "This form cannot be shown: its page has mistakes",
-with each problem under "What is wrong" for whoever made the page. `onError`
-hears it (`{ stage: 'draw', part: 'page' }`), and `mountViewer` throws the error,
-its `issues` on it (`PageRefused`):
+instead, never a blank area, in words for whoever opened it: "This form is not
+available right now. Please try again later, or contact whoever sent it to you."
+What is wrong is for whoever made the page: the console says it, `onError` hears
+it (`{ stage: 'draw', part: 'page' }`), and `mountViewer` throws the error, its
+`issues` on it (`PageRefused`). While the app is being made, `development: true`
+lists each problem under "What is wrong" on the page too (the designer's Try it
+does):
 
 ```ts
 try {
@@ -98,13 +101,18 @@ try {
 The React, Vue and Angular bindings catch it: the words stay in the form's place,
 `onError` (`(partError)` in Angular) is told, and the app around it stays mounted.
 
-After the first draw, once the browser is idle, the viewer runs the whole check
-(`checkPageWhole`, `validatePage`'s verdict, a part of its own). In 0.36 a page
-it finds mistakes in stays drawn, as 0.35 drew it: the mistakes are said once in
-the console, and `onError` hears them as a warning — `{ stage: 'check', part:
-'page', warning: true }`, the error a `PageInvalid` with its `issues`. From 0.37
-such a page is refused (`page.invalid`): check pages with `validatePage` or
-`npx fieldia-check` before they are stored.
+As soon as the page is drawn, the viewer runs the whole check (`checkPageWhole`,
+`validatePage`'s verdict, a part of its own — `fieldia.check.js` in the one-tag
+script — asked for once nothing the page is drawn from is still on its way),
+never making the draw wait for it. A page it refuses is taken down (0.37; 0.36 left it drawn
+and said it, `page.invalid`): its form replaced by why, `onError` told `{ stage:
+'check', part: 'page' }`, and the handle's `refused` settled with the
+`PageRefused` (null where the page passed). Until it has run, nothing is written
+through the page: a save, a send, an upload, a server draft asked for meanwhile
+waits for it, and is refused with the page. Check pages with `validatePage` or
+`npx fieldia-check` before they are stored. Where its part cannot come, the page
+stays drawn, `onError` hears `{ stage: 'check', part: 'page', warning: true }`
+(not fully checked), and what was held goes on.
 
 ## While it waits: skeletons, spinners, bars — as you like
 
@@ -336,6 +344,14 @@ if (call.saved) console.log(call.recordId, call.values);
 // From another edge: the whole width along the top, 40 in a hundred of the screen tall.
 await openFormPanel({ page: callPage, dataSource, title: 'Log a call', side: 'top', height: 'short' });
 ```
+
+Their code — with a page's steps, the viewer's own questions and a save over
+someone else's — is the acts part's (`actsPart`, `fieldia.acts.js` in the
+one-tag script, two chunks in an app's bundle), which no page draws from: a
+viewer asks for it right after a page's whole check, and a dialog asked for
+sooner opens as it comes (0.37). An app that opens a dialog as it starts and
+wants it at once awaits `actsPart.load()` (or `loadParts()`) first. Where the
+part cannot come, `openFormDialog` rejects: nothing is opened.
 
 A record opened over its list, as a work tracker opens a bug over its backlog:
 

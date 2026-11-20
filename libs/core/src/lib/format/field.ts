@@ -184,6 +184,12 @@ const common = {
    * a draft (in the browser's store or on the app's server), as a password box's never does.
    */
   secret: z.boolean().optional(),
+  /**
+   * False: a copy of the record (Duplicate) does not keep its value — a posted bill's status, its number — but starts
+   * it as a new record does: its `default` (or `defaultFrom`), else empty. On a table's line field, a copy of the line
+   * starts it so too. The data source applies it as it copies (its `copy`); copied unless it says false.
+   */
+  copy: z.boolean().optional(),
   /** A new record's — or a new line's, or a response's — first value, as the field keeps it: `"today"` on a date. */
   default: JsonValueSchema.optional(),
   /**

@@ -1,4 +1,4 @@
-import { alikeRecords, createMemoryDataSource, gridClusters, scheduleSlots, type AppFunctions, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
+import { alikeRecords, createMemoryDataSource, FORMAT_VERSION, gridClusters, scheduleSlots, type AppFunctions, type Facet, type FormUser, type JsonValue, type Line, type Page, type ResolvedFilter, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import { pageFile, pageFrom, pageOf, type PageSource } from './lazy-page';
 import { LEASE, LEASE_AGENTS, LEASE_SHOWS } from './lease';
@@ -7,7 +7,7 @@ import { demoFunctions } from './functions';
 import { customPage } from './custom-page';
 import { wiHeadPage, WI_HEAD_RECORDS } from './wi-header';
 import { wiMorePage, wiMoreRecords } from './wi-more';
-import { BILLS, billAttachments, billCopy, billNavigation, vendorBill } from './vendor-bill';
+import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
 import { wiPicker } from './wi-picker';
 import { businessData, businessPage } from './business';
@@ -313,8 +313,12 @@ export const pages: Record<string, PageSource> = {
  * light system leaves the page exactly as it is drawn.
  */
 export async function pageFromQuery(params: URLSearchParams): Promise<Page> {
+  // A record opened from a list's row: the list's own page too, at once, for its name over the record (`trailFromQuery`).
+  const from = listOpening(params);
+  const list = from ? pageOf(pages[from]).then((page) => (listTitles[from] = page.layout.type === 'list' ? (page.title ?? '') : ''), () => undefined) : undefined;
   // The code page in the editor the demo's switch picked.
   const named = params.get('page') === 'code' ? codePageFor(params.get('editor')) : await pageOf(pages[params.get('page') ?? 'signup'] ?? pages['signup']);
+  await list;
   // A list opened for one record's records (`filter=` or `search=`, a related list's View all by the app's route) shows them all, its own default filters off.
   const page = (params.get('filter') || params.get('search')) && named.layout.type === 'list' ? { ...named, layout: { ...named.layout, defaultFilters: [] } } : named;
   const maxWidth = params.get('maxWidth');
@@ -326,8 +330,12 @@ export async function pageFromQuery(params: URLSearchParams): Promise<Page> {
   const parts = params.get('parts');
   // A printout's words and logo over and under it, as JSON: `print={"footer":"Confidential · {name}"}`.
   const print = params.get('print');
+  // A page the address dresses in settings of its own is written in the format this Fieldia writes: a page is read by its
+  // stamp, and refused stamped older than a setting it uses (a printout's words came in 0.4).
+  const dressed = !!(maxWidth || actions || scheme || labels || parts || print);
   return {
     ...page,
+    ...(dressed ? { fieldia: FORMAT_VERSION } : {}),
     ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
     ...(actions ? { actionsPosition: actions as Page['actionsPosition'] } : {}),
     ...(scheme || labels || parts
@@ -395,16 +403,61 @@ const CHANGED_IN_PLACE = new Set(['service-prices', 'staff-hours', 'deal-stages'
 /** Whether a list's rows open a record of their own: not those changed in place, whose rows are the whole of it. */
 export const opensRows = (params: URLSearchParams): boolean => !CHANGED_IN_PLACE.has(params.get('page') ?? '');
 
-/** A list's row opens its record on its own page, keeping the skin, language and direction. */
+/**
+ * A list's row opens its record on its own page, keeping the skin, language and direction — and the list it came
+ * from (`from`), whose name the record shows over it, its way back (`trailFromQuery`).
+ */
 export function openRecord(params: URLSearchParams, id: string | number): void {
   if (!opensRows(params)) return;
-  const next = new URLSearchParams(params);
-  next.set('page', RECORD_PAGES[params.get('page') ?? ''] ?? 'customer');
-  next.set('record', String(id));
+  // The list it came from first, then the list's own address as it was — its page the record's, the record last.
+  const next = new URLSearchParams([['from', params.get('page') ?? ''], ...[...params].filter(([key]) => key !== 'from')]);
+  next.set('page', recordPageOf(params.get('page') ?? ''));
   // What kept the list to one record's records is the list's, not the record's.
   next.delete('filter');
   next.delete('search');
+  next.delete('record');
+  next.set('record', String(id));
   location.search = next.toString();
+}
+
+/** The page a list's rows open their records on: its own, else the customer's — the Customer list's among them. */
+const recordPageOf = (list: string): string => RECORD_PAGES[list] ?? 'customer';
+
+/**
+ * The list a record's address says it was opened from (`from`): one whose rows open records of this page — by the one
+ * rule `openRecord` opens them by (the 0.37 walk: the Customer list's customer had no way back, its list in no table).
+ */
+function listOpening(params: URLSearchParams): string | null {
+  const from = params.get('from');
+  return from && pages[from] && opensRows(new URLSearchParams({ page: from })) && recordPageOf(from) === params.get('page') ? from : null;
+}
+
+/** The titles of the lists records were opened from, as `pageFromQuery` fetched them with the record's page. */
+const listTitles: Record<string, string> = {};
+
+/**
+ * A record opened from a list's row, its way back, as an app gives one (the walk of 0.36: an activity log entry had
+ * only the browser's Back): the list's name over the record (`breadcrumbs`, which the viewer draws as Flectra's
+ * trail, as the vendor bill's and the real pages' show theirs). Pressed, the browser's Back where the list is the page
+ * before — the list where it was left, its rows and its place, as Back keeps them (the walk of 0.35) — else the list's
+ * own address: a link opened in a tab of its own. Its name is the list page's title, which `pageFromQuery` (awaited
+ * before the viewer's options, by every demo) fetched with the record's page; none where it could not.
+ */
+function trailFromQuery(params: URLSearchParams): { breadcrumbs?: { label: string; href: string; open: () => void }[] } {
+  const from = listOpening(params);
+  const label = from && listTitles[from];
+  if (!from || !label) return {};
+  const list = new URLSearchParams(params);
+  list.set('page', from);
+  list.delete('record');
+  list.delete('from');
+  const href = `?${list}`;
+  const open = () => {
+    const before = document.referrer ? new URL(document.referrer) : null;
+    if (before?.origin === location.origin && before.pathname === location.pathname && before.searchParams.get('page') === from && history.length > 1) history.back();
+    else location.assign(href);
+  };
+  return { breadcrumbs: [{ label, href, open }] };
 }
 
 /**
@@ -419,7 +472,7 @@ export function optionsFromQuery(params: URLSearchParams): {
   user?: FormUser;
   context?: Record<string, JsonValue>;
   records?: (string | number)[];
-  breadcrumbs?: { label: string; href?: string }[];
+  breadcrumbs?: { label: string; href?: string; open?: () => void }[];
   keys?: { enterMovesToNext: boolean };
   showValid?: boolean;
   saveStatus?: 'inline' | 'toast' | 'bar';
@@ -458,6 +511,8 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('resume') ? { resume: params.get('resume') as string } : {}),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
     ...(params.get('page') === 'vendor-bill' ? billNavigation() : {}),
+    // A record opened from a list's row: the list's name over it, its way back.
+    ...trailFromQuery(params),
     // A real page's person, with the roles that show its parts, and the records round it: `roles=a,b` (or none) changes the roles.
     ...realAround(params),
     ...(params.get('translate') === 'fr' ? { translate: (text: string) => APP_CATALOG_FR[text] ?? text } : {}),
@@ -1037,8 +1092,6 @@ export function sampleDataSource() {
   servicePerHour(source);
   // The pipeline's: a new stage before Won, which stays last (shared/editable-lists.ts).
   stageOrder(source);
-  // The accounting server's: a bill's copy is a draft, a posted bill's status never copied (shared/vendor-bill.ts).
-  billCopy(source);
   return source;
 }
 

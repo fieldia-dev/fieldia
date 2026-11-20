@@ -1,5 +1,6 @@
 import { foldForSearch, languagesOf, placesOf, placesOfCurrency, plainPart, type NumberLimits } from '@fieldia/core';
 import type {
+  CellRules,
   Field,
   FieldNode,
   FileValue,
@@ -129,10 +130,12 @@ export interface WidgetDialogs {
       withValues?: boolean;
       /** A line's own: its labels small inside sentences as its record's page asks (`lowerLabels`), unless its own page says. */
       lowerLabels?: boolean;
+      /** The control pressed for it, which waits till the dialog shows (`pressWait`); the one pressed just now unless said. */
+      from?: Element | null;
     }
   ): Promise<(RelatedRecord & { values?: Values }) | null>;
   /** Pick a record from a searchable list. */
-  searchMore(request: { title: string; search(query: string, limit: number): Promise<RelatedRecord[]> }): Promise<RelatedRecord | null>;
+  searchMore(request: { title: string; search(query: string, limit: number): Promise<RelatedRecord[]>; from?: Element | null }): Promise<RelatedRecord | null>;
   /**
    * Values edited in a form made of these fields. Resolves with the new values,
    * or null. `recompute` recalculates them as they change, as a line's onchange.
@@ -148,12 +151,16 @@ export interface WidgetDialogs {
     layout?: LayoutNode[];
     /** Without a layout, the fields placed, in this order, in two columns — the rest kept as they are; every field when left out. */
     shown?: string[];
+    /** Without a layout, each field's widget and its settings, as its column's cells draw it (a table's `cells`). */
+    cells?: Readonly<Record<string, Pick<CellRules, 'widget' | 'options'>>>;
     /** The record the values are a line of, read by the form's conditions and filters as `parent`. */
     parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
     /** Its two buttons' words, where Save & Close and Discard would mislead: Update and Cancel, for values set on many records. */
     buttons?: { done?: string; cancel?: string };
     /** Its labels small inside sentences, as the page it is part of asks (`lowerLabels`): a line's record, a list. */
     lowerLabels?: boolean;
+    /** The control pressed for it, which waits till the dialog shows (`pressWait`); the one pressed just now unless said. */
+    from?: Element | null;
   }): Promise<Values | null>;
 }
 

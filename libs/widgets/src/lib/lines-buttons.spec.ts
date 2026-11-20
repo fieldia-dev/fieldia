@@ -39,15 +39,15 @@ const page = {
   },
 } as unknown as Page;
 
-function mount(state = 'progress') {
+function mount(state = 'progress', shown = page) {
   const asked: ActionRequest[] = [];
   const form = createForm({
-    page,
+    page: shown,
     values: { state, workorder_ids: [{ key: 'a', id: 11, values: { name: 'Cut', hours: 2 } }, { key: 'b', id: 12, values: { name: 'Glue', hours: 1 } }, { key: 'c', values: { name: 'Paint', hours: 3 } }] } as never,
     onAction: (request) => void asked.push(request),
   });
   const node = (page.layout as { children: FieldNode[] }).children[0];
-  const widget = createWidget({ form, name: 'workorder_ids', field: page.fields['workorder_ids'] as Field, node, id: 'fd-wo', document, labels: WIDGET_LABELS.en });
+  const widget = createWidget({ form, name: 'workorder_ids', field: shown.fields['workorder_ids'] as Field, node, id: 'fd-wo', document, labels: WIDGET_LABELS.en });
   document.body.replaceChildren(widget.element);
   let readonly = false;
   const refresh = () => widget.update({ value: form.getState().values['workorder_ids'], values: form.getState().values, readonly, required: false, invalid: false });
@@ -133,6 +133,16 @@ describe('a line copied', () => {
     const lines = form.getState().values['workorder_ids'] as { key: string; id?: number; values: { name: string } }[];
     expect(lines.map((l) => l.values.name)).toEqual(['Cut', 'Cut', 'Glue', 'Paint']);
     expect(lines[1].id).toBeUndefined();
+  });
+
+  it('starts a line field that says copy: false in the copy as a new line starts it — its default, else empty', () => {
+    const table = page.fields['workorder_ids'] as { fields: Record<string, unknown> };
+    const fields = { ...table.fields, hours: { type: 'float', label: 'Hours', copy: false, default: 1 }, name: { type: 'char', label: 'Operation', copy: false } };
+    const own = { ...page, fields: { ...page.fields, workorder_ids: { ...table, fields } } } as unknown as Page;
+    const { el, form } = mount('progress', own);
+    (el.querySelector('tr[data-line="a"] button.fd-line-copy') as HTMLButtonElement).click();
+    const lines = form.getState().values['workorder_ids'] as { values: Record<string, unknown> }[];
+    expect(lines.map((l) => l.values)).toEqual([{ name: 'Cut', hours: 2 }, { name: null, hours: 1 }, { name: 'Glue', hours: 1 }, { name: 'Paint', hours: 3 }]);
   });
 });
 

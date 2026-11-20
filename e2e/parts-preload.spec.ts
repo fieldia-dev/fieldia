@@ -43,8 +43,9 @@ async function served(page: Page, head: string) {
   const asked: string[] = [];
   page.on('request', (request: Request) => {
     const file = /\/(fieldia\.[a-z]+\.js)$/.exec(request.url())?.[1];
-    // The whole check aside: every page asks for it once drawn (page-check.spec), none writes its tag.
-    if (file && file !== 'fieldia.check.js') asked.push(file);
+    // The whole check aside: fieldia.js asks for it once nothing is waited for (page-check.spec), none writes its tag; and
+    // what no page draws from, asked for right after it (acts-part.spec).
+    if (file && file !== 'fieldia.check.js' && file !== 'fieldia.acts.js') asked.push(file);
   });
   await page.goto('/script/preloaded.html');
   await expect(page.locator('#app .fd-list-row')).toHaveCount(2);
