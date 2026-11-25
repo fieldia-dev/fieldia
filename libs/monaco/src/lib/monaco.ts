@@ -1,5 +1,5 @@
 import type { JsonValue, Value } from '@fieldia/core';
-import { jsonProblem, readJson as readJsonText, WIDGET_LABELS, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { jsonProblem, ownWords, readJson as readJsonText, WIDGET_LABELS, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { MONACO_SERVICES, serviceOf, type MonacoService } from './languages';
 import { defaultLoader } from './loader';
 import { installMonacoStyles } from './styles';
@@ -159,12 +159,15 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
   const error = json ? document.createElement('div') : null;
   if (error) {
     error.className = 'fd-error fd-monaco-error';
+    error.id = `${id}-json-problem`;
     error.dir = 'auto';
     error.setAttribute('role', 'alert');
     error.textContent = labels.invalidJson;
     error.hidden = true;
   }
   element.append(plain, ...(error ? [error] : []));
+  // Where the JSON goes wrong, said under the editor: the field's error, which would say it again, out of sight meanwhile.
+  const once = error ? ownWords(element, error, () => (error.hidden ? '' : (error.textContent ?? ''))) : null;
 
   /** What the form holds, as last written or shown: its echo of what was typed changes nothing. */
   let known = keyOf(form.getState().values[name]);
@@ -188,7 +191,8 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
   function describe() {
     const at = input();
     at.setAttribute('aria-invalid', String(!valid || !!last?.invalid));
-    if (last?.describedBy) at.setAttribute('aria-describedby', last.describedBy);
+    const described = [once ? once.describedBy(last?.describedBy) : last?.describedBy, error && !error.hidden ? error.id : ''].filter(Boolean).join(' ');
+    if (described) at.setAttribute('aria-describedby', described);
     else at.removeAttribute('aria-describedby');
     if (at === plain) at.setAttribute('aria-required', String(!!last?.required));
     element.toggleAttribute('data-invalid', !valid);

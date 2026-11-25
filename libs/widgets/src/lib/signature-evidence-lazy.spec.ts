@@ -47,8 +47,15 @@ function consent(options: Record<string, unknown>, record = false) {
   const draw = (name: string) => {
     const node = (page.layout as { children: FieldNode[] }).children.find((one) => one.field === name) as FieldNode;
     const widget = createWidget({ form, name, field: page.fields[name], node, id: `fd-${name}`, document, labels: WIDGET_LABELS.en, locale: 'en' });
-    document.body.append(widget.element);
-    const refresh = () => widget.update({ value: form.getState().values[name], values: form.getState().values, readonly: false, required: false, invalid: false });
+    // The field's error under it, as the viewer draws it and names it to the widget (`describedBy`).
+    const error = Object.assign(document.createElement('div'), { className: 'fd-error', id: `fd-${name}-error`, hidden: true });
+    document.body.append(widget.element, error);
+    const refresh = () => {
+      const message = form.getState().errors[name];
+      error.hidden = !message;
+      error.textContent = message ?? '';
+      widget.update({ value: form.getState().values[name], values: form.getState().values, readonly: false, required: false, invalid: !!message, ...(message ? { describedBy: error.id } : {}) });
+    };
     form.subscribe(refresh);
     refresh();
     return widget.element;
@@ -110,6 +117,8 @@ describe('the evidence part', () => {
     expect(await form.save()).toBe(false);
     expect(saved).toEqual([]);
     expect(form.getState().errors['signature']).toBe('Not signed yet: the signing could not load.');
+    // Said once, by the note under the signature: the field's error, which would say it again, out of sight (0.37).
+    expect([...document.querySelectorAll('.fd-signature-unloaded, .fd-error')].filter((said) => !(said as HTMLElement).hidden && said.textContent?.includes('Not signed yet'))).toEqual([note]);
     expect(form.validate()).toBe(false);
     // Try again asks for the part once more: signed, the save goes.
     (note.querySelector('button') as HTMLButtonElement).click();

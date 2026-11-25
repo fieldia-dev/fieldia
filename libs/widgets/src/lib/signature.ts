@@ -4,6 +4,7 @@ import { stillShown, whileShown } from './shown';
 import { goingList } from './files-going';
 import { shrinkFor, shrinkPhoto } from './shrink';
 import { describeState, maker, setAttr, setHidden, setText, wordsFor } from './kind-parts';
+import { ownWords } from './input-rules';
 import type { WidgetFactory, WidgetState } from './widgets';
 import { installFilesStyles } from './styles-files';
 import { evidencePartAsksAgain, loadEvidencePart } from './widget-parts';
@@ -89,7 +90,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
   const retry = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.signingRetry);
   const unloadedWords = make('span');
   const retryBox = make('span', {}, ' ', retry);
-  const unloaded = make('div', { class: 'fd-help fd-file-note fd-signature-unloaded', role: 'alert', hidden: '' }, unloadedWords);
+  const unloaded = make('div', { class: 'fd-help fd-file-note fd-signature-unloaded', id: `${id}-unloaded`, role: 'alert', hidden: '' }, unloadedWords);
   const tools = make('div', { class: 'fd-signature-tools' }, typed, undo, ...(upload ? [upload, file] : []), clear);
   const element = make(
     'div',
@@ -100,6 +101,8 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     refused,
     unloaded
   );
+  // Why the picture is not signed, said under it: the field's error, which would say it again, out of sight meanwhile.
+  const once = ownWords(element, unloaded, () => (unloaded.hidden ? '' : (unloadedWords.textContent ?? '')));
 
   const pen = () => {
     const context = canvas.getContext('2d');
@@ -241,6 +244,7 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
     else if (!again) retryBox.remove();
     if (unloadedWords.textContent !== (said ?? '')) setText(unloadedWords, said ?? '');
     setHidden(unloaded, !said);
+    once.said();
   }
   retry.addEventListener('click', () => {
     setHidden(unloaded, true);
@@ -438,7 +442,8 @@ export const signatureWidget: WidgetFactory = ({ form, name, field, node, id, do
       if (upload) upload.hidden = readonly;
       canvas.classList.toggle('fd-signature-locked', readonly);
       going.update(readonly);
-      describeState(element, state);
+      // Its note, while it says why the picture is not signed: in place of the field's error, which would say it again.
+      describeState(element, { ...state, describedBy: [once.describedBy(state.describedBy), unloaded.hidden ? '' : unloaded.id].filter(Boolean).join(' ') });
       typed.setAttribute('aria-invalid', String(state.invalid));
     },
   };

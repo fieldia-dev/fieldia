@@ -1684,7 +1684,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // for that part with its own, its tag written with theirs (viewer-parts.ts `asksActs`, viewer.ts) +133; a save whose
 // beforeSave steps wait for it says so, saving, its Submit busy — never a press that waits in silence (form.ts) +174:
 // 563,507 measured before, 563,814 after (+307), to 550.6.
-const BUDGET_KB = 550.6;
+// 0.37 (p37-one-sentence), needed wherever a box says a refusal — the hint is the main script's, every box's: a refusal
+// said once under its box, the field's error that would say it again out of sight while the box's own words say it
+// (input-rules.ts `ownWords`, which a box's own note uses too: a place's, a JSON editor's): 563,814 measured before,
+// 564,452 after (+638), to 551.3.
+const BUDGET_KB = 551.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -2089,7 +2093,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.37 (p37-walk-fix), listed with the raw budget above: 184.64 → 186.00 (+1.36: 189,075 → 190,464 B), to 186.1.
 // 0.37 (p37-tail), listed with the raw budget above: 186.00 → 186.12 (+0.12: 190,464 → 190,587 B; the viewer's +51, the
 // form's +72), to 186.2: under the owner's 200.
-const GZIP_BUDGET_KB = 186.2;
+// 0.37 (p37-one-sentence), listed with the raw budget above: 186.12 → 186.38 (+0.26: 190,587 → 190,857 B), to 186.4:
+// under the owner's 200.
+const GZIP_BUDGET_KB = 186.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

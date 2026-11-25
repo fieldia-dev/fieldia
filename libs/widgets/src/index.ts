@@ -41,7 +41,7 @@ export * from './lib/preferences';
 export * from './lib/numbers';
 // The input rules' side of a box — its guard on keystrokes, pastes and drops, and its hint — for every box an app or another
 // package draws: a cell's editor, a filter, a designer's setting.
-export { guard, refusalHint, numberRules, numberKeyboard, refusalWords, unreadWords, leftWords, numberFits, quoted, type Guard, type InputRules, type NumberBox, type RefusalHint } from './lib/input-rules';
+export { guard, refusalHint, ownWords, numberRules, numberKeyboard, refusalWords, unreadWords, leftWords, numberFits, quoted, type Guard, type InputRules, type NumberBox, type OwnWords, type RefusalHint } from './lib/input-rules';
 // What the browser fills a box in with and the keyboard a phone shows, the page's over the kind's own: for an app's own widget.
 export { askFirst, boxPurpose } from './lib/kind-parts';
 export { moneyReads, shortNumber, writeMoney } from './lib/money';

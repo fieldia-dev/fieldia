@@ -98,7 +98,8 @@ export const cardsWidget =
       const widget = create({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets, onError });
       const label = make('label', { class: 'fd-repeat-label', for: cellId }, sub.label);
       if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) label.addEventListener('click', () => widget.focus());
-      const error = make('div', { class: 'fd-cell-error', hidden: '' });
+      // Its message, linked to its box (aria-describedby), as a table's cell's is.
+      const error = make('div', { class: 'fd-cell-error', id: `${cellId}-error`, hidden: '' });
       body.append(make('div', { class: 'fd-repeat-field' }, label, widget.element, error));
       return { name: column, def: sub, widget, error };
     });
@@ -179,7 +180,7 @@ export const cardsWidget =
           const message = errors[`${name}.${line.key}.${f.name}`];
           f.error.hidden = !message;
           f.error.textContent = message ?? '';
-          f.widget.update({ value: line.values[f.name], values: line.values, parent: state.values, readonly: readonly || f.def.readonly === true, required: f.def.required === true, invalid: !!message });
+          f.widget.update({ value: line.values[f.name], values: line.values, parent: state.values, readonly: readonly || f.def.readonly === true, required: f.def.required === true, invalid: !!message, ...(message ? { describedBy: f.error.id } : {}) });
         }
       });
       addButton.hidden = readonly || current.length >= max;

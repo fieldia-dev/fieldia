@@ -1,6 +1,6 @@
 import { placesOf, placesOfCurrency, readNumber, type JsonValue, type RelatedRecord, type Value } from '@fieldia/core';
 import { fillIn, maker, setAttr, setHidden, wordsFor } from './kind-parts';
-import { guard, leftWords, numberRules, refusalHint, type Guard } from './input-rules';
+import { guard, leftWords, numberRules, ownWords, refusalHint, type Guard } from './input-rules';
 import { formatMoney, formatNumber } from './numbers';
 import { installBusinessStyles } from './styles-business-part';
 import type { Widget, WidgetFactory, WidgetState } from './widgets';
@@ -64,9 +64,12 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
   /** What a tax box left says: an amount kept, or text that does not read. In a row of its own after the totals, said politely. */
   const note = make('div', { class: 'fd-refusal-hint fd-tax-note', id: `${id}-note`, role: 'status', hidden: '' });
   const noteRow = make('tr', { class: 'fd-tax-note-row' }, make('td', { colspan: '2' }, note));
+  // What it says of a box left, the field's error would say again under the totals: said once (`ownWords`).
+  const once = ownWords(element, note, () => (note.hidden ? '' : (note.textContent ?? '')));
   const say = (words: string) => {
     note.textContent = words;
     setHidden(note, !words);
+    once.said();
   };
   /** Text left in a tax box that does not read, by the group's place: kept in its box, marked, until it is put right. */
   const unread = new Map<string, { text: string; message: string }>();
@@ -97,6 +100,7 @@ export const taxTotalsWidget: WidgetFactory = ({ form, name, node, id, document,
     destroy: () => guards.forEach((g) => g.destroy()),
     update(state) {
       last = state;
+      once.describedBy(state.describedBy);
       // The form lets text go once the value is written another way (the app's): its boxes do too.
       if (!form.getState().unread?.[name]) unread.clear();
       const totals = read(state.value, words.untaxed);
