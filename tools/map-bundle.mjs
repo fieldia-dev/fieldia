@@ -196,7 +196,10 @@ const BUDGET = { fields: 12.0, all: 13.7, embed: 10.8, leaflet: 47, routes: 2 };
 // 0.36's merge, set once from the merged build (deps-maint's names beside p3-real-tests' map fixes): a list's map 22,973
 // bytes, inside its 22.5; a form's 20,559, inside its 20.1; the fields' 19,022, inside 18.6; with the page 12,018, 13,721
 // and 10,945, inside 11.8, 13.4 and 10.7.
-const PART_BUDGET = { 'view-part': 22.5, 'form-part': 20.1, 'widgets-part': 18.6 };
+// 0.37 (p37-one-sentence), one refusal said once under its box: a place's own note run through `ownWords`
+// (place.ts, input-rules.ts), so the field's error under it does not say it again — the fields' 19,022 bytes measured
+// before, 19,119 after, to 18.7; a list's map and a form's as they were.
+const PART_BUDGET = { 'view-part': 22.5, 'form-part': 20.1, 'widgets-part': 18.7 };
 
 /** One app's import of the package, bundled and split as its bundler would: its own code and Leaflet's chunk, gzipped. */
 const metafiles = {};
