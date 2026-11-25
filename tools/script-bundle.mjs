@@ -1687,7 +1687,7 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // 0.37 (p37-one-sentence), needed wherever a box says a refusal — the hint is the main script's, every box's: a refusal
 // said once under its box, the field's error that would say it again out of sight while the box's own words say it
 // (input-rules.ts `ownWords`, which a box's own note uses too: a place's, a JSON editor's): 563,814 measured before,
-// 564,452 after (+638), to 551.3.
+// 564,455 after (+641), to 551.3.
 const BUDGET_KB = 551.3;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
@@ -2093,7 +2093,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // 0.37 (p37-walk-fix), listed with the raw budget above: 184.64 → 186.00 (+1.36: 189,075 → 190,464 B), to 186.1.
 // 0.37 (p37-tail), listed with the raw budget above: 186.00 → 186.12 (+0.12: 190,464 → 190,587 B; the viewer's +51, the
 // form's +72), to 186.2: under the owner's 200.
-// 0.37 (p37-one-sentence), listed with the raw budget above: 186.12 → 186.38 (+0.26: 190,587 → 190,857 B), to 186.4:
+// 0.37 (p37-one-sentence), listed with the raw budget above: 186.12 → 186.39 (+0.27: 190,587 → 190,866 B), to 186.4:
 // under the owner's 200.
 const GZIP_BUDGET_KB = 186.4;
 const gzipped = gzipSync(code, { level: 9 }).length;
@@ -3391,7 +3391,12 @@ console.log(`language add-ons: ${sizes.join('; ')}`);
 // 16.63 → 48.31 and 16.67 (a card's dialog named by its words as a table's line is), to 48.4; record 13.34 and 5.46 →
 // 13.46 and 5.50 (a recording too short to keep, said), to 13.5; loading 9.10 and 3.06 → 9.20 and 3.08 (a skeleton's
 // shapes never shorter than their boxes), to 9.3; html 6.49 → 6.47 (its text styles' names in the main script).
-const PART_BUDGET_KB = { acts: [34.3, 12.5], html: [6.5, 2.8], sheet: [11.4, 4.3], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.2, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.4, 16.7], business: [32.7, 12.0], files: [51.3, 19.1], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.5, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.3, 4.8], loading: [9.3, 3.1], check: [65.3, 17.3] };
+// 0.37 (p37-one-sentence), a refusal said once by a box's own note, the field's error that says it again out of sight
+// (`ownWords`), each measured before and after: business 33,474 and 12,197 B → 33,666 and 12,257 (a distribution's
+// account and a tax amount), to 32.9; files 52,472 and 19,541 → 52,677 and 19,638 (a signature its signing could not
+// come for), to 51.5 and 19.2; lines 49,472 and 17,075 → 49,524 and 17,090 (a card's box described by its error), inside
+// 48.4 and 16.7.
+const PART_BUDGET_KB = { acts: [34.3, 12.5], html: [6.5, 2.8], sheet: [11.4, 4.3], head: [42.5, 13.0], text: [73.2, 24.8], path: [22.5, 8.3], choice: [12.1, 4.8], filters: [23.4, 8.1], date: [24.1, 9.4], months: [13.8, 5.7], typed: [14.3, 6.0], list: [160.2, 52.4], cards: [12.6, 3.8], columns: [18.7, 6.8], import: [39.0, 15.4], editable: [35.3, 12.8], views: [5.6, 2.5], rows: [19.8, 7.5], themes: [13.2, 4.0], quiet: [8.3, 2.1], lines: [48.4, 16.7], business: [32.9, 12.0], files: [51.5, 19.2], evidence: [9.3, 4.2], photos: [31.5, 11.7], record: [13.5, 5.5], codes: [11.4, 5.6], pins: [9.7, 4.1], survey: [36.7, 12.6], phone: [45.3, 19.3], slots: [15.5, 6.0], schedule: [20.8, 8.1], relations: [21.2, 8.1], duplicates: [15.6, 6.4], answers: [4.5, 2.2], limits: [10.9, 4.8], approvals: [20.3, 7.0], templates: [6.7, 3.0], live: [4.7, 2.3], undo: [7.0, 3.2], print: [16.6, 5.3], memory: [26.2, 9.5], functions: [4.8, 2.1], options: [4.5, 2.1], mapchecks: [6.7, 2.5], languages: [10.3, 4.4], assist: [36.5, 12.4], scan: [20.7, 8.6], decode: [153.8, 39.0], surveyflow: [34.5, 12.4], prefill: [4.2, 2.0], verify: [11.4, 4.8], pay: [7.9, 3.5], element: [5.8, 2.6], outbox: [11.3, 4.8], loading: [9.3, 3.1], check: [65.3, 17.3] };
 // What each part gives, by the names the packages draw from.
 const PART_GIVES = {
   acts: ['createRunner', 'reloadTheirs', 'keepMine', 'putBack', 'openFormDialog', 'openFormPanel', 'openSearchDialog', 'openPage', 'linkDialogs', 'askBox', 'conflictBanners'],
