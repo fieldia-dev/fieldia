@@ -294,6 +294,27 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   designer in Arabic, its Rules tab focused and never chosen). The move now
   waits for the press to end, its click handled first, as what moves the page
   as a box is left waits (`afterPress`); focused by the keys, it moves at once.
+- **One refusal is said once under its box.** A name typed that names nothing —
+  in a choice found by its name or its tags, a link or its tags, a reference, a
+  path, or tags past their most — was said twice under the box as it was left or
+  a save refused it, in all three engines: by the box ("At: nothing is called
+  “08:15”; pick one from the list. At still holds 08:30", NexiBI's report on
+  0.36.1) and again by the field's error under it ("At: nothing is called
+  “08:15”; pick one from the list") — on a page, in a dialog or a saved form
+  placed on one, in a table's cell and on a card; an account typed in a
+  distribution, by the warning under its lines too. So were
+  the refusals a box says in a note of its own: a place's coordinate past the
+  poles, under its map; JSON that breaks, under either code editor; a tax amount
+  that does not read, under the totals; a signature its signing could not come
+  for. Now the box's own words say it once, in full, under the box, said
+  politely as they come; the field's error that would say it again is out of
+  sight and out of the box's `aria-describedby` while they show, and back once
+  they go (the next key). The save is refused as before, its announcer naming
+  the field, the words kept as typed and the value as it was; the box stays
+  marked invalid, described by the words in sight (`ownWords`, one rule every
+  box's refusal hint keeps). A card's box is described by its error, as a
+  table's cell's is, and CodeMirror's JSON editor says a number too long to keep
+  as written in the words the form keeps it with, as VS Code's editor does.
 - Demos: the vendor bill's copy keeps no number and no dates, as Odoo's draft copy
   (`"copy": false` on its number, bill date and due date): its number is a
   draft's, "Draft", until Confirm gives it its number, as a new bill's is. The
@@ -442,6 +463,10 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
   - (fix) `designer.savedForms()` rejects with the store's own refusal as
     before, the store's answer handled as it was given; the editor's callers say
     it or ask again.
+  - (adds) `ownWords` (`@fieldia/widgets`): an app's own widget that says a
+    refusal under its box in a note of its own keeps the field's error from
+    saying it again, as Fieldia's boxes do (`describedBy(state.describedBy)` in
+    its update, `said()` as its words change).
 - *Tests and CSS:*
   - A unit test that mounts a page and at once expects a write to reach its data
     source awaits the handle's `refused` first, or `loadParts()` before the mount,
@@ -514,6 +539,17 @@ is drawn as soon as without these parts or up to 91 ms sooner, and in use 27 to
     count ("Overdue, 3 invoices"), found by its words' start, not their end. The
     vendor bill's copy has no number — "Draft", a new bill's too, till Confirm
     numbers it — and no dates.
+  - (fix) A refusal a box says under itself is in sight once: while its own words
+    show (`.fd-refusal-hint`, a place's `.fd-map-note`, `.fd-code-error`,
+    `.fd-monaco-error`, `.fd-tax-note`, `.fd-signature-unloaded`), the field's
+    `.fd-error` — a cell's or a card's `.fd-cell-error`, a distribution's
+    `.fd-distribution-off` — that said the same words again is hidden
+    (`data-said-by-box`), and the box's `aria-describedby` names them in its
+    place. A test that read the words from the field's error, or counted two
+    elements saying them, reads them from the box's words or from
+    `form.getState().errors`, which still holds them, and counts one. A card's
+    box is described by its `.fd-cell-error` (`aria-describedby`); CodeMirror's
+    `.fd-code-error` says a number too long to keep in the field's error's words.
 - *Translators:* (adds) the designer's new words in ar, es, fa, tr and ur —
   "Copied with the record" and its hint, a filter's Group and its hint, the
   example word and the refusal — are machine-made and not yet reviewed by a
