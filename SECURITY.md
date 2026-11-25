@@ -54,8 +54,9 @@ What Fieldia guarantees, each guarantee with the test that holds it, is on
   its bytes are; CSV cells a spreadsheet would run kept as words; bounds on patterns, dates, values worked out,
   imports and archives; a framed form that talks only to the sites it names; each part of the one-tag script checked
   against its hash, and a send a part must check never made without it; drafts kept per person, secrets never in
-  them; a page the check before the draw refuses never drawn, and what only the whole check finds said once the
-  page is drawn (refused from 0.37).
+  them; a page the check before the draw refuses never drawn, and one the whole check (`validatePage`'s verdict)
+  refuses taken down as it runs, once the page is drawn, nothing written through it before then (0.37; drawn and said
+  in 0.36).
 - **Your server must still:** check what it is sent with `checkSubmission(page, values, context)` — required fields,
   patterns, options, codes proved, the payment due; decide who may see and change what (a field hidden or read-only
   in the browser is not protected); check a code's proof and a payment's reference itself; and store only pages that

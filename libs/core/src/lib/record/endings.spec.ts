@@ -1,13 +1,14 @@
 import type { Page } from '../format/page';
 import { checkPage } from '../format/check-page';
 import { pageWarnings, validatePage } from '../format/validate';
+import { FORMAT_VERSION } from '../format/version';
 import { createForm } from './form';
 import { createMemoryDataSource } from './memory-data-source';
 import type { SubmitResult } from './data-source';
 
 /** A clinic's feedback: the branch visited, a rating asked of it by name, and a name to thank. */
 const feedback = (more: Partial<Page> = {}): Page => ({
-  fieldia: '0.13',
+  fieldia: FORMAT_VERSION,
   id: 'feedback',
   data: { kind: 'responses' },
   fields: {

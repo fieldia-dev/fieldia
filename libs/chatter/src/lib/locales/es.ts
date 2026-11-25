@@ -68,6 +68,7 @@ export const es: ChatterLabels = {
   search: 'Buscar…',
   noOneFound: 'No se encontró a nadie',
   couldNotSend: 'No se envió: {reason}',
+  notDone: 'No se hizo: {reason}',
   sendingAfterFile: '1 archivo aún se está subiendo. Se enviará cuando termine.',
   sendingAfterFiles: '{n} archivos aún se están subiendo. Se enviará cuando terminen.',
   notSentFile: 'No se envió: no se pudo subir {name}. Inténtelo de nuevo o quítelo.',

@@ -244,6 +244,24 @@ async function mount(page: Page, script: unknown = 'def total():\n    return 1',
   const label = box.querySelector('label') as HTMLLabelElement;
   return { ...fake, host, box, label, dataSource, form: handle.form, editor: () => fake.seen.editors[0] };
 }
+/**
+ * The places `words` are in sight under the field: each piece of text holding them whose element is drawn — none round it
+ * hidden, not words for a screen reader alone. One refusal is said once (0.37): the box's own words, or the field's error.
+ */
+function said(root: ParentNode, words: string): string[] {
+  const found: string[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+    const element = text.parentElement;
+    if (!element || !(text.nodeValue ?? '').includes(words) || element.closest('[hidden], [aria-hidden="true"], .fd-sr-only')) continue;
+    found.push(`${element.className}: ${text.nodeValue}`);
+  }
+  return found;
+}
+/** What `box` is described by that says `words`. */
+const describedWith = (box: Element, words: string) =>
+  (box.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean).map((id) => document.getElementById(id)).filter((element) => element?.textContent?.includes(words));
+
 /** A key pressed in an element, as the keyboard sends it: whether something took it is on the event. */
 function press(target: Element, key: string, init: KeyboardEventInit = {}) {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -632,6 +650,19 @@ describe('JSON in VS Code’s editor', () => {
     expect(message.hidden).toBe(true);
     expect(editor().input.getAttribute('aria-invalid')).toBe('false');
     expect(form.getState().values['script']).toEqual([]);
+  });
+
+  it('says where the JSON breaks once under the editor — as it is left, and as a save is refused — never again as the field’s error', async () => {
+    const { host, box, arrive, editor, form } = await mount(pageWith('json'), { readers: 4 });
+    await arrive();
+    editor().input.focus();
+    editor().type('{ "readers": ');
+    (box.closest('form, .fd-form')?.querySelector('[data-node="f-owner"] input') as HTMLInputElement).focus();
+    expect(form.getState().errors['script']).toBe('Not valid JSON: line 1, column 14');
+    expect(said(host, 'Not valid JSON')).toEqual(['fd-error fd-monaco-error: Not valid JSON: line 1, column 14']);
+    expect(await form.save()).toBe(false);
+    expect(said(host, 'Not valid JSON')).toEqual(['fd-error fd-monaco-error: Not valid JSON: line 1, column 14']);
+    expect(describedWith(editor().input, 'Not valid JSON')).toEqual([box.querySelector('.fd-monaco-error')]);
   });
 
   it('keeps text that is not JSON unread, with where it breaks: a check made meanwhile refuses it', async () => {

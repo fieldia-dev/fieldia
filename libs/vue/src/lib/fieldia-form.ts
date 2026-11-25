@@ -195,6 +195,8 @@ export const FieldiaForm = defineComponent({
     records: { type: [Array, Object] as PropType<ViewerOptions['records']>, default: undefined },
     /** The trail to this record, for the breadcrumbs over it. */
     breadcrumbs: { type: Array as PropType<ViewerOptions['breadcrumbs']>, default: undefined },
+    /** While the app is being made: a refused page shows what is wrong under its visitor's words (ViewerOptions.development). */
+    development: { type: Boolean, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -334,6 +336,7 @@ export const FieldiaForm = defineComponent({
           onOpenRecord: (id) => emit('openRecord', id),
           records: props.records ? toRaw(props.records) : undefined,
           breadcrumbs: props.breadcrumbs ? toRaw(props.breadcrumbs) : undefined,
+          development: props.development,
         });
       } catch {
         // A page the viewer refused: it said why where the form would be and told `onError` (refused.ts in

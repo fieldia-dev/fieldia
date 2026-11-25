@@ -101,10 +101,14 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
   function listPages() {
     if (asked || !designer.canPlaceForms()) return;
     asked = true;
-    void designer.savedForms().then((refs) => {
-      listed = refs;
-      draw();
-    });
+    // Refused, what was listed stays, and they are asked for again as Add a step opens next.
+    void designer.savedForms().then(
+      (refs) => {
+        listed = refs;
+        draw();
+      },
+      () => void (asked = false)
+    );
   }
   /** A page the app lists, as saved: its title and its fields. An id typed is not looked up as it is typed. */
   const saved = (id: string): Page | null | undefined => {

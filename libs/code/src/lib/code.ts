@@ -4,7 +4,7 @@ import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/
 import { Compartment, EditorState, StateEffect, StateField } from '@codemirror/state';
 import { Decoration, EditorView, keymap, lineNumbers, type DecorationSet } from '@codemirror/view';
 import type { JsonValue, Value } from '@fieldia/core';
-import { jsonProblem, readJson, styleNonce, WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
+import { jsonProblem, ownWords, readJson, styleNonce, WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
 import { codeHighlightStyle } from './palette';
 import { installCodeStyles } from './styles';
 import { textCodeWidget } from './text-code';
@@ -70,6 +70,8 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
   error.setAttribute('role', 'alert');
   error.textContent = labels.invalidJson;
   error.hidden = true;
+  // Where the JSON goes wrong, said under the editor: the field's error, which would say it again, out of sight meanwhile.
+  const once = ownWords(element, error, () => (error.hidden ? '' : (error.textContent ?? '')));
   /** The field's own help and error, from the form. */
   let described = '';
   let invalidByForm = false;
@@ -117,7 +119,7 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
             // Kept unread, with where it breaks: a save waits for it. Said, and marked there, once typing pauses.
             invalid = true;
             form.setUnread(name, { text, message: problemWords(text) });
-            saying = setTimeout(() => say(jsonProblem(text)), SETTLE_MS);
+            saying = setTimeout(() => say(jsonProblem(text), problemWords(text)), SETTLE_MS);
             return;
           }
           queueMicrotask(() => say(null));
@@ -131,10 +133,13 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
   });
   element.append(error);
 
-  /** Says where the JSON goes wrong, or that nothing does: under the editor, in it, and to assistive technology. */
-  function say(problem: { offset: number; line: number; column: number } | null) {
+  /**
+   * Says where the JSON goes wrong, or that nothing does: under the editor, in it, and to assistive technology — in the
+   * words the form keeps it unread with (`problemWords`: a number too long to keep as written says so), never other ones.
+   */
+  function say(problem: { offset: number; line: number; column: number } | null, words = '') {
     error.hidden = !problem;
-    if (problem) error.textContent = labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column));
+    if (problem) error.textContent = words;
     view.dispatch({ effects: markProblem.of(problem ? problem.offset : null) });
     describe();
   }
@@ -142,7 +147,7 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
   function describe() {
     const content = view.contentDOM;
     content.setAttribute('aria-invalid', String(invalidByForm || !error.hidden));
-    const ids = [described, error.hidden ? '' : error.id].filter(Boolean).join(' ');
+    const ids = [once.describedBy(described), error.hidden ? '' : error.id].filter(Boolean).join(' ');
     if (ids) content.setAttribute('aria-describedby', ids);
     else content.removeAttribute('aria-describedby');
   }

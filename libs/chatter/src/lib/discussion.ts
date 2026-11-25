@@ -1,4 +1,4 @@
-import { PICTURE_URL, safeUrl, fill, recordSentence, dayTag, wordsComing, wordsReady, intlFormat } from '@fieldia/core';
+import { answerOf, PICTURE_URL, safeUrl, fill, recordSentence, dayTag, wordsComing, wordsReady, intlFormat } from '@fieldia/core';
 import { installStyles, sanitizeHtml, showHtml, textPart, WIDGET_LABELS, type TextPart, type TextReference } from '@fieldia/widgets';
 import type { ChatterHandle, ChatterOptions } from './chatter';
 import { initials } from './chatter';
@@ -59,6 +59,14 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
 
   // ---- the comment box ------------------------------------------------------------------
   const source = options.source;
+  /** The people suggested after an @: the source's answer handled as it is given (`answerOf`); not given, no one. */
+  async function mentioned(query: string) {
+    try {
+      return ((await answerOf(source.people?.(query))) ?? []).map((person) => ({ id: person.id, label: person.name }));
+    } catch {
+      return [];
+    }
+  }
   const box = formattedText(doc, {
     label: labels.comment,
     placeholder: options.placeholder,
@@ -68,7 +76,7 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
     toolbarAt: 'bottom',
     switchEditor: 'always',
     icons: options.icons,
-    ...(source.people ? { mention: { search: async (query: string) => ((await source.people?.(query)) ?? []).map((person) => ({ id: person.id, label: person.name })) } } : {}),
+    ...(source.people ? { mention: { search: mentioned } } : {}),
     references: options.references ?? [],
     onInput: () => {
       problem.textContent = '';
@@ -164,7 +172,8 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
     if (!current || saveButton.hasAttribute('aria-busy')) return;
     saveButton.setAttribute('aria-busy', 'true');
     try {
-      await source.post(current, { kind: 'message', body: sanitizeHtml(body, doc) });
+      // The source's answer handled as it is given (`answerOf`), never a microtask late as this function's own await.
+      await answerOf(source.post(current, { kind: 'message', body: sanitizeHtml(body, doc) }));
       close();
       await load();
       (list.querySelector('.fd-comment-card') as HTMLElement | null)?.focus();
@@ -206,7 +215,13 @@ function drawDiscussion(host: HTMLElement, options: DiscussionOptions, { decorat
       options.onCount?.(0);
       return;
     }
-    const messages = (await source.messages(current)).filter((message) => message.kind === 'message' && message.body);
+    let messages: ChatterMessage[];
+    try {
+      messages = (await answerOf(source.messages(current))).filter((message) => message.kind === 'message' && message.body);
+    } catch {
+      // Not given: the comments as they were, asked again at the next refresh.
+      return;
+    }
     if (destroyed || record !== current) return;
     list.replaceChildren(...messages.map(comment));
     options.onCount?.(messages.length);

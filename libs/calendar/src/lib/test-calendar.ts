@@ -8,7 +8,7 @@ export const at = (day: number, h: number, m = 0) => new Date(2026, 9, day, h, m
 /** A clinic's appointments, by doctor. */
 export function clinicPage(calendar: Partial<ListCalendar> = {}): Page {
   return {
-    fieldia: '0.1',
+    fieldia: '0.13',
     id: 'appointments',
     title: 'Appointments',
     // British English: its week from Monday, as CLDR has the United Kingdom's (these tests' weeks run so).

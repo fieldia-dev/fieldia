@@ -1,4 +1,4 @@
-import { LINK_URL, plainWords, safeUrl, recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult, type Tone } from '@fieldia/core';
+import { answerOf, LINK_URL, plainWords, safeUrl, recordSentence, type Form, type MenuItem, type RecordId, type RecordToolbar, type RunResult, type Tone } from '@fieldia/core';
 import { drawIcon, type IconSet, type Loading } from '@fieldia/widgets';
 import { setAttr, setHidden, setText, type El } from './dom';
 import { hotkeyOn } from './hotkeys';
@@ -332,11 +332,8 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
   hotkeyOn(next, 'n', after);
   const box = el('div', { class: 'fd-record-pager', role: 'group', 'aria-label': sentence(labels.recordsNoun, labels.records) }, text, previous, next);
 
-  /** The id at a place: the app's, where it gives a count — its answer handled as it is asked (`later`). */
-  const idAt = (place: number): RecordId | PromiseLike<RecordId> => {
-    const id = ids ? ids[place] : (asked as RecordPager).id(place);
-    return later(id) ? id.then() : id;
-  };
+  /** The id at a place: the app's, where it gives a count — its answer handled as it is given, the engine's own (`answerOf`). */
+  const idAt = (place: number): RecordId | PromiseLike<RecordId> => answerOf(ids ? ids[place] : (asked as RecordPager).id(place));
   const cannot = (error: unknown) => context.say?.((error as Error)?.message ?? String(error), 'danger');
   async function move(by: number) {
     const from = here();

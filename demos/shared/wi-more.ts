@@ -49,6 +49,8 @@ const details = (head.children[0] as { children: { children: unknown[] }[] }).ch
 
 export const wiMorePage: Page = {
   ...wiHeadPage,
+  // Its menu's dividers came in format 0.9: stamped with the format it is written in, as a page read by its stamp is.
+  fieldia: '0.13',
   id: 'wi-more',
   data: { kind: 'record', model: 'wi.more' },
   fields: {

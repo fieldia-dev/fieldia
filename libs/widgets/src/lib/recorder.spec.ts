@@ -368,10 +368,11 @@ describe('Record beside a file field’s picker', () => {
     expect(value()).toHaveLength(1);
   });
 
-  it('stopped a moment after it began, keeps nothing and says so; one of a second and more says its time as its clock does', async () => {
+  it('stopped a moment after it began, keeps nothing and says it was too short; one of a second and more says its time as its clock does', async () => {
     // Firefox's recorder begins at once and hands back its first moments: 0.36 kept a recording of 0.05 s and said
-    // "Recorded 0:01" while its clock said 0:00 (the 0.36 walk). Under half a second is nothing recorded, as a stop before
-    // the recorder began is; and the words say the time the clock beside them says.
+    // "Recorded 0:01" while its clock said 0:00 (the 0.36 walk). Under half a second is nothing kept, as a stop before
+    // the recorder began is — said as it was: begun, too short to keep (the 0.37 walk: "had not started yet", which it
+    // had); and the words say the time the clock beside them says.
     const { el } = setup({ record: 'audio' });
     button(el, 'Record a voice note')?.click();
     await until(() => shown('Start recording'));
@@ -380,7 +381,7 @@ describe('Record beside a file field’s picker', () => {
     await until(() => said() === 'Recording…');
     button(box, 'Stop')?.click();
     await until(() => shown('Start recording') || shown('Use this recording'));
-    expect(said()).toBe('Nothing was recorded: the recording had not started yet. Press Start recording to try again.');
+    expect(said()).toBe('Nothing was kept: the recording was too short. Press Start recording to try again.');
     expect(box.querySelector('.fd-recorder-review audio')).toBeNull();
     expect(box.querySelector('.fd-recorder-time')?.textContent).toBe('0:00 / 2:00');
     button(box, 'Start recording')?.click();

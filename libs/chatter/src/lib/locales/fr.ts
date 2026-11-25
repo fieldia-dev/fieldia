@@ -64,6 +64,7 @@ export const fr: ChatterLabels = {
   search: 'Rechercher…',
   noOneFound: 'Personne trouvée',
   couldNotSend: 'Non envoyé : {reason}',
+  notDone: 'Non effectué : {reason}',
   sendingAfterFile: '1 fichier encore en cours d’envoi. Envoi dès qu’il est arrivé.',
   sendingAfterFiles: '{n} fichiers encore en cours d’envoi. Envoi dès qu’ils sont arrivés.',
   notSentFile: 'Non envoyé : {name} n’a pas été envoyé. Réessayez, ou retirez-le.',

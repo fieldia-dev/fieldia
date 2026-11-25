@@ -153,6 +153,7 @@ export const de: WidgetLabels = {
   recordingNow: 'Aufnahme läuft…',
   recordStarting: 'Aufnahme wird gestartet…',
   recordNothing: 'Nichts wurde aufgenommen: Die Aufnahme hatte noch nicht begonnen. Drücken Sie „Aufnahme starten“, um es erneut zu versuchen.',
+  recordTooShort: 'Nichts wurde behalten: Die Aufnahme war zu kurz. Drücken Sie „Aufnahme starten“, um es erneut zu versuchen.',
   recordStoppedAt: 'Bei {time} angehalten, der längsten erlaubten Aufnahme hier.',
   recordStoppedSize: 'Angehalten: Die Aufnahme hat die größte Datei erreicht, die dieses Feld annimmt.',
   recordDone: '{time} aufgenommen. Spielen Sie es ab, dann verwenden Sie es oder nehmen Sie neu auf.',

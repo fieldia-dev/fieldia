@@ -46,6 +46,8 @@ export const bar: DesignerWords['bar'] = {
   keepEditing: 'Seguir editando',
   publishVersion: (version) => `Publicar la versión ${version}`,
   publishFailed: 'No se pudo publicar.',
+  notPublished: (version) => `No se pudo publicar la versión ${version}`,
+  notSaved: 'No se pudieron guardar sus cambios',
   close: 'Cerrar',
   publishQuestion: (version) => `¿Publicar la versión ${version}?`,
   changesSince: (n, version) => `${plural('es', n, { one: '# cambio', other: '# cambios' })} desde la versión ${version}:`,

@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkPage } from './check-page';
 import { validatePage } from './validate';
+import { FORMAT_VERSION } from './version';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
 const example = (name: string): Record<string, any> => JSON.parse(readFileSync(join(EXAMPLES, `${name}.page.json`), 'utf8'));
@@ -13,13 +14,16 @@ const paths = (input: unknown) => {
 describe('checkPage', () => {
   it('passes every example page, as the full check does, and hands the page back unchanged', () => {
     for (const name of readdirSync(EXAMPLES).filter((f) => f.endsWith('.page.json')).map((f) => f.replace('.page.json', ''))) {
-      const page = example(name);
+      // In the format it says, an older one brought up to this one (upgradePage); in this one, the very page given.
+      const given = example(name);
+      const page = { ...given, fieldia: FORMAT_VERSION };
       // The demos' own function a listing calls, as the demos give it (demos/shared/functions.ts).
       const functions = { districtPrice: { takes: [1, 1] as const } };
       const result = checkPage(page, { functions });
       expect(result.ok).toBe(true);
       expect(validatePage(page, { functions }).ok).toBe(true);
       expect(result.ok && result.page).toBe(page);
+      expect(checkPage(given, { functions })).toEqual({ ok: true, page });
     }
   });
 

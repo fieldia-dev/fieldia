@@ -26,8 +26,6 @@ export const SHEET_CSS = /* css */ `
 /* A choice as a coloured pill, as wide as its words, on the line a box's words sit on. */
 .fd-field > .fd-value-badge { justify-self: start; align-self: start; width: fit-content; margin-block: calc((var(--fd-control-height, 30px) - 24px) / 2); }
 .fd-title > .fd-field > .fd-read-text { font-size: 24px; font-weight: 600; line-height: 1.25; }
-/* A ribbon with words to point at takes the pointer, though its frame lets clicks through. */
-.fd-ribbon[title] { pointer-events: auto; cursor: help; }
 /* A field's value inside an alert's or a text's words, set apart by its weight. */
 .fd-value { font-weight: 600; }
 /* A value empty, its words while empty in its place ({branch|this branch}): the page's words, as the words round them. */
@@ -39,25 +37,6 @@ export const SHEET_CSS = /* css */ `
 .fd-alert-actions .fd-button-link { color: inherit; padding-inline: 0; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
 /* An alert among a page's parts, as Flectra's in a tab: across its row. */
 .fd-text-alert { grid-column: 1 / -1; margin: 0; }
-/* The first alert on a card clears the ribbon in its corner, when no stat buttons stand between them. */
-.fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) > :is(.fd-ribbon-frame + .fd-alert, .fd-ribbon-frame + .fd-stats[hidden] + .fd-alert) { margin-inline-end: 72px; }
-/* A stat button with two values, each after its words, one over the other: "In: 3", "Out: 5". */
-.fd-stat-pair { gap: 1px; }
-.fd-stat-row { display: inline-flex; align-items: baseline; gap: 5px; }
-.fd-stat-row > .fd-stat-label::after { content: ":"; }
-.fd-stat-pair .fd-stat-value { font-size: 13.5px; }
-/* On a phone, stat buttons two to a row, edged between them, clear of a ribbon in the corner. */
-@container (max-width: 520px) {
-  .fd-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .fd-stat { min-width: 0; padding-inline: 12px; text-align: start; column-gap: 8px; }
-  .fd-stat:has(> .fd-icon) { column-gap: 8px; }
-  .fd-stat-value { font-size: 14px; }
-  .fd-stat:nth-child(odd of :not([hidden])) { border-inline-start: none; }
-  .fd-stat:nth-child(n + 3 of :not([hidden])) { border-block-start: 1px solid var(--fd-border); }
-  .fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) .fd-stats { padding-inline-end: 0; }
-  .fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) .fd-stat:nth-child(2 of :not([hidden])) { padding-inline-end: 64px; }
-  .fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) .fd-stat:nth-child(4 of :not([hidden])) { padding-inline-end: 36px; }
-}
 /* A button's key, shown on it while Alt is held, as Flectra shows its hotkeys. */
 .fd-hotkey { display: none; }
 [data-hotkeys] .fd-hotkey {

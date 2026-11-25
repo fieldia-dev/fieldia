@@ -25,6 +25,10 @@ interface Presses {
   /** What waits for the press to end, by who asked: the latest of each. */
   waiting: Map<object, () => void>;
   timer: ReturnType<typeof setTimeout> | undefined;
+  /** The control pressed last, and when (`pressedControl`). */
+  last?: { control: Element; at: number };
+  /** The controls a press waits on, each with what ends its wait (`pressWait`). */
+  waits: Map<Element, () => void>;
 }
 
 /** Kept on the document under a key every copy of this module shares: the main script's and a part's watch one press. */
@@ -34,8 +38,19 @@ type Watched = Document & { [KEY]?: Presses };
 function pressesOf(doc: Document): Presses {
   const found = (doc as Watched)[KEY];
   if (found) return found;
-  const presses: Presses = { pressing: false, waiting: new Map(), timer: undefined };
+  const presses: Presses = { pressing: false, waiting: new Map(), timer: undefined, waits: new Map() };
   (doc as Watched)[KEY] = presses;
+  // The control a click or a key presses, before its own handlers: an option of a box's list stands for its box, which
+  // outlives the list it closes.
+  const pressed = (event: Event) => {
+    let at = event.target as Element | null;
+    const list = at?.closest?.('[role="option"]') && at.closest('[role="listbox"]');
+    if (list && list.id) at = doc.querySelector(`[aria-controls="${list.id}"]`) ?? at;
+    const control = at?.closest?.(CONTROL);
+    if (control) presses.last = { control, at: Date.now() };
+  };
+  doc.addEventListener('click', pressed, true);
+  doc.addEventListener('keydown', (event) => ((event as KeyboardEvent).key === 'Enter' || (event as KeyboardEvent).key === ' ') && pressed(event), true);
   const wait = (ms: number) => {
     clearTimeout(presses.timer);
     presses.timer = setTimeout(ended, ms);
@@ -92,4 +107,63 @@ export function afterPress(doc: Document, who: object, act: () => void): void {
 /** Start watching presses in `doc`, so a box left by the first press already waits for it. */
 export function watchPresses(doc: Document): void {
   pressesOf(doc);
+}
+
+/** What a press is waited on in: a button, a link, a box (an option of its list stands for it). */
+const CONTROL = 'button, [role="button"], a[href], [role="combobox"]';
+/** How long after its press a control still stands for what asks: a press's handlers may wait a few turns first. */
+const PRESSED_MS = 1000;
+
+/**
+ * The control a person pressed just now in `doc`: the press its watch saw last, a moment ago at most — WebKit focuses no
+ * button it clicks — else the focus's.
+ */
+export function pressedControl(doc: Document | undefined): Element | null {
+  if (!doc) return null;
+  const last = pressesOf(doc).last;
+  if (last && last.control.isConnected && Date.now() - last.at < PRESSED_MS) return last.control;
+  return doc.activeElement?.closest(CONTROL) ?? null;
+}
+
+/**
+ * THE rule for a control a press waits on — a part on its way, then the app's answer (a link's record, a line's form):
+ * `aria-busy`, and a ring turning in its place from the press, where the eye is — over an icon's glyph, at the end of a
+ * name's words or of a box (its own buttons hidden meanwhile), a button's own ring at once. Never over the page, and
+ * nothing moves for it. Ended by what it hands back: as its wait ends, or as a dialog shows over the page
+ * (`dialogShown`). A second press of it meanwhile asks nothing more where the caller asks `pressing` first.
+ */
+export function pressWait(control: Element | null | undefined): () => void {
+  const doc = control?.ownerDocument;
+  const waits = doc && pressesOf(doc).waits;
+  if (!control || !doc || !waits || waits.has(control)) return () => undefined;
+  const box = control.matches('input, [role="combobox"]');
+  const holder = (box && control.parentElement) || control;
+  const way = box ? 'box' : control.classList.contains('fd-button') ? 'button' : (control.textContent ?? '').trim().length > 2 ? 'words' : 'icon';
+  const busy = !control.hasAttribute('aria-busy');
+  if (busy) control.setAttribute('aria-busy', 'true');
+  holder.setAttribute('data-fd-pressing', way);
+  // Fieldia's own controls: an app's own button, which asked for a dialog, is busy alone, its look its own.
+  const ring = way === 'button' || !holder.closest('.fd-form') ? null : doc.createElement('span');
+  if (ring) {
+    ring.className = 'fd-pressing';
+    ring.setAttribute('aria-hidden', 'true');
+    holder.append(ring);
+  }
+  const end = () => {
+    if (waits.get(control) !== end) return;
+    waits.delete(control);
+    if (busy) control.removeAttribute('aria-busy');
+    holder.removeAttribute('data-fd-pressing');
+    ring?.remove();
+  };
+  waits.set(control, end);
+  return end;
+}
+
+/** Whether a press waits on `control` now: a second press asks nothing more. */
+export const pressing = (control: Element | null | undefined): boolean => !!control?.ownerDocument && pressesOf(control.ownerDocument).waits.has(control);
+
+/** A dialog shown over the page: every press waiting in it is answered, its ring gone under the dialog. */
+export function dialogShown(doc: Document): void {
+  for (const end of [...pressesOf(doc).waits.values()]) end();
 }

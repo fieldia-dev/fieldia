@@ -71,6 +71,7 @@ export const tr: ChatterLabels = {
   search: 'Ara…',
   noOneFound: 'Kimse bulunamadı',
   couldNotSend: 'Gönderilmedi: {reason}',
+  notDone: 'Yapılmadı: {reason}',
   sendingAfterFile: '1 dosya hâlâ yükleniyor. Yükleme bitince gönderilecek.',
   sendingAfterFiles: '{n} dosya hâlâ yükleniyor. Yüklemeler bitince gönderilecek.',
   notSentFile: 'Gönderilmedi: {name} yüklenmedi. Yeniden deneyin ya da kaldırın.',

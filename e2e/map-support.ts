@@ -89,9 +89,15 @@ export async function stubMaps(page: Page, answers: { search?: PhotonPlace[]; re
 /** A field's map, by the field's layout id. */
 export const mapOf = (page: Page, nodeId: string) => page.locator(`[data-node="${nodeId}"] .fd-map-box`);
 
-/** Wait until a map has drawn its images. */
+/**
+ * Wait until a map is as a person sees it: its images drawn, its own wait over, and still. Drawn the first time, a
+ * skeleton covers the map until its places are in and it has been seen its minimum; the images come in under it, and on
+ * a busy machine the map stands still there long enough to look settled — a press, or a look for a district to point
+ * at, finds the skeleton (map-areas' Downtown, a suite under load).
+ */
 export async function mapReady(map: Locator) {
   await expect(map.locator('.leaflet-tile-loaded').first()).toBeVisible();
+  await expect(map).not.toHaveAttribute('aria-busy', 'true');
   await mapSettled(map);
 }
 

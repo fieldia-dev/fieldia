@@ -47,7 +47,12 @@ tapped; the words fit; light and dark both read.
    take a photo with the camera and pick two from the library; watch them upload. Then [a site visit's films and voice notes](https://fieldia.dev/demos/plain/?page=site-visit&record=1&skin=outlined):
    record a voice note (allow the microphone) and play it back. Then press Stop straight after Start: the dialog says
    nothing was recorded, never a note that cannot play; and record one of about 20 seconds: it plays back whole, from
-   its first word, and its length is shown (0.36's recorder clock starts when the phone's recorder does).
+   its first word, and its length is shown (0.36's recorder clock starts when the phone's recorder does). Then, on the
+   Android phone (a mid-range one, not a flagship), in [a clinic's before and after](https://fieldia.dev/demos/plain/?page=clinic-before-after&skin=outlined):
+   add a full-size photo from the library to After, press Crop and turn on it, turn it and press Apply. Judge the
+   pause as the photo is added and as Apply closes the dialog: each should feel at once, and a second or more is a
+   fail. From 0.37 a picture is encoded by the phone's own encoder, or at once after 0.2 s if that has not answered,
+   holding the page for that encode.
 7. **A code scanned** — [An injectable's lot](https://fieldia.dev/demos/plain/?page=clinic-treatment&record=1&skin=outlined):
    press Scan, allow the camera, scan a code from [the codes to scan](https://fieldia.dev/demos/samples/codes-to-scan.html)
    on another screen; then refuse the camera once and type the code instead.

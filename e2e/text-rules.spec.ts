@@ -42,7 +42,7 @@ async function mountOwn(page: Page, fields: Record<string, unknown>, children: u
       const host = document.createElement('div');
       if (locale === 'ar') host.setAttribute('dir', 'rtl');
       document.body.append(host);
-      const page = { fieldia: '0.1', id: 'own', title: 'Own', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'r', children: [{ type: 'section', id: 's', columns: 1, children }] } };
+      const page = { fieldia: '0.13', id: 'own', title: 'Own', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'r', children: [{ type: 'section', id: 's', columns: 1, children }] } };
       W.handle = W.Fieldia.mountViewer(host, { page, dataSource: W.Fieldia.createMemoryDataSource(), locale, skin: 'outlined' });
     },
     [fields, children, locale] as const
@@ -359,7 +359,7 @@ test.describe('a pattern', () => {
     await page.waitForFunction(() => 'Fieldia' in window);
     const said = await page.evaluate(() => {
       const W = window as any;
-      const broken = { fieldia: '0.1', id: 'p', data: { kind: 'responses' }, fields: { zip: { type: 'char', label: 'Zip', pattern: '[0-9' } }, layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'n', field: 'zip' }] } };
+      const broken = { fieldia: '0.13', id: 'p', data: { kind: 'responses' }, fields: { zip: { type: 'char', label: 'Zip', pattern: '[0-9' } }, layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'n', field: 'zip' }] } };
       const checked = W.Fieldia.checkPage(broken);
       let shown = '';
       try {

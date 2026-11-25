@@ -106,6 +106,11 @@ test('every deprecation is in the table, as the list says it — and the table h
   const later = deprecationProblems(changed('| `format.under-stamped` | 0.36 | 0.37 |', '| `format.under-stamped` | 0.36 | 0.38 |'), list);
   assert.deepEqual(later, ['format.under-stamped: the table says 0.36, 0.38, page authors; the list 0.36, 0.37, page authors']);
   assert.deepEqual(deprecationProblems(doc, list.filter((one) => one.id !== 'page.invalid')), ['page.invalid is in the table and not in the list']);
+  // Changed, or not: the row says it as the list does.
+  const unmade = list.map((one) => (one.id === 'page.invalid' ? { ...one, changed: undefined } : one));
+  assert.deepEqual(deprecationProblems(doc, unmade), ['page.invalid: the list says it is not changed yet: its row does not say it is']);
+  const made = list.map((one) => (one.id === 'core.page-invalid' ? { ...one, changed: true } : one));
+  assert.deepEqual(deprecationProblems(doc, made), ['core.page-invalid: the list says it is changed: its row starts "Changed in 0.38:"']);
 });
 
 test('the browsers CI runs are the ones this page names: Playwright\'s engines and versions, the smoke set, the jobs, the targets', () => {

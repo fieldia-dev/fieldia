@@ -63,15 +63,17 @@ export function pageReferences(page: Page, options: PageCheckOptions, sense?: Ch
 }
 
 /**
- * The check a page gets before it is drawn — what the viewer refuses, as 0.35's viewer refused it: its outline, then
- * every name and condition in it, the same as `validatePage` finds them (its warnings — a value of a kind a function
- * does not take — are said where pages are made, and stop nothing). It leaves out the key-by-key check of the format
- * and the settings held to themselves: the whole check (`checkPageWhole`, a part of its own, check-whole.ts) — which
- * gives `validatePage`'s verdict, and which the viewer runs after the first draw, saying what it finds in 0.36 and
- * refusing it from 0.37 (`page.invalid`). Run `validatePage` where pages are made or tested. A page that passes is
- * handed back as it is — one in an older format, brought up to date (`upgradePage`). A line's own form — a page of a
- * table's line fields — is checked with `parent`, the fields of the record the line is on, which its conditions read
- * as `parent`; `functions`, the app's own, which its expressions may call besides Fieldia's.
+ * The check a page gets before it is drawn — what the viewer refuses at once, as 0.35's viewer refused it: its outline,
+ * then every name and condition in it, the same as `validatePage` finds them (its warnings — a value of a kind a function
+ * does not take — are said where pages are made, and stop nothing). It leaves out the key-by-key check of the format and
+ * the settings held to themselves: the whole check (`checkPageWhole`, a part of its own, check-whole.ts), which gives
+ * `validatePage`'s verdict, and which every viewer runs as soon as the page is drawn, taking down a page it refuses and
+ * holding every write through the page until it has run (0.37, `page.invalid`). Run `validatePage` where pages are made
+ * or tested. A page that passes is handed back as it is — one in an older format, brought up to date (`upgradePage`). A
+ * line's own form — a page of a table's line fields — is checked with `parent`, the fields of the record the line is on,
+ * which its conditions read as `parent`; `functions`, the app's own, which its expressions may call besides Fieldia's.
+ * In the one-tag script the checks of what a part draws (a list's settings, a map's: owed-checks.ts) are owed until it
+ * came (`later`).
  */
 export function checkPage(given: unknown, options: PageCheckOptions = {}): PageValidation {
   const outline = pageOutline(given);

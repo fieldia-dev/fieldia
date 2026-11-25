@@ -1,6 +1,6 @@
 import type * as Leaflet from 'leaflet';
 import type { Value } from '@fieldia/core';
-import { formatNumber, guard, numberRules, refusalHint, stillShown, type Guard, type RefusalHint, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { formatNumber, guard, numberRules, ownWords, refusalHint, stillShown, type Guard, type RefusalHint, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { addressLine } from './address-line';
 import { asJson, isLatLng, parseCoordinate, parseCoordinatePair, readPoint, writePoint, type LatLng } from './geo';
 import { fill, mapLabels } from './labels';
@@ -56,13 +56,17 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     tools.className = 'fd-map-tools';
     const note = doc.createElement('p');
     note.className = 'fd-map-note';
+    note.id = `${id}-note`;
     note.setAttribute('aria-live', 'polite');
     note.hidden = true;
+    // What the note says of a coordinate that does not read, the field's error would say again under the map: once.
+    const once = ownWords(element, note, () => (note.hidden ? '' : (note.textContent ?? '')));
     const say = (words: string | null, tone?: 'error') => {
       note.textContent = words ?? '';
       note.hidden = !words;
       if (tone) note.dataset['tone'] = tone;
       else delete note.dataset['tone'];
+      once.said();
     };
 
     const box = createMapBox({
@@ -447,7 +451,9 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         // The latitude's box, when it is the one the field's label names, stays marked while its text is unread.
         target.setAttribute('aria-invalid', String(state.invalid || (target === lat && wrong[0] && !!unread())));
         target.setAttribute('aria-required', String(state.required));
-        if (state.describedBy) target.setAttribute('aria-describedby', state.describedBy);
+        // Its note, while it says why a coordinate does not read: in place of the field's error, which would say it again.
+        const described = [once.describedBy(state.describedBy), note.dataset['tone'] === 'error' && !note.hidden ? note.id : ''].filter(Boolean).join(' ');
+        if (described) target.setAttribute('aria-describedby', described);
         else target.removeAttribute('aria-describedby');
         lat.setAttribute('aria-required', String(state.required));
         showCoords();

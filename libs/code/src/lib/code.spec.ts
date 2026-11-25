@@ -38,6 +38,23 @@ async function mount(readonly = false) {
 }
 /** Replace the whole text, as typing over a selection would. */
 const replaceAll = (view: EditorView, text: string) => view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
+/**
+ * The places `words` are in sight under the field: each piece of text holding them whose element is drawn — none round it
+ * hidden, not words for a screen reader alone. One refusal is said once (0.37): the box's own words, or the field's error.
+ */
+function said(root: ParentNode, words: string): string[] {
+  const found: string[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+    const element = text.parentElement;
+    if (!element || !(text.nodeValue ?? '').includes(words) || element.closest('[hidden], [aria-hidden="true"], .fd-sr-only')) continue;
+    found.push(`${element.className}: ${text.nodeValue}`);
+  }
+  return found;
+}
+/** What `box` is described by that says `words`. */
+const describedWith = (box: Element, words: string) =>
+  (box.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean).map((id) => document.getElementById(id)).filter((element) => element?.textContent?.includes(words));
 
 describe('JSON in a code editor', () => {
   it('shows the value as indented JSON, in an editor named by the field’s label', async () => {
@@ -77,6 +94,33 @@ describe('JSON in a code editor', () => {
     expect(box.querySelector('.fd-code-bad-line')).toBeNull();
     expect(content.getAttribute('aria-invalid')).toBe('false');
     expect(form.getState().values['settings']).toEqual([]);
+  });
+
+  it('says where the JSON breaks once under the editor — as it is left, and as a save is refused — never again as the field’s error', async () => {
+    const { host, box, view, form } = await mount();
+    const content = box.querySelector('.cm-content') as HTMLElement;
+    content.focus();
+    replaceAll(view, '{ "badge_readers": 6, ');
+    await new Promise((done) => setTimeout(done, 600));
+    const away = document.body.appendChild(document.createElement('button'));
+    away.focus();
+    expect(form.getState().errors['settings']).toBe('Not valid JSON: line 1, column 23');
+    expect(said(host, 'Not valid JSON')).toEqual(['fd-error fd-code-error: Not valid JSON: line 1, column 23']);
+    expect(await form.save()).toBe(false);
+    expect(said(host, 'Not valid JSON')).toEqual(['fd-error fd-code-error: Not valid JSON: line 1, column 23']);
+    expect(describedWith(content, 'Not valid JSON')).toEqual([box.querySelector('.fd-code-error')]);
+    expect(content.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('says a number too long to keep as written in the very words the form keeps it with: one sentence under the editor', async () => {
+    const { host, box, view, form } = await mount();
+    replaceAll(view, '{ "badge": 12345678901234567890 }');
+    await new Promise((done) => setTimeout(done, 600));
+    const words = form.getState().unread['settings']?.message as string;
+    expect(words).toMatch(/^Not saved: the number 12345678901234567890 can’t be kept as written/);
+    expect((box.querySelector('.fd-code-error') as HTMLElement).textContent).toBe(words);
+    expect(await form.save()).toBe(false);
+    expect(said(host, 'can’t be kept as written')).toEqual([`fd-error fd-code-error: ${words}`]);
   });
 
   it('keeps text that is not JSON unread, with where it breaks: a save made meanwhile is refused, never made with the last good value', async () => {

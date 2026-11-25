@@ -61,6 +61,8 @@ export interface DesignerBar {
   element: HTMLElement;
   /** Why the last edit was refused, if it was. */
   issues: HTMLElement;
+  /** Why the store refused the draft's last save, if it did, with Try again: under the bar, after `issues`. */
+  unsaved: HTMLElement;
   update(state: DesignerState): void;
   destroy(): void;
 }
@@ -176,6 +178,13 @@ export function designerBar(
   const sized = view && 'ResizeObserver' in view ? new view.ResizeObserver(roomSoon) : null;
   sized?.observe(element);
   const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
+  // A save of the draft the store refused: said under the bar, why in its words, and Try again — never an edit that
+  // looks kept and is not. Its words written only as they change, so it is said once.
+  const unsavedWords = el('span', {});
+  const saveAgain = el('button', { type: 'button', class: 'fd-button fd-button-link' }, designer.words.looks.tryAgain);
+  saveAgain.addEventListener('click', () => void designer.saveAgain());
+  const unsaved = el('div', { class: 'fd-alert fd-tone-danger fd-designer-unsaved', role: 'alert', hidden: '' }, unsavedWords, saveAgain);
+  let unsavedSaid: string | null = null;
   // A refusal of words whose braces name no field: its fix beside it, as in Checks — the braces shown as written.
   const bracesFix = () => designer.checks().find((check) => check.fix?.action.kind === 'braces');
   const showBraces = el('button', { type: 'button', class: 'fd-button fd-designer-issues-fix' }, designer.words.checks.showBracesAsWritten);
@@ -222,6 +231,7 @@ export function designerBar(
   return {
     element,
     issues,
+    unsaved,
     update(state) {
       if (doc.activeElement !== title && title.value !== (state.page.title ?? '')) title.value = state.page.title ?? '';
       setHidden(undo, !state.canUndo);
@@ -232,6 +242,10 @@ export function designerBar(
       setHidden(issues, state.issues.length === 0);
       setText(issues, state.issues.join('\n'));
       if (state.issues.length && bracesFix()) issues.append(' ', showBraces);
+      const notSaved = state.notSaved === null ? null : designer.words.looks.failed(w.notSaved, state.notSaved);
+      setHidden(unsaved, notSaved === null);
+      if (notSaved !== unsavedSaid) unsavedWords.replaceChildren(...(notSaved === null ? [] : [el('bdi', {}, notSaved), ' ']));
+      unsavedSaid = notSaved;
     },
     destroy() {
       stopReading();

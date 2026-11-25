@@ -14,6 +14,7 @@ export const savedForms: DesignerWords['savedForms'] = {
   copy: (n) => (n === 1 ? 'Formulario guardado' : `Formulario guardado ${n}`),
   tile: 'Un formulario guardado',
   tileTip: 'Un formulario guardado: coloque uno de los formularios guardados de la aplicación, como una dirección',
+  couldNotList: 'No se pudieron listar los formularios guardados',
   menuNote: (any) =>
     any
       ? 'Se coloca entero, con sus respuestas aparte; se cambia en su propia página.'

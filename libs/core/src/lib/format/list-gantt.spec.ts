@@ -25,7 +25,7 @@ const fields = {
 };
 
 const page = (gantt: Record<string, unknown>, more: Record<string, unknown> = {}) => ({
-  fieldia: '0.1',
+  fieldia: '0.13',
   id: 'tasks',
   data: { kind: 'record', model: 'fitout.task' },
   fields,

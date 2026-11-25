@@ -128,6 +128,9 @@ function onItsWay(doc: Document, src: string): HTMLScriptElement | undefined {
   return [...doc.scripts].find((one) => one.src === src);
 }
 
+/** Whether a part can be asked for here: a page, and the address this script came from, beside which its parts are. */
+export const partsCanCome = (): boolean => !!base && typeof document !== 'undefined';
+
 /** A part's code: at once once it has come, else its script added to the page, beside the main one. */
 export function loadPart(name: string): Promise<unknown> {
   if (made.has(name)) return Promise.resolve(made.get(name));

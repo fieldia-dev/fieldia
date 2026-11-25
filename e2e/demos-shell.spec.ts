@@ -3,6 +3,7 @@ import { expect, test } from './fixtures';
 import { DEMOS, FRAMEWORKS, GITHUB, OPENED, demoHref, sourceOf, stepParts, stepText } from '../demos/catalog.mjs';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { expectNoSidewaysScroll, screen } from './support';
+import { FORMAT_VERSION } from '../libs/core/src/lib/format/version';
 
 /**
  * The frame around every demo: the header for everyone; the menu of all
@@ -157,7 +158,8 @@ test.describe('the demo frame', () => {
     // Coloured as it reads: a key apart from its value, in colours of their own.
     const colour = (selector: string) => code.locator(selector).first().evaluate((el) => getComputedStyle(el).color);
     await expect(code.locator('.tok-key').first()).toHaveText('"fieldia"');
-    await expect(code.locator('.tok-string').first()).toHaveText('"0.13"');
+    // The page as the form reads it: in the format this Fieldia reads.
+    await expect(code.locator('.tok-string').first()).toHaveText(`"${FORMAT_VERSION}"`);
     expect(await colour('.tok-key')).not.toBe(await colour('.tok-string'));
     expect(await colour('.tok-string')).not.toBe(await code.locator('code').evaluate((el) => getComputedStyle(el).color));
     await code.getByRole('tab', { name: 'React' }).click();

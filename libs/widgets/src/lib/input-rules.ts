@@ -60,14 +60,80 @@ export interface RefusalHint {
   /** Show these words, said politely. */
   show(words: string): void;
   hide(): void;
-  /** The box's own aria-describedby (`base`) with the hint's while it shows. */
+  /**
+   * The box's own aria-describedby (`base`: the ids its drawer hands the widget, `WidgetState.describedBy`) with the
+   * hint's while it shows — and without the field's error the hint says now, out of sight (`ownWords`).
+   */
   describedBy(base: string | undefined): string | undefined;
+}
+
+/** On a field's error put out of sight because the box's own words say it (`ownWords`): it is not described by. */
+const SAID_BY_BOX = 'data-said-by-box';
+
+/** A box's own words — its refusal hint, a note of its own — as they meet the field's error its drawer shows for it. */
+export interface OwnWords {
+  /** `base`, the ids the drawer hands the widget for the box, without the field's error these words say now. */
+  describedBy(base: string | undefined): string | undefined;
+  /** `current`, the box's aria-describedby, as the words changed between drawings: the error given back named again. */
+  redescribe(current: string | undefined): string | undefined;
+  /** The words changed — shown, or gone: the field's error that repeats them put out of sight, or given back. */
+  said(): void;
+}
+
+/**
+ * One refusal, said once under its box (0.37; a 0.36.1 report: "At: nothing is called “08:15”; pick one from the list.
+ * At still holds 08:30" under a box, and under it again as its field's error, "At: nothing is called “08:15”; pick one
+ * from the list"). A box that says why it did not take what was typed says it in full, right under itself, politely as
+ * it comes, at whatever moment it finds it — as the box is left, as a name looked up comes back, as a save reads it —
+ * and the form keeps the same words as the field's error, which its drawer shows under the box too: a field on a page,
+ * in a dialog or a saved form placed on one, a table's cell, a card. So while the box's own words (`own`, saying
+ * `words()`) say it, the field's error that would say it again — one the drawer names among the ids it hands the widget
+ * (`WidgetState.describedBy`) and whose words the box's own begin with — is out of sight and out of the box's
+ * aria-describedby, and it is given back once they go (the next key, another record). The form's errors are its own:
+ * a save is refused as before, the box marked invalid, its announcer naming the field. Where the drawer names no error
+ * (a grid's cell being changed, whose problems show beside the table) the box's words are the only ones, and stay.
+ */
+export function ownWords(box: HTMLElement, own: HTMLElement, words: () => string): OwnWords {
+  let base = '';
+  /** The field's errors these words put out of sight. */
+  const quiet = new Set<HTMLElement>();
+  const named = (id: string) => (box.getRootNode() as Partial<Document>).getElementById?.(id);
+  const kept = (ids: string) => [...new Set(ids.split(' '))].filter((id) => id && !named(id)?.hasAttribute(SAID_BY_BOX)).join(' ') || undefined;
+  const said = () => {
+    // Only while they are in the page: words left behind by a box taken away (a grid's cell closed) are in sight nowhere.
+    const now = own.isConnected ? words().trim() : '';
+    // Given back as its drawer drew it — shown while it has words — unless they still say it.
+    for (const error of quiet) {
+      quiet.delete(error);
+      error.removeAttribute(SAID_BY_BOX);
+      error.hidden = !error.textContent?.trim();
+    }
+    if (now)
+      for (const id of base.split(' ')) {
+        const error = id ? named(id) : null;
+        const text = error?.textContent?.trim();
+        if (!error || !text || !now.startsWith(text)) continue;
+        quiet.add(error);
+        error.setAttribute(SAID_BY_BOX, '');
+        error.hidden = true;
+      }
+  };
+  return {
+    describedBy(given) {
+      base = given ?? '';
+      said();
+      return kept(base);
+    },
+    redescribe: (current) => kept(`${base} ${current ?? ''}`),
+    said,
+  };
 }
 
 /**
  * A hint for `box`, placed right after `anchor` (the box itself, or what its
  * widget wraps it in) the first time the box is entered: in the page by then,
- * and before anything is said, so a screen reader hears it.
+ * and before anything is said, so a screen reader hears it. While it says what
+ * the field's error under the box would say again, it is said once (`ownWords`).
  */
 export function refusalHint(box: HTMLElement, anchor: HTMLElement = box): RefusalHint {
   const document = box.ownerDocument;
@@ -85,10 +151,11 @@ export function refusalHint(box: HTMLElement, anchor: HTMLElement = box): Refusa
   // Shown or hidden as a press leaves the box, the words wait for the press to end: nothing under the pointer moves.
   watchPresses(document);
   let words = '';
+  const once = ownWords(box, element, () => words);
   const describe = () => {
     const tokens = (box.getAttribute('aria-describedby') ?? '').split(/\s+/).filter((token) => token && token !== id);
     if (words) tokens.push(id);
-    setAttr(box, 'aria-describedby', tokens.join(' ') || null);
+    setAttr(box, 'aria-describedby', once.redescribe(tokens.join(' ')) ?? null);
   };
   return {
     element,
@@ -107,6 +174,9 @@ export function refusalHint(box: HTMLElement, anchor: HTMLElement = box): Refusa
         // Floating over a table's cell (styles.ts), where the table cuts it off below its last line: above the box instead.
         element.removeAttribute('data-above');
         if (cutOff(element)) element.setAttribute('data-above', '');
+        // The field's error that would say it again, out of sight with them: one sentence, said once.
+        once.said();
+        describe();
       });
       describe();
     },
@@ -116,10 +186,12 @@ export function refusalHint(box: HTMLElement, anchor: HTMLElement = box): Refusa
       afterPress(document, element, () => {
         element.textContent = '';
         element.hidden = true;
+        once.said();
+        describe();
       });
       describe();
     },
-    describedBy: (base) => [base, words ? id : ''].filter(Boolean).join(' ') || undefined,
+    describedBy: (base) => [once.describedBy(base), words ? id : ''].filter(Boolean).join(' ') || undefined,
   };
 }
 

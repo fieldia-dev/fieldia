@@ -119,10 +119,26 @@ function valueConditions(field: string, value: FieldFacet['values'][number], day
 }
 
 /**
- * The filter a list's facets make: the values of one field any of them, named filters any of them, the facets all
- * together. A period — a named filter's, a custom filter's — is counted by `periods`, as the list counts days (its
- * clock, its week, its time zone); a custom filter without it keeps what it was counted as. A field's range — one
- * chip, "Price: 1,000,000 – 3,000,000" — reaches the source as `>=` and `<=`, a date and time's days counted by `days`.
+ * Named filters by id in their groups (`ListFilter.group`), those that name none one group of their own: each group in
+ * the order its first filter comes in `ids` — the order they were turned on, as Odoo adds a facet for a group; the
+ * list's own order for its menu — and its filters in that order. One group where the list's filters name none, as
+ * before 0.37. An id the list does not have is with those that name none.
+ */
+export function filterGroups(ids: readonly string[], list: ListNode): string[][] {
+  const groups = new Map<string, string[]>();
+  for (const id of ids) {
+    const group = list.filters?.find((filter) => filter.id === id)?.group ?? '';
+    groups.set(group, [...(groups.get(group) ?? []), id]);
+  }
+  return [...groups.values()];
+}
+
+/**
+ * The filter a list's facets make: the values of one field any of them, named filters any of each group's (Odoo's
+ * filters between separators) and every group, the facets all together. A period — a named filter's, a custom
+ * filter's — is counted by `periods`, as the list counts days (its clock, its week, its time zone); a custom filter
+ * without it keeps what it was counted as. A field's range — one chip, "Price: 1,000,000 – 3,000,000" — reaches the
+ * source as `>=` and `<=`, a date and time's days counted by `days`.
  */
 export function facetsToFilter(facets: readonly Facet[], list: ListNode, periods?: (period: FilterPeriod) => ResolvedFilter[], days?: RangeDays): ResolvedFilter[] {
   const filter: ResolvedFilter[] = [];
@@ -132,13 +148,16 @@ export function facetsToFilter(facets: readonly Facet[], list: ListNode, periods
       if (each.length === 1) filter.push(...each[0]);
       else if (each.length > 1) filter.push({ any: each.map((conditions) => (conditions.length === 1 ? conditions[0] : { all: conditions })) });
     } else if (facet.kind === 'filters') {
-      // A list's own filters have no valueFrom: their conditions are already values.
-      const chosen = facet.ids
-        .map((id) => list.filters?.find((f) => f.id === id))
-        .map((named) => [...((named?.filter ?? []) as ResolvedFilter[]), ...(named?.period && periods ? periods(named.period) : [])])
-        .filter((items) => items.length);
-      if (chosen.length === 1) filter.push(...chosen[0]);
-      else if (chosen.length > 1) filter.push({ any: chosen.map((items) => (items.length === 1 ? items[0] : { all: items })) });
+      // Each group any of its filters, the groups side by side. A list's own filters have no valueFrom: their
+      // conditions are already values.
+      for (const group of filterGroups(facet.ids, list)) {
+        const chosen = group
+          .map((id) => list.filters?.find((f) => f.id === id))
+          .map((named) => [...((named?.filter ?? []) as ResolvedFilter[]), ...(named?.period && periods ? periods(named.period) : [])])
+          .filter((items) => items.length);
+        if (chosen.length === 1) filter.push(...chosen[0]);
+        else if (chosen.length > 1) filter.push({ any: chosen.map((items) => (items.length === 1 ? items[0] : { all: items })) });
+      }
     } else if (facet.kind === 'custom') {
       filter.push(...(facet.period && periods ? periods(facet.period) : facet.filter));
     }

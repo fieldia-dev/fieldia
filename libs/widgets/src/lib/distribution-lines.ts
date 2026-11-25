@@ -60,6 +60,8 @@ export const distributionWidget: WidgetFactory = (context) => {
   const element = make('div', { id, class: 'fd-distribution', role: 'group' }, make('div', { class: 'fd-lines-scroll' }, table), add, off);
   let rows: Row[] = [];
   let readonly = false;
+  /** The ids the field's drawer describes it by (its error among them): an account's refusal says them once. */
+  let described: string | undefined;
   // A share is a per cent of 0 or more, with two places at most; "25%" and "٢٥٪" read too.
   const shareBox: NumberBox & { percent: boolean } = { label: words.share, locale, labels, limits: () => ({ min: 0, places: 2, percent: true }), percent: true };
   /** The share and account boxes' unread text is the field's: Save refuses while one holds any. */
@@ -203,7 +205,9 @@ export const distributionWidget: WidgetFactory = (context) => {
     setHidden(off, !unread && !wrong);
     setHidden(add, readonly);
     for (const row of rows) {
-      row.account.update({ value: row.key ? { id: row.key, label: nameOf(row.key) } : null, values: {}, readonly, required: false, invalid: false });
+      // An account's name that names none is said under its box, once: the warning under the lines and the field's error,
+      // which say it again, out of sight meanwhile (`ownWords`).
+      row.account.update({ value: row.key ? { id: row.key, label: nameOf(row.key) } : null, values: {}, readonly, required: false, invalid: false, ...(row.accountUnread ? { describedBy: [described, off.id].filter(Boolean).join(' ') } : {}) });
       // A box holding text that does not read keeps it, marked, until it is put right.
       const text = row.unread ? row.unread.text : formatNumber(row.share, Number.isInteger(row.share) ? 0 : 2, locale);
       if (document.activeElement !== row.input && row.input.value !== text) row.input.value = text;
@@ -225,6 +229,7 @@ export const distributionWidget: WidgetFactory = (context) => {
       }),
     update(state) {
       readonly = state.readonly;
+      described = state.describedBy;
       const shares = sharesOf(state.value);
       // Lines follow the value: those it holds, in its order, and a new one still without its account.
       const same = shares.length === rows.filter((row) => row.key).length && shares.every(([key, share], i) => rows.filter((row) => row.key)[i]?.key === key && rows.filter((row) => row.key)[i]?.share === share);

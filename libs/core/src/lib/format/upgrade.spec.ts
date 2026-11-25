@@ -69,7 +69,7 @@ describe('upgradePage', () => {
   });
 
   it('hands back a page newer than this Fieldia, or of no known format, as it is: the checks say why', () => {
-    for (const version of ['0.14', '1.0', '0.6', 'one', undefined]) {
+    for (const version of ['0.15', '1.0', '0.6', 'one', undefined]) {
       const odd = { ...page(), fieldia: version };
       expect(upgradePage(odd, HISTORY)).toBe(odd);
     }
@@ -80,8 +80,8 @@ describe('upgradePage', () => {
 
 describe('the format in the checks', () => {
   it('a page newer than this Fieldia: checkPage and validatePage say to update Fieldia', () => {
-    const newer = { ...page(), fieldia: '0.14' };
-    const said = `this page is in format 0.14, newer than this Fieldia reads (${FORMAT_VERSION}): update Fieldia to show it`;
+    const newer = { ...page(), fieldia: '0.15' };
+    const said = `this page is in format 0.15, newer than this Fieldia reads (${FORMAT_VERSION}): update Fieldia to show it`;
     expect(checkPage(newer)).toEqual({ ok: false, issues: [{ path: 'fieldia', message: said }] });
     const validated = validatePage(newer);
     expect(validated.ok).toBe(false);
@@ -120,6 +120,9 @@ describe('the format in the checks', () => {
     expect(compareFormats('0.13', '0.12')).toBeGreaterThan(0);
     expect(compareFormats('0.12', '0.13')).toBeLessThan(0);
     expect(compareFormats('0.13', '0.1')).toBeGreaterThan(0);
+    expect(compareFormats('0.14', '0.13')).toBeGreaterThan(0);
+    expect(compareFormats('0.13', '0.14')).toBeLessThan(0);
+    expect(compareFormats('0.14', '0.9')).toBeGreaterThan(0);
     expect(compareFormats('1.0', '0.21')).toBeGreaterThan(0);
     expect(compareFormats('0.1', '0.1')).toBe(0);
     expect(compareFormats('0.1', 'x')).toBeNull();
@@ -148,7 +151,7 @@ describe('a page from 0.22 or 0.23 (format 0.2)', () => {
     const given = { fieldia: '0.2', id: 'kept', data: { kind: 'responses' }, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.2');
-    expect(read).toMatchObject({ fieldia: '0.13' });
+    expect(read).toMatchObject({ fieldia: '0.14' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });
@@ -162,7 +165,7 @@ describe('a page from 0.24 (format 0.3)', () => {
     const given = { fieldia: '0.3', id: 'kept', data: { kind: 'record', model: 'm' }, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.3');
-    expect(read).toMatchObject({ fieldia: '0.13' });
+    expect(read).toMatchObject({ fieldia: '0.14' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });
@@ -176,7 +179,7 @@ describe('a page from 0.25 (format 0.4)', () => {
     const given = { fieldia: '0.4', id: 'kept', data: { kind: 'record', model: 'm' }, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.4');
-    expect(read).toMatchObject({ fieldia: '0.13' });
+    expect(read).toMatchObject({ fieldia: '0.14' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });
@@ -190,7 +193,7 @@ describe('a page from 0.26 (format 0.5)', () => {
     const given = { fieldia: '0.5', id: 'kept', records: { one: 'customer', other: 'customers' }, data: { kind: 'record', model: 'm' }, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.5');
-    expect(read).toMatchObject({ fieldia: '0.13' });
+    expect(read).toMatchObject({ fieldia: '0.14' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });
@@ -205,7 +208,7 @@ describe('a page from 0.27 (format 0.6)', () => {
     const given = { fieldia: '0.6', id: 'kept', data: { kind: 'responses' }, endings, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.6');
-    expect(read).toMatchObject({ fieldia: '0.13' });
+    expect(read).toMatchObject({ fieldia: '0.14' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });
@@ -219,7 +222,7 @@ describe('a page from 0.28 (format 0.7)', () => {
     const given = { fieldia: '0.7', id: 'kept', data: { kind: 'record', model: 'm' }, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.7');
-    expect(read).toMatchObject({ fieldia: '0.13' });
+    expect(read).toMatchObject({ fieldia: '0.14' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });
@@ -233,7 +236,7 @@ describe('a page from 0.29 (format 0.8)', () => {
     const given = { fieldia: '0.8', id: 'kept', data: { kind: 'record', model: 'm' }, fields, layout };
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.8');
-    expect(read).toMatchObject({ fieldia: '0.13' });
+    expect(read).toMatchObject({ fieldia: '0.14' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(validatePage(given)).toMatchObject({ ok: true });
@@ -245,10 +248,10 @@ describe('a page from 0.30 (format 0.9)', () => {
     const fields = { name: { type: 'char', label: 'Name' } };
     const layout = { type: 'sheet', id: 'sheet', toolbar: { menu: [{ id: 'm-sep', type: 'divider' }, { id: 'm-copy', label: 'Copy link', action: 'copy-link' }] }, children: [{ type: 'field', id: 'n', field: 'name' }] };
     const given = { fieldia: '0.9', id: 'kept', data: { kind: 'record', model: 'm' }, fields, layout };
-    expect(formatProblem('0.9')).toBe('this page is in format 0.9: upgradePage(page) brings it to 0.13');
+    expect(formatProblem('0.9')).toBe('this page is in format 0.9: upgradePage(page) brings it to 0.14');
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.9');
-    expect(read).toMatchObject({ fieldia: '0.13' });
+    expect(read).toMatchObject({ fieldia: '0.14' });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(checkPage(given)).toMatchObject({ ok: true });
@@ -262,10 +265,10 @@ describe('a page from 0.31 (format 0.10)', () => {
     const layout = { type: 'sheet', id: 'sheet', children: [{ type: 'field', id: 'p', field: 'phone', widget: 'phone', options: { country: 'EG' } }] };
     const given = { fieldia: '0.10', id: 'kept', data: { kind: 'record', model: 'm' }, phone: { shown: 'national' }, fields, layout };
     expect(compareFormats('0.10', FORMAT_VERSION)).toBeLessThan(0);
-    expect(formatProblem('0.10')).toBe('this page is in format 0.10: upgradePage(page) brings it to 0.13');
+    expect(formatProblem('0.10')).toBe('this page is in format 0.10: upgradePage(page) brings it to 0.14');
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.10');
-    expect(read).toMatchObject({ fieldia: '0.13', phone: { shown: 'national' } });
+    expect(read).toMatchObject({ fieldia: '0.14', phone: { shown: 'national' } });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(checkPage(given)).toMatchObject({ ok: true });
@@ -282,10 +285,10 @@ describe('a page from 0.32 (format 0.11)', () => {
     const layout = { type: 'list', id: 'l', columns: ['name'] };
     const given = { fieldia: '0.11', id: 'kept', data: { kind: 'record', model: 'm' }, phone: { countries: 'native' }, fields, layout };
     expect(compareFormats('0.11', FORMAT_VERSION)).toBeLessThan(0);
-    expect(formatProblem('0.11')).toBe('this page is in format 0.11: upgradePage(page) brings it to 0.13');
+    expect(formatProblem('0.11')).toBe('this page is in format 0.11: upgradePage(page) brings it to 0.14');
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.11');
-    expect(read).toMatchObject({ fieldia: '0.13', phone: { countries: 'native' } });
+    expect(read).toMatchObject({ fieldia: '0.14', phone: { countries: 'native' } });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(checkPage(given)).toMatchObject({ ok: true });
@@ -303,16 +306,37 @@ describe('a page from 0.33 (format 0.12)', () => {
     const layout = { type: 'list', id: 'l', columns: ['name'], loading: { refresh: 'dim' } };
     const given = { fieldia: '0.12', id: 'kept', data: { kind: 'record', model: 'm' }, loading: { first: 'spinner' }, fields, layout };
     expect(compareFormats('0.12', FORMAT_VERSION)).toBeLessThan(0);
-    expect(formatProblem('0.12')).toBe('this page is in format 0.12: upgradePage(page) brings it to 0.13');
+    expect(formatProblem('0.12')).toBe('this page is in format 0.12: upgradePage(page) brings it to 0.14');
     const read = upgradePage(given);
     expect(given.fieldia).toBe('0.12');
-    expect(read).toMatchObject({ fieldia: '0.13', loading: { first: 'spinner' } });
+    expect(read).toMatchObject({ fieldia: '0.14', loading: { first: 'spinner' } });
     expect(read.fields).toBe(fields);
     expect(read.layout).toBe(layout);
     expect(checkPage(given)).toMatchObject({ ok: true });
     expect(validatePage(given)).toMatchObject({ ok: true });
     // What 0.13 added: a field never kept in a draft.
     const now = { ...given, fieldia: FORMAT_VERSION, fields: { ...fields, pin: { type: 'char', label: 'PIN', secret: true } } };
+    expect(checkPage(now)).toMatchObject({ ok: true });
+    expect(validatePage(now)).toMatchObject({ ok: true });
+  });
+});
+
+describe('a page from 0.34, 0.35 or 0.36 (format 0.13)', () => {
+  it('is read as it is, 0.14 having only added: its version moved on, its own objects kept, and it does what it did', () => {
+    const fields = { name: { type: 'char', label: 'Name' }, state: { type: 'selection', label: 'Status', default: 'draft', options: [{ value: 'draft', label: 'Draft' }, { value: 'posted', label: 'Posted' }] }, pin: { type: 'char', label: 'PIN', secret: true } };
+    const layout = { type: 'list', id: 'l', columns: ['name', 'state'], filters: [{ id: 'draft', label: 'Draft', filter: [{ field: 'state', op: '=', value: 'draft' }] }, { id: 'posted', label: 'Posted', filter: [{ field: 'state', op: '=', value: 'posted' }] }] };
+    const given = { fieldia: '0.13', id: 'kept', data: { kind: 'record', model: 'm' }, fields, layout };
+    expect(compareFormats('0.13', FORMAT_VERSION)).toBeLessThan(0);
+    expect(formatProblem('0.13')).toBe('this page is in format 0.13: upgradePage(page) brings it to 0.14');
+    const read = upgradePage(given);
+    expect(given.fieldia).toBe('0.13');
+    expect(read).toMatchObject({ fieldia: '0.14' });
+    expect(read.fields).toBe(fields);
+    expect(read.layout).toBe(layout);
+    expect(checkPage(given)).toMatchObject({ ok: true });
+    expect(validatePage(given)).toMatchObject({ ok: true });
+    // What 0.14 added: a field a copy does not keep, and filters in groups.
+    const now = { ...given, fieldia: FORMAT_VERSION, fields: { ...fields, state: { ...fields.state, copy: false } }, layout: { ...layout, filters: layout.filters.map((filter) => ({ ...filter, group: 'state' })) } };
     expect(checkPage(now)).toMatchObject({ ok: true });
     expect(validatePage(now)).toMatchObject({ ok: true });
   });

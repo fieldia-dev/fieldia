@@ -36,6 +36,27 @@ export const replay: DemoReplay = {
       },
     },
     {
+      says: 'Read the help under Greeting: the template’s {customer} is shown as written, braces and all',
+      async run({ page, see }) {
+        const greeting = part(page, 'f-greeting');
+        // The page writes it `\{customer}`: shown as written, the backslash gone — no field "customer" asked for, and
+        // the page drawn, never refused (the replay fails on its console's "This page cannot be shown").
+        await see(greeting.locator('.fd-help')).toHaveText('Your reply opens with these words, then the buyer’s first name, where the agency’s template says {customer}. A space at their end is kept.');
+        await see(greeting.getByRole('textbox', { name: 'Greeting' })).toHaveValue('Dear ');
+      },
+    },
+    {
+      says: 'Change Greeting to “Hello ”, a space at its end, and leave the box: the space stays',
+      async run({ page, press, type, see }) {
+        const box = part(page, 'f-greeting').getByRole('textbox', { name: 'Greeting' });
+        await type(box, 'Hello ', { clear: true });
+        // Left for the reply's box, as a person moves on: a box trims its ends as it is left; this one keeps them.
+        await press(part(page, 'f-reply').getByRole('textbox', { name: 'Your reply' }));
+        await see(box).not.toBeFocused();
+        await see(box).toHaveValue('Hello ');
+      },
+    },
+    {
       says: 'Press Draft under Your reply: a reply to Hana for a villa in New Cairo is proposed under the box',
       async run({ page, press, keys, see }) {
         const reply = part(page, 'f-reply');
@@ -43,12 +64,13 @@ export const replay: DemoReplay = {
         await press(reply.getByRole('button', { name: 'Draft' }));
         const proposed = proposalOf(page, 'f-reply');
         await see(proposed).toContainText('Proposed text');
-        await see(proposed.locator('.fd-proposal-text')).toContainText('Dear Hana,');
+        // The greeting as it was typed, its space kept: "Hello Hana," — never "HelloHana,".
+        await see(proposed.locator('.fd-proposal-text')).toContainText('Hello Hana,');
         await see(proposed.locator('.fd-proposal-text')).toContainText('Thank you for your enquiry about a villa in New Cairo with 4 bedrooms, up to EGP 15,000,000.');
         await see(proposed).toContainText('Stand-in AI, no model: written from this record’s fields by a template.');
         await see(box).toHaveValue('');
         await press(proposed.getByRole('button', { name: 'Accept' }));
-        await see(box).toHaveValue(/^Dear Hana,\n\nThank you for your enquiry about a villa in New Cairo/);
+        await see(box).toHaveValue(/^Hello Hana,\n\nThank you for your enquiry about a villa in New Cairo/);
         await see(box).toHaveValue(/Riverside Realty$/);
         // A word changed: the agency's last word put as the agent writes it.
         await press(box, { position: await atTheEnd(box) });

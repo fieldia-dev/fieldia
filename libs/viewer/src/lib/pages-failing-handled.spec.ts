@@ -9,8 +9,8 @@ import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
  * asks whether the app has a page, to show its Open), its Open, a tag's, a related list's rows and New, the app's own
  * way of opening a related record (`open: 'app'`), and the pager's next record. Each press can be tried again.
  *
- * Promises here are kept as Angular's zone keeps them (testing/zone-promises.ts: a refusal with no handler by the next
- * microtask is said); one of the engine's own left unhandled fails the test (jest). The app answers with the zone's
+ * Promises here are kept as Angular's zone keeps them (testing/zone-promises.ts: a refusal with no handler once the
+ * zone's microtasks have drained is said — before a native `await` queued after them); one of the engine's own left unhandled fails the test (jest). The app answers with the zone's
  * promise or with the engine's own (an `import()`, an async function Angular did not compile): in a zone, `instanceof
  * Promise` is true of the zone's alone, so a page that comes later is known by its `then`.
  */
@@ -156,7 +156,7 @@ describe('a link whose record’s page cannot come', () => {
       const opened = dialogs.openRecord('partner', { recordId: 1, title: 'Nile Traders' });
       await settle();
       const box = dialog() as HTMLElement;
-      expect(box.textContent).toContain('This form cannot be shown: its page has mistakes.');
+      expect(box.textContent).toContain('This form is not available right now.');
       if (key === '×') (box.querySelector('.fd-dialog-close') as HTMLButtonElement).click();
       else box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       await expect(opened).resolves.toBeNull();

@@ -148,8 +148,9 @@ export { THEMES, type Theme } from './lib/format/themes';
 export { SKINS, type Skin } from './lib/format/themes';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
 export { checkPage, type PageCheckOptions } from './lib/format/check-page';
-// The whole check — `validatePage`'s verdict without zod — in a part of its own, fetched after a page's first draw (0.36).
-export { checkPageWhole, pageCheckPart, pageInvalid, type PageCheckPart, type PageInvalid } from './lib/format/page-check';
+// The whole check — `validatePage`'s verdict without zod — in a part of its own, which every viewer runs as soon as a
+// page is drawn, taking down a page it refuses (0.37); the one-tag script asks for it once the page is parsed.
+export { askAfterCheck, askForCheck, checkPageWhole, pageCheckPart, pageInvalid, type PageCheckPart, type PageInvalid } from './lib/format/page-check';
 export { fillValues, literalWords, plainWords, READ_WORDS, splitValues, valuesIn } from './lib/format/words';
 export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
@@ -301,11 +302,13 @@ export { saveRefused, saveProblemOf, ConflictError, loadedRecord, loadedRecordOf
 export { drafts, outbox, ownerOf } from './lib/record/browser-kept';
 // A record's values as its source sent them, read as its fields hold theirs: what every load goes through.
 export { valuesFromSource, type FromSource } from './lib/record/from-source';
-// One deadline for every request a person waits on: the viewer's lists and its form's, one source (deadline.ts).
-export { SEND_TIMEOUT_MS, withDeadlines } from './lib/record/deadline';
+// One deadline for every request a person waits on: the viewer's lists and its form's, one source (deadline.ts). Every
+// promise the app gives Fieldia handled the moment it is given, the engine's own (`answerOf`): an Angular zone never
+// says one unhandled that Fieldia awaits a microtask late.
+export { answerOf, SEND_TIMEOUT_MS, withDeadlines } from './lib/record/deadline';
 export { matchesFilter } from './lib/record/filter';
 export { DATE_PERIODS, DATE_INTERVALS, addDays, dayStarts, spanStart, type DatePeriod, type DateInterval, type DayCount } from './lib/record/periods';
-export { suggestions, facetsToFilter, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
+export { suggestions, facetsToFilter, filterGroups, groupByFields, type Facet, type RangeDays, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryAssist, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 export type { MemoryApprovalRoute } from './lib/record/memory-approvals';
 export type { MemoryCodes, SentCodeKept } from './lib/record/memory-codes';
@@ -415,5 +418,7 @@ export { callsPartFunctions, functionsPart, type FunctionsPart } from './lib/exp
 export { recordLivePart, type RecordLivePart } from './lib/record/live-later';
 // A press said with Undo, and taken back: loaded with a page whose buttons offer it, or as an answer first brings one.
 export { pressUndoPart, type PressUndoPart } from './lib/record/undo-later';
+// A page's steps run, in the acts part with what draws its dialogs and questions (the viewer's half): asked for right after the whole check.
+export { formActsPart, type FormActsPart } from './lib/record/acts-later';
 // The checks a page owes a part of the one-tag script (`PageValidation.later`): a map's come in a part of their own.
 export { mapChecksPart } from './lib/format/later-checks';

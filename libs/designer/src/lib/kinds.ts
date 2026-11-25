@@ -77,7 +77,8 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
     id: 'status',
     label: 'Status steps',
     group: 'more',
-    field: (label, w = en) => ({ type: 'selection', label, options: [{ value: 'draft', label: w.defaults.draft }, { value: 'confirmed', label: w.defaults.confirmed }, { value: 'done', label: w.defaults.done }] }),
+    // Not kept by a copy of the record: a copy of a confirmed order starts as a new one does (the panel's "Copied with the record").
+    field: (label, w = en) => ({ type: 'selection', label, options: [{ value: 'draft', label: w.defaults.draft }, { value: 'confirmed', label: w.defaults.confirmed }, { value: 'done', label: w.defaults.done }], copy: false }),
     widget: 'statusbar',
   },
   { id: 'rich-text', label: 'Rich text', group: 'more', field: (label) => ({ type: 'html', label }) },

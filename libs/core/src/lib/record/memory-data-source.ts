@@ -85,6 +85,8 @@ import { wait, type Scheduler } from './scheduler';
 import { memoryKept, type MemoryKept } from './memory-kept';
 import { memoryApprovals, type MemoryApprovalRoute } from './memory-approvals';
 import { memoryViews } from './memory-views';
+import { copiedValues } from './copied-values';
+import { dayIn } from './zones';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 export interface MemoryDataSourceOptions {
@@ -885,9 +887,10 @@ export function memorySource(options: MemoryDataSourceOptions, kept: MemoryKept)
       if (!stored) throw new Error(`No ${request.model} record with id ${request.id}`);
       allowed(permissions(request.model, request.id), 'duplicate');
       const id = nextId(request.model);
-      const copy = structuredCopy(stored);
+      // What a field that says `copy: false` holds is a new record's, as a server's copy=False (copied-values.ts).
+      const copy = copiedValues(stored, request.fields ?? {}, dayIn(new Date()));
       const name = options.labelField?.[request.model] ?? 'name';
-      if (typeof copy[name] === 'string') copy[name] = `${copy[name]}${options.copySuffix ?? ' (copy)'}`;
+      if (typeof copy[name] === 'string' && request.fields?.[name]?.copy !== false) copy[name] = `${copy[name]}${options.copySuffix ?? ' (copy)'}`;
       // Its lines are its own: new lines, with new ids.
       for (const [key, value] of Object.entries(copy)) {
         if (Array.isArray(value) && value.every((line) => line && typeof line === 'object' && 'key' in line && 'values' in line)) {

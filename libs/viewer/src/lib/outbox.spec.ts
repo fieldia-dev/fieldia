@@ -3,7 +3,7 @@ import { mountViewer, type ViewerHandle } from './viewer';
 
 /** The broker signed in: what she sends without signal is kept as hers, past a closed tab. */
 const BROKER = { id: 'mona', name: 'Mona Adel' };
-import { partsFor, undoPart } from './viewer-parts';
+import { actsPart, asksActs, partFiles, partsFor, undoPart } from './viewer-parts';
 
 /**
  * An offline outbox, as the viewer says it (the outbox part): a response sent without signal ends "Kept on this
@@ -36,6 +36,27 @@ describe('an offline outbox on screen', () => {
   it('asks for Undo with its parts, while the signal is there, never as the person first enters the form (0.31)', () => {
     expect(partsFor(visit)).toContain(undoPart);
     expect(partsFor({ ...visit, outbox: undefined })).not.toContain(undoPart);
+  });
+
+  it('asks for the acts part with its parts where it runs steps or asks — beside them, never waited for (0.37)', () => {
+    const button = { type: 'button', id: 'b-check', label: 'Check the unit', confirm: 'Check it now?', action: 'check' };
+    const acting = [
+      // Its sends' own steps, before they go: their engine in while the signal is there, not asked by Submit with none.
+      { ...visit, on: { beforeSave: [{ do: 'set', field: 'unit', value: "'B-12'" }] } },
+      // A button's question and the app's action.
+      { ...visit, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-unit', field: 'unit' }, button] } },
+    ] as Page[];
+    for (const page of acting) {
+      expect(asksActs(page)).toBe(true);
+      // Its tag written with theirs, so it comes beside fieldia.js; nothing on the page drawn from it, so never waited for.
+      expect(partFiles(page)).toContain('fieldia.acts.js');
+      expect(partsFor(page)).not.toContain(actsPart);
+    }
+    // Nothing that acts, or nothing kept without signal: after the whole check, as on any other page.
+    expect(asksActs(visit)).toBe(false);
+    expect(partFiles(visit)).not.toContain('fieldia.acts.js');
+    expect(asksActs({ ...acting[0], outbox: undefined })).toBe(false);
+    expect(partFiles({ ...acting[1], outbox: undefined })).not.toContain('fieldia.acts.js');
   });
 
   it('says a response is kept on this device, what waits, and sends it as the signal comes back', async () => {

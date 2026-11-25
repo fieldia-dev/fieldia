@@ -38,6 +38,8 @@ export const bar: DesignerWords['bar'] = {
   keepEditing: 'Düzenlemeye devam et',
   publishVersion: (version) => `${version}. sürümü yayımla`,
   publishFailed: 'Yayımlanamadı.',
+  notPublished: (version) => `${version}. sürüm yayımlanamadı`,
+  notSaved: 'Değişiklikleriniz kaydedilemedi',
   close: 'Kapat',
   publishQuestion: (version) => `${version}. sürüm yayımlansın mı?`,
   changesSince: (n, version) => `${version}. sürümden bu yana ${plural('tr', n, { one: '# değişiklik', other: '# değişiklik' })}:`,

@@ -447,6 +447,18 @@ createDesigner({ page, store, openForm: (id) => router.go(`/forms/${id}/design`)
 
 `createMemoryPageStore()` lists the pages it has published.
 
+Each answer of the store is taken as it is given, so one refused at once is the
+editor's to say, never an Angular zone's (`NgZone.onError`). A draft's save the
+store refuses — after an edit, Undo, a template, a version made the draft again —
+is said under the bar, "Your changes could not be saved: " and the store's own
+words, with Try again; the next edit saves the draft too, and the line goes once
+a save went (`designer.getState().notSaved`, `designer.saveAgain()`). A publish
+it refuses is said in the dialog, "Version 3 could not be published: …", whose
+button is then Try again. Saved forms it will not list are said in the toolbox's
+menu and asked for again at the next press; a saved form it will not give keeps
+what was drawn of it — never taken for one the store has not got — and is asked
+for again a few seconds later, as the canvas or the checks next need it.
+
 ### Looks of your own
 
 The Look tab (the Look sheet, in the survey editor) starts with Fieldia's
